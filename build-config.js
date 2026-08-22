@@ -37,8 +37,13 @@ if (missing.length) {
   console.error(
     "\nbuild-config: missing required environment variable(s): " +
       missing.join(", ") +
-      "\n\nSet them on the hosting project (Cloudflare: Settings > Variables)," +
-      "\nor locally for a test build:\n" +
+      "\n\nON CLOUDFLARE: these must be BUILD variables, not RUNTIME variables." +
+      "\n  Settings > Build > Variables and secrets   <- correct, the build reads these" +
+      "\n  Settings > Runtime > Variables and secrets <- wrong, only the live Worker sees these" +
+      "\nThe two lists look identical in the dashboard. Filling in the runtime" +
+      "\none and retrying produces exactly this error, with the variables" +
+      "\nvisibly present on screen." +
+      "\n\nLocally, for a test build:\n" +
       "  SUPABASE_URL=https://xxxx.supabase.co SUPABASE_ANON_KEY=eyJ... node build-config.js\n",
   );
   process.exit(1);
@@ -58,10 +63,36 @@ if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(url)) {
   );
   process.exit(1);
 }
-if (!key.startsWith("eyJ")) {
+// Supabase issues two shapes of publishable key:
+//   legacy anon key  -> a JWT, starts "eyJ"
+//   modern key       -> starts "sb_publishable_"
+// Both work with supabase-js. Accept either, and reject anything else,
+// because the common mistake is pasting the URL and key the wrong way round.
+const looksLikeKey =
+  key.startsWith("eyJ") || key.startsWith("sb_publishable_");
+
+if (!looksLikeKey) {
   console.error(
-    "\nbuild-config: SUPABASE_ANON_KEY does not look like a JWT (should start 'eyJ')." +
-      "\nCheck you have not swapped the URL and key.\n",
+    "\nbuild-config: SUPABASE_ANON_KEY is not a recognised Supabase key." +
+      "\n  expected it to start with 'eyJ' (legacy anon key)" +
+      "\n  or 'sb_publishable_' (current publishable key)" +
+      "\n  got: " + key.slice(0, 12) + "..." +
+      "\n\nSupabase dashboard: Project Settings > API Keys." +
+      "\nDo NOT use a service_role or sb_secret_ key here: this value ends up" +
+      "\npublic in the browser.\n",
+  );
+  process.exit(1);
+}
+
+// Hard stop on a server-side key. Shipping one of these to the browser
+// hands every visitor full admin access to the database.
+if (key.startsWith("sb_secret_") || /"role"\s*:\s*"service_role"/.test(
+  (() => { try { return Buffer.from(key.split(".")[1] || "", "base64").toString("utf8"); } catch (_) { return ""; } })()
+)) {
+  console.error(
+    "\nbuild-config: that is a SERVICE ROLE key. Refusing to build." +
+      "\nIt would be published in the browser and grant full admin access." +
+      "\nUse the anon / publishable key instead.\n",
   );
   process.exit(1);
 }

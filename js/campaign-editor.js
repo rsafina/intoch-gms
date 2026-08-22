@@ -1398,10 +1398,23 @@ function ceRenderRowChips(p) {
 // number of days is the thing ops is actually reading the date for.
 function ceLastVisitCell(iso) {
   if (!iso) return `<span class="text-sm text-[#999]">Belum pernah</span>`;
-  const days = Math.max(
-    0,
-    Math.round((Date.now() - new Date(iso)) / 86400000),
-  );
+
+  // Compare CALENDAR DAYS in local time, not raw instants.
+  //
+  // The old version did Math.round((Date.now() - new Date(iso)) / 86400000).
+  // new Date("2026-08-22") parses as UTC midnight, which is 07:00 in Jakarta,
+  // so from 19:00 local onward the gap passed 12 hours and rounded up: a guest
+  // who ate here TODAY was shown as "1 hari lalu" for the busiest hours of
+  // every service. Off by one, every evening, on the screen staff use to pick
+  // who to message.
+  //
+  // Both sides are now local midnight, so the subtraction is a whole number of
+  // days and rounding cannot tip it.
+  const parts = String(iso).slice(0, 10).split("-").map(Number);
+  const then = new Date(parts[0], parts[1] - 1, parts[2]);
+  const n = new Date();
+  const today = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  const days = Math.max(0, Math.round((today - then) / 86400000));
   return `<p class="text-sm text-[#555]">${campFmtDate(iso)}</p>
     <p class="text-[11px] text-[#999]">${days === 0 ? "hari ini" : `${days} hari lalu`}</p>`;
 }

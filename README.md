@@ -39,12 +39,19 @@ live-reload loop does not burn database egress.
 Each client gets their own Cloudflare project connected to **this same repo**, with their
 own environment variables. The code is byte-identical between clients.
 
-| Setting | Value |
-|---|---|
-| Build command | `node build-config.js` |
-| Build output directory | `/` |
-| `SUPABASE_URL` | that client's project URL |
-| `SUPABASE_ANON_KEY` | that client's anon key |
+| Setting | Where | Value |
+|---|---|---|
+| Build command | Settings > Build | `node build-config.js` |
+| Build output directory | Settings > Build | `/` |
+| `SUPABASE_URL` | Settings > **Build** > Variables | that client's project URL |
+| `SUPABASE_ANON_KEY` | Settings > **Build** > Variables | that client's anon or publishable key |
+
+> **The variables go under Build, not Runtime.** Cloudflare has two lists with
+> nearly identical names. Runtime variables are for a Worker reading them on
+> each request; this app bakes the values into the JavaScript at build time, so
+> only the Build list is read. Put them in the wrong one and the build fails
+> with "missing required environment variable(s)" while the variables sit
+> visibly on screen.
 
 Adding a client is: create the project, point it at this repo, paste two values, deploy.
 Fixing a bug is: push once, every client rebuilds.

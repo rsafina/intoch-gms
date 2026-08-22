@@ -7,9 +7,9 @@
 // placeholders below from the SUPABASE_URL / SUPABASE_ANON_KEY environment
 // variables set per client in the hosting dashboard.
 const IS_STAGING = false;
-const SUPABASE_URL = "__SUPABASE_URL__";
+const SUPABASE_URL = "https://hkrhsubhfqrgqkuhpvql.supabase.co";
 const SUPABASE_ANON_KEY =
-  "__SUPABASE_ANON_KEY__";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrcmhzdWJoZnFyZ3FrdWhwdnFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4NjIyMTgsImV4cCI6MjEwMjQzODIxOH0.36wTWGzXYBMzurfIQDH6pCx0Kyd9I6H8KKiA9CFn8aI";
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -26,7 +26,11 @@ const PROMO_HOST = null;
 // misconfiguration rather than as another restaurant's brand.
 function restaurantName() {
   try {
-    if (typeof APP_SETTINGS !== "undefined" && APP_SETTINGS && APP_SETTINGS.restaurant_name) {
+    if (
+      typeof APP_SETTINGS !== "undefined" &&
+      APP_SETTINGS &&
+      APP_SETTINGS.restaurant_name
+    ) {
       return String(APP_SETTINGS.restaurant_name);
     }
   } catch (_) {}
@@ -671,7 +675,6 @@ const ID_DICT = {
     "Porsi kanal hanya mencerminkan booking yang tercatat.",
   "No bookings in this period.": "Tidak ada booking di periode ini.",
 
-
   // Who matters / spending tiers
   "Who Matters Most": "Tamu Paling Berpengaruh",
   "Spending tier breakdown": "Rincian tingkat belanja",
@@ -777,8 +780,8 @@ const ID_DICT = {
   "Show a down payment line": "Tampilkan baris down payment",
   "Show a settlement line (the rest still to pay)":
     "Tampilkan baris settlement (sisa yang masih harus dibayar)",
-  "Settlement is Total minus Down Payment — what the guest still owes after the deposit. Turning this on also marks the down payment as already paid: its bar turns pale and reads \"Down Payment Paid\", so only the settlement reads as money still being asked for.":
-    "Settlement adalah Total dikurangi Down Payment, yaitu sisa yang masih harus dibayar tamu setelah DP. Mengaktifkan ini juga menandai down payment sebagai sudah dibayar: barnya berubah menjadi biru muda dan bertuliskan \"Down Payment Paid\", sehingga hanya settlement yang terbaca sebagai tagihan yang belum dibayar.",
+  'Settlement is Total minus Down Payment — what the guest still owes after the deposit. Turning this on also marks the down payment as already paid: its bar turns pale and reads "Down Payment Paid", so only the settlement reads as money still being asked for.':
+    'Settlement adalah Total dikurangi Down Payment, yaitu sisa yang masih harus dibayar tamu setelah DP. Mengaktifkan ini juga menandai down payment sebagai sudah dibayar: barnya berubah menjadi biru muda dan bertuliskan "Down Payment Paid", sehingga hanya settlement yang terbaca sebagai tagihan yang belum dibayar.',
   "Note (bottom left of the invoice)": "Catatan (di kiri bawah invoice)",
   "Recent invoices": "Invoice terakhir",
   "this browser only": "hanya di browser ini",
@@ -838,10 +841,8 @@ const ID_DICT = {
   "Back to day view": "Kembali ke tampilan harian",
   "No reservations found": "Tidak ada reservasi ditemukan",
   "1 reservation found": "1 reservasi ditemukan",
-  "No reservations found for this guest":
-    "Tidak ada reservasi untuk tamu ini",
-  "Type at least 2 characters to search":
-    "Ketik minimal 2 huruf untuk mencari",
+  "No reservations found for this guest": "Tidak ada reservasi untuk tamu ini",
+  "Type at least 2 characters to search": "Ketik minimal 2 huruf untuk mencari",
   "all dates": "semua tanggal",
   "Not in the guest list? Just type the name below instead.":
     "Tidak ada di daftar tamu? Ketik saja namanya di bawah ini.",
@@ -949,8 +950,7 @@ const ID_DICT = {
   "all reservations, placed or not": "semua reservasi, ditempatkan atau belum",
   "Not yet placed": "Belum ditempatkan",
   "not yet placed": "belum ditempatkan",
-  "not counted in the area figures above":
-    "belum masuk hitungan area di atas",
+  "not counted in the area figures above": "belum masuk hitungan area di atas",
   reservations: "reservasi",
   "Expected Pax": "Perkiraan Pax",
   "cancelled / no-show, not counted":
