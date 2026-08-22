@@ -84,8 +84,14 @@
       }
       .logo-plain img {
         display: block;
-        height: 120px;
+        /* The old rule was height:120px with width:auto, which is fine for a
+           square mark and disastrous for a wide wordmark: the logo grew past
+           the viewport. Cap BOTH axes and let whichever limit bites first
+           win, so any client's logo lands at a sane size whatever its shape. */
+        height: auto;
         width: auto;
+        max-height: 72px;
+        max-width: min(260px, 62vw);
         filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.35));
       }
       .card {

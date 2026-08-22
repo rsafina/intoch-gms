@@ -608,7 +608,7 @@ console.log("\n── last visit sort, alone and combined with spending ──")
 // ------------------------------------------------------------
 // Five real test campaigns went out with promo_title and
 // promo_description both null, so every card read the generic
-// "Blue Heron — Promo". On the large card the title is the biggest
+// "Restoran — Promo". On the large card the title is the biggest
 // text in the whole message — bigger than the message body.
 // ============================================================
 
@@ -793,7 +793,7 @@ console.log("\n── ceCardTextGuard ──");
   // The failure that actually shipped, five times.
   const noTitle = g({ promo_image_path: IMG, promo_title: null, promo_description: "x" });
   ok("image + no title is blocked", !!noTitle);
-  // Was asserting the literal "Blue Heron". The fallback title is now
+  // Was asserting the literal "Restoran". The fallback title is now
   // per-deployment, so assert the guard explains WHY instead of naming
   // one restaurant.
   ok(

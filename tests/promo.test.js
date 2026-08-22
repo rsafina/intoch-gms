@@ -18,7 +18,7 @@ const eq = (n, a, b) => ok(n, a === b, { got: a, want: b });
 const CAMP = {
   slug: "promo-burger-agustus",
   promo_title: "Promo Burger Beli 1 Gratis 1",
-  promo_description: "Berlaku sampai 15 Agustus di Blue Heron Jogja.",
+  promo_description: "Berlaku sampai 15 Agustus di Restoran Jogja.",
   promo_image_path: "promo-burger-agustus/poster.jpg",
   promo_destination: "/reserve?from=promo-burger-agustus",
 };

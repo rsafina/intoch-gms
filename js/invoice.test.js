@@ -10,7 +10,7 @@
 const fs = require("fs");
 const { JSDOM } = require("jsdom");
 
-const ROOT = "/sessions/lucid-nifty-bell/mnt/Blue Heron/blueheron-gms";
+const ROOT = "/sessions/lucid-nifty-bell/mnt/Restoran/blueheron-gms";
 const html = fs.readFileSync(ROOT + "/index.html", "utf8");
 const dom = new JSDOM(html, {
   runScripts: "outside-only",

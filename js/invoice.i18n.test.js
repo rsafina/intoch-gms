@@ -90,7 +90,7 @@ const STAYS_ENGLISH = new Set([
   "Items", "Qty", "Unit Price", "Unit price", "Amount", "Sub Total",
   "Service Charge", "Svc %", "Tax", "Tax %", "Total", "Down Payment",
   "DP %", "Settlement", "Invoice", "auto", "PDF",
-  "We look forward to welcome you at Blue Heron :)",
+  "We look forward to welcome you at Restoran :)",
 ]);
 
 // Anything the dictionary already produces is, by definition, done —
@@ -166,7 +166,7 @@ const translated = new Set(Object.values(w.__probe.dict));
   check("Sub Total", /Sub Total/.test(sheet), "true");
   check("Service Charge", /Service Charge/.test(sheet), "true");
   check("Down Payment", /Down Payment/.test(sheet), "true");
-  check("closing line", /We look forward to welcome you at Blue Heron/.test(sheet), "true");
+  check("closing line", /We look forward to welcome you at Restoran/.test(sheet), "true");
   check("no Indonesian leaked in", /Pajak|Catatan|Perhitungan|Unduh/.test(sheet), "false");
 
   console.log("\n== 5. Every visible form string is accounted for ==");
