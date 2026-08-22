@@ -1,56 +1,65 @@
 # Migrations
 
-**Filename order IS run order.** Apply top to bottom.
+**One file: `ALL_IN_ONE.sql`.** Paste it into the Supabase SQL Editor and run it.
 
-```
-00_schema_from_blueheron.sql          base tables
-20260602_customer_spending_tiers.sql
-20260602_saved_segments.sql
-20260705_01_membership_tables.sql     members, transactions, vouchers
-20260705_02_fix_spending_tier_no_spend.sql
-20260714_delete_void_feature.sql
-20260717_favorite_menu.sql
-20260718_broadcast_tables.sql         wa_templates, wa_outreach_log
-20260719_public_reservation.sql       app_settings, create_public_reservation
-20260721_01_settings_feature.sql      featured_dishes + storage bucket
-20260721_02_seed_featured_dishes.sql  (needs the table above to exist first)
-20260722_landing_page_config.sql
-20260726_dashboard_reports.sql        booking_name, booking_alias, views
-20260726_first_timer_template.sql
-20260731_01_voucher_code_expiry.sql
-20260731_02_wa_template.sql
-20260801_01_broadcast_campaigns.sql
-20260801_02_standalone_vouchers.sql
-20260801_03_voucher_card_label.sql
-20260809_backfill_visit_stickers.sql
-20260815_reservation_follow_up.sql    follow_up_done
-20260821_reservation_reminder_ack.sql D-1 / D-day reminder acks
-20260822_admin_role_and_first_user.sql
-```
+That is the whole procedure, for a brand new client and for an existing one.
 
-`ALL_IN_ONE.sql` is every file above, concatenated in this order, for pasting into a
-fresh project in a single go.
+## Why a single file
 
-## Why the numbering looks odd
+It is **idempotent**. Every `CREATE` is `IF NOT EXISTS`, every trigger and policy
+drops itself first, every seed insert is guarded, and functions that change shape
+are dropped before being redefined. So running it against a database that is
+empty, half-built, or fully up to date all do the right thing.
 
-These were reconstructed on 2026-08-22, the first time anyone tried to build this
-database from nothing. Three problems surfaced, all of which would have hit during a
-client's onboarding:
+That removes the usual "which migrations has this client had?" bookkeeping
+entirely. There is nothing to track: you always run the same file.
 
-1. **Seven migrations were not in the repo at all.** The membership tables and the
-   broadcast tables lived in a folder outside it. An app pointed at a database built
-   from the repo alone got 404s on `members`, `wa_templates` and `wa_outreach_log`.
-2. **Filename order was not dependency order.** `20260721_seed_featured_dishes` sorts
-   before `20260721_settings_feature`, but the seed inserts into a table the settings
-   file creates. Renumbered with `_01` / `_02` suffixes so sorting is safe.
-3. **The `admin` role was never in any migration**, though the code requires it. It had
-   been added by hand in production. Fixed in the 20260822 file.
+## The one rule that keeps this working
 
-Assume more gaps like these exist. Re-run the whole set against an empty project and
-open the app before onboarding any client, rather than trusting that it works.
+**Anything you add to this file must be safe to run twice.**
 
-## Applying safely to a database with real data
+- new table -> `create table if not exists`
+- new column -> `alter table ... add column if not exists`
+- new index -> `create index if not exists`
+- new trigger or policy -> `drop ... if exists` immediately before creating it
+- redefining a function with a different return type or arguments -> drop it first
+- seed data -> `on conflict do nothing`, or `where not exists (...)`
 
-Wrap the whole thing in one `DO $$` block with `GET DIAGNOSTICS ROW_COUNT` assertions
-per statement, run it once ending in `RAISE EXCEPTION 'DRY RUN OK'` to rehearse and roll
-back, then re-run without the RAISE.
+Break that rule once and the file stops being re-runnable, which is the property
+the whole approach depends on.
+
+## Why the individual migration files are gone
+
+They were deleted on 2026-08-23. Nothing was lost: `ALL_IN_ONE.sql` contains every
+one of them verbatim, in dependency order, each under a `-- ## filename` header.
+Git holds the originals if they are ever wanted.
+
+They were deleted because they had stopped being trustworthy as a history. Building
+a database from them for the first time on 2026-08-22 surfaced five separate
+defects:
+
+1. **Seven files were not in the repo at all.** The membership and WhatsApp tables
+   lived in a folder outside it, so a database built from the repo alone was missing
+   `members`, `wa_templates` and `wa_outreach_log`.
+2. **Filename order was not dependency order.** A seed file sorted before the file
+   that created the table it seeds.
+3. **The `admin` role was in no migration**, though the code requires it. It had been
+   added by hand in production.
+4. **Nothing was re-runnable.** Plain `CREATE TABLE`, plain `CREATE TRIGGER`, and
+   functions redefined with changing return types.
+5. **14 columns, 2 views and 5 functions existed in production and in no file at all**,
+   found by diffing against the live database.
+
+A history that cannot rebuild the thing it claims to describe is not a history.
+
+## Applying to a database with real data in it
+
+Rehearse first. Wrap the whole thing in a single `DO $$` block with
+`GET DIAGNOSTICS ROW_COUNT` assertions per statement, run it once ending in
+`RAISE EXCEPTION 'DRY RUN OK'` so it rolls back, then re-run without the RAISE.
+
+## When a migration history and a running database disagree
+
+The running database is right. Read it with `pg_get_functiondef`,
+`pg_get_viewdef`, `pg_indexes` and `information_schema.columns`, and correct the
+file. That is how defect 5 above was found.
