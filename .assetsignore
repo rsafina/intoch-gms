@@ -1,0 +1,39 @@
+# Files that must NOT be published as part of the website.
+#
+# `wrangler deploy` uploads EVERYTHING in the assets directory, and this repo's
+# assets directory is the repo root. Without this file the deploy tried to
+# publish 3,827 files including node_modules, and failed on a 144 MiB binary
+# (Cloudflare's per-asset limit is 25 MiB).
+
+# --- build machinery: created during the build, never part of the site ---
+node_modules
+package.json
+package-lock.json
+bun.lock
+bun.lockb
+build-config.js
+wrangler.json
+wrangler.jsonc
+wrangler.toml
+.wrangler
+
+# --- templates: these still contain __SUPABASE__ placeholders ---
+*.template.html
+js/*.template.js
+
+# --- database schema: no reason to hand this to the public ---
+migrations
+
+# --- tests and tooling ---
+scripts
+tests
+js/*.test.js
+
+# --- code kept for porting, not wired up ---
+reference
+
+# --- docs ---
+CLAUDE.md
+README.md
+.gitignore
+.assetsignore
