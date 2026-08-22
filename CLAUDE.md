@@ -97,6 +97,58 @@ Staff PINs are also stored in plain text.
 
 ---
 
+## Backlog
+
+Ordered by what blocks a sale, not by size.
+
+### 1. Row Level Security (blocks the first client)
+Covered above. The anon key is public in the browser and RLS is off, so it grants
+full read and write on every table. Needs a design decision first: staff currently
+authenticate against a `staff_users` table with plain-text PINs and there is no
+real auth layer, so there is no `auth.uid()` for policies to key off.
+
+### 2. Per-client branding on the public pages
+`reserve.html` reads three things from the database already (`reservation_hours`,
+`full_menu`, and the `featured_dishes` cards with their uploaded photos). Everything
+else that makes it look like one particular restaurant is **hardcoded in the file**:
+
+- the restaurant name, in roughly five places (tab title, og:site_name, headings)
+- the taglines
+- the background photo, the logo, the favicon, the share image
+- the brand colour, written into the stylesheet
+- the WhatsApp number and the Google Maps link
+
+Onboarding a client currently means hand-editing that file, which is exactly the
+per-client forking the build-time config exists to prevent.
+
+The fix follows the pattern already there: more `app_settings` keys for the text
+values, two more upload slots in the existing Storage bucket for logo and
+background, and the page reading them the way it already reads opening hours.
+Roughly a day. **Do this before client one.**
+
+### 3. Broken share preview on the booking page
+`reserve.html`'s og: tags point at `blueheron-gms.netlify.app`, which does not
+exist. The real Blue Heron site is `blue-heron.netlify.app`. So when a guest
+forwards the booking link on WhatsApp, the preview image fails to load.
+
+Cosmetic, but it is the first thing a guest sees when someone shares the link.
+**This is also live in the blueheron-gms repo**, not just here.
+
+### 4. The migration set does not build a database from zero
+Proven on 2026-08-22 while standing up the first fresh project: the base schema's
+role CHECK allows only `staff` and `manager`, while the code expects `admin` too.
+The original database had that widened by hand. Fixed by
+`migrations/20260822_admin_role_and_first_user.sql`, but assume there are more
+gaps like it and re-test the full run on an empty project before client one.
+
+### 5. Routing, file splitting, inline handlers
+The three reasons this repo exists. See the top of this file.
+
+### 6. Port the promo function to a Cloudflare Worker
+`reference/promo-netlify-function.js`. Until then campaign promo links do not work.
+
+---
+
 ## Inherited rules that must not be re-broken
 
 These were each found the hard way in Blue Heron. Porting the code without porting the rules
