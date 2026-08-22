@@ -407,7 +407,7 @@ function vchSetDefaultExpiry() {
 
 // Searching by name is the normal case. A guest arrives, says who
 // they are, and staff find the voucher — nobody wants to retype
-// BHV-00042 off a phone screen, and it cannot be pasted from a
+// VCH-00042 off a phone screen, and it cannot be pasted from a
 // printed card at all. Codes still work for when the guest does
 // show one.
 let vchMatches = [];

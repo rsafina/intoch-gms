@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blue Heron — Spin & Win</title>
-    <link rel="icon" href="assets/bird.png" sizes="32x32" type="image/png" />
-    <link rel="apple-touch-icon" href="assets/bird.png" />
+    <title>Restoran — Spin & Win</title>
+    <link rel="icon" href="assets/small-logo.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/small-logo.png" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -285,7 +285,7 @@
       <!-- Header -->
       <div style="text-align: center; margin-bottom: 40px" class="fade-up">
         <div class="spin-logo">
-          <img src="assets/logo.png" alt="Blue Heron" />
+          <img src="assets/full-logo.png" alt="Logo" />
         </div>
         <h1
           class="font-display"
@@ -376,7 +376,7 @@
             <canvas id="wheel-canvas" width="320" height="320"></canvas>
             <div id="wheel-center">
               <img
-                src="assets/spin_sticker.png"
+                src="assets/small-logo.png"
                 alt="sticker"
                 style="
                   width: 70%;
@@ -500,7 +500,7 @@
       let submissionId = "";
       const SPIN_LS_KEY = "bh_spin_session";
       const GOOGLE_REVIEW_URL =
-        "https://www.google.com/maps/place/Blue+Heron+Jogja/@-7.7503209,110.3985666,17z/data=!4m8!3m7!1s0x2e7a59e12f3b1fa9:0xcaea4c496184abfc!8m2!3d-7.7503209!4d110.4011415!9m1!1b1!16s%2Fg%2F11srmjpwnz?entry=ttu";
+        "https://maps.google.com/";
 
       // ── Init ──────────────────────────────────────────────────
       document.addEventListener("DOMContentLoaded", async () => {
@@ -805,7 +805,7 @@
         ctx.fillStyle = "#5596CE";
         ctx.font = "600 72px serif";
         ctx.textAlign = "center";
-        ctx.fillText("Blue Heron", 540, 230);
+        ctx.fillText(RESTAURANT_LABEL, 540, 230);
         ctx.fillStyle = "#C8A96B";
         ctx.font = '500 28px "DM Sans", sans-serif';
         ctx.fillText("SPIN & WIN VOUCHER", 540, 290);

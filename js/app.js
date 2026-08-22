@@ -1,5 +1,5 @@
 // ============================================================
-// BLUE HERON GUEST BOOK — Main Application Logic
+// INTOCH — Main Application Logic
 // ============================================================
 
 let currentPage = "dashboard";
@@ -6914,7 +6914,7 @@ function exportReservations() {
         .replace(/^-|-$/g, "")
         .slice(0, 40)
     : TODAY;
-  downloadCsv(`blue-heron-reservations-${slug || TODAY}.csv`, headers, rows);
+  downloadCsv(`export-reservations-${slug || TODAY}.csv`, headers, rows);
   toast("Reservations exported");
 }
 
@@ -6926,7 +6926,7 @@ function exportReservationSources() {
   }
 
   downloadCsv(
-    `blue-heron-reservation-sources-${TODAY}.csv`,
+    `export-reservation-sources-${TODAY}.csv`,
     ["Reservation Source", "Reservations"],
     sources.map((s) => [s.label, s.count]),
   );
@@ -8441,7 +8441,7 @@ function exportOnlineFormReport() {
     return;
   }
   downloadCsv(
-    `blue-heron-online-form-${TODAY}.csv`,
+    `export-online-form-${TODAY}.csv`,
     [
       "Guest Name",
       "Booking Alias",
@@ -8646,7 +8646,7 @@ function exportRepeatGuests() {
     return;
   }
   downloadCsv(
-    `blue-heron-repeat-guests-${TODAY}.csv`,
+    `export-repeat-guests-${TODAY}.csv`,
     [
       "Guest Name",
       "Booking Alias",
@@ -10556,7 +10556,7 @@ function exportAtRiskSegment() {
     fmt.date(g.lastVisit),
     g.daysSinceLastVisit,
   ]);
-  downloadCsv(`blue-heron-at-risk-${label}-${TODAY}.csv`, headers, rows);
+  downloadCsv(`export-at-risk-${label}-${TODAY}.csv`, headers, rows);
 }
 
 function exportGuestSegment(segmentKey) {
@@ -10568,7 +10568,7 @@ function exportGuestSegment(segmentKey) {
 
   let headers = [];
   let rows = [];
-  let filename = `blue-heron-${segmentKey}-${TODAY}.csv`;
+  let filename = `export-${segmentKey}-${TODAY}.csv`;
 
   if (segmentKey === "firstTime") {
     headers = [
@@ -10959,7 +10959,7 @@ async function exportCSV() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `blue-heron-guests-${TODAY}.csv`;
+  a.download = `export-guests-${TODAY}.csv`;
   a.click();
   URL.revokeObjectURL(url);
   toast("CSV exported");

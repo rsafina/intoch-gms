@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blue Heron — Reservation Confirmed</title>
-    <link rel="icon" href="assets/bird.png" sizes="32x32" type="image/png" />
-    <link rel="apple-touch-icon" href="assets/bird.png" />
+    <title>Restoran — Reservation Confirmed</title>
+    <link rel="icon" href="assets/small-logo.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/small-logo.png" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -287,8 +287,8 @@
       <!-- Logo -->
       <div style="text-align: center; margin-bottom: 36px" class="fade-up">
         <img
-          src="assets/logo.png"
-          alt="Blue Heron"
+          src="assets/full-logo.png"
+          alt="Logo"
           style="
             height: 56px;
             width: auto;
@@ -311,7 +311,7 @@
             font-weight: 500;
           "
         >
-          Blue Heron
+          Restoran
         </p>
       </div>
 
@@ -790,10 +790,10 @@
             ctx.fillStyle = "#28547C";
             ctx.font = "500 56px Cormorant, Georgia, serif";
             ctx.textAlign = "center";
-            ctx.fillText("Blue Heron", W / 2, 160);
+            ctx.fillText(RESTAURANT_LABEL, W / 2, 160);
             resolve();
           };
-          img.src = "assets/logo.png";
+          img.src = "assets/full-logo.png";
         });
 
         // ── Gold rule ──
@@ -939,11 +939,11 @@
         // ctx.fillText("Kami menanti kedatangan anda!", W / 2, footY);
         // ctx.fillStyle = "#C8A96B";
         // ctx.font = '500 22px DMSans, "DM Sans", sans-serif';
-        // ctx.fillText("Blue Heron", W / 2, footY + 38);
+        // ctx.fillText(RESTAURANT_LABEL, W / 2, footY + 38);
 
         // ── Save ──
         const link = document.createElement("a");
-        link.download = `BlueHeron_Reservation_${displayName.replace(/\s+/g, "_")}.png`;
+        link.download = `Reservation_${displayName.replace(/\s+/g, "_")}.png`;
         link.href = canvas.toDataURL("image/png");
         link.click();
 
@@ -979,13 +979,13 @@
         const start = `${dateStr}T${h.padStart(2, "0")}${m}00`;
         const end = `${dateStr}T${endHour}${m}00`;
         const title = encodeURIComponent(
-          `Blue Heron Reservation${r.occasion ? " — " + r.occasion : ""}`,
+          `Restoran Reservation${r.occasion ? " — " + r.occasion : ""}`,
         );
         const desc = encodeURIComponent(
-          `Reservation for ${r.guests?.name || "Guest"}, ${r.pax} pax at Blue Heron.`,
+          `Reservation for ${r.guests?.name || "Guest"}, ${r.pax} pax .`,
         );
         window.open(
-          `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${desc}&location=${encodeURIComponent("Blue Heron, Jogja")}`,
+          `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${desc}&location=${encodeURIComponent("Restoran")}`,
           "_blank",
         );
       }

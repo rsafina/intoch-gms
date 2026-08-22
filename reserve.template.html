@@ -3,28 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blue Heron — Reserve a Table</title>
+    <title>Restoran — Reserve a Table</title>
     <!-- Link preview (WhatsApp / Instagram / Facebook) -->
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Blue Heron Restaurant" />
-    <meta property="og:title" content="Blue Heron — Reserve a Table" />
+    <meta property="og:site_name" content="Restoran" />
+    <meta property="og:title" content="Restoran — Reserve a Table" />
     <meta
       property="og:description"
-      content="Reservasi meja di Blue Heron Jogja. Isi form singkat, staff kami akan menghubungi Anda untuk konfirmasi."
+      content="Reservasi meja di Restoran. Isi form singkat, staff kami akan menghubungi Anda untuk konfirmasi."
     />
     <meta
       property="og:url"
-      content="https://blueheron-gms.netlify.app/reserve"
+      content="/reserve"
     />
     <meta
       property="og:image"
-      content="https://blueheron-gms.netlify.app/assets/og-share.jpg"
+      content="/assets/og-share.jpg"
     />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
-    <link rel="icon" href="assets/bird.png" sizes="32x32" type="image/png" />
-    <link rel="apple-touch-icon" href="assets/bird.png" />
+    <link rel="icon" href="assets/small-logo.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/small-logo.png" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
@@ -56,8 +56,12 @@
       .bg-photo {
         position: fixed;
         inset: -24px;
-        background: url("assets/surup-web.jpg") center / cover no-repeat;
-        filter: brightness(0.68) saturate(0.85);
+        background: url("assets/background-generic.jpg") center / cover no-repeat;
+        /* The previous backdrop was a bright dawn shot and needed pulling
+           down hard. This one is already dark with a warm centre, so the
+           same 0.68 crushed the sunset into mud. Lighter touch, and the
+           navy tint layer below still carries the contrast. */
+        filter: brightness(0.85) saturate(0.95);
         z-index: -2;
       }
       .bg-tint {
@@ -91,7 +95,7 @@
         filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.35));
       }
       .card {
-        /* Blue Heron navy glass (#28547C base) */
+        /* navy glass (#28547C base) */
         background: rgba(40, 84, 124, 0.6);
         backdrop-filter: blur(14px);
         -webkit-backdrop-filter: blur(14px);
@@ -446,8 +450,8 @@
     <div class="wrap">
       <div class="logo-plain">
         <img
-          src="assets/logo-tagline.png"
-          alt="Blue Heron — Cita Rasa Jadi Cerita"
+          src="assets/full-logo.png"
+          alt="Restoran"
         />
       </div>
 
@@ -539,7 +543,7 @@
       <!-- Quick links — EDIT THE 3 HREFs BELOW (placeholders) -->
       <div class="quick-links">
         <a
-          href="https://www.google.com/maps/place/blue+heron+jogja/data=!4m2!3m1!1s0x2e7a59e12f3b1fa9:0xcaea4c496184abfc"
+          href="https://maps.google.com/"
           target="_blank"
           rel="noopener"
         >

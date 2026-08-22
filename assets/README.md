@@ -1,12 +1,28 @@
 # Assets
 
-**Every image here is a grey placeholder.** Filenames and pixel dimensions match the
-originals so layouts hold and nothing breaks, but all of them need replacing with the
-product's own artwork.
+## Real artwork (Intoch)
 
-The originals were Blue Heron's logo, their restaurant photography and their voucher card
-design. Client artwork does not belong in a product repo.
+- `full-logo.png`  — the wordmark. Page headers, the invoice header, the
+  reservation-confirmation canvas, the spin page.
+- `small-logo.png` — the compact mark. Favicons, apple-touch-icon, the spin
+  wheel centre, the small decorative mark on the invoice.
+- `background-generic.jpg` — backdrop for the public reservation pages. Dark
+  with a warm centre, so the CSS filter is a light `brightness(0.85)`; the
+  previous backdrop was a bright dawn shot that needed `0.68`.
 
-`voucher-bg.jpg` needs the most care: `js/voucher.js` draws text onto it at fixed
-coordinates (safe band roughly y470 to y1660 on a 1084x1940 canvas). A replacement must
-either keep those dimensions or the draw positions must be re-tuned.
+## Placeholders (grey boxes)
+
+Everything else is a grey placeholder at the original pixel dimensions, so
+layouts hold and nothing breaks. They came from Blue Heron's own photography
+and branding, which does not belong in a product repo.
+
+## Still carrying Blue Heron's design
+
+`voucher-bg.jpg` is Blue Heron's cream voucher card, and `js/voucher.js` draws
+text onto it at fixed coordinates (safe band roughly y470-y1660 on a 1084x1940
+canvas). Swapping it for a differently-sized image means re-tuning those draw
+positions. **The voucher card is not client-ready.** See CLAUDE.md, backlog
+item 2.
+
+`og-share.jpg` is the WhatsApp link-preview image and is also still a
+placeholder. It is what guests see when someone forwards the booking link.

@@ -426,7 +426,21 @@ console.log("\n── search still filters correctly after the split ──");
 
 console.log("\n── last visit cell ──");
 {
-  const days = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+  // Build the date from LOCAL getters, not toISOString().
+  //
+  // toISOString() formats in UTC. In Jakarta (UTC+7) that is yesterday's date
+  // for the first seven hours of every day, so this helper handed
+  // ceLastVisitCell a date one day off and the test failed depending on what
+  // time it was run. The function under test was fixed to compare local
+  // calendar days; the helper has to agree with it.
+  const days = (n) => {
+    const d = new Date(Date.now() - n * 864e5);
+    return (
+      d.getFullYear() +
+      "-" + String(d.getMonth() + 1).padStart(2, "0") +
+      "-" + String(d.getDate()).padStart(2, "0")
+    );
+  };
   ok(
     "a guest with no visits reads 'Belum pernah'",
     ctx.ceLastVisitCell(null).includes("Belum pernah"),

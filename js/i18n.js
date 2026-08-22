@@ -1,5 +1,5 @@
 // ============================================================
-// BLUE HERON GMS — DOM-mutation i18n translator
+// INTOCH — DOM-mutation i18n translator
 // ============================================================
 // Ports the approach proven in gms-proto/js/i18n.js: the app is authored
 // in English (plus a handful of spots that already hardcode Indonesian
@@ -161,11 +161,11 @@ const ID_DICT_PATTERNS = [
 
   // Vouchers (vouchers.js, 2026-08-01). Voucher codes are never
   // translated — they are printed on the card the guest holds.
-  [/^Voucher (BHV-\d+) issued\.$/, "Voucher $1 diterbitkan."],
+  [/^Voucher (VCH-\d+) issued\.$/, "Voucher $1 diterbitkan."],
   [/^(\d+) vouchers issued\.$/, "$1 voucher diterbitkan."],
   [/^Issue (\d+) vouchers$/, "Terbitkan $1 voucher"],
-  [/^Redeemed (BHV-\d+)\.$/, "$1 berhasil ditukar."],
-  [/^(BHV-\d+) cancelled\.$/, "$1 dibatalkan."],
+  [/^Redeemed (VCH-\d+)\.$/, "$1 berhasil ditukar."],
+  [/^(VCH-\d+) cancelled\.$/, "$1 dibatalkan."],
   [
     /^(\d+) vouchers, each with its own code\. Leave the recipient empty for bearer vouchers a partner hands out\.$/,
     "$1 voucher, masing-masing dengan kodenya sendiri. Kosongkan penerima untuk voucher atas nama pembawa yang dibagikan partner.",

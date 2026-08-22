@@ -1,5 +1,5 @@
 // ============================================================
-// BLUE HERON GUEST BOOK — Supabase Config & Utilities
+// INTOCH — Supabase Config & Utilities
 // ============================================================
 
 // GENERATED FILE — do not edit js/config.js directly and do not commit it.
@@ -70,7 +70,7 @@ if (typeof IS_STAGING !== "undefined" && IS_STAGING) {
     document.body.appendChild(banner);
   });
 }
-const STAFF_SESSION_KEY = "blueHeronStaffUser";
+const STAFF_SESSION_KEY = "intochStaffUser";
 
 // ============================================================
 // LANGUAGE / TRANSLATION (ID default, EN toggle)

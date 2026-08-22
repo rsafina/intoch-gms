@@ -45,7 +45,9 @@ const SITE = (
   "https://your-site.example"
 ).replace(/\/$/, "");
 const FALLBACK_IMAGE = SITE + "/assets/og-share.jpg";
-const RESTAURANT = "Blue Heron";
+// TODO when porting to a Worker: read this from app_settings.restaurant_name
+// rather than hardcoding it, the same way js/config.template.js does.
+const RESTAURANT = process.env.RESTAURANT_NAME || "Restoran";
 
 function esc(s) {
   return String(s == null ? "" : s)
@@ -97,7 +99,7 @@ function page(campaign, slug) {
   const title = (campaign && campaign.promo_title) || `${RESTAURANT} — Promo`;
   const desc =
     (campaign && campaign.promo_description) ||
-    "Ada penawaran spesial dari Blue Heron. Ketuk untuk melihat dan pesan meja.";
+    "Ada penawaran spesial dari " + RESTAURANT + ". Ketuk untuk melihat dan pesan meja.";
   const img = imageUrl(campaign, slug);
   const dest = safeDestination(campaign && campaign.promo_destination, slug);
   // Canonical form is always the short one, even when the guest arrived
@@ -112,7 +114,7 @@ function page(campaign, slug) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>${esc(title)}</title>
 <meta property="og:type" content="website"/>
-<meta property="og:site_name" content="Blue Heron Restaurant"/>
+<meta property="og:site_name" content="${RESTAURANT}"/>
 <meta property="og:title" content="${esc(title)}"/>
 <meta property="og:description" content="${esc(desc)}"/>
 <meta property="og:url" content="${esc(url)}"/>
@@ -120,7 +122,7 @@ function page(campaign, slug) {
 <meta property="og:image:width" content="1200"/>
 <meta property="og:image:height" content="630"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<link rel="icon" href="/assets/bird.png" sizes="32x32" type="image/png"/>
+<link rel="icon" href="/assets/small-logo.png" sizes="32x32" type="image/png"/>
 <style>
 body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
 background:#F8F6F2;color:#28547C;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -133,7 +135,7 @@ font-size:14px;font-weight:600;padding:12px 22px;border-radius:12px}
 </head>
 <body>
 <div class="wrap">
-  <img class="logo" src="/assets/logo.png" alt="Blue Heron"/>
+  <img class="logo" src="/assets/full-logo.png" alt="${RESTAURANT}"/>
   <p>Membuka halaman reservasi…</p>
   <a id="go" href="${esc(dest)}">Buka halaman reservasi</a>
 </div>

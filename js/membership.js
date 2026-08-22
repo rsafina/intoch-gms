@@ -1,5 +1,5 @@
 // ============================================================
-// BLUE HERON GUEST BOOK — Membership (merged from Staff Portal)
+// INTOCH — Membership
 // Tables: members, member_transactions, member_vouchers
 // Business rules live in DB functions:
 //   add_member_transaction() / redeem_member_voucher()

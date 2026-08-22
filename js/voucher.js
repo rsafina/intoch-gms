@@ -33,6 +33,12 @@ const VC_TOP = 470;
 const VC_BOTTOM = 1660;
 
 const VC_ASSETS = {
+  // BLUE HERON ARTWORK, still. voucher-bg.jpg is their cream card design
+  // (their logo, their "cita rasa jadi cerita" arc, their heron watermarks)
+  // and this renderer draws text onto it at fixed coordinates, so it cannot
+  // just be swapped for a differently-sized image without re-tuning the
+  // draw positions below. Replacing it is part of the branding work in
+  // CLAUDE.md, backlog item 2. Until then this card is NOT client-ready.
   bg: "assets/voucher-bg.jpg",
 };
 
