@@ -1,0 +1,959 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blue Heron — Reserve a Table</title>
+    <!-- Link preview (WhatsApp / Instagram / Facebook) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Blue Heron Restaurant" />
+    <meta property="og:title" content="Blue Heron — Reserve a Table" />
+    <meta
+      property="og:description"
+      content="Reservasi meja di Blue Heron Jogja. Isi form singkat, staff kami akan menghubungi Anda untuk konfirmasi."
+    />
+    <meta
+      property="og:url"
+      content="https://blueheron-gms.netlify.app/reserve"
+    />
+    <meta
+      property="og:image"
+      content="https://blueheron-gms.netlify.app/assets/og-share.jpg"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="assets/bird.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/bird.png" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500;600&family=Montserrat:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --primary: #5596ce;
+        --dark: #28547c;
+        --gold: #c8a96b;
+      }
+      html,
+      body {
+        min-height: 100%;
+      }
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: #101820;
+        color: #f2efe9;
+        -webkit-font-smoothing: antialiased;
+      }
+      /* Restaurant photo backdrop */
+      .bg-photo {
+        position: fixed;
+        inset: -24px;
+        background: url("assets/surup-web.jpg") center / cover no-repeat;
+        filter: brightness(0.68) saturate(0.85);
+        z-index: -2;
+      }
+      .bg-tint {
+        position: fixed;
+        inset: 0;
+        /* dawn nuance: cool indigo wash, lighter at mid, deeper at edges */
+        background: linear-gradient(
+          180deg,
+          rgba(24, 34, 66, 0.5) 0%,
+          rgba(40, 56, 94, 0.3) 45%,
+          rgba(18, 28, 54, 0.55) 100%
+        );
+        z-index: -1;
+      }
+      .wrap {
+        max-width: 430px;
+        margin: 0 auto;
+        padding: 28px 20px 40px;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+      }
+      .logo-plain {
+        align-self: center;
+        margin-bottom: 24px;
+      }
+      .logo-plain img {
+        display: block;
+        height: 120px;
+        width: auto;
+        filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.35));
+      }
+      .card {
+        /* Blue Heron navy glass (#28547C base) */
+        background: rgba(40, 84, 124, 0.6);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 18px;
+        padding: 22px 18px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      }
+      .card h1 {
+        font-family: "Montserrat", sans-serif;
+        font-weight: 400;
+        font-size: 21px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #fff;
+        margin-bottom: 4px;
+        text-align: center;
+      }
+      .card .sub {
+        font-size: 13px;
+        color: #b9c2cb;
+        margin-bottom: 18px;
+        text-align: center;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+        color: #cfd6dd;
+        margin: 0 0 6px 2px;
+        letter-spacing: 0.02em;
+      }
+      .field {
+        margin-bottom: 14px;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        font-family: inherit;
+        font-size: 16px; /* prevents iOS zoom-on-focus */
+        color: #fff;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 12px;
+        padding: 12px 14px;
+        outline: none;
+        transition:
+          border-color 0.15s,
+          background 0.15s;
+        appearance: none;
+        -webkit-appearance: none;
+      }
+      input::placeholder,
+      textarea::placeholder {
+        color: #7f8a94;
+      }
+      input:focus,
+      select:focus,
+      textarea:focus {
+        border-color: var(--primary);
+        background: rgba(255, 255, 255, 0.12);
+      }
+      /* Native pickers on dark backgrounds */
+      input[type="date"],
+      select {
+        color-scheme: dark;
+      }
+      input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(0.9);
+      }
+      /* The native dropdown popup ignores the select's dark styling on
+         some platforms (white popup + inherited white text = invisible
+         options). Give options explicit colors so they render everywhere. */
+      select option {
+        color: #1c2733;
+        background: #ffffff;
+      }
+      select {
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%23cfd6dd' stroke-width='2' stroke-linecap='round'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        padding-right: 38px;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 74px;
+      }
+      .row2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      /* Pax stepper */
+      .pax-box {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .pax-box button {
+        width: 52px;
+        height: 48px;
+        border: none;
+        background: transparent;
+        color: #fff;
+        font-size: 22px;
+        font-weight: 300;
+        cursor: pointer;
+      }
+      .pax-box button:active {
+        background: rgba(255, 255, 255, 0.12);
+      }
+      #pax-value {
+        flex: 1;
+        width: 100%;
+        min-width: 0;
+        text-align: center;
+        font-size: 16px;
+        font-weight: 500;
+        font-family: inherit;
+        color: #fff;
+        background: transparent;
+        border: none;
+        outline: none;
+        padding: 0;
+        -moz-appearance: textfield;
+        appearance: textfield;
+      }
+      /* hide the native number spinners — the +/- buttons do that job */
+      #pax-value::-webkit-outer-spin-button,
+      #pax-value::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      .err {
+        display: none;
+        margin: 2px 0 14px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        background: rgba(178, 58, 58, 0.22);
+        border: 1px solid rgba(226, 116, 116, 0.45);
+        color: #ffd9d9;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+      .btn-submit {
+        width: 100%;
+        border: none;
+        border-radius: 999px;
+        padding: 15px;
+        font-family: inherit;
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        color: #fff;
+        background: linear-gradient(135deg, var(--primary), var(--dark));
+        cursor: pointer;
+        box-shadow: 0 6px 20px rgba(85, 150, 206, 0.35);
+        transition:
+          opacity 0.15s,
+          transform 0.1s;
+      }
+      .btn-submit:active {
+        transform: scale(0.985);
+      }
+      .btn-submit:disabled {
+        opacity: 0.55;
+        cursor: default;
+      }
+      /* Quick-link buttons */
+      .quick-links {
+        display: flex;
+        justify-content: center;
+        gap: 26px;
+        margin-top: 26px;
+      }
+      .quick-links a {
+        text-decoration: none;
+        color: #dfe5ea;
+        text-align: center;
+        font-size: 12px;
+      }
+      .quick-links .icon {
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 7px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        transition: background 0.15s;
+      }
+      .quick-links a:active .icon {
+        background: rgba(255, 255, 255, 0.22);
+      }
+      .quick-links svg {
+        width: 24px;
+        height: 24px;
+      }
+      .foot {
+        text-align: center;
+        font-size: 12px;
+        font-weight: 600;
+        color: #c9d2da;
+        margin-top: auto;
+        padding-top: 30px;
+        text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+      }
+      /* ---- Signature menu bottom sheet ---- */
+      .sheet-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 40;
+        background: rgba(8, 13, 18, 0.6);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+      }
+      .sheet-backdrop.open {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .sheet {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 50;
+        max-width: 430px;
+        margin: 0 auto;
+        background: #131c26;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-bottom: none;
+        border-radius: 22px 22px 0 0;
+        padding: 14px 18px calc(20px + env(safe-area-inset-bottom));
+        max-height: 86dvh;
+        overflow-y: auto;
+        transform: translateY(100%);
+        transition: transform 0.35s cubic-bezier(0.32, 0.72, 0.25, 1);
+        box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.5);
+      }
+      .sheet.open {
+        transform: translateY(0);
+      }
+      .sheet-grab {
+        width: 42px;
+        height: 4px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.25);
+        margin: 0 auto 14px;
+      }
+      .sheet-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 4px;
+      }
+      .sheet-head h2 {
+        font-family: "Montserrat", sans-serif;
+        font-weight: 400;
+        font-size: 19px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #fff;
+      }
+      .sheet-close {
+        border: none;
+        background: rgba(255, 255, 255, 0.1);
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        color: #cfd6dd;
+        font-size: 16px;
+        line-height: 1;
+        cursor: pointer;
+      }
+      .sheet-sub {
+        font-size: 12.5px;
+        color: #9aa5af;
+        margin-bottom: 16px;
+      }
+      .dish {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 14px;
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+      .dish img {
+        width: 86px;
+        height: 86px;
+        object-fit: cover;
+        border-radius: 10px;
+        flex-shrink: 0;
+      }
+      .dish h3 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 3px;
+      }
+      .dish .badge {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 3px;
+      }
+      .dish p {
+        font-size: 12.5px;
+        line-height: 1.5;
+        color: #aeb7c0;
+      }
+      .btn-fullmenu {
+        display: block;
+        width: 100%;
+        margin-top: 14px;
+        border: none;
+        border-radius: 999px;
+        padding: 14px;
+        text-align: center;
+        text-decoration: none;
+        font-family: inherit;
+        font-size: 15.5px;
+        font-weight: 600;
+        color: #fff;
+        background: linear-gradient(135deg, var(--primary), var(--dark));
+        box-shadow: 0 6px 20px rgba(85, 150, 206, 0.35);
+        transition: transform 0.1s;
+      }
+      .btn-fullmenu:active {
+        transform: scale(0.985);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg-photo"></div>
+    <div class="bg-tint"></div>
+
+    <div class="wrap">
+      <div class="logo-plain">
+        <img
+          src="assets/logo-tagline.png"
+          alt="Blue Heron — Cita Rasa Jadi Cerita"
+        />
+      </div>
+
+      <div class="card">
+        <h1>Book a Table</h1>
+        <p class="sub">
+          Hanya butuh 1 menit, reservasi dengan cepat, dan sampai jumpa di Blue
+          Heron!
+        </p>
+
+        <form id="res-form" novalidate>
+          <div class="field">
+            <label for="f-name">Nama</label>
+            <input
+              id="f-name"
+              type="text"
+              autocomplete="name"
+              maxlength="80"
+              placeholder="Nama Anda"
+              required
+            />
+          </div>
+          <div class="field">
+            <label for="f-phone">Nomor WhatsApp</label>
+            <input
+              id="f-phone"
+              type="tel"
+              autocomplete="tel"
+              inputmode="tel"
+              placeholder="08xxxxxxxxxx"
+              required
+            />
+          </div>
+          <div class="field">
+            <label>Jumlah Tamu</label>
+            <div class="pax-box">
+              <button type="button" onclick="paxStep(-1)" aria-label="Kurangi">
+                &minus;
+              </button>
+              <input
+                id="pax-value"
+                type="number"
+                inputmode="numeric"
+                min="1"
+                max="20"
+                value="2"
+                aria-label="Jumlah tamu"
+                onblur="clampPax()"
+              />
+              <button type="button" onclick="paxStep(1)" aria-label="Tambah">
+                +
+              </button>
+            </div>
+          </div>
+          <div class="row2 field">
+            <div>
+              <label for="f-date">Tanggal</label>
+              <input id="f-date" type="date" required />
+            </div>
+            <div>
+              <label for="f-time">Jam</label>
+              <select id="f-time" required>
+                <option value="">--:--</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="f-notes"
+              >Catatan
+              <span style="color: #7f8a94; font-weight: 400"
+                >(opsional)</span
+              ></label
+            >
+            <textarea
+              id="f-notes"
+              maxlength="500"
+              placeholder="Bisa dekorasi romantis, pre-order menu, baby chair, dsb."
+            ></textarea>
+          </div>
+
+          <div id="form-error" class="err"></div>
+
+          <button id="btn-submit" type="submit" class="btn-submit">
+            Reserve Now
+          </button>
+        </form>
+      </div>
+
+      <!-- Quick links — EDIT THE 3 HREFs BELOW (placeholders) -->
+      <div class="quick-links">
+        <a
+          href="https://www.google.com/maps/place/blue+heron+jogja/data=!4m2!3m1!1s0x2e7a59e12f3b1fa9:0xcaea4c496184abfc"
+          target="_blank"
+          rel="noopener"
+        >
+          <span class="icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#e8c88a"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 21s-7-5.3-7-11a7 7 0 1 1 14 0c0 5.7-7 11-7 11z" />
+              <circle cx="12" cy="10" r="2.6" />
+            </svg>
+          </span>
+          Lokasi
+        </a>
+        <a href="#" onclick="openMenuSheet(event)">
+          <span class="icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#9fc4e8"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M4 4h9a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V4z" />
+              <path d="M16 8h4v9a3 3 0 0 1-3 3" />
+              <path d="M8 9h4M8 13h4" />
+            </svg>
+          </span>
+          Menu
+        </a>
+        <a
+          href="https://wa.me/62XXXXXXXXXX?text=Halo%20Blue%20Heron%2C%20saya%20ingin%20melakukan%20inquiry%20mengenai%20reservasi"
+          target="_blank"
+          rel="noopener"
+        >
+          <span class="icon">
+            <svg viewBox="0 0 24 24" fill="#7ed88f">
+              <path
+                d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2zm5.4 14.1c-.2.7-1.3 1.3-1.9 1.4-.5.1-1.1.1-1.8-.1-.4-.1-1-.3-1.7-.6-2.9-1.3-4.8-4.2-5-4.4-.1-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.4.2.5.7 1.9.8 2 .1.1.1.3 0 .5l-.4.6c-.1.2-.3.3-.1.6.1.3.6 1.1 1.4 1.8 1 .9 1.8 1.2 2.1 1.3.3.1.4.1.6-.1l.7-.9c.2-.3.4-.2.6-.1l1.9.9c.2.1.4.2.5.3 0 .1 0 .5-.3 1.1z"
+              />
+            </svg>
+          </span>
+          WhatsApp
+        </a>
+      </div>
+
+      <p class="foot">Serving stories on every plate since 2023</p>
+    </div>
+
+    <!-- Signature menu bottom sheet -->
+    <div
+      id="sheet-backdrop"
+      class="sheet-backdrop"
+      onclick="closeMenuSheet()"
+    ></div>
+    <div
+      id="menu-sheet"
+      class="sheet"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Signature dishes"
+    >
+      <div class="sheet-grab"></div>
+      <div class="sheet-head">
+        <h2>Our Signatures</h2>
+        <button
+          class="sheet-close"
+          onclick="closeMenuSheet()"
+          aria-label="Tutup"
+        >
+          &times;
+        </button>
+      </div>
+      <p class="sheet-sub">Hidangan yang paling dicintai tamu kami.</p>
+
+      <!-- Managed in the staff app: Settings > Reservation Configuration.
+           The two dishes below are the static fallback shown if the
+           featured_dishes fetch fails or the table is empty. -->
+      <div id="dish-list">
+        <div class="dish">
+          <img
+            src="assets/sirloin-wagyu-web.jpg"
+            alt="Sirloin Wagyu MB5"
+            loading="lazy"
+          />
+          <div>
+            <span class="badge">Best Seller</span>
+            <h3>Sirloin Wagyu MB5</h3>
+            <p>
+              Grilled irloin wagyu marbling 5, disajikan dengan garlic convit,
+              sauteed mushroom, pilihan kentang pendamping, sayuran dan saus.
+            </p>
+          </div>
+        </div>
+        <div class="dish">
+          <img
+            src="assets/butter-salmon-web.jpg"
+            alt="Butter Salmon"
+            loading="lazy"
+          />
+          <div>
+            <span class="badge">Chef's Recommendation</span>
+            <h3>Butter Salmon</h3>
+            <p>
+              Grilled Norwegian Salmon yang dimasak dengan bawang merah, bawang
+              putih, cabai pilihan, smoked beef dan butter
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- href is the hardcoded fallback; loadFullMenuLink() below swaps it
+           for app_settings.full_menu.url once that's set in Settings >
+           Menu & Dishes (shared with the landing page). -->
+      <a
+        id="btn-fullmenu"
+        class="btn-fullmenu"
+        href="https://drive.google.com/file/d/1A2M5iYbCJC_H9hD-793q4k3O49TpAsBH/view"
+        target="_blank"
+        rel="noopener"
+        >Lihat Menu Lengkap</a
+      >
+    </div>
+
+    <script>
+      // ---- Supabase (same PROD DB as the staff app — YOUR_SUPABASE_PROJECT_REF) ----
+      const SUPABASE_URL = "__SUPABASE_URL__";
+      const SUPABASE_ANON_KEY =
+        "__SUPABASE_ANON_KEY__";
+      const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      // ---- Config ----
+      const SLOT_MINUTES = 30; // time dropdown step
+      const SAME_DAY_LEAD_MIN = 30; // must match the DB function
+      const MAX_DAYS_AHEAD = 90; // must match the DB function
+      let HOURS = { open: "10:00", close: "21:30" }; // fallback; real value from app_settings
+
+      // Indonesian messages for RPC rejection codes (validation itself is server-side)
+      const ERR_ID = {
+        invalid_name: "Mohon isi nama Anda (2-80 karakter).",
+        invalid_phone: "Nomor telepon tidak valid. Contoh: 0812xxxxxxxx.",
+        invalid_pax:
+          "Jumlah tamu 1-20. Untuk rombongan besar, silakan hubungi kami via WhatsApp.",
+        missing_datetime: "Mohon pilih tanggal dan jam.",
+        past_date: "Tanggal sudah lewat. Mohon pilih tanggal lain.",
+        too_far: "Reservasi maksimal " + MAX_DAYS_AHEAD + " hari ke depan.",
+        outside_hours: "Jam tersebut di luar jam operasional kami.",
+        too_soon:
+          "Untuk hari ini, reservasi minimal " +
+          SAME_DAY_LEAD_MIN +
+          " menit sebelumnya. Silakan pilih jam lain atau hubungi kami via WhatsApp.",
+        duplicate:
+          "Nomor ini sudah punya reservasi di tanggal tersebut. Untuk mengubahnya, silakan hubungi kami via WhatsApp.",
+        network: "Koneksi bermasalah. Mohon coba lagi.",
+      };
+
+      // ---- Helpers ----
+      const $ = (id) => document.getElementById(id);
+      const pad = (n) => String(n).padStart(2, "0");
+      function todayLocal() {
+        const d = new Date();
+        return (
+          d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
+        );
+      }
+      function addDays(iso, days) {
+        const d = new Date(iso + "T00:00:00");
+        d.setDate(d.getDate() + days);
+        return (
+          d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
+        );
+      }
+      function toMin(hhmm) {
+        const [h, m] = hhmm.split(":").map(Number);
+        return h * 60 + m;
+      }
+
+      // Pax: typeable input; +/- buttons still work. The field is left
+      // alone WHILE typing (so clearing it to type "12" isn't fought),
+      // then normalized on blur / +/- click / submit.
+      // Typing >20 is NOT silently clamped — that would quietly book the
+      // wrong party size. It shows the 1-20 message (which points big
+      // groups to WhatsApp). The DB re-validates 1-20 server-side.
+      function readPaxRaw() {
+        const n = parseInt($("pax-value").value, 10);
+        return Number.isFinite(n) ? n : null;
+      }
+      function readPax() {
+        const n = readPaxRaw();
+        return n !== null && n >= 1 && n <= 20 ? n : null;
+      }
+      function clampPax() {
+        const n = readPaxRaw();
+        if (n === null) {
+          $("pax-value").value = 2; // emptied the field → back to default
+          return;
+        }
+        if (n > 20) showError(ERR_ID.invalid_pax); // explains the WA route
+        $("pax-value").value = Math.min(20, Math.max(1, n));
+      }
+      function paxStep(delta) {
+        const current = readPaxRaw() ?? 2;
+        $("pax-value").value = Math.min(20, Math.max(1, current + delta));
+      }
+
+      // Build the time dropdown from opening hours; on today's date,
+      // hide slots that are already too soon.
+      function buildTimeSlots() {
+        const sel = $("f-time");
+        const prev = sel.value;
+        sel.innerHTML = '<option value="">--:--</option>';
+        const isToday = $("f-date").value === todayLocal();
+        const now = new Date();
+        const nowMin =
+          now.getHours() * 60 + now.getMinutes() + SAME_DAY_LEAD_MIN;
+        for (
+          let t = toMin(HOURS.open);
+          t <= toMin(HOURS.close);
+          t += SLOT_MINUTES
+        ) {
+          if (isToday && t < nowMin) continue;
+          const label = pad(Math.floor(t / 60)) + ":" + pad(t % 60);
+          const opt = document.createElement("option");
+          opt.value = label;
+          opt.textContent = label;
+          sel.appendChild(opt);
+        }
+        if ([...sel.options].some((o) => o.value === prev)) sel.value = prev;
+        if (sel.options.length === 1 && isToday) {
+          showError(
+            "Slot hari ini sudah habis. Silakan pilih tanggal lain atau hubungi kami via WhatsApp.",
+          );
+        } else {
+          hideError();
+        }
+      }
+
+      function showError(msg) {
+        const el = $("form-error");
+        el.textContent = msg;
+        el.style.display = "block";
+      }
+      function hideError() {
+        $("form-error").style.display = "none";
+      }
+
+      // ---- Init ----
+      (async function init() {
+        const dateEl = $("f-date");
+        dateEl.min = todayLocal();
+        dateEl.max = addDays(todayLocal(), MAX_DAYS_AHEAD);
+        dateEl.value = todayLocal();
+        dateEl.addEventListener("change", buildTimeSlots);
+
+        // Opening hours from app_settings (fallback stays if fetch fails —
+        // the DB function is the real gate either way)
+        try {
+          const { data } = await db
+            .from("app_settings")
+            .select("value")
+            .eq("key", "reservation_hours")
+            .maybeSingle();
+          if (data?.value?.open && data?.value?.close) HOURS = data.value;
+        } catch (_) {
+          /* keep fallback */
+        }
+        buildTimeSlots();
+        loadFeaturedDishes(); // not awaited — the sheet is below the fold
+        loadFullMenuLink(); // not awaited — hardcoded href works until this resolves
+      })();
+
+      // ---- Full menu link (shared with the landing page) ----
+      async function loadFullMenuLink() {
+        try {
+          const { data } = await db
+            .from("app_settings")
+            .select("value")
+            .eq("key", "full_menu")
+            .maybeSingle();
+          const url = data?.value?.url;
+          if (url) $("btn-fullmenu").href = url;
+        } catch (_) {
+          /* keep hardcoded fallback href */
+        }
+      }
+
+      // ---- Featured dishes (managed in staff app Settings > Menu & Dishes) ----
+      // Replaces the static fallback in #dish-list only when the fetch
+      // succeeds AND returns at least one active dish; any failure keeps
+      // the hardcoded pair, so the sheet never renders empty.
+      const DISH_BADGES = {
+        signature: "Signature",
+        chef_recommendation: "Chef's Recommendation",
+        best_seller: "Best Seller",
+      };
+      function escDish(s) {
+        const div = document.createElement("div");
+        div.textContent = s ?? "";
+        return div.innerHTML;
+      }
+      async function loadFeaturedDishes() {
+        try {
+          const { data, error } = await db
+            .from("featured_dishes")
+            .select("name, description, image_url, category")
+            .eq("is_active", true)
+            .order("category")
+            .order("display_order")
+            .order("created_at");
+          if (error || !data || !data.length) return; // keep fallback
+          // Signature dishes first, then chef recommendations, then best sellers
+          const ordered = [
+            ...data.filter((d) => d.category === "signature"),
+            ...data.filter((d) => d.category === "chef_recommendation"),
+            ...data.filter((d) => d.category === "best_seller"),
+          ];
+          $("dish-list").innerHTML = ordered
+            .map(
+              (d) => `
+            <div class="dish">
+              ${d.image_url ? `<img src="${escDish(d.image_url)}" alt="${escDish(d.name)}" loading="lazy" />` : ""}
+              <div>
+                <span class="badge">${DISH_BADGES[d.category] || ""}</span>
+                <h3>${escDish(d.name)}</h3>
+                ${d.description ? `<p>${escDish(d.description)}</p>` : ""}
+              </div>
+            </div>`,
+            )
+            .join("");
+        } catch (_) {
+          /* keep fallback */
+        }
+      }
+
+      // ---- Signature menu bottom sheet ----
+      function openMenuSheet(e) {
+        if (e) e.preventDefault();
+        $("sheet-backdrop").classList.add("open");
+        $("menu-sheet").classList.add("open");
+        document.body.style.overflow = "hidden"; // lock page scroll behind sheet
+      }
+      function closeMenuSheet() {
+        $("sheet-backdrop").classList.remove("open");
+        $("menu-sheet").classList.remove("open");
+        document.body.style.overflow = "";
+      }
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeMenuSheet();
+      });
+
+      // ---- Submit ----
+      let submitting = false;
+      $("res-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (submitting) return; // double-tap guard
+        hideError();
+
+        const name = $("f-name").value.trim();
+        const phone = $("f-phone").value.trim();
+        const date = $("f-date").value;
+        const time = $("f-time").value;
+        const notes = $("f-notes").value.trim();
+        const pax = readPax();
+
+        // Light client checks for instant feedback (server re-validates everything)
+        if (name.length < 2) return showError(ERR_ID.invalid_name);
+        if (phone.replace(/\D/g, "").length < 9)
+          return showError(ERR_ID.invalid_phone);
+        if (pax === null) {
+          clampPax(); // restore a visible value so the guest sees what to fix
+          return showError(ERR_ID.invalid_pax);
+        }
+        if (!date || !time) return showError(ERR_ID.missing_datetime);
+
+        submitting = true;
+        const btn = $("btn-submit");
+        btn.disabled = true;
+        btn.textContent = "Mengirim...";
+
+        try {
+          const { data, error } = await db.rpc("create_public_reservation", {
+            p_name: name,
+            p_phone: phone,
+            p_pax: pax,
+            p_date: date,
+            p_time: time,
+            p_notes: notes || null,
+          });
+          if (error) throw error;
+          if (!data?.ok) {
+            showError(ERR_ID[data?.code] || ERR_ID.network);
+            return;
+          }
+          // Pass a small summary to the confirmation page (no URL params — no PII in links)
+          try {
+            sessionStorage.setItem(
+              "bhPublicRes",
+              JSON.stringify({ name, date, time, pax }),
+            );
+          } catch (_) {}
+          window.location.href = "reservation-created.html";
+        } catch (err) {
+          showError(ERR_ID.network);
+        } finally {
+          submitting = false;
+          btn.disabled = false;
+          btn.textContent = "Reserve Now";
+        }
+      });
+    </script>
+  </body>
+</html>

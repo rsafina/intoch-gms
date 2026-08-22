@@ -1,0 +1,9 @@
+# Generated at build time by build-config.js from the .template files.
+# These contain the client's Supabase credentials. Never commit them.
+js/config.js
+reserve.html
+
+node_modules/
+.DS_Store
+Thumbs.db
+*.log

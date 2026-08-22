@@ -1,0 +1,14 @@
+{
+  "name": "intoch-gms",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Guest management and membership system for restaurants",
+  "scripts": {
+    "build": "node build-config.js",
+    "serve": "python3 -m http.server 8080",
+    "test": "node scripts/run-tests.js"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
+  }
+}

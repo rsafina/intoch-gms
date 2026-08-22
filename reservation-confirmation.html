@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blue Heron — Reservation Confirmed</title>
+    <link rel="icon" href="assets/bird.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/bird.png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary: #5596ce;
+        --dark: #28547c;
+        --gold: #c8a96b;
+        --bg: #f8f6f2;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: var(--bg);
+        min-height: 100vh;
+      }
+      .font-display {
+        font-family: "Cormorant Garamond", serif;
+      }
+
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes pop {
+        0% {
+          transform: scale(0.8);
+          opacity: 0;
+        }
+        60% {
+          transform: scale(1.07);
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      @keyframes confetti-fall {
+        to {
+          transform: translateY(110vh) rotate(720deg);
+          opacity: 0;
+        }
+      }
+      @keyframes checkDraw {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .fade-up {
+        animation: fadeUp 0.55s ease forwards;
+      }
+      .pop {
+        animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      }
+
+      .confetti-piece {
+        position: fixed;
+        top: -10px;
+        border-radius: 2px;
+        animation: confetti-fall linear forwards;
+        pointer-events: none;
+        z-index: 999;
+      }
+
+      .check-circle {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: #eef7ee;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+      }
+      .check-circle svg .check-path {
+        stroke-dasharray: 40;
+        stroke-dashoffset: 40;
+        animation: checkDraw 0.4s ease 0.7s forwards;
+      }
+
+      .card {
+        background: white;
+        border-radius: 20px;
+        padding: 32px 28px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
+      }
+      .divider {
+        border: none;
+        border-top: 1.5px dashed #e0ddd7;
+        margin: 24px 0;
+      }
+
+      .detail-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .detail-row:last-child {
+        margin-bottom: 0;
+      }
+      .detail-icon {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        border-radius: 8px;
+        background: #eef3f7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 2px;
+      }
+      .detail-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #aaa;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 2px;
+      }
+      .detail-value {
+        font-size: 15px;
+        color: #222;
+        font-weight: 500;
+        line-height: 1.4;
+      }
+
+      .notes-box {
+        background: #fffbf2;
+        border: 1.5px solid #e8dfc8;
+        border-radius: 12px;
+        padding: 14px 16px;
+        font-size: 13px;
+        color: #666;
+        line-height: 1.6;
+      }
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+      }
+      .status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+      }
+
+      /* ── Name edit strip ── */
+      .name-edit-bar {
+        background: white;
+        border: 1.5px solid #e0ddd7;
+        border-radius: 14px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .name-edit-bar input {
+        flex: 1;
+        border: none;
+        outline: none;
+        font-family: "DM Sans", sans-serif;
+        font-size: 15px;
+        color: #222;
+        font-weight: 500;
+        background: transparent;
+      }
+      .name-edit-bar label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #aaa;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+      }
+
+      .btn-action {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 14px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 500;
+        font-family: "DM Sans", sans-serif;
+        border: none;
+        cursor: pointer;
+        transition:
+          background 0.2s,
+          transform 0.15s;
+        text-decoration: none;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+      .btn-action:hover {
+        transform: translateY(-1px);
+      }
+      .btn-primary-action {
+        background: var(--dark);
+        color: white;
+      }
+      .btn-primary-action:hover {
+        background: #1e3f5c;
+      }
+      .btn-gold-action {
+        background: var(--gold);
+        color: white;
+      }
+      .btn-gold-action:hover {
+        background: #b8954f;
+      }
+      .btn-outline-action {
+        background: white;
+        color: var(--dark);
+        border: 1.5px solid #d0d7df;
+      }
+      .btn-outline-action:hover {
+        background: #f5f8fb;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      style="
+        position: fixed;
+        inset: 0;
+        background:
+          radial-gradient(
+            ellipse at 20% 20%,
+            rgba(200, 169, 107, 0.06) 0%,
+            transparent 60%
+          ),
+          radial-gradient(
+            ellipse at 80% 80%,
+            rgba(47, 74, 99, 0.05) 0%,
+            transparent 60%
+          );
+        pointer-events: none;
+      "
+    ></div>
+
+    <div
+      style="
+        max-width: 480px;
+        margin: 0 auto;
+        padding: 40px 20px 80px;
+        position: relative;
+      "
+    >
+      <!-- Logo -->
+      <div style="text-align: center; margin-bottom: 36px" class="fade-up">
+        <img
+          src="assets/logo.png"
+          alt="Blue Heron"
+          style="
+            height: 56px;
+            width: auto;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+          "
+          onerror="
+            this.style.display = 'none';
+            document.getElementById('logo-fallback').style.display = 'block';
+          "
+        />
+        <p
+          id="logo-fallback"
+          class="font-display"
+          style="
+            display: none;
+            font-size: 28px;
+            color: var(--dark);
+            font-weight: 500;
+          "
+        >
+          Blue Heron
+        </p>
+      </div>
+
+      <!-- Loading -->
+      <div id="loading-state" style="text-align: center; padding: 60px 0">
+        <div
+          style="
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e0ddd7;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+          "
+        ></div>
+        <p style="color: #aaa; font-size: 14px">Loading your reservation…</p>
+      </div>
+
+      <!-- Error -->
+      <div
+        id="error-state"
+        style="display: none; text-align: center; padding: 60px 0"
+      >
+        <p style="font-size: 40px; margin-bottom: 12px">🔍</p>
+        <p
+          class="font-display"
+          style="font-size: 22px; color: var(--dark); margin-bottom: 8px"
+        >
+          Reservation not found
+        </p>
+        <p style="color: #aaa; font-size: 14px">
+          This link may be invalid or expired.
+        </p>
+      </div>
+
+      <!-- Content -->
+      <div id="content-state" style="display: none">
+        <!-- Check + heading -->
+        <div style="text-align: center; margin-bottom: 28px" class="fade-up">
+          <!-- <div class="check-circle">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+              <path
+                class="check-path"
+                d="M8 16.5 L13.5 22 L24 11"
+                stroke="#3aaa5c"
+                stroke-width="2.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div> -->
+          <p
+            style="
+              font-size: 12px;
+              letter-spacing: 0.16em;
+              color: var(--gold);
+              text-transform: uppercase;
+              font-weight: 600;
+              margin-bottom: 6px;
+            "
+          >
+            Reservation Confirmed
+          </p>
+          <h1
+            class="font-display"
+            style="
+              font-size: 38px;
+              font-weight: 500;
+              color: var(--dark);
+              line-height: 1.1;
+            "
+            id="guest-name-heading"
+          ></h1>
+          <p
+            style="color: #888; font-size: 14px; margin-top: 8px"
+            id="res-date-subheading"
+          ></p>
+        </div>
+
+        <!-- Main card (this gets captured for download) -->
+        <div class="card pop" id="download-card" style="margin-bottom: 16px">
+          <!-- Status -->
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              margin-bottom: 24px;
+            "
+          >
+            <p
+              style="
+                font-size: 12px;
+                color: #aaa;
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+              "
+            >
+              Status
+            </p>
+            <div id="status-badge"></div>
+          </div>
+
+          <hr class="divider" style="margin-top: 0" />
+
+          <div id="details-grid"></div>
+
+          <div id="notes-wrap" style="display: none; margin-top: 20px">
+            <p
+              style="
+                font-size: 11px;
+                font-weight: 600;
+                color: #aaa;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                margin-bottom: 8px;
+              "
+            >
+              Note from our team
+            </p>
+            <div class="notes-box" id="notes-content"></div>
+          </div>
+        </div>
+
+        <!-- ── Staff toolbar (name edit + download) ── -->
+        <div
+          style="
+            background: #f0f4f8;
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+          "
+          class="fade-up"
+        >
+          <p
+            style="
+              font-size: 11px;
+              font-weight: 600;
+              color: #888;
+              text-transform: uppercase;
+              letter-spacing: 0.08em;
+              margin-bottom: 10px;
+            "
+          >
+            Staff: Customize before sending
+          </p>
+
+          <!-- Editable name -->
+          <div class="name-edit-bar" style="margin-bottom: 10px">
+            <label>Name</label>
+            <input
+              type="text"
+              id="display-name-input"
+              placeholder="e.g. Ibu Ima"
+              oninput="updateDisplayName(this.value)"
+            />
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#aaa"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+              />
+              <path
+                d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+              />
+            </svg>
+          </div>
+
+          <!-- Download button -->
+          <button class="btn-action btn-gold-action" onclick="downloadCard()">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Download as Image
+          </button>
+        </div>
+
+        <!-- Info box -->
+        <!-- <div
+          style="
+            background: #eef3f7;
+            border-radius: 14px;
+            padding: 16px 20px;
+            margin-bottom: 16px;
+          "
+          class="fade-up"
+        >
+          <p
+            style="
+              font-size: 13px;
+              color: var(--dark);
+              font-weight: 600;
+              margin-bottom: 6px;
+            "
+          >
+            📍 Kami menunggu kedatangan kamu!
+          </p>
+          <p style="font-size: 13px; color: #555; line-height: 1.6">
+            Silakan datang tepat waktu. Jika rencana Anda berubah, harap hubungi
+            kami sebelumnya.
+          </p>
+        </div> -->
+
+        <!-- Add to calendar -->
+        <!-- <a
+          href="#"
+          class="btn-action btn-outline-action fade-up"
+          onclick="addToCalendar(event)"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          Add to Calendar
+        </a> -->
+      </div>
+    </div>
+
+    <div id="confetti-wrap" style="pointer-events: none"></div>
+
+    <script src="js/config.js"></script>
+    <script>
+      let reservation = null;
+
+      function show(id) {
+        document.getElementById(id).style.display = "block";
+      }
+      function hide(id) {
+        document.getElementById(id).style.display = "none";
+      }
+
+      function formatDate(d) {
+        if (!d) return "—";
+        return new Date(d + "T00:00:00").toLocaleDateString("en-GB", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
+      }
+      function formatTime(t) {
+        if (!t) return "—";
+        const [h, m] = t.split(":");
+        const hr = parseInt(h, 10);
+        return `${hr % 12 || 12}:${m} ${hr >= 12 ? "PM" : "AM"}`;
+      }
+      function statusConfig(s) {
+        return (
+          {
+            Reserved: { color: "#28547C", bg: "#EEF3F7", dot: "#5596CE" },
+            Confirmed: { color: "#1a6b3c", bg: "#dcf4e8", dot: "#3aaa5c" },
+            Arrived: { color: "#5F4B00", bg: "#FEF3C7", dot: "#C8A96B" },
+            Completed: { color: "#444", bg: "#F0F0EC", dot: "#aaa" },
+            Cancelled: { color: "#991B1B", bg: "#FEE2E2", dot: "#DC2626" },
+          }[s] || { color: "#28547C", bg: "#EEF3F7", dot: "#5596CE" }
+        );
+      }
+      function detailRow(icon, label, value) {
+        return `<div class="detail-row"><div class="detail-icon">${icon}</div><div><p class="detail-label">${label}</p><p class="detail-value">${value}</p></div></div>`;
+      }
+      const IC = {
+        cal: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5596CE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+        clk: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5596CE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+        ppl: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5596CE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+        tag: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5596CE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`,
+        loc: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5596CE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+      };
+
+      // ── Update heading live as staff types ────────────────────
+      function updateDisplayName(val) {
+        const name =
+          val.trim() || reservation?.guests?.name?.split(" ")[0] || "Guest";
+        document.getElementById("guest-name-heading").textContent =
+          `Welcome, ${name}!`;
+      }
+
+      // ── Render page ───────────────────────────────────────────
+      function renderPage(r) {
+        const fullName = r.guests?.name || "Guest";
+        const firstName = fullName.split(" ")[0];
+        const sc = statusConfig(r.status);
+
+        document.getElementById("guest-name-heading").textContent =
+          `Welcome, ${firstName}!`;
+        document.getElementById("res-date-subheading").textContent =
+          `${formatDate(r.reservation_date)} at ${formatTime(r.reservation_time)}`;
+        document.getElementById("display-name-input").value = firstName;
+
+        document.getElementById("status-badge").innerHTML =
+          `<span class="status-badge" style="background:${sc.bg};color:${sc.color};">
+            <span class="status-dot" style="background:${sc.dot};"></span>${r.status}
+          </span>`;
+
+        const areaName = r.areas?.name || null;
+        const tableName = r.tables?.name || null;
+        let rows = "";
+        rows += detailRow(IC.cal, "Date", formatDate(r.reservation_date));
+        rows += detailRow(IC.clk, "Time", formatTime(r.reservation_time));
+        rows += detailRow(
+          IC.ppl,
+          "Guests",
+          `${r.pax} ${r.pax === 1 ? "person" : "people"}`,
+        );
+        if (areaName || tableName)
+          rows += detailRow(
+            IC.loc,
+            "Location",
+            [areaName, tableName].filter(Boolean).join(" · "),
+          );
+        if (r.occasion) rows += detailRow(IC.tag, "Occasion", r.occasion);
+        document.getElementById("details-grid").innerHTML = rows;
+
+        if (r.notes) {
+          document.getElementById("notes-content").textContent = r.notes;
+          document.getElementById("notes-wrap").style.display = "block";
+        }
+
+        hide("loading-state");
+        show("content-state");
+        if (["Reserved", "Confirmed"].includes(r.status))
+          setTimeout(launchConfetti, 400);
+      }
+
+      // ── Load from Supabase ────────────────────────────────────
+      async function loadReservation() {
+        const id = new URLSearchParams(window.location.search).get("id");
+        if (!id) {
+          hide("loading-state");
+          show("error-state");
+          return;
+        }
+
+        const { data, error } = await db
+          .from("reservations")
+          .select(
+            "id, reservation_date, reservation_time, pax, occasion, status, notes, guests(name), areas(name), tables(name)",
+          )
+          .eq("id", id)
+          .single();
+
+        if (error || !data) {
+          hide("loading-state");
+          show("error-state");
+          return;
+        }
+        reservation = data;
+        renderPage(data);
+      }
+
+      // ── Download card as image (canvas) ───────────────────────
+      async function downloadCard() {
+        const r = reservation;
+        if (!r) return;
+
+        const btn = document.querySelector(".btn-gold-action");
+        if (btn) {
+          btn.textContent = "Generating…";
+          btn.disabled = true;
+        }
+
+        const displayName =
+          document.getElementById("display-name-input").value.trim() ||
+          r.guests?.name?.split(" ")[0] ||
+          "Guest";
+
+        const areaName = r.areas?.name || null;
+        const tableName = r.tables?.name || null;
+        const location =
+          [areaName, tableName].filter(Boolean).join(" · ") || null;
+
+        // ── Pre-load web fonts so canvas renders them correctly ──
+        try {
+          const fontBase =
+            "https://fonts.gstatic.com/s/dmsans/v15/rP2Hp2ywxg089UriCZa4ET-DNl0.woff2";
+          const fontBold =
+            "https://fonts.gstatic.com/s/dmsans/v15/rP2Cp2ywxg089UriAaIwXb-_lh2.woff2";
+          const fontSerif =
+            "https://fonts.gstatic.com/s/cormorantgaramond/v22/co3WmX5slCNuHLi8bLeY9MK7whWMhyjQAllvuQ.woff2";
+          await Promise.all([
+            new FontFace("DMSans", `url(${fontBase})`)
+              .load()
+              .then((f) => document.fonts.add(f)),
+            new FontFace("DMSans", `url(${fontBold})`, { weight: "600" })
+              .load()
+              .then((f) => document.fonts.add(f)),
+            new FontFace("Cormorant", `url(${fontSerif})`, { weight: "500" })
+              .load()
+              .then((f) => document.fonts.add(f)),
+          ]);
+        } catch (e) {
+          /* fall back to system fonts gracefully */
+        }
+
+        // ── Build detail rows (compute dynamic card height) ──
+        const details = [
+          ["📅", "DATE", formatDate(r.reservation_date)],
+          ["🕐", "TIME", formatTime(r.reservation_time)],
+          ["👥", "GUESTS", `${r.pax} ${r.pax === 1 ? "person" : "people"}`],
+        ];
+        if (location) details.push(["📍", "LOCATION", location]);
+        if (r.occasion) details.push(["🎉", "OCCASION", r.occasion]);
+
+        const ROW_H = 88;
+        const CARD_PAD = 80;
+        const NOTE_H = r.notes ? 110 : 0;
+        const cardH = CARD_PAD + details.length * ROW_H + NOTE_H + CARD_PAD;
+
+        const W = 1080;
+        const cardX = 80,
+          cardY = 460,
+          cardW = W - 160;
+        const H = cardY + cardH + 380; // total canvas height
+
+        const canvas = document.createElement("canvas");
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext("2d");
+
+        // ── Background ──
+        ctx.fillStyle = "#F8F6F2";
+        ctx.fillRect(0, 0, W, H);
+        const grad = ctx.createRadialGradient(
+          W * 0.15,
+          H * 0.08,
+          0,
+          W * 0.15,
+          H * 0.08,
+          W * 0.65,
+        );
+        grad.addColorStop(0, "rgba(200,169,107,0.10)");
+        grad.addColorStop(1, "transparent");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        // ── Logo ──
+        await new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            const lH = 130,
+              lW = lH * (img.naturalWidth / img.naturalHeight);
+            ctx.drawImage(img, (W - lW) / 2, 72, lW, lH);
+            resolve();
+          };
+          img.onerror = () => {
+            ctx.fillStyle = "#28547C";
+            ctx.font = "500 56px Cormorant, Georgia, serif";
+            ctx.textAlign = "center";
+            ctx.fillText("Blue Heron", W / 2, 160);
+            resolve();
+          };
+          img.src = "assets/logo.png";
+        });
+
+        // ── Gold rule ──
+        ctx.fillStyle = "#C8A96B";
+        ctx.fillRect((W - 56) / 2, 228, 56, 3);
+
+        // ── RESERVATION CONFIRMED ──
+        ctx.fillStyle = "#C8A96B";
+        ctx.font = '600 22px DMSans, "DM Sans", sans-serif';
+        ctx.textAlign = "center";
+        // Manually spaced since canvas letterSpacing is unreliable
+        const label = "R E S E R V A T I O N   C O N F I R M E D";
+        ctx.fillText(label, W / 2, 274);
+
+        // ── Welcome name ──
+        ctx.fillStyle = "#28547C";
+        ctx.font = `500 86px Cormorant, "Cormorant Garamond", Georgia, serif`;
+        ctx.textAlign = "center";
+        ctx.fillText(`Welcome, ${displayName}!`, W / 2, 370);
+
+        // ── Date subheading ──
+        ctx.fillStyle = "#888888";
+        ctx.font = '400 28px DMSans, "DM Sans", sans-serif';
+        ctx.fillText(
+          `${formatDate(r.reservation_date)}  ·  ${formatTime(r.reservation_time)}`,
+          W / 2,
+          418,
+        );
+
+        // ── White card shadow ──
+        ctx.shadowColor = "rgba(0,0,0,0.09)";
+        ctx.shadowBlur = 48;
+        ctx.shadowOffsetY = 8;
+        roundRect(ctx, cardX, cardY, cardW, cardH, 28);
+        ctx.fillStyle = "white";
+        ctx.fill();
+        ctx.shadowColor = "transparent";
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+
+        // ── Status badge ──
+        const sc = statusConfig(r.status);
+        const badgeW = 160,
+          badgeH = 44,
+          badgeX = cardX + cardW - badgeW - 36,
+          badgeY = cardY + 34;
+        roundRect(ctx, badgeX, badgeY, badgeW, badgeH, 22);
+        ctx.fillStyle = sc.bg;
+        ctx.fill();
+        // dot
+        ctx.fillStyle = sc.dot;
+        ctx.beginPath();
+        ctx.arc(badgeX + 20, badgeY + badgeH / 2, 7, 0, Math.PI * 2);
+        ctx.fill();
+        // text
+        ctx.fillStyle = sc.color;
+        ctx.font = '600 22px DMSans, "DM Sans", sans-serif';
+        ctx.textAlign = "left";
+        ctx.fillText(r.status, badgeX + 34, badgeY + 29);
+
+        // ── Dashed divider ──
+        ctx.save();
+        ctx.setLineDash([10, 7]);
+        ctx.strokeStyle = "#E0DDD7";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cardX + 44, cardY + 96);
+        ctx.lineTo(cardX + cardW - 44, cardY + 96);
+        ctx.stroke();
+        ctx.restore();
+
+        // ── Detail rows ──
+        let rowY = cardY + CARD_PAD + 56; // below divider
+        for (const [emoji, lbl, val] of details) {
+          // Icon circle
+          ctx.fillStyle = "#EEF3F7";
+          ctx.beginPath();
+          ctx.arc(cardX + 76, rowY + 22, 26, 0, Math.PI * 2);
+          ctx.fill();
+          // Emoji icon
+          ctx.font = "22px serif";
+          ctx.textAlign = "center";
+          ctx.fillText(emoji, cardX + 76, rowY + 30);
+          // Label
+          ctx.fillStyle = "#AAAAAA";
+          ctx.font = '600 19px DMSans, "DM Sans", sans-serif';
+          ctx.textAlign = "left";
+          ctx.fillText(lbl, cardX + 118, rowY + 12);
+          // Value
+          ctx.fillStyle = "#222222";
+          ctx.font = '500 27px DMSans, "DM Sans", sans-serif';
+          ctx.fillText(val, cardX + 118, rowY + 44);
+
+          rowY += ROW_H;
+        }
+
+        // ── Notes box ──
+        if (r.notes) {
+          const noteY = rowY + 8;
+          roundRect(ctx, cardX + 44, noteY, cardW - 88, NOTE_H - 12, 14);
+          ctx.fillStyle = "#FFFBF2";
+          ctx.fill();
+          ctx.strokeStyle = "#E8DFC8";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.fillStyle = "#AAAAAA";
+          ctx.font = '600 20px DMSans, "DM Sans", sans-serif';
+          ctx.textAlign = "left";
+          ctx.fillText("Note from our team", cardX + 68, noteY + 30);
+          ctx.fillStyle = "#555555";
+          ctx.font = '400 24px DMSans, "DM Sans", sans-serif';
+          const noteText =
+            r.notes.length > 65 ? r.notes.slice(0, 62) + "…" : r.notes;
+          ctx.fillText(noteText, cardX + 68, noteY + 70);
+        }
+
+        // ── Footer ──
+        // ── Info box ──
+        const infoY = cardY + cardH + 28;
+        const infoW = cardW,
+          infoH = 110;
+        roundRect(ctx, cardX, infoY, infoW, infoH, 16);
+        ctx.fillStyle = "#EEF3F7";
+        ctx.fill();
+        ctx.font = '600 24px DMSans, "DM Sans", sans-serif';
+        ctx.fillStyle = "#28547C";
+        ctx.textAlign = "center";
+        ctx.fillText("📍 Kami menunggu kedatangan kamu!", W / 2, infoY + 38);
+        ctx.font = '400 22px DMSans, "DM Sans", sans-serif';
+        ctx.fillStyle = "#555555";
+        ctx.fillText(
+          "Silakan datang tepat waktu. Jika rencana Anda berubah,",
+          W / 2,
+          infoY + 68,
+        );
+        ctx.fillText("harap hubungi kami sebelumnya.", W / 2, infoY + 94);
+
+        // ── Footer ──
+        // const footY = infoY + infoH + 44;
+        // ctx.fillStyle = "#AAAAAA";
+        // ctx.font = '400 24px DMSans, "DM Sans", sans-serif';
+        // ctx.textAlign = "center";
+        // ctx.fillText("Kami menanti kedatangan anda!", W / 2, footY);
+        // ctx.fillStyle = "#C8A96B";
+        // ctx.font = '500 22px DMSans, "DM Sans", sans-serif';
+        // ctx.fillText("Blue Heron", W / 2, footY + 38);
+
+        // ── Save ──
+        const link = document.createElement("a");
+        link.download = `BlueHeron_Reservation_${displayName.replace(/\s+/g, "_")}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+
+        if (btn) {
+          btn.innerHTML =
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download as Image';
+          btn.disabled = false;
+        }
+      }
+
+      function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      }
+
+      // ── Add to Calendar ───────────────────────────────────────
+      function addToCalendar(e) {
+        e.preventDefault();
+        if (!reservation) return;
+        const r = reservation;
+        const dateStr = r.reservation_date.replace(/-/g, "");
+        const [h, m] = r.reservation_time.split(":");
+        const endHour = String((parseInt(h, 10) + 2) % 24).padStart(2, "0");
+        const start = `${dateStr}T${h.padStart(2, "0")}${m}00`;
+        const end = `${dateStr}T${endHour}${m}00`;
+        const title = encodeURIComponent(
+          `Blue Heron Reservation${r.occasion ? " — " + r.occasion : ""}`,
+        );
+        const desc = encodeURIComponent(
+          `Reservation for ${r.guests?.name || "Guest"}, ${r.pax} pax at Blue Heron.`,
+        );
+        window.open(
+          `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${desc}&location=${encodeURIComponent("Blue Heron, Jogja")}`,
+          "_blank",
+        );
+      }
+
+      // ── Confetti ──────────────────────────────────────────────
+      function launchConfetti() {
+        const colors = [
+          "#C8A96B",
+          "#5596CE",
+          "#8B6F47",
+          "#3aaa5c",
+          "#F8F6F2",
+          "#D4A017",
+        ];
+        const wrap = document.getElementById("confetti-wrap");
+        for (let i = 0; i < 70; i++) {
+          const p = document.createElement("div");
+          p.className = "confetti-piece";
+          const size = 6 + Math.random() * 8;
+          p.style.cssText = `left:${Math.random() * 100}vw;width:${size}px;height:${size * (0.4 + Math.random() * 0.8)}px;background:${colors[Math.floor(Math.random() * colors.length)]};animation-duration:${2 + Math.random() * 2}s;animation-delay:${Math.random() * 0.6}s;transform:rotate(${Math.random() * 360}deg);`;
+          wrap.appendChild(p);
+        }
+        setTimeout(() => (wrap.innerHTML = ""), 5000);
+      }
+
+      document.addEventListener("DOMContentLoaded", loadReservation);
+    </script>
+  </body>
+</html>

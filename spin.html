@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blue Heron — Spin & Win</title>
+    <link rel="icon" href="assets/bird.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/bird.png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary: #5596ce;
+        --gold: #c8a96b;
+        --bg: #f8f6f2;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: var(--bg);
+        min-height: 100vh;
+      }
+      .font-display {
+        font-family: "Cormorant Garamond", serif;
+      }
+      .form-input {
+        width: 100%;
+        border: 1.5px solid #e0ddd7;
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 15px;
+        font-family: "DM Sans", sans-serif;
+        outline: none;
+        background: white;
+        transition: border 0.2s;
+      }
+      .form-input:focus {
+        border-color: #28547c;
+      }
+      .btn-primary {
+        background: #5596ce;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 14px 28px;
+        font-size: 15px;
+        font-weight: 500;
+        cursor: pointer;
+        font-family: "DM Sans", sans-serif;
+        width: 100%;
+        transition: background 0.2s;
+      }
+      .btn-primary:hover {
+        background: #85c5e9;
+      }
+      .btn-primary:disabled {
+        background: #a8b5c0;
+        cursor: not-allowed;
+      }
+      .btn-gold {
+        background: #c8a96b;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 14px 28px;
+        font-size: 15px;
+        font-weight: 500;
+        cursor: pointer;
+        font-family: "DM Sans", sans-serif;
+        width: 100%;
+        transition: background 0.2s;
+        text-decoration: none;
+        display: block;
+        text-align: center;
+      }
+      .btn-gold:hover {
+        background: #b8954f;
+      }
+
+      /* ── Wheel ── */
+      #wheel-wrap {
+        position: relative;
+        width: 320px;
+        height: 320px;
+        margin: 0 auto;
+      }
+      #wheel-canvas {
+        border-radius: 50%;
+        box-shadow: 0 8px 40px rgba(47, 74, 99, 0.18);
+        display: block;
+      }
+      #wheel-pointer {
+        position: absolute;
+        top: -18px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 12px solid transparent;
+        border-right: 12px solid transparent;
+        border-top: 24px solid #c8a96b;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+      }
+      #wheel-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid #e0ddd7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      #spin-btn {
+        margin-top: 28px;
+        background: #c8a96b;
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 14px 48px;
+        font-size: 16px;
+        font-weight: 500;
+        font-family: "DM Sans", sans-serif;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 4px 16px rgba(200, 169, 107, 0.35);
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      #spin-btn:hover {
+        background: #b8954f;
+        transform: translateY(-1px);
+      }
+      #spin-btn:disabled {
+        background: #d4cfc8;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+      }
+
+      /* ── Claim code ── */
+      .claim-code {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 26px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        color: #28547c;
+        text-align: center;
+        background: #f8f6f2;
+        border: 1.5px dashed #c8a96b;
+        border-radius: 12px;
+        padding: 18px 24px;
+      }
+      .voucher-card {
+        background: white;
+        border-radius: 16px;
+        padding: 28px;
+        box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+      }
+      #prize-reveal {
+        padding-bottom: 24px;
+      }
+      .prize-footer {
+        font-size: 13px;
+        color: #888;
+        font-weight: 500;
+        margin-top: 6px;
+        line-height: 1.4;
+      }
+
+      /* ── Steps ── */
+      .step {
+        display: none;
+      }
+      .step.active {
+        display: block;
+      }
+
+      /* ── Animations ── */
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes pop {
+        0% {
+          transform: scale(0.85);
+          opacity: 0;
+        }
+        60% {
+          transform: scale(1.06);
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      @keyframes confetti-fall {
+        to {
+          transform: translateY(110vh) rotate(720deg);
+          opacity: 0;
+        }
+      }
+      .fade-up {
+        animation: fadeUp 0.5s ease forwards;
+      }
+      .pop {
+        animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      }
+
+      /* ── Confetti ── */
+      .confetti-piece {
+        position: fixed;
+        top: -10px;
+        border-radius: 2px;
+        animation: confetti-fall linear forwards;
+        pointer-events: none;
+        z-index: 999;
+      }
+      .spin-logo {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+      }
+      .spin-logo img {
+        width: 120px;
+        height: auto;
+        object-fit: contain;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- BACKGROUND TEXTURE -->
+    <div
+      style="
+        position: fixed;
+        inset: 0;
+        background:
+          radial-gradient(
+            ellipse at 20% 20%,
+            rgba(200, 169, 107, 0.06) 0%,
+            transparent 60%
+          ),
+          radial-gradient(
+            ellipse at 80% 80%,
+            rgba(47, 74, 99, 0.05) 0%,
+            transparent 60%
+          );
+        pointer-events: none;
+      "
+    ></div>
+
+    <div
+      style="
+        max-width: 480px;
+        margin: 0 auto;
+        padding: 40px 20px 80px;
+        position: relative;
+      "
+    >
+      <!-- Header -->
+      <div style="text-align: center; margin-bottom: 40px" class="fade-up">
+        <div class="spin-logo">
+          <img src="assets/logo.png" alt="Blue Heron" />
+        </div>
+        <h1
+          class="font-display"
+          style="
+            font-size: 38px;
+            font-weight: 500;
+            color: #28547c;
+            line-height: 1.1;
+          "
+        >
+          Spin & Win
+        </h1>
+        <p
+          style="
+            color: #888;
+            font-size: 14px;
+            margin-top: 8px;
+            line-height: 1.6;
+          "
+        >
+          Tambahkan Google review <br />dan redeem prize di kunjungan
+          selanjutnya!
+        </p>
+      </div>
+
+      <!-- STEP 1: Form -->
+      <div id="step-form" class="step active">
+        <div
+          style="
+            background: white;
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+          "
+          class="fade-up"
+        >
+          <div style="margin-bottom: 20px">
+            <label
+              style="
+                display: block;
+                font-size: 12px;
+                font-weight: 500;
+                color: #555;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                margin-bottom: 8px;
+              "
+              >Your Name</label
+            >
+            <input
+              id="f-name"
+              type="text"
+              placeholder="Full name"
+              class="form-input"
+              autocomplete="name"
+            />
+          </div>
+          <button class="btn-primary" onclick="submitForm()">Lanjutkan</button>
+          <p
+            id="form-error"
+            style="
+              color: #d4573a;
+              font-size: 13px;
+              text-align: center;
+              margin-top: 12px;
+              display: none;
+            "
+          ></p>
+        </div>
+      </div>
+
+      <!-- STEP 2: Review -->
+      <!-- STEP 2: Wheel -->
+      <div id="step-wheel" class="step">
+        <div style="text-align: center" class="fade-up">
+          <p
+            class="font-display"
+            style="font-size: 22px; color: #28547c; margin-bottom: 8px"
+          >
+            You're in!
+          </p>
+          <p style="color: #888; font-size: 14px; margin-bottom: 32px">
+            Spin the wheel to reveal your prize
+          </p>
+
+          <div id="wheel-wrap">
+            <div id="wheel-pointer"></div>
+            <canvas id="wheel-canvas" width="320" height="320"></canvas>
+            <div id="wheel-center">
+              <img
+                src="assets/spin_sticker.png"
+                alt="sticker"
+                style="
+                  width: 70%;
+                  height: 70%;
+                  object-fit: contain;
+                  display: block;
+                "
+              />
+            </div>
+          </div>
+
+          <button id="spin-btn" onclick="spinWheel()" disabled>Spin!</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: Prize reveal -->
+      <div id="step-prize" class="step">
+        <div class="voucher-card" style="text-align: center" id="prize-reveal">
+          <p
+            style="
+              font-size: 12px;
+              letter-spacing: 0.16em;
+              color: #c8a96b;
+              text-transform: uppercase;
+              font-weight: 500;
+              margin-bottom: 8px;
+            "
+          >
+            Congratulations
+          </p>
+          <h2
+            class="font-display"
+            id="prize-name"
+            style="
+              font-size: 36px;
+              font-weight: 500;
+              color: #28547c;
+              margin-bottom: 8px;
+            "
+          ></h2>
+          <p
+            id="result-date"
+            style="font-size: 13px; color: #888; margin-bottom: 24px"
+          ></p>
+
+          <div style="margin-bottom: 28px">
+            <p
+              style="
+                font-size: 12px;
+                color: #888;
+                margin-bottom: 10px;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+              "
+            >
+              Reference Code
+            </p>
+            <div class="claim-code" id="reference-code-display"></div>
+            <p style="font-size: 12px; color: #aaa; margin-top: 8px">
+              Kamu bisa screenshot ini juga loh!
+            </p>
+          </div>
+
+          <div
+            style="
+              background: #eef3f7;
+              border-radius: 12px;
+              padding: 16px 20px;
+              text-align: left;
+              margin-bottom: 20px;
+            "
+          >
+            <p
+              style="
+                font-size: 13px;
+                color: #28547c;
+                font-weight: 500;
+                margin-bottom: 4px;
+              "
+            >
+              How to redeem
+            </p>
+            <ol
+              style="
+                font-size: 13px;
+                color: #666;
+                padding-left: 18px;
+                line-height: 1.8;
+              "
+            >
+              <li>
+                Tunjukkan voucher yang telah didownload kepada tim kami di
+                kunjungan kamu selanjutnya!
+              </li>
+              <li><i>Voucher ini berlaku selama 30 hari</i></li>
+            </ol>
+          </div>
+          <button class="btn-primary" onclick="downloadVoucher()">
+            Download Voucher
+          </button>
+
+          <p class="prize-footer">Thank you for your review! 🎉</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confetti container -->
+    <div id="confetti-wrap" style="pointer-events: none"></div>
+
+    <script src="js/config.js"></script>
+    <script>
+      // ── State ──────────────────────────────────────────────────
+      let prizes = [];
+      let selectedPrize = null; // Set from server response, not client-side random
+      let isSpinning = false;
+      let currentRotation = 0;
+      let guestName = "";
+      let referenceCode = "";
+      let resultDate = "";
+      let sessionToken = ""; // Server-issued token for this play session
+      let submissionId = "";
+      const SPIN_LS_KEY = "bh_spin_session";
+      const GOOGLE_REVIEW_URL =
+        "https://www.google.com/maps/place/Blue+Heron+Jogja/@-7.7503209,110.3985666,17z/data=!4m8!3m7!1s0x2e7a59e12f3b1fa9:0xcaea4c496184abfc!8m2!3d-7.7503209!4d110.4011415!9m1!1b1!16s%2Fg%2F11srmjpwnz?entry=ttu";
+
+      // ── Init ──────────────────────────────────────────────────
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Option 2: localStorage guard — check if already played today
+        const existing = getStoredSession();
+        if (existing) {
+          restoreAlreadyPlayedScreen(existing);
+          return;
+        }
+
+        const { data } = await db
+          .from("prizes")
+          .select("*")
+          .eq("is_active", true)
+          .order("name");
+        prizes = data || [];
+        if (prizes.length) drawWheel(prizes);
+      });
+
+      // ── Session storage helpers ───────────────────────────────
+      function getStoredSession() {
+        try {
+          const raw = localStorage.getItem(SPIN_LS_KEY);
+          if (!raw) return null;
+          const session = JSON.parse(raw);
+          // Only valid if it was created today (local date)
+          const today = new Date().toISOString().slice(0, 10);
+          if (session.date !== today) {
+            localStorage.removeItem(SPIN_LS_KEY);
+            return null;
+          }
+          return session;
+        } catch {
+          return null;
+        }
+      }
+
+      function storeSession(data) {
+        const today = new Date().toISOString().slice(0, 10);
+        localStorage.setItem(
+          SPIN_LS_KEY,
+          JSON.stringify({ ...data, date: today }),
+        );
+      }
+
+      // ── Already-played screen ─────────────────────────────────
+      function restoreAlreadyPlayedScreen(session) {
+        // Restore prize wheel so it renders (needed to show the page without blank canvas)
+        db.from("prizes")
+          .select("*")
+          .eq("is_active", true)
+          .order("name")
+          .then(({ data }) => {
+            prizes = data || [];
+            if (prizes.length) drawWheel(prizes);
+          });
+
+        // Show prize step directly with stored values
+        guestName = session.name;
+        referenceCode = session.referenceCode;
+        resultDate = session.resultDate;
+
+        document.getElementById("prize-name").textContent = session.prizeName;
+        document.getElementById("result-date").textContent = resultDate;
+        document.getElementById("reference-code-display").textContent =
+          referenceCode;
+
+        // Re-populate selectedPrize enough for downloadVoucher()
+        selectedPrize = { name: session.prizeName };
+
+        showStep("step-prize");
+
+        // Add a soft "already played" notice above the card
+        const notice = document.createElement("p");
+        notice.style.cssText =
+          "text-align:center;font-size:13px;color:#C8A96B;margin-bottom:16px;";
+        notice.textContent =
+          "You've already played today — here's your voucher!";
+        const card = document.getElementById("prize-reveal");
+        card.parentNode.insertBefore(notice, card);
+      }
+
+      function showStep(id) {
+        document
+          .querySelectorAll(".step")
+          .forEach((s) => s.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+      }
+
+      function showError(msg) {
+        const el = document.getElementById("form-error");
+        el.textContent = msg;
+        el.style.display = "block";
+      }
+
+      // ── Form submission (Option 3: server-side prize pick) ────
+      async function submitForm() {
+        const name = document.getElementById("f-name").value.trim();
+        if (!name) {
+          showError("Please enter your name.");
+          return;
+        }
+        if (!prizes.length) {
+          showError("No prizes are available right now.");
+          return;
+        }
+
+        const btn = document.querySelector("#step-form .btn-primary");
+        btn.disabled = true;
+        btn.textContent = "Please wait…";
+
+        // Call RPC — server picks the prize and inserts a reserved row
+        const { data, error } = await db.rpc("create_spin_session", {
+          p_name: name,
+        });
+
+        if (error || !data || data.error) {
+          showError("Something went wrong. Please try again.");
+          btn.disabled = false;
+          btn.textContent = "Lanjutkan";
+          return;
+        }
+
+        guestName = name;
+        sessionToken = data.session_token;
+        submissionId = data.submission_id;
+        referenceCode = data.reference_code;
+        // Find the full prize object from our local list so the wheel can target it
+        selectedPrize = prizes.find((p) => p.id === data.prize_id) || {
+          id: data.prize_id,
+          name: data.prize_name,
+          emoji: data.prize_emoji,
+        };
+
+        document.getElementById("spin-btn").disabled = false;
+        showStep("step-wheel");
+      }
+
+      // ── Prize Wheel ───────────────────────────────────────────
+      const WHEEL_PALETTE = [
+        "#28547C",
+        "#5596CE",
+        "#B8954F",
+        "#5F8D4E",
+        "#6E8499",
+      ];
+
+      function drawWheel(segments, rotation = 0) {
+        const canvas = document.getElementById("wheel-canvas");
+        const ctx = canvas.getContext("2d");
+        const cx = 160,
+          cy = 160,
+          r = 148;
+        const arc = (Math.PI * 2) / segments.length;
+
+        ctx.clearRect(0, 0, 320, 320);
+
+        segments.forEach((seg, i) => {
+          const start = rotation + i * arc - Math.PI / 2;
+          const end = start + arc;
+
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, r, start, end);
+          ctx.closePath();
+          ctx.fillStyle = WHEEL_PALETTE[i % WHEEL_PALETTE.length];
+          ctx.fill();
+          ctx.strokeStyle = "rgba(255,255,255,0.65)";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(start + arc / 2);
+          ctx.textAlign = "right";
+          ctx.shadowColor = "rgba(0,0,0,0.28)";
+          ctx.shadowBlur = 3;
+          ctx.fillStyle = "#FFFFFF";
+          ctx.font = '600 12px "DM Sans", sans-serif';
+          ctx.fillText(seg.name || "Prize", r - 14, 4);
+          if (seg.emoji) {
+            ctx.font = "15px serif";
+            ctx.fillText(
+              seg.emoji,
+              r - String(seg.name || "").length * 7 - 22,
+              5,
+            );
+          }
+          ctx.shadowColor = "transparent";
+          ctx.shadowBlur = 0;
+          ctx.restore();
+        });
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(40,84,124,0.15)";
+        ctx.lineWidth = 4;
+        ctx.stroke();
+      }
+
+      async function spinWheel() {
+        if (isSpinning || !selectedPrize) return;
+        isSpinning = true;
+        document.getElementById("spin-btn").disabled = true;
+
+        const segments = prizes;
+        const arc = (Math.PI * 2) / segments.length;
+        const prizeIndex = segments.findIndex((p) => p.id === selectedPrize.id);
+
+        // Calculate target rotation: land on the prize segment
+        const targetAngle = -(prizeIndex * arc + arc / 2);
+        const extraSpins = Math.PI * 2 * (8 + Math.floor(Math.random() * 5));
+        const finalRotation =
+          currentRotation +
+          extraSpins +
+          (targetAngle - (currentRotation % (Math.PI * 2)));
+
+        const duration = 4500;
+        const start = performance.now();
+        const startRot = currentRotation;
+
+        function easeOut(t) {
+          return 1 - Math.pow(1 - t, 4);
+        }
+
+        function animate(now) {
+          const elapsed = now - start;
+          const t = Math.min(elapsed / duration, 1);
+          currentRotation = startRot + (finalRotation - startRot) * easeOut(t);
+          drawWheel(segments, currentRotation);
+
+          if (t < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            currentRotation = finalRotation;
+            drawWheel(segments, currentRotation);
+            setTimeout(showPrize, 600);
+          }
+        }
+        requestAnimationFrame(animate);
+      }
+
+      async function showPrize() {
+        resultDate = new Date().toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
+
+        document.getElementById("prize-name").textContent = selectedPrize.name;
+        document.getElementById("result-date").textContent = resultDate;
+        document.getElementById("reference-code-display").textContent =
+          referenceCode;
+
+        // Option 3: confirm the server-reserved row (prize was already picked server-side)
+        const { data: confirmData, error: confirmError } = await db.rpc(
+          "confirm_spin_session",
+          {
+            p_session_token: sessionToken,
+            p_review_url: GOOGLE_REVIEW_URL,
+          },
+        );
+
+        if (confirmError || !confirmData || confirmData.error) {
+          console.error(
+            "Spin confirm failed:",
+            confirmError || confirmData?.error,
+          );
+          // Non-fatal: prize is already in DB as 'reserved', staff can redeem it
+        } else {
+          console.log("Spin confirmed:", confirmData);
+        }
+
+        // Option 2: save to localStorage so returning to the page shows "already played"
+        storeSession({
+          name: guestName,
+          prizeName: selectedPrize.name,
+          referenceCode: referenceCode,
+          resultDate: resultDate,
+        });
+
+        showStep("step-prize");
+        launchConfetti();
+        document.getElementById("prize-reveal").classList.add("pop");
+      }
+
+      function downloadVoucher() {
+        const canvas = document.createElement("canvas");
+        canvas.width = 1080;
+        canvas.height = 1350;
+        const ctx = canvas.getContext("2d");
+
+        ctx.fillStyle = "#F8F6F2";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#FFFFFF";
+        roundRect(ctx, 90, 100, 900, 1150, 36);
+        ctx.fill();
+        ctx.strokeStyle = "#C8A96B";
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        ctx.fillStyle = "#5596CE";
+        ctx.font = "600 72px serif";
+        ctx.textAlign = "center";
+        ctx.fillText("Blue Heron", 540, 230);
+        ctx.fillStyle = "#C8A96B";
+        ctx.font = '500 28px "DM Sans", sans-serif';
+        ctx.fillText("SPIN & WIN VOUCHER", 540, 290);
+
+        ctx.fillStyle = "#666666";
+        ctx.font = '400 30px "DM Sans", sans-serif';
+        ctx.fillText("Guest Name", 540, 420);
+        ctx.fillStyle = "#222222";
+        ctx.font = '500 48px "DM Sans", sans-serif';
+        ctx.fillText(guestName, 540, 480);
+
+        ctx.fillStyle = "#666666";
+        ctx.font = '400 30px "DM Sans", sans-serif';
+        ctx.fillText("Prize Won", 540, 610);
+        ctx.fillStyle = "#5596CE";
+        ctx.font = "600 60px serif";
+        ctx.fillText(selectedPrize.name, 540, 680);
+
+        ctx.fillStyle = "#666666";
+        ctx.font = '400 30px "DM Sans", sans-serif';
+        ctx.fillText("Reference Code", 540, 820);
+        ctx.fillStyle = "#5596CE";
+        ctx.font = '600 52px "DM Sans", sans-serif';
+        ctx.fillText(referenceCode, 540, 890);
+
+        ctx.fillStyle = "#666666";
+        ctx.font = '400 30px "DM Sans", sans-serif';
+        ctx.fillText(resultDate, 540, 1010);
+        ctx.fillStyle = "#999999";
+        ctx.font = '400 26px "DM Sans", sans-serif';
+        ctx.fillText(
+          "Please present this voucher to our team for redemption.",
+          540,
+          1130,
+        );
+
+        const link = document.createElement("a");
+        link.download = `${referenceCode}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      }
+
+      function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      }
+
+      // ── Confetti ──────────────────────────────────────────────
+      function launchConfetti() {
+        const colors = [
+          "#C8A96B",
+          "#5596CE",
+          "#8B6F47",
+          "#5F8D4E",
+          "#F8F6F2",
+          "#D4A017",
+        ];
+        const wrap = document.getElementById("confetti-wrap");
+        for (let i = 0; i < 80; i++) {
+          const piece = document.createElement("div");
+          piece.className = "confetti-piece";
+          const size = 6 + Math.random() * 8;
+          piece.style.cssText = `
+      left:${Math.random() * 100}vw;
+      width:${size}px; height:${size * (0.4 + Math.random() * 0.8)}px;
+      background:${colors[Math.floor(Math.random() * colors.length)]};
+      animation-duration:${2 + Math.random() * 2}s;
+      animation-delay:${Math.random() * 0.8}s;
+      transform:rotate(${Math.random() * 360}deg);
+    `;
+          wrap.appendChild(piece);
+        }
+        setTimeout(() => (wrap.innerHTML = ""), 5000);
+      }
+    </script>
+  </body>
+</html>
