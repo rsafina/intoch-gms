@@ -115,14 +115,22 @@ the JavaScript is public. Hash the PINs as part of the auth work, not before it:
 two half-fixes to the same problem are worse than one whole one.
 
 ### 2. Per-client branding on the public pages
-**Half done (2026-08-23).** The IMAGES are now configurable: Settings > Branding
-uploads a main logo, a small mark and the voucher card artwork into a `branding`
-storage bucket, with the public URLs in `app_settings.branding`. Every surface
-reads them through `brandAsset()` / `applyBranding()` in `config.js`, with the
-files in `assets/` kept as the fallback so a client who has uploaded nothing still
-sees a working page. Covered: reserve, reservation-created,
-reservation-confirmation, spin, the staff app login and sidebar, the invoice, and
-the voucher canvas.
+**Mostly done (2026-08-23).** Three settings rows now carry it:
+
+- `app_settings.branding` — main logo and small mark, uploaded into the
+  `branding` storage bucket. Read through `brandAsset()` / `applyBranding()` in
+  `config.js`. Covers reserve, reservation-created, reservation-confirmation,
+  spin, the staff login and sidebar, the invoice, and the voucher card.
+- `app_settings.reserve_appearance` — the booking page and the thank-you page
+  after it: backdrop photo, form panel colour and opacity, button colour, logo
+  height. Delivered as four CSS custom properties (`--rf-bg-image`, `--rf-glass`,
+  `--rf-logo-max-h`, plus `--primary` / `--dark`), so applying settings is a
+  handful of `setProperty` calls and the bundled values stay in each page's
+  `:root` as the fallback.
+- `app_settings.voucher_style` — see "The voucher card is drawn, not a picture".
+
+The files in `assets/` are the fallback throughout, so a client who has uploaded
+and configured nothing still sees a working, on-brand page.
 
 Still hardcoded in the files, and still to do before client one:
 
@@ -130,9 +138,47 @@ Still hardcoded in the files, and still to do before client one:
   `restaurantName()` reads `app_settings.restaurant_name` in JS already, but the
   HTML does not use it
 - the taglines
-- the background photo
-- the brand colour, written into the stylesheet
 - the WhatsApp number and the Google Maps link
+
+### reserve.html carries a COPY of two appearance functions, on purpose
+
+`loadReserveAppearance()` and `applyReserveAppearance()` exist in both
+`js/config.template.js` and inline in `reserve.template.html`. That is not an
+oversight and must not be "cleaned up" by loading config.js from reserve.html:
+both files declare `const SUPABASE_URL`, and the redeclaration kills the page.
+Fifteen duplicated lines beat a booking form that white-screens. Both copies
+carry a comment pointing at the other; change one, change the other.
+
+### The voucher card is drawn, not a picture
+
+Until 2026-08-23 the downloadable voucher was text painted onto a fixed
+1084x1940 artwork file, with four hardcoded colours and the logo baked into the
+image. That made it unsellable: every client would have needed a designer before
+they could hand out one voucher.
+
+It is now painted in code from `app_settings.voucher_style` (background, accent
+and text colours, logo scale) plus the Branding logo. Every secondary colour —
+muted labels, hairlines, fine print — is DERIVED from those three, because asking
+an owner for six colours and hoping they harmonise is how cards end up
+unreadable. Settings > Vouchers > Card Design has a live preview that runs the
+real renderer, not a mock-up.
+
+`use_artwork` switches back to the old behaviour for a client who genuinely has
+designed artwork; the file still lives in `app_settings.branding.voucher_bg_url`.
+The migration flips existing artwork users into that mode automatically, so
+nobody's card silently changes.
+
+Two traps in that renderer:
+
+- **Canvas tainting.** A logo from Supabase Storage is cross-origin, and drawing
+  it onto the canvas taints it, so `toDataURL()` throws and the download button
+  silently does nothing. `loadImage` sets `crossOrigin = "anonymous"` for any
+  http(s) source. Storage sends the CORS header; a `file://` page does not, which
+  is why local screenshot harnesses need `--allow-file-access-from-files`.
+- **A dark card hides a dark logo.** The colour contrast warning checks text
+  against background AND measures the logo's own average luminance (ignoring
+  transparent pixels) to catch it. The default mark is dark navy and vanishes on
+  a navy card, which is the first thing a client trying dark colours will hit.
 
 **`og:image` can never be one of these.** The WhatsApp crawler does not run
 JavaScript, so the share card has to stay a real file in the build and gets
@@ -154,9 +200,16 @@ Cosmetic, but it is the first thing a guest sees when someone shares the link.
 ### 4. The migration set does not build a database from zero
 Proven on 2026-08-22 while standing up the first fresh project: the base schema's
 role CHECK allows only `staff` and `manager`, while the code expects `admin` too.
-The original database had that widened by hand. Fixed by
-`migrations/20260822_admin_role_and_first_user.sql`, but assume there are more
-gaps like it and re-test the full run on an empty project before client one.
+The original database had that widened by hand. Assume there are more gaps like it
+and re-test the full run on an empty project before client one.
+
+**A second one surfaced 2026-08-23, and it was worse.** See "Two functions in this
+file can drift apart" below. Walk-ins and reservations could not be created at all
+on a database built from this file. Both defects share a cause: the live Blue Heron
+database was patched by hand, so the file was never the thing being exercised.
+Nothing here is trustworthy until a fresh project has been built from it AND the
+app has been driven through create-guest, create-walk-in, create-reservation,
+add-spend against that project.
 
 ### 5. Routing, file splitting, inline handlers
 The three reasons this repo exists. See the top of this file.
@@ -233,6 +286,37 @@ in-window visits asks "did they eat here 5 times in these 9 days" and produces n
 client's earliest visit by less than 14 days. **Every new client starts with no history**,
 so without this their first two months of deltas are pure noise. This matters far more for
 a product than it did for Blue Heron.
+
+### Two functions in this file can drift apart, and one pair did
+
+`ALL_IN_ONE.sql` concatenates migrations in order, so **the last definition of a
+function wins** — and two related functions can end up paired with versions of each
+other that were never meant to meet.
+
+That happened to `calculate_guest_spending_tier` (redefined 3 times, final version
+`RETURNS TABLE(tier, qualified_at)`) and `recalculate_guest_spending_tier`
+(redefined twice, final version still doing `SELECT calculate_...(id) INTO
+new_tier`, the call shape for a scalar). The correct recalculate_ sat EARLIER in
+the file than the stale one, so the stale one survived.
+
+Postgres does not complain. Selecting a TABLE-returning function into a text
+variable stringifies the whole row, so a guest with no spend produced the literal
+string `(,)`, which the CHECK constraint rejected. Result: **every walk-in and
+every reservation failed**, leaving the guest row behind, with the misleading error
+`new row for relation "guests" violates check constraint
+"guests_spending_tier_check"`. Fixed by
+`20260823_fix_recalculate_spending_tier.sql` at the end of the file.
+
+Two rules from it:
+
+- **The constraint was not the bug.** The obvious "fix" is to widen the CHECK to
+  admit the new value. That would have written `(,)` into the tier column of every
+  new guest and turned a loud failure into a silent one. When a CHECK fires, first
+  ask what wrote the value.
+- **A redefined function needs every caller re-checked**, and the check has to be
+  a real call, not a read. The self-test at the end of that section creates a
+  throwaway guest, recalculates, and asserts NULL, because reading the definitions
+  is exactly what failed to catch this for months.
 
 ### `computeDaysUntilBirthday()` never returns a negative number
 

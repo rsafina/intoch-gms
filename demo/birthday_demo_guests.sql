@@ -32,6 +32,19 @@
 
 begin;
 
+-- Fail with a sentence a human can act on, rather than
+-- `relation "birthday_greetings" does not exist` pointing at line 117.
+-- Hit for real on 2026-08-23: ALL_IN_ONE.sql had been run BEFORE the
+-- birthday section was added to it, so the app looked up to date and this
+-- file blew up 100 lines in.
+do $$
+begin
+  if to_regclass('public.birthday_greetings') is null then
+    raise exception
+      'birthday_greetings does not exist. Run migrations/ALL_IN_ONE.sql first (it is idempotent, so re-running a database that is already set up is safe), then run this file again.';
+  end if;
+end $$;
+
 with anchor as (
   select (now() at time zone 'Asia/Jakarta')::date as today
 ),

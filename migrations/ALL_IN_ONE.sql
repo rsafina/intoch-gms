@@ -3703,3 +3703,205 @@ where schemaname = 'public' and indexname = 'idx_birthday_greetings_guest_year'
 union all
 select 'birthday template', count(*) from wa_templates where key = 'birthday';
 -- expect: 1, 1, 1
+
+-- ============================================================
+-- ## 20260823_fix_recalculate_spending_tier.sql
+-- ============================================================
+-- FIXES A SHOWSTOPPER. Without this, on a database built from this file,
+-- creating a walk-in or a reservation for a guest with no spend history
+-- fails with:
+--
+--   new row for relation "guests" violates check constraint
+--   "guests_spending_tier_check"
+--
+-- and the guest row is left behind while the visit or reservation is not
+-- written. Reported by Rere 2026-08-23 on the first real client database.
+--
+-- ── What was actually wrong ───────────────────────────────────────────
+-- Two functions in this file drifted out of step with each other:
+--
+--   calculate_guest_spending_tier   redefined THREE times. The last version
+--                                   (20260721, settings-driven thresholds)
+--                                   RETURNS TABLE(tier, qualified_at).
+--   recalculate_guest_spending_tier redefined TWICE. The last version
+--                                   (20260602) still does
+--                                     SELECT calculate_...(id) INTO new_tier
+--                                   which is the call shape for a function
+--                                   returning a scalar TEXT.
+--
+-- The 20260602 recalculate_ sits LATER in this file than the correct
+-- 20260518 one, so it is the version that survives, and it is paired with a
+-- calculate_ that no longer matches it.
+--
+-- Selecting a TABLE-returning function into a text variable does not fail.
+-- It quietly stringifies the whole ROW. For a guest with no spend the
+-- function returns (NULL, NULL), so new_tier becomes the literal three
+-- characters `(,)` — not null, and not one of the two allowed tiers. The
+-- CHECK constraint then does its job and rejects the write.
+--
+-- The constraint is CORRECT and is not what gets changed here. Nothing in
+-- the codebase ever writes a tier other than 'high_spender', 'medium_spender'
+-- or NULL. Widening the constraint would have hidden the bug and let `(,)`
+-- into the tier column of every new guest.
+--
+-- ── The second, quieter bug this also fixes ───────────────────────────
+-- The 20260602 version never writes high_spender_qualified_at. That column
+-- is what makes High Spender status STICKY for 90 days: calculate_ reads it
+-- back on the next run to decide whether the window is still open. With it
+-- never written, a guest would be High on the visit that qualified them and
+-- silently drop to Medium on their next visit. The version below restores
+-- the write, matching the 20260518 definition.
+--
+-- Idempotent: create or replace, plus a repair pass that is a no-op on a
+-- healthy database.
+
+create or replace function recalculate_guest_spending_tier(p_guest_id uuid)
+returns void as $$
+declare
+  v_tier         text;
+  v_qualified_at timestamptz;
+begin
+  if p_guest_id is null then
+    return;
+  end if;
+
+  -- FROM, not SELECT ... INTO: calculate_guest_spending_tier returns a
+  -- TABLE(tier, qualified_at). Assigning the call to a single text variable
+  -- is what produced `(,)`. Do not "simplify" this back.
+  select t.tier, t.qualified_at
+    into v_tier, v_qualified_at
+  from calculate_guest_spending_tier(p_guest_id) as t;
+
+  update guests
+  set spending_tier            = v_tier,
+      tier_source              = 'auto',
+      tier_last_calculated_at  = now(),
+      high_spender_qualified_at = v_qualified_at
+  where id = p_guest_id
+    and tier_source = 'auto';
+end;
+$$ language plpgsql;
+
+-- Repair pass. On a database where the CHECK constraint was in place this
+-- matches nothing, because the constraint is exactly what stopped the bad
+-- value being stored. It is here for a database where the constraint was
+-- dropped or was never created, in which case `(,)` really is sitting in the
+-- column and every tier badge in the app is reading it.
+--
+-- NULLs are untouched: `spending_tier not in (...)` is NULL for a NULL, not
+-- true, so an un-tiered guest stays un-tiered.
+update guests
+set spending_tier = null
+where spending_tier is not null
+  and spending_tier not in ('high_spender', 'medium_spender');
+
+-- ---------- Confirm ----------
+-- Proves the pairing is right by RUNNING it rather than trusting the
+-- definition: a guest with no spend must come back with a NULL tier.
+--
+-- The temporary guest is created and removed inside this block. If creating
+-- it fails for some unrelated reason the check is skipped with a notice
+-- rather than aborting the whole file, because a self-test must never be the
+-- thing that stops a migration from applying.
+do $$
+declare
+  v_id      uuid;
+  v_tier    text;
+  v_checked boolean := false;
+begin
+  begin
+    insert into guests (name) values ('__tier_selftest__') returning id into v_id;
+    v_checked := true;
+  exception when others then
+    raise notice 'spending tier self-test skipped (could not create a temporary guest: %)', sqlerrm;
+  end;
+
+  if not v_checked then
+    return;
+  end if;
+
+  perform recalculate_guest_spending_tier(v_id);
+  select spending_tier into v_tier from guests where id = v_id;
+  delete from guests where id = v_id;
+
+  if v_tier is not null then
+    raise exception
+      'recalculate_guest_spending_tier is still broken: expected NULL for a guest with no spend, got %', v_tier;
+  end if;
+  raise notice 'spending tier recalculation OK (no-spend guest -> NULL)';
+end $$;
+
+-- ============================================================
+-- ## 20260823_reserve_appearance_and_voucher_style.sql
+-- ============================================================
+-- Two more app_settings rows, both seeded with the values already hardcoded
+-- in the CSS and the canvas renderer. Seeding the CURRENT look rather than
+-- something new is the point: applying this changes nothing on screen until
+-- somebody edits it in Settings.
+--
+--   reserve_appearance  the public booking page and the thank-you page after
+--                       it: backdrop photo, form panel colour and how solid
+--                       it is, button colour, logo height.
+--   voucher_style       the downloadable voucher card, which is now DRAWN
+--                       from these colours instead of being text painted on
+--                       a 1084x1940 artwork file. `use_artwork` switches back
+--                       to the artwork route for a client who has one; the
+--                       file itself still lives in app_settings.branding
+--                       under voucher_bg_url.
+--
+-- Both use the same merge shape as the branding row: existing keys win, so
+-- re-running never overwrites a client's choices, and a key added later
+-- appears with its default instead of being missing.
+
+insert into app_settings (key, value)
+values ('reserve_appearance', jsonb_build_object(
+          'bg_url', null,
+          'glass_color', '#28547C',
+          'glass_opacity', 0.6,
+          'accent_color', '#5596CE',
+          'logo_max_height', 72))
+on conflict (key) do update
+set value = app_settings.value
+            || jsonb_build_object(
+                 'bg_url',          coalesce(app_settings.value->'bg_url', 'null'::jsonb),
+                 'glass_color',     coalesce(app_settings.value->'glass_color', '"#28547C"'::jsonb),
+                 'glass_opacity',   coalesce(app_settings.value->'glass_opacity', '0.6'::jsonb),
+                 'accent_color',    coalesce(app_settings.value->'accent_color', '"#5596CE"'::jsonb),
+                 'logo_max_height', coalesce(app_settings.value->'logo_max_height', '72'::jsonb));
+
+insert into app_settings (key, value)
+values ('voucher_style', jsonb_build_object(
+          'bg_color', '#F9F5F2',
+          'accent_color', '#4795D0',
+          'text_color', '#28547C',
+          'logo_scale', 100,
+          'use_artwork', false))
+on conflict (key) do update
+set value = app_settings.value
+            || jsonb_build_object(
+                 'bg_color',     coalesce(app_settings.value->'bg_color', '"#F9F5F2"'::jsonb),
+                 'accent_color', coalesce(app_settings.value->'accent_color', '"#4795D0"'::jsonb),
+                 'text_color',   coalesce(app_settings.value->'text_color', '"#28547C"'::jsonb),
+                 'logo_scale',   coalesce(app_settings.value->'logo_scale', '100'::jsonb),
+                 'use_artwork',  coalesce(app_settings.value->'use_artwork', 'false'::jsonb));
+
+-- A client who uploaded voucher artwork BEFORE this existed had it applied
+-- automatically, because artwork was the only mode. Now that colours are the
+-- default, flip them to artwork mode so their card does not silently change
+-- the next time they hand one out.
+update app_settings
+set value = jsonb_set(value, '{use_artwork}', 'true'::jsonb)
+where key = 'voucher_style'
+  and coalesce(value->>'use_artwork', 'false') = 'false'
+  and exists (
+    select 1 from app_settings b
+    where b.key = 'branding'
+      and coalesce(b.value->>'voucher_bg_url', '') <> ''
+  );
+
+-- ---------- Confirm ----------
+select 'reserve_appearance' as checked, count(*) as found
+from app_settings where key = 'reserve_appearance'
+union all
+select 'voucher_style', count(*) from app_settings where key = 'voucher_style';
+-- expect: 1, 1

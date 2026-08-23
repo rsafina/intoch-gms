@@ -41,6 +41,14 @@
         --primary: #5596ce;
         --dark: #28547c;
         --gold: #c8a96b;
+        /* ── Configurable from Settings > Reservation Form (2026-08-23) ──
+           These four carry the bundled defaults. applyReserveAppearance()
+           overwrites them at runtime from app_settings.reserve_appearance.
+           Leaving the real values here means the page renders correctly
+           before the fetch lands, and stays correct if it never does. */
+        --rf-bg-image: url("assets/background-generic.jpg");
+        --rf-glass: rgba(40, 84, 124, 0.6);
+        --rf-logo-max-h: 72px;
       }
       html,
       body {
@@ -56,7 +64,7 @@
       .bg-photo {
         position: fixed;
         inset: -24px;
-        background: url("assets/background-generic.jpg") center / cover no-repeat;
+        background: var(--rf-bg-image) center / cover no-repeat;
         /* The previous backdrop was a bright dawn shot and needed pulling
            down hard. This one is already dark with a warm centre, so the
            same 0.68 crushed the sunset into mud. Lighter touch, and the
@@ -96,13 +104,13 @@
            win, so any client's logo lands at a sane size whatever its shape. */
         height: auto;
         width: auto;
-        max-height: 72px;
+        max-height: var(--rf-logo-max-h);
         max-width: min(260px, 62vw);
         filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.35));
       }
       .card {
-        /* navy glass (#28547C base) */
-        background: rgba(40, 84, 124, 0.6);
+        /* navy glass (#28547C base), colour and opacity set in Settings */
+        background: var(--rf-glass);
         backdrop-filter: blur(14px);
         -webkit-backdrop-filter: blur(14px);
         border: 1px solid rgba(255, 255, 255, 0.18);
@@ -842,6 +850,7 @@
             .select("value")
             .eq("key", "branding")
             .maybeSingle();
+          applyReserveAppearance(await loadReserveAppearance());
           const logo = data?.value?.logo_url;
           if (typeof logo === "string" && /^https?:\/\/\S+$/i.test(logo.trim()))
             $("brand-logo").src = logo.trim();
@@ -870,7 +879,70 @@
         }
       }
 
-      // ---- Featured dishes (managed in staff app Settings > Menu & Dishes) ----
+      // ---- Page appearance (Settings > Reservation Form) ----
+      // Deliberately a copy of the helper in js/config.js rather than a
+      // shared import: this page builds its own Supabase client from the
+      // build-time placeholders and does NOT load config.js, because both
+      // declare `const SUPABASE_URL` and the redeclaration would kill the
+      // page. Fifteen lines duplicated beats a booking form that white-screens.
+      // If you change one, change the other.
+      async function loadReserveAppearance() {
+        try {
+          const { data } = await db
+            .from("app_settings")
+            .select("value")
+            .eq("key", "reserve_appearance")
+            .maybeSingle();
+          return data?.value || {};
+        } catch (_) {
+          return {};
+        }
+      }
+
+      function applyReserveAppearance(cfg) {
+        if (!cfg) return;
+        const root = document.documentElement.style;
+        const hex = (v) => (/^#[0-9a-f]{6}$/i.test(String(v || "").trim()) ? v.trim() : null);
+        const url = (v) => (/^https?:\/\/\S+$/i.test(String(v || "").trim()) ? v.trim() : null);
+
+        const bg = url(cfg.bg_url);
+        if (bg) root.setProperty("--rf-bg-image", `url("${bg}")`);
+
+        const glass = hex(cfg.glass_color);
+        // Opacity is clamped rather than trusted. 0 makes the form invisible
+        // against the photo and 1 loses the glass effect entirely; neither is
+        // a look anybody chose on purpose.
+        const op = Math.min(0.95, Math.max(0.25, Number(cfg.glass_opacity ?? 0.6)));
+        if (glass) {
+          const r = parseInt(glass.slice(1, 3), 16);
+          const g = parseInt(glass.slice(3, 5), 16);
+          const b = parseInt(glass.slice(5, 7), 16);
+          root.setProperty("--rf-glass", `rgba(${r}, ${g}, ${b}, ${op})`);
+        }
+
+        const accent = hex(cfg.accent_color);
+        if (accent) {
+          root.setProperty("--primary", accent);
+          // The buttons are a gradient from --primary to --dark. Rather than
+          // asking for two colours, the darker end is computed, so the pair
+          // can never be set to something that clashes with itself.
+          root.setProperty("--dark", shadeHex(accent, -0.32));
+        }
+
+        const h = Number(cfg.logo_max_height);
+        if (h >= 32 && h <= 200) root.setProperty("--rf-logo-max-h", h + "px");
+      }
+
+      function shadeHex(hex, amount) {
+        const n = parseInt(hex.slice(1), 16);
+        const cl = (v) => Math.max(0, Math.min(255, Math.round(v)));
+        const r = cl(((n >> 16) & 255) * (1 + amount));
+        const g = cl(((n >> 8) & 255) * (1 + amount));
+        const b = cl((n & 255) * (1 + amount));
+        return "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
+      }
+
+      // ---- Featured dishes (managed in staff app Settings > Reservation Form) ----
       // Replaces the static fallback in #dish-list only when the fetch
       // succeeds AND returns at least one active dish; any failure keeps
       // the hardcoded pair, so the sheet never renders empty.

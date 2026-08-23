@@ -1041,6 +1041,358 @@ function initVouchers() {
     vchOnOccasionChange();
     vchOnQtyChange();
     vchLoadValidity();
+    vchShowTab(vchDefaultTab());
   }
   vchLoad();
+}
+
+// ============================================================
+// CARD DESIGN TAB (manager+)
+// ============================================================
+// Two panes on one page: "Issue & Redeem" is the day-to-day work and
+// "Card Design" is set up once and then forgotten. They are panes rather
+// than separate pages so every existing vch* id and loader keeps working
+// untouched.
+const VCH_TAB_KEY = "vchLastTab";
+
+function vchDefaultTab() {
+  // Staff never see the design tab, so never restore them into it — they
+  // would land on an empty page with no way back that they recognise.
+  if (typeof isManagerOrAdmin === "function" && !isManagerOrAdmin()) return "issue";
+  const last = localStorage.getItem(VCH_TAB_KEY);
+  return last === "design" ? "design" : "issue";
+}
+
+function vchShowTab(tab) {
+  if (tab === "design" && typeof isManagerOrAdmin === "function" && !isManagerOrAdmin()) {
+    toast(t("Only a manager can change the card design"), "error");
+    tab = "issue";
+  }
+  const activeCls =
+    "px-4 py-2 rounded-full text-sm font-medium bg-[#28547C] text-white transition";
+  const idleCls =
+    "px-4 py-2 rounded-full text-sm font-medium bg-white text-[#555] border border-[#E6E2DC] hover:bg-[#F8F6F2] transition";
+  const design = tab === "design";
+
+  document.getElementById("vch-pane-issue")?.classList.toggle("hidden", design);
+  document.getElementById("vch-pane-design")?.classList.toggle("hidden", !design);
+  const issueBtn = document.getElementById("vch-tab-issue");
+  const designBtn = document.getElementById("vch-tab-design");
+  if (issueBtn) issueBtn.className = design ? idleCls : activeCls;
+  if (designBtn)
+    designBtn.className = (design ? activeCls : idleCls) + " manager-only-ui";
+  if (typeof applyManagerOnlyUI === "function") applyManagerOnlyUI();
+
+  localStorage.setItem(VCH_TAB_KEY, design ? "design" : "issue");
+  if (design) vchRenderStyleForm();
+}
+
+function vchStyleForm() {
+  const color = (id, fb) => {
+    const v = document.getElementById(id)?.value;
+    return /^#[0-9a-f]{6}$/i.test(String(v || "").trim()) ? v.trim().toUpperCase() : fb;
+  };
+  const scale = Number(document.getElementById("vch-logo-scale")?.value);
+  return {
+    bg_color: color("vch-bg-color", VC_DEFAULTS.bg_color),
+    text_color: color("vch-text-color", VC_DEFAULTS.text_color),
+    accent_color: color("vch-accent-color", VC_DEFAULTS.accent_color),
+    logo_scale: isFinite(scale) ? scale : VC_DEFAULTS.logo_scale,
+    use_artwork: !!document.getElementById("vch-use-artwork")?.checked,
+  };
+}
+
+function vchRenderStyleForm() {
+  const cfg = { ...VC_DEFAULTS, ...(VOUCHER_STYLE || {}) };
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.value = v;
+  };
+  ["bg", "text", "accent"].forEach((k) => {
+    const key = k + "_color";
+    const v = /^#[0-9a-f]{6}$/i.test(String(cfg[key] || "")) ? cfg[key] : VC_DEFAULTS[key];
+    set(`vch-${k}-color`, v);
+    set(`vch-${k}-color-hex`, String(v).toUpperCase());
+  });
+  set("vch-logo-scale", cfg.logo_scale || VC_DEFAULTS.logo_scale);
+  const chk = document.getElementById("vch-use-artwork");
+  if (chk) chk.checked = !!cfg.use_artwork;
+
+  const custom =
+    typeof brandUrlOk === "function" &&
+    brandUrlOk(BRANDING && BRANDING.voucher_bg_url);
+  const state = document.getElementById("vch-artwork-state");
+  if (state) {
+    state.textContent = custom ? t("Custom artwork uploaded") : t("No artwork uploaded yet");
+    state.className = custom
+      ? "text-[11px] font-semibold text-[#28547C]"
+      : "text-[11px] text-[#999]";
+  }
+  document.getElementById("vch-artwork-reset")?.classList.toggle("hidden", !custom);
+  const file = document.getElementById("vch-artwork-file");
+  if (file) file.value = "";
+
+  vchPreviewStyle();
+}
+
+function vchSyncColor(pickerId, textEl) {
+  let v = String(textEl.value || "").trim();
+  if (v && !v.startsWith("#")) {
+    v = "#" + v;
+    textEl.value = v;
+  }
+  if (/^#[0-9a-f]{6}$/i.test(v)) {
+    const picker = document.getElementById(pickerId);
+    if (picker) picker.value = v;
+    vchPreviewStyle();
+  }
+}
+
+// Redraws the real card with sample details. Deliberately the SAME renderer
+// the guest's card uses, not a mock-up: a preview that is drawn differently
+// is worse than none, because it is believed.
+let vchPreviewToken = 0;
+async function vchPreviewStyle() {
+  const cfg = vchStyleForm();
+
+  ["bg", "text", "accent"].forEach((k) => {
+    const hex = document.getElementById(`vch-${k}-color-hex`);
+    if (hex && document.activeElement !== hex) hex.value = cfg[k + "_color"];
+  });
+  const scaleLabel = document.getElementById("vch-logo-scale-value");
+  if (scaleLabel) scaleLabel.textContent = cfg.logo_scale + "%";
+  document.getElementById("vch-artwork-slot")?.classList.toggle("hidden", !cfg.use_artwork);
+
+  // Contrast checks. A restaurant owner picking their brand navy as the
+  // background and leaving the text navy gets an unreadable card, and no
+  // warning until a guest cannot read their voucher.
+  const warn = document.getElementById("vch-contrast-warning");
+  if (warn) {
+    const p = warn.querySelector("p");
+    const dark = vcIsDarkBackground(cfg.bg_color);
+    const problems = [];
+
+    if (!cfg.use_artwork) {
+      if (vcIsDarkBackground(cfg.text_color) === dark) {
+        problems.push(
+          CURRENT_LANG === "id"
+            ? "Warna teks dan latar sama-sama " +
+              (dark ? "gelap" : "terang") +
+              ", jadi tulisan di kartu sulit dibaca. Coba warna teks yang " +
+              (dark ? "terang" : "gelap") +
+              "."
+            : "The text and the background are both " +
+              (dark ? "dark" : "light") +
+              ", so the wording will be hard to read. Try a " +
+              (dark ? "light" : "dark") +
+              " text colour.",
+        );
+      }
+      // The logo is an uploaded image, so its colour cannot be read from a
+      // setting. Measure it instead. This is the failure a dark card hits
+      // first: the default mark is dark navy and simply disappears.
+      const logoDark = await vchLogoIsDark();
+      if (logoDark !== null && logoDark === dark) {
+        problems.push(
+          CURRENT_LANG === "id"
+            ? "Logo Anda juga " +
+              (dark ? "gelap" : "terang") +
+              ", jadi hampir tidak terlihat di latar ini. Unggah versi logo yang " +
+              (dark ? "terang" : "gelap") +
+              " di Pengaturan > Branding, atau pilih latar lain."
+            : "Your logo is also " +
+              (dark ? "dark" : "light") +
+              ", so it will barely show against this background. Upload a " +
+              (dark ? "light" : "dark") +
+              " version under Settings > Branding, or pick another background.",
+        );
+      }
+    }
+
+    warn.classList.toggle("hidden", problems.length === 0);
+    if (p) p.textContent = problems.join(" ");
+  }
+
+  const canvas = document.getElementById("vch-style-preview");
+  if (!canvas) return;
+
+  const token = ++vchPreviewToken;
+  // Paint from the form values without saving them, then restore, so a
+  // preview can never leave unsaved settings live for a real download.
+  const saved = VOUCHER_STYLE;
+  VOUCHER_STYLE = cfg;
+  try {
+    const card = await vcRenderVoucher({
+      name: "Ibu Sinta Wijaya",
+      code: "VCH-00042",
+      amount: 250000,
+      expiresAt: new Date(Date.now() + 90 * 86400000).toISOString(),
+      typeLabel: t("Sample"),
+    });
+    if (token !== vchPreviewToken) return; // a newer preview overtook this one
+    canvas.width = card.width;
+    canvas.height = card.height;
+    canvas.getContext("2d").drawImage(card, 0, 0);
+  } catch (e) {
+    console.warn("voucher preview failed", e);
+  } finally {
+    VOUCHER_STYLE = saved;
+  }
+}
+
+
+// Average luminance of the logo's own pixels, ignoring anything transparent
+// (a logo is mostly transparent padding, and counting that would make every
+// logo look light). Returns null when it cannot be measured, so the caller
+// stays quiet rather than guessing.
+//
+// Reading pixels needs an untainted canvas. The bundled logo is same-origin
+// and an uploaded one is fetched with crossOrigin="anonymous" against Supabase
+// Storage, which sends the CORS header — but a file:// preview during local
+// development taints, hence the try/catch.
+let vchLogoDarkCache = { src: null, value: null };
+async function vchLogoIsDark() {
+  const src =
+    typeof brandAsset === "function" ? brandAsset("full") : "assets/full-logo.png";
+  if (vchLogoDarkCache.src === src) return vchLogoDarkCache.value;
+  let result = null;
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      if (/^https?:\/\//i.test(src)) i.crossOrigin = "anonymous";
+      i.onload = () => resolve(i);
+      i.onerror = reject;
+      i.src = src;
+    });
+    const w = 64;
+    const h = Math.max(1, Math.round((img.height / img.width) * w)) || 64;
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const cx = c.getContext("2d");
+    cx.drawImage(img, 0, 0, w, h);
+    const px = cx.getImageData(0, 0, w, h).data;
+    let sum = 0;
+    let n = 0;
+    for (let i = 0; i < px.length; i += 4) {
+      if (px[i + 3] < 32) continue; // transparent padding
+      sum += 0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2];
+      n++;
+    }
+    if (n > 0) result = sum / n / 255 < 0.45;
+  } catch (e) {
+    console.warn("logo contrast check skipped", e);
+  }
+  vchLogoDarkCache = { src, value: result };
+  return result;
+}
+
+async function vchSaveStyle() {
+  if (typeof isManagerOrAdmin === "function" && !isManagerOrAdmin()) {
+    toast(t("Only a manager can change the card design"), "error");
+    return;
+  }
+  const cfg = vchStyleForm();
+  loader(true);
+  const { error } = await supabaseQuery(
+    () =>
+      db.from("app_settings").upsert({
+        key: "voucher_style",
+        value: cfg,
+        updated_at: new Date().toISOString(),
+      }),
+    "Failed to save voucher design",
+  );
+  loader(false);
+  if (error) {
+    toast(error.message || t("Unable to save settings"), "error");
+    return;
+  }
+  VOUCHER_STYLE = cfg;
+  toast(t("Card design saved"));
+  vchRenderStyleForm();
+}
+
+async function vchResetStyle() {
+  if (!confirm(t("Put the card design back to the built-in one?"))) return;
+  VOUCHER_STYLE = { ...VC_DEFAULTS };
+  vchRenderStyleForm();
+  await vchSaveStyle();
+}
+
+// The artwork override reuses the branding bucket and the branding row's
+// voucher_bg_url key, so a client who uploaded artwork before this screen
+// existed keeps it. Only the UI moved here, where somebody configuring the
+// card will actually look for it.
+async function vchUploadArtwork() {
+  if (typeof isManagerOrAdmin === "function" && !isManagerOrAdmin()) {
+    toast(t("Only a manager can change the card design"), "error");
+    return;
+  }
+  const file = document.getElementById("vch-artwork-file")?.files?.[0];
+  if (!file) {
+    toast(t("Pick an image file first"), "error");
+    return;
+  }
+  const problem = validateBrandFile(file);
+  if (problem) {
+    toast(problem, "error");
+    return;
+  }
+  const size = await readImageSize(file);
+  if (size && (size.w !== VOUCHER_BG_W || size.h !== VOUCHER_BG_H)) {
+    const msg =
+      CURRENT_LANG === "id"
+        ? `Gambar ini ${size.w}x${size.h} piksel. Kartu voucher digambar pada ${VOUCHER_BG_W}x${VOUCHER_BG_H}, jadi ukuran lain akan tertarik/gepeng, bukan terpotong. Tetap unggah?`
+        : `This image is ${size.w}x${size.h} pixels. The voucher card is drawn at ${VOUCHER_BG_W}x${VOUCHER_BG_H}, so a different size stretches rather than crops. Upload anyway?`;
+    if (!confirm(msg)) return;
+  }
+
+  const btn = document.getElementById("vch-artwork-upload");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = t("Uploading...");
+  }
+  loader(true);
+  try {
+    const ext = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[file.type];
+    const path = `voucher-bg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error: upErr } = await db.storage
+      .from(BRAND_BUCKET)
+      .upload(path, file, { contentType: file.type, upsert: false });
+    if (upErr) {
+      toast(upErr.message || t("Upload failed. Please try again."), "error");
+      return;
+    }
+    const { data: pub } = db.storage.from(BRAND_BUCKET).getPublicUrl(path);
+    const url = pub?.publicUrl || null;
+    if (!brandUrlOk(url)) {
+      toast(t("Upload failed. Please try again."), "error");
+      return;
+    }
+    const previous = BRANDING && BRANDING.voucher_bg_url;
+    const ok = await saveBrandingValue("voucher_bg_url", url);
+    if (!ok) return;
+    if (brandUrlOk(previous)) removeBrandImageByUrl(previous);
+    toast(t("Artwork updated"));
+    vchRenderStyleForm();
+  } finally {
+    loader(false);
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = t("Upload");
+    }
+  }
+}
+
+async function vchResetArtwork() {
+  if (!confirm(t("Remove the uploaded artwork?"))) return;
+  const previous = BRANDING && BRANDING.voucher_bg_url;
+  loader(true);
+  const ok = await saveBrandingValue("voucher_bg_url", null);
+  loader(false);
+  if (!ok) return;
+  if (brandUrlOk(previous)) removeBrandImageByUrl(previous);
+  toast(t("Artwork removed"));
+  vchRenderStyleForm();
 }

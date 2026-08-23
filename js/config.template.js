@@ -112,6 +112,74 @@ const I18N_EXCEPTION_TERMS = new Set([
 
 // Indonesian translations, keyed by the English source string.
 const ID_DICT = {
+  // ── Reservation form appearance + voucher card design (2026-08-23) ──
+  "Reservation Form": "Formulir Reservasi",
+  "Everything a guest sees on the online booking page: how it looks, the dishes you feature, and where the full menu lives":
+    "Semua yang dilihat tamu di halaman reservasi online: tampilannya, menu yang ditonjolkan, dan di mana menu lengkap berada",
+  "Page Appearance": "Tampilan Halaman",
+  "How the booking page looks to a guest. The same backdrop and colours carry over to the thank-you page they land on after booking.":
+    "Tampilan halaman reservasi untuk tamu. Latar dan warna yang sama juga dipakai di halaman terima kasih setelah mereka memesan.",
+  "Background photo": "Foto latar",
+  "Landscape, at least 1600px wide, max 2 MB. A darker photo makes the form easier to read.":
+    "Format melebar, minimal 1600px, maks 2 MB. Foto yang lebih gelap membuat formulir lebih mudah dibaca.",
+  "Form panel colour": "Warna panel formulir",
+  "How solid the panel is": "Ketebalan panel",
+  "See-through": "Tembus pandang",
+  Solid: "Pekat",
+  "Button colour": "Warna tombol",
+  "Used for the Book button and the selected time slot. The darker end of the button gradient is worked out from this.":
+    "Dipakai untuk tombol Pesan dan jam yang dipilih. Ujung gelap gradasi tombol dihitung dari warna ini.",
+  "Logo height on this page": "Tinggi logo di halaman ini",
+  "The logo itself is the one in Settings > Branding, so it only has to be uploaded once.":
+    "Logonya sendiri diambil dari Pengaturan > Branding, jadi cukup diunggah sekali.",
+  Small: "Kecil",
+  Large: "Besar",
+  Preview: "Pratinjau",
+  "Book a Table": "Pesan Meja",
+  Reserve: "Pesan",
+  "Save Appearance": "Simpan Tampilan",
+  "Back to defaults": "Kembali ke bawaan",
+  "Appearance saved": "Tampilan disimpan",
+  "Back to the built-in look": "Kembali ke tampilan bawaan",
+  "Background updated": "Foto latar diperbarui",
+  "Put the colours and sizes back to the built-in ones? The background photo is kept.":
+    "Kembalikan warna dan ukuran ke bawaan? Foto latar tetap dipertahankan.",
+
+  "Issue & Redeem": "Terbitkan & Tukar",
+  "Card Design": "Desain Kartu",
+  "Card colours": "Warna kartu",
+  "The card is drawn from these, so nothing has to be designed in advance. The logo is the one in Settings > Branding.":
+    "Kartu digambar dari pengaturan ini, jadi tidak perlu desain khusus. Logonya diambil dari Pengaturan > Branding.",
+  Background: "Latar",
+  Text: "Teks",
+  Accent: "Aksen",
+  "The guest name, the amount and the code. Smaller labels use a lighter version of this automatically.":
+    "Nama tamu, nominal, dan kode. Label kecil otomatis memakai versi yang lebih pudar dari warna ini.",
+  "The bands top and bottom, the \"VOUCHER DINE IN\" line and the hairlines.":
+    "Garis tebal atas dan bawah, tulisan \"VOUCHER DINE IN\", dan garis-garis tipis.",
+  "Logo size": "Ukuran logo",
+  "Use my own artwork instead": "Pakai desain saya sendiri",
+  "For a restaurant that already has a designed voucher. The colours and logo above are ignored and only the wording is drawn on top, so the file must be exactly 1084 x 1940 and must leave the middle empty.":
+    "Untuk restoran yang sudah punya desain voucher sendiri. Warna dan logo di atas diabaikan, hanya tulisan yang digambar di atasnya, jadi file harus tepat 1084 x 1940 dan bagian tengahnya dibiarkan kosong.",
+  "Custom artwork uploaded": "Desain sendiri sudah diunggah",
+  "No artwork uploaded yet": "Belum ada desain yang diunggah",
+  "Save Design": "Simpan Desain",
+  "Card design saved": "Desain kartu disimpan",
+  "Put the card design back to the built-in one?": "Kembalikan desain kartu ke bawaan?",
+  "Remove the uploaded artwork?": "Hapus desain yang diunggah?",
+  "Artwork updated": "Desain diperbarui",
+  "Artwork removed": "Desain dihapus",
+  // "Remove" is already in this dictionary twice further down. Not added a
+  // third time: a duplicate key is silently dropped and the two copies then
+  // drift apart.
+  "Only a manager can change the card design":
+    "Hanya manager yang bisa mengubah desain kartu",
+  "A real card with sample details, drawn the same way the one a guest receives is drawn.":
+    "Kartu asli dengan data contoh, digambar dengan cara yang sama seperti kartu yang diterima tamu.",
+  Sample: "Contoh",
+  "Looking for the voucher card? Its colours, logo size and the optional custom artwork now live under Vouchers > Card Design, next to a live preview of the card itself.":
+    "Mencari kartu voucher? Warna, ukuran logo, dan desain khusus opsionalnya sekarang ada di Voucher > Desain Kartu, lengkap dengan pratinjau kartunya.",
+
   // ── Birthday follow-up (added 2026-08-23) ─────────────────────────
   "Send WhatsApp": "Kirim WA",
   "Mark as sent": "Tandai sudah dikirim",
@@ -1346,6 +1414,120 @@ function applyManagerOnlyUI() {
   document.querySelectorAll(".manager-only-ui").forEach((el) => {
     el.style.display = isManager ? "" : "none";
   });
+}
+
+
+// ============================================================
+// RESERVATION PAGE APPEARANCE (per-client, set in Settings)
+// ============================================================
+// The guest-facing booking page and the thank-you page that follows it are
+// driven by four CSS custom properties. This reads the saved values and sets
+// them; the bundled defaults live in each page's own :root, so a page renders
+// correctly before this resolves and stays correct if it never does.
+//
+// reserve.html does NOT use this. It builds its own Supabase client from the
+// build-time placeholders and cannot load config.js without redeclaring
+// `const SUPABASE_URL`, so it carries a copy of these two functions inline.
+// Change one, change the other. The duplication is deliberate and marked at
+// both ends.
+
+const RESERVE_APPEARANCE_DEFAULTS = {
+  bg_url: null,
+  glass_color: "#28547C",
+  glass_opacity: 0.6,
+  accent_color: "#5596CE",
+  logo_max_height: 72,
+};
+
+// Opacity bounds. 0 makes the booking form invisible against the photo and 1
+// throws away the glass effect; neither is a look anyone picks on purpose, so
+// the slider and this clamp agree on the same range.
+const RESERVE_GLASS_MIN_OPACITY = 0.25;
+const RESERVE_GLASS_MAX_OPACITY = 0.95;
+const RESERVE_LOGO_MIN_H = 32;
+const RESERVE_LOGO_MAX_H = 200;
+
+function isHexColor(value) {
+  return /^#[0-9a-f]{6}$/i.test(String(value || "").trim());
+}
+
+// Darkens (amount < 0) or lightens a hex colour. Used so the button gradient
+// needs ONE colour from the user instead of two that could be set to clash.
+function shadeHex(hex, amount) {
+  if (!isHexColor(hex)) return hex;
+  const n = parseInt(hex.slice(1), 16);
+  const cl = (v) => Math.max(0, Math.min(255, Math.round(v)));
+  const r = cl(((n >> 16) & 255) * (1 + amount));
+  const g = cl(((n >> 8) & 255) * (1 + amount));
+  const b = cl((n & 255) * (1 + amount));
+  return "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+function hexToRgba(hex, alpha) {
+  if (!isHexColor(hex)) return null;
+  const h = hex.trim();
+  const r = parseInt(h.slice(1, 3), 16);
+  const g = parseInt(h.slice(3, 5), 16);
+  const b = parseInt(h.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function clampGlassOpacity(value) {
+  const n = Number(value);
+  if (!isFinite(n)) return RESERVE_APPEARANCE_DEFAULTS.glass_opacity;
+  return Math.min(RESERVE_GLASS_MAX_OPACITY, Math.max(RESERVE_GLASS_MIN_OPACITY, n));
+}
+
+let RESERVE_APPEARANCE = null;
+
+async function loadReserveAppearance(preloaded) {
+  if (preloaded && typeof preloaded === "object") {
+    RESERVE_APPEARANCE = preloaded;
+    return RESERVE_APPEARANCE;
+  }
+  try {
+    const { data, error } = await db
+      .from("app_settings")
+      .select("value")
+      .eq("key", "reserve_appearance")
+      .maybeSingle();
+    if (error) console.warn("reserve appearance: load failed, using defaults", error);
+    RESERVE_APPEARANCE = (data && data.value) || {};
+  } catch (e) {
+    console.warn("reserve appearance: load failed, using defaults", e);
+    RESERVE_APPEARANCE = {};
+  }
+  return RESERVE_APPEARANCE;
+}
+
+// Every value is validated before it reaches the page. These settings are
+// edited by a restaurant owner, not a designer, and a typo in a colour field
+// must degrade to the bundled look rather than to an unreadable booking form.
+function applyReserveAppearance(cfg, target) {
+  const conf = cfg || RESERVE_APPEARANCE || {};
+  const root = (target || document.documentElement).style;
+
+  const bg = String(conf.bg_url || "").trim();
+  if (/^https?:\/\/\S+$/i.test(bg)) root.setProperty("--rf-bg-image", `url("${bg}")`);
+
+  if (isHexColor(conf.glass_color)) {
+    const rgba = hexToRgba(conf.glass_color, clampGlassOpacity(conf.glass_opacity));
+    if (rgba) root.setProperty("--rf-glass", rgba);
+  }
+
+  if (isHexColor(conf.accent_color)) {
+    root.setProperty("--primary", conf.accent_color.trim());
+    root.setProperty("--dark", shadeHex(conf.accent_color.trim(), -0.32));
+  }
+
+  const h = Number(conf.logo_max_height);
+  if (h >= RESERVE_LOGO_MIN_H && h <= RESERVE_LOGO_MAX_H)
+    root.setProperty("--rf-logo-max-h", h + "px");
+}
+
+async function initReserveAppearance(preloaded) {
+  await loadReserveAppearance(preloaded);
+  applyReserveAppearance();
 }
 
 // ============================================================

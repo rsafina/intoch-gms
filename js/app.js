@@ -94,6 +94,10 @@ async function loadAppSettings() {
   // the branding row straight to the branding module instead of making it
   // run a second query for a row we just fetched.
   if (typeof initBranding === "function") initBranding(APP_SETTINGS.branding);
+  if (typeof loadReserveAppearance === "function")
+    loadReserveAppearance(APP_SETTINGS.reserve_appearance || {});
+  if (typeof vcLoadStyle === "function")
+    vcLoadStyle(APP_SETTINGS.voucher_style || {});
 }
 
 /**
@@ -787,6 +791,7 @@ function navigateTo(page) {
   if (page === "settings-menu") {
     loadFeaturedDishes();
     renderFullMenuLink();
+    renderReserveAppearanceSettings();
   }
   if (page === "settings-thresholds") renderThresholdSettings();
   if (page === "settings-branding") renderBrandingSettings();
@@ -11471,7 +11476,7 @@ async function quickAddWalkIn() {
 function renderSettingsTabs(activePage) {
   const tabs = [
     { page: "areas", label: t("Areas"), managerOnly: false },
-    { page: "settings-menu", label: t("Menu & Dishes"), managerOnly: false },
+    { page: "settings-menu", label: t("Reservation Form"), managerOnly: false },
     { page: "prizes", label: t("Prizes"), managerOnly: true },
     { page: "settings-thresholds", label: t("Thresholds"), managerOnly: true },
     { page: "settings-branding", label: t("Branding"), managerOnly: true },
@@ -12010,12 +12015,19 @@ const VOUCHER_BG_H = 1940;
 const BRAND_SLOTS = {
   full: { key: "logo_url", input: "brand-file-full", prefix: "logo" },
   small: { key: "small_logo_url", input: "brand-file-small", prefix: "mark" },
-  voucher: { key: "voucher_bg_url", input: "brand-file-voucher", prefix: "voucher-bg" },
+  // Still here so brandAsset("voucher") and the upload helpers keep working.
+  // Its UI card moved to Settings > Vouchers > Card Design (2026-08-23) —
+  // it is not a logo, and it belongs next to the colours it overrides.
+  voucher: { key: "voucher_bg_url", input: "vch-artwork-file", prefix: "voucher-bg" },
 };
 
 function renderBrandingSettings() {
   if (!isManagerOrAdmin()) return; // hasAccess() already blocks staff
-  Object.keys(BRAND_SLOTS).forEach((slot) => {
+  // Only the two logo slots have UI on this page. The voucher slot is still
+  // in BRAND_SLOTS (brandAsset and the upload helpers use it) but its card
+  // lives under Vouchers > Card Design, so iterating it here would hunt for
+  // elements that are not on this page.
+  ["full", "small"].forEach((slot) => {
     const url = brandAsset(slot);
     const img = document.getElementById(`brand-preview-${slot}`);
     if (img && url) img.src = url;
@@ -12522,4 +12534,253 @@ async function toggleStaffActive(staffId) {
   }
   toast(user.is_active ? t("Staff deactivated") : t("Staff reactivated"));
   loadStaffUsers();
+}
+
+
+// ============================================================
+// SETTINGS: RESERVATION FORM APPEARANCE (manager+)
+// ============================================================
+// Backdrop, panel colour, button colour and logo size for the public booking
+// page. The reading half (CSS variables, validation, fallbacks) lives in
+// config.template.js under "RESERVATION PAGE APPEARANCE".
+const RESERVE_BG_PREFIX = "reserve-bg";
+
+function reserveAppearanceForm() {
+  const num = (id, fallback) => {
+    const el = document.getElementById(id);
+    const n = Number(el?.value);
+    return isFinite(n) ? n : fallback;
+  };
+  const color = (id, fallback) => {
+    const v = document.getElementById(id)?.value;
+    return isHexColor(v) ? v.toUpperCase() : fallback;
+  };
+  return {
+    // The uploaded background is NOT part of this form. It is saved the moment
+    // it uploads, so a slow photo upload followed by a browser crash does not
+    // lose the file with nothing pointing at it.
+    bg_url: (RESERVE_APPEARANCE && RESERVE_APPEARANCE.bg_url) || null,
+    glass_color: color("rf-glass-color", RESERVE_APPEARANCE_DEFAULTS.glass_color),
+    glass_opacity: num("rf-glass-opacity", 60) / 100,
+    accent_color: color("rf-accent-color", RESERVE_APPEARANCE_DEFAULTS.accent_color),
+    logo_max_height: num("rf-logo-height", RESERVE_APPEARANCE_DEFAULTS.logo_max_height),
+  };
+}
+
+function renderReserveAppearanceSettings() {
+  if (!isManagerOrAdmin()) return; // hasAccess() already blocks staff
+  const cfg = { ...RESERVE_APPEARANCE_DEFAULTS, ...(RESERVE_APPEARANCE || {}) };
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.value = v;
+  };
+  set("rf-glass-color", isHexColor(cfg.glass_color) ? cfg.glass_color : RESERVE_APPEARANCE_DEFAULTS.glass_color);
+  set("rf-glass-color-hex", isHexColor(cfg.glass_color) ? cfg.glass_color.toUpperCase() : RESERVE_APPEARANCE_DEFAULTS.glass_color);
+  set("rf-accent-color", isHexColor(cfg.accent_color) ? cfg.accent_color : RESERVE_APPEARANCE_DEFAULTS.accent_color);
+  set("rf-accent-color-hex", isHexColor(cfg.accent_color) ? cfg.accent_color.toUpperCase() : RESERVE_APPEARANCE_DEFAULTS.accent_color);
+  set("rf-glass-opacity", Math.round(clampGlassOpacity(cfg.glass_opacity) * 100));
+  set("rf-logo-height", cfg.logo_max_height || RESERVE_APPEARANCE_DEFAULTS.logo_max_height);
+
+  const bgCustom = /^https?:\/\/\S+$/i.test(String(cfg.bg_url || "").trim());
+  const preview = document.getElementById("rf-bg-preview");
+  if (preview) preview.src = bgCustom ? cfg.bg_url : "assets/background-generic.jpg";
+  const state = document.getElementById("rf-bg-state");
+  if (state) {
+    state.textContent = bgCustom ? t("Custom image") : t("Default image");
+    state.className = bgCustom
+      ? "text-[11px] font-semibold text-[#28547C]"
+      : "text-[11px] text-[#999]";
+  }
+  document.getElementById("rf-bg-reset")?.classList.toggle("hidden", !bgCustom);
+  const file = document.getElementById("rf-bg-file");
+  if (file) file.value = "";
+
+  previewReserveAppearance();
+}
+
+// Keeps the hex box and the colour swatch in step. Typing is allowed to be
+// half-finished ("#28" on the way to "#28547C") without the swatch jumping
+// somewhere random, so only a complete value is pushed across.
+function syncReserveColorInput(pickerId, textEl) {
+  let v = String(textEl.value || "").trim();
+  if (v && !v.startsWith("#")) {
+    v = "#" + v;
+    textEl.value = v;
+  }
+  if (isHexColor(v)) {
+    const picker = document.getElementById(pickerId);
+    if (picker) picker.value = v;
+    previewReserveAppearance();
+  }
+}
+
+// Repaints the little mock booking card from whatever the controls say right
+// now. Nothing is saved: this is here because four settings that each look
+// fine alone can combine into an unreadable form over a dark photo.
+function previewReserveAppearance() {
+  const cfg = reserveAppearanceForm();
+
+  const glassHex = document.getElementById("rf-glass-color-hex");
+  if (glassHex && document.activeElement !== glassHex)
+    glassHex.value = cfg.glass_color;
+  const accentHex = document.getElementById("rf-accent-color-hex");
+  if (accentHex && document.activeElement !== accentHex)
+    accentHex.value = cfg.accent_color;
+
+  const opLabel = document.getElementById("rf-glass-opacity-value");
+  if (opLabel) opLabel.textContent = Math.round(cfg.glass_opacity * 100) + "%";
+  const hLabel = document.getElementById("rf-logo-height-value");
+  if (hLabel) hLabel.textContent = cfg.logo_max_height + "px";
+
+  const card = document.getElementById("rf-preview-card");
+  if (card)
+    card.style.background =
+      hexToRgba(cfg.glass_color, clampGlassOpacity(cfg.glass_opacity)) || "";
+  const btn = document.getElementById("rf-preview-btn");
+  if (btn)
+    btn.style.background = `linear-gradient(135deg, ${cfg.accent_color}, ${shadeHex(cfg.accent_color, -0.32)})`;
+
+  // The preview box is 260px tall against a real page around 800px, so the
+  // logo is scaled to match rather than shown at its literal pixel height —
+  // otherwise "200px" would fill the entire preview and look like a bug.
+  const logo = document.getElementById("rf-preview-logo");
+  if (logo) logo.style.maxHeight = Math.round(cfg.logo_max_height * 0.55) + "px";
+
+  const bgEl = document.getElementById("rf-preview-bg");
+  const bg = String((RESERVE_APPEARANCE && RESERVE_APPEARANCE.bg_url) || "").trim();
+  if (bgEl)
+    bgEl.style.backgroundImage = /^https?:\/\/\S+$/i.test(bg)
+      ? `url("${bg}")`
+      : 'url("assets/background-generic.jpg")';
+}
+
+async function saveReserveAppearance() {
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can change settings"), "error");
+    return;
+  }
+  const cfg = reserveAppearanceForm();
+  loader(true);
+  const ok = await writeReserveAppearance(cfg);
+  loader(false);
+  if (ok) toast(t("Appearance saved"));
+}
+
+async function resetReserveAppearanceDefaults() {
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can change settings"), "error");
+    return;
+  }
+  if (!confirm(t("Put the colours and sizes back to the built-in ones? The background photo is kept."))) return;
+  // The photo is deliberately NOT cleared here: it is a file somebody
+  // uploaded, and "back to defaults" on a colour picker should not silently
+  // throw it away. "Use built-in" under the photo does that, on purpose.
+  const cfg = {
+    ...RESERVE_APPEARANCE_DEFAULTS,
+    bg_url: (RESERVE_APPEARANCE && RESERVE_APPEARANCE.bg_url) || null,
+  };
+  loader(true);
+  const ok = await writeReserveAppearance(cfg);
+  loader(false);
+  if (ok) toast(t("Back to the built-in look"));
+}
+
+async function writeReserveAppearance(cfg) {
+  const { error } = await supabaseQuery(
+    () =>
+      db.from("app_settings").upsert({
+        key: "reserve_appearance",
+        value: cfg,
+        updated_at: new Date().toISOString(),
+      }),
+    "Failed to save appearance",
+  );
+  if (error) {
+    toast(error.message || t("Unable to save settings"), "error");
+    return false;
+  }
+  RESERVE_APPEARANCE = cfg;
+  renderReserveAppearanceSettings();
+  return true;
+}
+
+async function uploadReserveBackground() {
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can change settings"), "error");
+    return;
+  }
+  const file = document.getElementById("rf-bg-file")?.files?.[0];
+  if (!file) {
+    toast(t("Pick an image file first"), "error");
+    return;
+  }
+  const problem = validateBrandFile(file);
+  if (problem) {
+    toast(problem, "error");
+    return;
+  }
+  // Portrait photos crop badly in a full-bleed backdrop: the interesting part
+  // ends up off screen on a phone. Warn, do not block — it is their photo.
+  const size = await readImageSize(file);
+  if (size && size.w < size.h) {
+    const msg =
+      CURRENT_LANG === "id"
+        ? "Foto ini potret (lebih tinggi daripada lebar). Latar belakang halaman memakai seluruh layar, jadi bagian atas dan bawah akan terpotong. Tetap unggah?"
+        : "This photo is portrait (taller than it is wide). The page backdrop fills the whole screen, so the top and bottom will be cropped off. Upload anyway?";
+    if (!confirm(msg)) return;
+  }
+
+  const btn = document.getElementById("rf-bg-upload");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = t("Uploading...");
+  }
+  loader(true);
+  try {
+    const ext = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[file.type];
+    const path = `${RESERVE_BG_PREFIX}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error: upErr } = await db.storage
+      .from(BRAND_BUCKET)
+      .upload(path, file, { contentType: file.type, upsert: false });
+    if (upErr) {
+      toast(upErr.message || t("Upload failed. Please try again."), "error");
+      return;
+    }
+    const { data: pub } = db.storage.from(BRAND_BUCKET).getPublicUrl(path);
+    const url = pub?.publicUrl || null;
+    if (!brandUrlOk(url)) {
+      toast(t("Upload failed. Please try again."), "error");
+      return;
+    }
+
+    const previous = RESERVE_APPEARANCE && RESERVE_APPEARANCE.bg_url;
+    // Saved immediately, with whatever the colour controls currently show, so
+    // the uploaded file is never orphaned in storage with nothing pointing at
+    // it. Unsaved colour edits ride along, which is what the user expects.
+    const ok = await writeReserveAppearance({ ...reserveAppearanceForm(), bg_url: url });
+    if (!ok) return;
+    if (brandUrlOk(previous)) removeBrandImageByUrl(previous);
+    toast(t("Background updated"));
+  } finally {
+    loader(false);
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = t("Upload");
+    }
+  }
+}
+
+async function resetReserveBackground() {
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can change settings"), "error");
+    return;
+  }
+  if (!confirm(t("Go back to the built-in image?"))) return;
+  const previous = RESERVE_APPEARANCE && RESERVE_APPEARANCE.bg_url;
+  loader(true);
+  const ok = await writeReserveAppearance({ ...reserveAppearanceForm(), bg_url: null });
+  loader(false);
+  if (!ok) return;
+  if (brandUrlOk(previous)) removeBrandImageByUrl(previous);
+  toast(t("Back to the built-in image"));
 }

@@ -40,6 +40,14 @@
         --primary: #5596ce;
         --dark: #28547c;
         --gold: #c8a96b;
+        /* ── Configurable from Settings > Reservation Form (2026-08-23) ──
+           These four carry the bundled defaults. applyReserveAppearance()
+           overwrites them at runtime from app_settings.reserve_appearance.
+           Leaving the real values here means the page renders correctly
+           before the fetch lands, and stays correct if it never does. */
+        --rf-bg-image: url("assets/background-generic.jpg");
+        --rf-glass: rgba(40, 84, 124, 0.6);
+        --rf-logo-max-h: 72px;
       }
       html,
       body {
@@ -54,7 +62,7 @@
       .bg-photo {
         position: fixed;
         inset: -24px;
-        background: url("assets/background-generic.jpg") center / cover no-repeat;
+        background: var(--rf-bg-image) center / cover no-repeat;
         filter: brightness(0.85) saturate(0.95);
         z-index: -2;
       }
@@ -90,13 +98,13 @@
            win, so any client's logo lands at a sane size whatever its shape. */
         height: auto;
         width: auto;
-        max-height: 72px;
+        max-height: var(--rf-logo-max-h);
         max-width: min(260px, 62vw);
         filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.35));
       }
       .card {
-        /* navy glass (#28547C base) */
-        background: rgba(40, 84, 124, 0.6);
+        /* navy glass (#28547C base), colour and opacity set in Settings */
+        background: var(--rf-glass);
         backdrop-filter: blur(14px);
         -webkit-backdrop-filter: blur(14px);
         border: 1px solid rgba(255, 255, 255, 0.18);
@@ -322,6 +330,10 @@
     <script src="js/config.js"></script>
     <script>
       if (typeof initBranding === "function") initBranding();
+      // Same backdrop, glass and logo size as the booking page it follows.
+      // A guest who books and lands here must not watch the restaurant change
+      // colour between two consecutive screens.
+      if (typeof initReserveAppearance === "function") initReserveAppearance();
     </script>
   </body>
 </html>

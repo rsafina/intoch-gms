@@ -116,11 +116,103 @@ ok(
 
 // ── Branding markup matches BRAND_SLOTS ───────────────────────────────
 console.log("\nMarkup: every branding slot has its full set of controls");
-["full", "small", "voucher"].forEach((slot) => {
+// Only the two LOGO slots live on the Branding page. The voucher artwork slot
+// moved to Vouchers > Card Design (2026-08-23) because it is not a logo.
+["full", "small"].forEach((slot) => {
   ["brand-file-", "brand-upload-", "brand-reset-", "brand-preview-", "brand-state-"].forEach(
     (prefix) => ok(`#${prefix}${slot} exists`, !!w.document.getElementById(prefix + slot)),
   );
 });
+ok(
+  "the voucher slot is NOT on the Branding page any more",
+  !w.document.getElementById("brand-file-voucher"),
+);
+
+console.log("\nMarkup: the new settings surfaces");
+// Reservation Form appearance controls.
+[
+  "rf-bg-file", "rf-bg-preview", "rf-bg-state", "rf-glass-color",
+  "rf-glass-color-hex", "rf-glass-opacity", "rf-accent-color",
+  "rf-accent-color-hex", "rf-logo-height", "rf-preview-card", "rf-preview-btn",
+].forEach((id) => ok(`#${id} exists`, !!w.document.getElementById(id)));
+
+// Voucher design tab.
+[
+  "vch-pane-issue", "vch-pane-design", "vch-tab-issue", "vch-tab-design",
+  "vch-bg-color", "vch-text-color", "vch-accent-color", "vch-logo-scale",
+  "vch-use-artwork", "vch-artwork-file", "vch-style-preview",
+  "vch-contrast-warning",
+].forEach((id) => ok(`#${id} exists`, !!w.document.getElementById(id)));
+
+// The design pane starts hidden, or a manager opening Vouchers to redeem one
+// lands on a colour picker.
+ok(
+  "the design pane starts hidden",
+  w.document.getElementById("vch-pane-design").classList.contains("hidden"),
+);
+
+console.log("\nBehaviour: the Vouchers tabs swap panes");
+// Asserted on the class list, not on rendered CSS. Tailwind is a CDN script
+// that does not run in jsdom (nor offline in a headless screenshot), so
+// `.hidden` has no styling here and only the class itself is evidence.
+w.eval(`
+  ${lift(fs.readFileSync(path.join(ROOT, "js", "vouchers.js"), "utf8"), "vchShowTab", "vouchers.js")}
+  var VCH_TAB_KEY = "vchLastTab";
+  var isManagerOrAdmin = () => true;
+  var applyManagerOnlyUI = () => {};
+  var vchRenderStyleForm = () => {};
+  var toast = () => {};
+`);
+w.eval('vchShowTab("design")');
+ok(
+  "design shows the design pane",
+  !w.document.getElementById("vch-pane-design").classList.contains("hidden"),
+);
+ok(
+  "design hides the issue pane",
+  w.document.getElementById("vch-pane-issue").classList.contains("hidden"),
+);
+w.eval('vchShowTab("issue")');
+ok(
+  "issue shows the issue pane",
+  !w.document.getElementById("vch-pane-issue").classList.contains("hidden"),
+);
+ok(
+  "issue hides the design pane",
+  w.document.getElementById("vch-pane-design").classList.contains("hidden"),
+);
+// Staff must never be dropped into the design tab, even if their browser
+// remembers it: they cannot save from there and would just be stuck.
+w.eval('isManagerOrAdmin = () => false; vchShowTab("design")');
+ok(
+  "a non-manager asking for design lands on issue",
+  !w.document.getElementById("vch-pane-issue").classList.contains("hidden"),
+);
+w.eval("isManagerOrAdmin = () => true");
+
+console.log("\nEvery Settings tab is the same width");
+// They had drifted to four different values, so the page jumped sideways on
+// every tab click.
+const widths = [
+  "page-areas", "page-settings-menu", "page-prizes",
+  "page-settings-thresholds", "page-settings-branding", "page-settings-staff",
+].map((id) => {
+  const wrap = w.document.getElementById(id).firstElementChild;
+  return [...wrap.classList].find((c) => c.startsWith("max-w-")) || "(none)";
+});
+ok("all six agree", new Set(widths).size === 1, widths.join(", "));
+
+console.log("\nCache busters were bumped for every JS file changed");
+// A fix that is not accompanied by a ?v= bump reaches nobody: the front desk
+// keeps running the cached copy and reports the bug as still present.
+const scripts = [...w.document.querySelectorAll("script[src^='js/']")].map((el) =>
+  el.getAttribute("src"),
+);
+ok(
+  "every local script carries a ?v=",
+  scripts.every((src) => /\?v=\d+$/.test(src)),
+  scripts.filter((src) => !/\?v=\d+$/.test(src)).join(", "),
+);
 
 // ── applyBranding() actually swaps what is on the page ────────────────
 console.log("\nBehaviour: applyBranding() swaps every marked logo");

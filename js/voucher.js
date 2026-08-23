@@ -22,10 +22,65 @@
 const VC_W = 1084;
 const VC_H = 1940;
 
-const VC_NAVY = "#28547C";
-const VC_BLUE = "#4795D0";
-const VC_MUTED = "rgba(40,84,124,0.58)";
-const VC_HAIR = "rgba(71,149,208,0.45)";
+// The card used to be TEXT PAINTED ON A PICTURE: a 1084x1940 artwork file
+// carried the colour, the logo and the decoration, and only the type was
+// drawn. That made it unsellable — every client would have needed a designer
+// to produce that file before they could hand out a single voucher.
+//
+// It is now DRAWN. Background, accent and text colours come from
+// app_settings.voucher_style, the logo comes from Branding, and the rules and
+// panel are painted in code. The artwork route survives as an override for a
+// client who genuinely has one (Settings > Vouchers > Configure).
+//
+// These four remain as the DEFAULTS, which is why they still read as the
+// original navy-on-cream card.
+const VC_DEFAULTS = {
+  bg_color: "#F9F5F2",
+  accent_color: "#4795D0",
+  text_color: "#28547C",
+  logo_scale: 100, // percent of the standard logo width
+  use_artwork: false,
+};
+
+let VOUCHER_STYLE = null;
+
+function vcStyle() {
+  const s = { ...VC_DEFAULTS, ...(VOUCHER_STYLE || {}) };
+  const hex = (v, fb) => (/^#[0-9a-f]{6}$/i.test(String(v || "").trim()) ? String(v).trim() : fb);
+  s.bg_color = hex(s.bg_color, VC_DEFAULTS.bg_color);
+  s.accent_color = hex(s.accent_color, VC_DEFAULTS.accent_color);
+  s.text_color = hex(s.text_color, VC_DEFAULTS.text_color);
+  const sc = Number(s.logo_scale);
+  s.logo_scale = sc >= 40 && sc <= 180 ? sc : VC_DEFAULTS.logo_scale;
+  return s;
+}
+
+// Same colour at reduced strength, for secondary labels and hairlines.
+// Derived rather than configured: asking an owner for four colours and
+// hoping they pick a harmonious set is how cards end up unreadable.
+function vcAlpha(hex, alpha) {
+  const h = String(hex).trim();
+  const r = parseInt(h.slice(1, 3), 16);
+  const g = parseInt(h.slice(3, 5), 16);
+  const b = parseInt(h.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+// Relative luminance, so the card can tell a light background from a dark one
+// and stop drawing dark text on a dark card. A client WILL pick navy as their
+// background at some point.
+function vcLuminance(hex) {
+  const h = String(hex).trim();
+  const c = [1, 3, 5].map((i) => {
+    const v = parseInt(h.slice(i, i + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+
+function vcIsDarkBackground(hex) {
+  return vcLuminance(hex) < 0.45;
+}
 
 // Safe drawing band on the template: below the tagline arc,
 // above the blue social bar (which starts at y=1704).
@@ -52,6 +107,29 @@ function vcBackground() {
     if (typeof brandAsset === "function") return brandAsset("voucher") || VC_ASSETS.bg;
   } catch (_) {}
   return VC_ASSETS.bg;
+}
+
+// Reads the saved style. Handed the row directly by the staff app, which
+// already has every app_settings row in memory; the argument exists so the
+// card does not run its own query on every preview.
+async function vcLoadStyle(preloaded) {
+  if (preloaded && typeof preloaded === "object") {
+    VOUCHER_STYLE = preloaded;
+    return VOUCHER_STYLE;
+  }
+  try {
+    const { data } = await db
+      .from("app_settings")
+      .select("value")
+      .eq("key", "voucher_style")
+      .maybeSingle();
+    VOUCHER_STYLE = (data && data.value) || {};
+  } catch (e) {
+    // A styling failure must never stop a voucher being handed to a guest.
+    console.warn("voucher style: load failed, using defaults", e);
+    VOUCHER_STYLE = {};
+  }
+  return VOUCHER_STYLE;
 }
 
 // ── Small helpers ────────────────────────────────────────────
@@ -209,50 +287,101 @@ async function vcRenderVoucher(data, env) {
 
   const canvas = env.createCanvas(VC_W, VC_H);
   const ctx = canvas.getContext("2d");
+  const st = vcStyle();
 
-  // Cream first: if the template fails to load, the card is still a
-  // readable cream voucher rather than a black rectangle.
-  ctx.fillStyle = "#F9F5F2";
+  // Every colour below is derived from the three the user actually picked,
+  // so a card can be restyled without anybody choosing five values that have
+  // to harmonise with each other.
+  const C_TEXT = st.text_color;
+  const C_ACCENT = st.accent_color;
+  const C_MUTED = vcAlpha(st.text_color, 0.58);
+  const C_HAIR = vcAlpha(st.accent_color, 0.45);
+  const C_FINE = vcAlpha(st.text_color, 0.45);
+
+  ctx.fillStyle = st.bg_color;
   ctx.fillRect(0, 0, VC_W, VC_H);
 
-  // Falls back to the bundled artwork if the uploaded one fails to load, so
-  // a broken storage URL costs the client a generic card, not a blank one.
-  let bg = await env.loadImage(vcBackground()).catch(() => null);
-  if (!bg && vcBackground() !== VC_ASSETS.bg)
-    bg = await env.loadImage(VC_ASSETS.bg).catch(() => null);
-  if (bg) ctx.drawImage(bg, 0, 0, VC_W, VC_H);
+  // Artwork mode: the whole card is somebody's picture and nothing is drawn
+  // except the type. Kept for a client who has a real designed voucher.
+  let bg = null;
+  if (st.use_artwork) {
+    bg = await env.loadImage(vcBackground()).catch(() => null);
+    if (!bg && vcBackground() !== VC_ASSETS.bg)
+      bg = await env.loadImage(VC_ASSETS.bg).catch(() => null);
+    if (bg) ctx.drawImage(bg, 0, 0, VC_W, VC_H);
+  }
 
   const CX = VC_W / 2;
+
+  // Drawn mode: logo, a band of accent colour along the top, and a hairline
+  // frame. This is what replaces the artwork file.
+  if (!bg) {
+    ctx.fillStyle = C_ACCENT;
+    ctx.fillRect(0, 0, VC_W, 12);
+
+    ctx.strokeStyle = C_HAIR;
+    ctx.lineWidth = 2;
+    vcRoundRect(ctx, 40, 40, VC_W - 80, VC_H - 80, 18);
+    ctx.stroke();
+
+    // The logo sits in the empty band above VC_TOP, which is the same space
+    // the artwork used for its wordmark, so nothing below has to move.
+    const logoSrc =
+      typeof brandAsset === "function" ? brandAsset("full") : "assets/full-logo.png";
+    const logo = await env.loadImage(logoSrc).catch(() => null);
+    if (logo && logo.width && logo.height) {
+      const maxW = 520 * (st.logo_scale / 100);
+      const maxH = 210 * (st.logo_scale / 100);
+      const scale = Math.min(maxW / logo.width, maxH / logo.height);
+      const w = logo.width * scale;
+      const h = logo.height * scale;
+      ctx.drawImage(logo, CX - w / 2, 150 + (maxH - h) / 2, w, h);
+    } else {
+      // No logo on file, or it failed to load: the restaurant's name in the
+      // serif face reads as a deliberate wordmark rather than a gap.
+      ctx.fillStyle = C_TEXT;
+      ctx.textAlign = "center";
+      ctx.font = serif(76);
+      ctx.fillText(
+        typeof restaurantName === "function" ? restaurantName() : "Restoran",
+        CX,
+        265,
+      );
+    }
+
+    ctx.fillStyle = C_ACCENT;
+    ctx.fillRect(0, VC_H - 96, VC_W, 96);
+  }
   const SAFE = 800; // max text width
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
 
   // ── Title ─────────────────────────────────────────────────
-  ctx.fillStyle = VC_HAIR;
+  ctx.fillStyle = C_HAIR;
   ctx.fillRect(CX - 32, VC_TOP + 20, 64, 2);
 
-  ctx.fillStyle = VC_BLUE;
+  ctx.fillStyle = C_ACCENT;
   ctx.font = sans(28, 600);
   vcTracked(ctx, "VOUCHER DINE IN", CX, VC_TOP + 96, 8);
 
   // ── Recipient ─────────────────────────────────────────────
-  ctx.fillStyle = VC_MUTED;
+  ctx.fillStyle = C_MUTED;
   ctx.font = sans(23);
   vcTracked(ctx, "DIBERIKAN KEPADA", CX, VC_TOP + 200, 5);
 
   const name = (data.name || "").trim() || "Tamu " + restaurantName();
   const fit = vcFitLines(ctx, name, SAFE, serif, 88, 48);
-  ctx.fillStyle = VC_NAVY;
+  ctx.fillStyle = C_TEXT;
   ctx.font = serif(fit.size);
   let y = VC_TOP + 300;
   fit.lines.forEach((ln, i) => ctx.fillText(ln, CX, y + i * (fit.size + 6)));
   y += (fit.lines.length - 1) * (fit.size + 6);
 
-  ctx.fillStyle = VC_HAIR;
+  ctx.fillStyle = C_HAIR;
   ctx.fillRect(CX - 150, y + 46, 300, 1);
 
   // ── Amount ────────────────────────────────────────────────
-  ctx.fillStyle = VC_MUTED;
+  ctx.fillStyle = C_MUTED;
   ctx.font = sans(22);
   vcTracked(ctx, "NILAI VOUCHER", CX, y + 132, 5);
 
@@ -264,14 +393,14 @@ async function vcRenderVoucher(data, env) {
   // A free-item description is a sentence, not a figure — it needs to be
   // allowed to shrink much further before it wraps off the card.
   const afit = vcFitLines(ctx, amountText, SAFE, serif, 128, data.valueText ? 44 : 76);
-  ctx.fillStyle = VC_NAVY;
+  ctx.fillStyle = C_TEXT;
   ctx.font = serif(afit.size);
   afit.lines.forEach((ln, i) =>
     ctx.fillText(ln, CX, y + 254 + i * (afit.size + 4)),
   );
 
   // ── Code ──────────────────────────────────────────────────
-  ctx.fillStyle = VC_MUTED;
+  ctx.fillStyle = C_MUTED;
   ctx.font = sans(20);
   vcTracked(ctx, "KODE VOUCHER", CX, y + 336, 5);
 
@@ -281,11 +410,11 @@ async function vcRenderVoucher(data, env) {
   const pillX = CX - pillW / 2;
   const pillY = y + 366;
   vcRoundRect(ctx, pillX, pillY, pillW, pillH, 12);
-  ctx.strokeStyle = VC_HAIR;
+  ctx.strokeStyle = C_HAIR;
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  ctx.fillStyle = VC_NAVY;
+  ctx.fillStyle = C_TEXT;
   let codeSize = 40;
   ctx.font = sans(codeSize, 600);
   // Tracked text is wider than measureText suggests — budget for it.
@@ -297,23 +426,23 @@ async function vcRenderVoucher(data, env) {
 
   // ── Valid until ───────────────────────────────────────────
   const exp = vcDateId(data.expiresAt);
-  ctx.fillStyle = VC_MUTED;
+  ctx.fillStyle = C_MUTED;
   ctx.font = sans(20);
   vcTracked(ctx, "VALID UNTIL", CX, pillY + pillH + 78, 5);
 
-  ctx.fillStyle = exp ? VC_NAVY : VC_MUTED;
+  ctx.fillStyle = exp ? C_TEXT : C_MUTED;
   ctx.font = serif(46);
   ctx.fillText(exp || "— tanggal belum diatur —", CX, pillY + pillH + 142);
 
   // ── Member + terms ────────────────────────────────────────
   const memberLine = [data.memberNumber, data.typeLabel].filter(Boolean).join("  ·  ");
   if (memberLine) {
-    ctx.fillStyle = VC_MUTED;
+    ctx.fillStyle = C_MUTED;
     ctx.font = sans(23);
     ctx.fillText(memberLine, CX, pillY + pillH + 206);
   }
 
-  ctx.fillStyle = "rgba(40,84,124,0.45)";
+  ctx.fillStyle = C_FINE;
   ctx.font = sans(20);
   ctx.fillText(
     "Berlaku untuk satu kali transaksi. Tidak dapat diuangkan.",
