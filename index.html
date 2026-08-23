@@ -138,6 +138,18 @@
       .settings-field {
         max-width: 320px;
       }
+      /* A fieldset used purely to gate a group of inputs. The browser's
+         default border, padding, margin and min-width would all change the
+         layout, so they are cleared; only the disabled dimming is kept. */
+      fieldset.res-gated {
+        border: 0;
+        padding: 0;
+        margin: 0;
+        min-width: 0;
+      }
+      fieldset.res-gated[disabled] {
+        opacity: 0.45;
+      }
       .form-input {
         width: 100%;
         border: 1.5px solid #e0ddd7;
@@ -7615,7 +7627,12 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           </div>
         </div>
 
-        <div id="res-details-fields" class="hidden">
+        <!-- Everything below is visible from the moment the modal opens, but
+             disabled until a guest is chosen. See setResDetailsEnabled(). -->
+        <p id="res-gate-hint" class="text-xs text-[#C8A96B] mb-3">
+          Pick a guest above, or create a new one, to fill in the rest.
+        </p>
+        <fieldset id="res-details-fields" class="res-gated" disabled>
           <div class="divider my-4"></div>
           <div class="grid grid-cols-2 gap-3 mb-3">
             <div>
@@ -7756,7 +7773,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           >
             Save Reservation
           </button>
-        </div>
+        </fieldset>
       </div>
     </div>
 
@@ -8677,7 +8694,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
     <script src="js/config.js?v=10"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=14"></script>
+    <script src="js/app.js?v=15"></script>
     <script src="js/membership.js?v=4"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->

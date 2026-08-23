@@ -4767,6 +4767,18 @@ function renderGuestSearchResults(prefix, guests, searchTerm) {
   `;
 }
 
+// Enables or disables the rest of the New Reservation form, and shows the
+// hint that explains why it is greyed out.
+//
+// Gating survives a re-render of anything inside the fieldset (the table
+// picker repaints on every date change), because `disabled` on a fieldset
+// applies to descendants added after it was set.
+function setResDetailsEnabled(enabled) {
+  const fs = document.getElementById("res-details-fields");
+  if (fs) fs.disabled = !enabled;
+  document.getElementById("res-gate-hint")?.classList.toggle("hidden", enabled);
+}
+
 function createNewGuestFromSearch(prefix) {
   const resultsEl = document.getElementById(`${prefix}-guest-search-results`);
   if (resultsEl) {
@@ -4776,7 +4788,7 @@ function createNewGuestFromSearch(prefix) {
 
   if (prefix === "res") {
     document.getElementById("res-new-guest")?.classList.remove("hidden");
-    document.getElementById("res-details-fields")?.classList.remove("hidden");
+    setResDetailsEnabled(true);
     document.getElementById("res-guest-info")?.classList.add("hidden");
     currentResGuestId = null;
     document.getElementById("res-guest-id").value = "";
@@ -4839,9 +4851,8 @@ async function selectGuestFromSearch(guestId, prefix) {
   if (prefix === "res") currentResGuestId = guest.id;
 
   // Show reservation details fields if this is a reservation
-  const detailsEl = document.getElementById("res-details-fields");
-  if (detailsEl && prefix === "res") {
-    detailsEl.classList.remove("hidden");
+  if (prefix === "res") {
+    setResDetailsEnabled(true);
     populateAreaSelects();
   }
 
@@ -4872,7 +4883,13 @@ function clearGuestSelection(prefix) {
   }
 
   if (prefix === "wi") currentWiGuestId = null;
-  if (prefix === "res") currentResGuestId = null;
+  if (prefix === "res") {
+    currentResGuestId = null;
+    // Re-gate. Without this, clearing the guest leaves a fully editable form
+    // that cannot be saved, and the failure only shows up at the save button.
+    setResDetailsEnabled(false);
+    document.getElementById("res-new-guest")?.classList.add("hidden");
+  }
 }
 
 // Legacy lookup functions (keeping for compatibility)
@@ -5520,7 +5537,9 @@ function openReservationModal(res = null) {
   document.getElementById("res-guest-search").value = res?.guests?.name || "";
   document.getElementById("res-guest-info").classList.add("hidden");
   document.getElementById("res-new-guest").classList.add("hidden");
-  document.getElementById("res-details-fields").classList.add("hidden");
+  // Opens gated. The edit path below re-enables it, because an existing
+  // reservation already has a guest and there is nothing to choose.
+  setResDetailsEnabled(false);
   document.getElementById("res-date").value = res?.reservation_date || TODAY;
   document.getElementById("res-time").value =
     res?.reservation_time?.slice(0, 5) || "19:00";
@@ -5560,7 +5579,7 @@ function openReservationModal(res = null) {
         <button type="button" onclick="renameReservationGuest()" class="text-xs text-[#5596CE] underline mt-1">✏️ Perbaiki nama guest</button>
       </div>
     `;
-    document.getElementById("res-details-fields").classList.remove("hidden");
+    setResDetailsEnabled(true);
   }
 
   showModal("modal-reservation");
