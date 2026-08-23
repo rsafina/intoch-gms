@@ -3214,7 +3214,128 @@
             </p>
           </div>
 
-          <div class="flex flex-col xl:flex-row gap-8 items-start">
+          <!-- Two panes, same approach as Vouchers: the Build pane is the
+               whole existing page, so nothing about the generator had to be
+               re-pointed. -->
+          <div class="flex flex-wrap items-center gap-2 mb-6">
+            <button id="inv-tab-build" onclick="invShowTab('build')" class="px-4 py-2 rounded-full text-sm font-medium transition">
+              <span data-i18n>Build Invoice</span>
+            </button>
+            <button id="inv-tab-design" onclick="invShowTab('design')" class="px-4 py-2 rounded-full text-sm font-medium transition manager-only-ui">
+              <span data-i18n>Invoice Design</span>
+            </button>
+          </div>
+
+          <div id="inv-pane-design" class="hidden mb-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div class="bg-white rounded-2xl border border-[#EDE9E3] p-5">
+                <h3 class="text-sm font-semibold text-[#28547C] mb-1" data-i18n>Colours</h3>
+                <p class="text-[11px] text-[#999] mb-4" data-i18n>
+                  The text on the blue bars is not listed here: it picks white or dark by
+                  itself depending on how light the bar colour is, so a Total line can never
+                  come out invisible.
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Ink</label>
+                    <div class="flex items-center gap-2">
+                      <input id="inv-c-ink" type="color" class="h-9 w-12 rounded-lg border border-[#E6E2DC] bg-white p-1 cursor-pointer" oninput="invPreviewStyle()" />
+                      <input id="inv-c-ink-hex" type="text" maxlength="7" class="form-input" style="max-width:100px" oninput="invSyncColor('inv-c-ink', this)" />
+                    </div>
+                    <p class="text-[10px] text-[#999] mt-1" data-i18n>Headings, figures, guest details</p>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Bars</label>
+                    <div class="flex items-center gap-2">
+                      <input id="inv-c-accent" type="color" class="h-9 w-12 rounded-lg border border-[#E6E2DC] bg-white p-1 cursor-pointer" oninput="invPreviewStyle()" />
+                      <input id="inv-c-accent-hex" type="text" maxlength="7" class="form-input" style="max-width:100px" oninput="invSyncColor('inv-c-accent', this)" />
+                    </div>
+                    <p class="text-[10px] text-[#999] mt-1" data-i18n>Table header, totals bar, rules</p>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Frame</label>
+                    <div class="flex items-center gap-2">
+                      <input id="inv-c-frame" type="color" class="h-9 w-12 rounded-lg border border-[#E6E2DC] bg-white p-1 cursor-pointer" oninput="invPreviewStyle()" />
+                      <input id="inv-c-frame-hex" type="text" maxlength="7" class="form-input" style="max-width:100px" oninput="invSyncColor('inv-c-frame', this)" />
+                    </div>
+                    <p class="text-[10px] text-[#999] mt-1" data-i18n>The border around the page</p>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Row fill</label>
+                    <div class="flex items-center gap-2">
+                      <input id="inv-c-row_fill" type="color" class="h-9 w-12 rounded-lg border border-[#E6E2DC] bg-white p-1 cursor-pointer" oninput="invPreviewStyle()" />
+                      <input id="inv-c-row_fill-hex" type="text" maxlength="7" class="form-input" style="max-width:100px" oninput="invSyncColor('inv-c-row_fill', this)" />
+                    </div>
+                    <p class="text-[10px] text-[#999] mt-1" data-i18n>Item rows and the paid bar</p>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Secondary text</label>
+                    <div class="flex items-center gap-2">
+                      <input id="inv-c-muted" type="color" class="h-9 w-12 rounded-lg border border-[#E6E2DC] bg-white p-1 cursor-pointer" oninput="invPreviewStyle()" />
+                      <input id="inv-c-muted-hex" type="text" maxlength="7" class="form-input" style="max-width:100px" oninput="invSyncColor('inv-c-muted', this)" />
+                    </div>
+                    <p class="text-[10px] text-[#999] mt-1" data-i18n>Totals labels and the footer</p>
+                  </div>
+                </div>
+
+                <h3 class="text-sm font-semibold text-[#28547C] mt-6 mb-3" data-i18n>Logo sizes</h3>
+                <div class="mb-4">
+                  <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Main logo width</label>
+                  <input id="inv-logo-width" type="range" min="80" max="320" class="w-full accent-[#28547C]" oninput="invPreviewStyle()" />
+                  <div class="flex justify-between text-[10px] text-[#999]">
+                    <span data-i18n>Small</span><span id="inv-logo-width-value" data-i18n-skip></span><span data-i18n>Large</span>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Footer mark width</label>
+                  <input id="inv-mark-width" type="range" min="24" max="140" class="w-full accent-[#28547C]" oninput="invPreviewStyle()" />
+                  <div class="flex justify-between text-[10px] text-[#999]">
+                    <span data-i18n>Small</span><span id="inv-mark-width-value" data-i18n-skip></span><span data-i18n>Large</span>
+                  </div>
+                </div>
+                <p class="text-[11px] text-[#999] mt-1" data-i18n>
+                  Both images come from Settings &gt; Branding, so they only have to be
+                  uploaded once. Only the size is set here.
+                </p>
+              </div>
+
+              <div class="bg-white rounded-2xl border border-[#EDE9E3] p-5">
+                <h3 class="text-sm font-semibold text-[#28547C] mb-1" data-i18n>Footer details</h3>
+                <p class="text-[11px] text-[#999] mb-4" data-i18n>
+                  Printed along the bottom of every invoice. Anything left empty is left
+                  out entirely, separators and all.
+                </p>
+                <div class="mb-3">
+                  <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Address</label>
+                  <textarea id="inv-f-address" rows="3" maxlength="220" class="form-input resize-none" placeholder="Jl. ..., Kota, Provinsi 00000" oninput="invPreviewStyle()"></textarea>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                  <div>
+                    <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Reservation phone</label>
+                    <input id="inv-f-phone" type="text" maxlength="40" class="form-input" placeholder="0812xxxxxxxx" oninput="invPreviewStyle()" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Instagram</label>
+                    <input id="inv-f-instagram" type="text" maxlength="40" class="form-input" placeholder="restoran.anda" oninput="invPreviewStyle()" />
+                  </div>
+                </div>
+                <div class="rounded-10 border border-[#EDE9E3] bg-[#F8F6F2] p-3 mb-4">
+                  <p class="text-[10px] text-[#999] mb-1" data-i18n>Footer preview</p>
+                  <p id="inv-footer-preview" class="text-[11px] text-[#555] leading-snug" data-i18n-skip></p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <button onclick="invSaveStyle()" class="btn-primary px-6 py-2.5" data-i18n>Save Design</button>
+                  <button onclick="invResetStyle()" class="btn-ghost text-sm px-4 py-2.5" data-i18n>Back to defaults</button>
+                </div>
+                <p class="text-[11px] text-[#999] mt-3" data-i18n>
+                  The sheet on the Build tab updates as you change these, so switch across
+                  to see a full page before saving.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div id="inv-pane-build" class="flex flex-col xl:flex-row gap-8 items-start">
             <!-- ── FORM ─────────────────────────────────────────── -->
             <div class="w-full xl:w-[440px] xl:flex-none space-y-5">
               <div class="bg-white rounded-2xl border border-[#EDE9E3] p-5">
@@ -3452,11 +3573,13 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                         <div class="inv-rule-b"></div>
                         <div class="inv-rule-b"></div>
                       </div>
-                      <div class="inv-address">
-                        Jl. Asem Gede No.23, Sanggrahan, Condongcatur, Kec. Depok, Kabupaten
-                        Sleman, Daerah Istimewa<br />Yogyakarta 55281. Reservation:
-                        [nomor telepon]. Instagram: [akun]
-                      </div>
+                      <!-- Filled by applyInvoiceStyle() from
+                           app_settings.invoice_style. Left EMPTY in the
+                           markup on purpose: this used to carry one
+                           particular restaurant's real street address plus
+                           two unfilled placeholders, which a new client would
+                           have printed and sent to a guest. -->
+                      <div class="inv-address"></div>
                     </div>
                   </div>
                 </div>
@@ -8545,9 +8668,9 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
 
-    <script src="js/config.js?v=9"></script>
+    <script src="js/config.js?v=10"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=13"></script>
+    <script src="js/app.js?v=14"></script>
     <script src="js/membership.js?v=4"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->
@@ -8567,7 +8690,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
          Both libraries are only needed on the Invoice page. -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="js/invoice.js?v=8"></script>
+    <script src="js/invoice.js?v=9"></script>
     <!-- vouchers.js uses the voucher-card canvas helpers in voucher.js
          (membership card) for its own card, so it must load after it. -->
     <script src="js/vouchers.js?v=3"></script>

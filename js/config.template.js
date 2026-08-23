@@ -112,6 +112,46 @@ const I18N_EXCEPTION_TERMS = new Set([
 
 // Indonesian translations, keyed by the English source string.
 const ID_DICT = {
+  // ── Invoice design (added 2026-08-23) ─────────────────────────────
+  "Build Invoice": "Buat Invoice",
+  "Invoice Design": "Desain Invoice",
+  Colours: "Warna",
+  "The text on the blue bars is not listed here: it picks white or dark by itself depending on how light the bar colour is, so a Total line can never come out invisible.":
+    "Warna tulisan di atas bar tidak diatur di sini: otomatis memilih putih atau gelap tergantung terangnya warna bar, jadi baris Total tidak akan pernah jadi tidak terbaca.",
+  Ink: "Tinta",
+  "Headings, figures, guest details": "Judul, angka, dan data tamu",
+  Bars: "Bar",
+  "Table header, totals bar, rules": "Kepala tabel, bar total, dan garis",
+  Frame: "Bingkai",
+  "The border around the page": "Garis tepi halaman",
+  "Row fill": "Isi baris",
+  "Item rows and the paid bar": "Baris item dan bar sudah dibayar",
+  "Secondary text": "Teks sekunder",
+  "Totals labels and the footer": "Label total dan bagian bawah",
+  "Logo sizes": "Ukuran logo",
+  "Main logo width": "Lebar logo utama",
+  "Footer mark width": "Lebar ikon bawah",
+  "Both images come from Settings > Branding, so they only have to be uploaded once. Only the size is set here.":
+    "Kedua gambar diambil dari Pengaturan > Branding, jadi cukup diunggah sekali. Di sini hanya ukurannya yang diatur.",
+  "Footer details": "Detail bagian bawah",
+  "Printed along the bottom of every invoice. Anything left empty is left out entirely, separators and all.":
+    "Dicetak di bagian bawah setiap invoice. Yang dikosongkan tidak akan ditampilkan sama sekali, termasuk tanda pemisahnya.",
+  Address: "Alamat",
+  "Reservation phone": "Nomor reservasi",
+  // "Instagram" is already in this dictionary further down and translates to
+  // itself. Not added twice: a duplicate key is silently dropped and the two
+  // copies then drift apart.
+  "Footer preview": "Pratinjau bagian bawah",
+  "Nothing filled in yet — the footer will be blank.":
+    "Belum ada yang diisi — bagian bawah akan kosong.",
+  "The sheet on the Build tab updates as you change these, so switch across to see a full page before saving.":
+    "Halaman invoice di tab Buat ikut berubah saat Anda mengubah ini, jadi pindah ke sana untuk melihat satu halaman penuh sebelum menyimpan.",
+  "Invoice design saved": "Desain invoice disimpan",
+  "Only a manager can change the invoice design":
+    "Hanya manager yang bisa mengubah desain invoice",
+  "Put the invoice design back to the built-in one? The address is kept.":
+    "Kembalikan desain invoice ke bawaan? Alamat tetap dipertahankan.",
+
   // ── Areas, tables and import (added 2026-08-23) ───────────────────
   "Areas & Tables": "Area & Meja",
   "Create the rooms and sections first, then add the tables inside each one.":

@@ -747,11 +747,17 @@ function invCheckReceipt() {
 let invBooted = false;
 
 function initInvoice() {
+  // Re-applied on every visit, not only the first: a manager can change the
+  // design and come straight back here, and a stale sheet would send them
+  // hunting for a bug that is not there.
+  applyInvoiceStyle();
   if (invBooted) {
+    invShowTab(invDefaultTab());
     invFitPreview();
     return;
   }
   invBooted = true;
+  invShowTab(invDefaultTab());
 
   invEl("inv-paydate").value = invToday();
   invItems = [invBlankItem(), invBlankItem()];
@@ -854,4 +860,319 @@ function initInvoice() {
 
   invRenderHistory();
   invRecalc();
+}
+
+// ============================================================
+// INVOICE APPEARANCE (per-client, set in Settings)
+// ============================================================
+// Five colours, two logo sizes and the footer address, from
+// app_settings.invoice_style.
+//
+// ── Why this writes a <style> block of LITERAL hex ────────────────────
+// The obvious implementation is CSS custom properties, the way the
+// reservation page does it. It is NOT used here, and the stylesheet says why
+// at the top of the invoice section: html2canvas rasterises #inv-sheet for
+// the PDF, and it is not reliable with variables. A colour that resolves
+// perfectly on screen and silently falls back to black in the exported PDF is
+// the worst possible failure for a document a guest receives.
+//
+// So every value is baked into a literal hex string before it reaches the
+// page. Nothing in the invoice sheet depends on var() resolution at capture
+// time, which sidesteps the question entirely.
+const INVOICE_STYLE_DEFAULTS = {
+  ink: "#28547C",
+  accent: "#3E8FCB",
+  frame: "#7FB8E0",
+  row_fill: "#CFE4F5",
+  muted: "#4795D0",
+  logo_width: 172,
+  mark_width: 62,
+  address: "",
+  phone: "",
+  instagram: "",
+};
+
+const INVOICE_LOGO_MIN = 80;
+const INVOICE_LOGO_MAX = 320;
+const INVOICE_MARK_MIN = 24;
+const INVOICE_MARK_MAX = 140;
+
+let INVOICE_STYLE = null;
+
+function invStyle() {
+  const cfg = { ...INVOICE_STYLE_DEFAULTS, ...(INVOICE_STYLE || {}) };
+  const hex = (v, fb) =>
+    /^#[0-9a-f]{6}$/i.test(String(v || "").trim()) ? String(v).trim() : fb;
+  ["ink", "accent", "frame", "row_fill", "muted"].forEach((k) => {
+    cfg[k] = hex(cfg[k], INVOICE_STYLE_DEFAULTS[k]);
+  });
+  const num = (v, fb, lo, hi) => {
+    const n = Number(v);
+    return isFinite(n) && n >= lo && n <= hi ? Math.round(n) : fb;
+  };
+  cfg.logo_width = num(cfg.logo_width, 172, INVOICE_LOGO_MIN, INVOICE_LOGO_MAX);
+  cfg.mark_width = num(cfg.mark_width, 62, INVOICE_MARK_MIN, INVOICE_MARK_MAX);
+  ["address", "phone", "instagram"].forEach((k) => {
+    cfg[k] = String(cfg[k] || "").trim();
+  });
+  return cfg;
+}
+
+// Relative luminance, so text on a coloured bar can pick itself.
+function invLuminance(hex) {
+  const h = String(hex).trim();
+  const c = [1, 3, 5].map((i) => {
+    const v = parseInt(h.slice(i, i + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+
+// The table header and the totals bar print text ON the accent colour. That
+// text is NOT one of the five settings on purpose: it is not a design choice,
+// it is a legibility requirement, and a client who picks a pale accent would
+// otherwise produce an invoice with an invisible "Total" line. Dark text on a
+// light bar, white on a dark one.
+function invBarTextColor(fill, ink) {
+  return invLuminance(fill) > 0.6 ? ink : "#FFFFFF";
+}
+
+async function invLoadStyle(preloaded) {
+  if (preloaded && typeof preloaded === "object") {
+    INVOICE_STYLE = preloaded;
+    return INVOICE_STYLE;
+  }
+  try {
+    const { data } = await db
+      .from("app_settings")
+      .select("value")
+      .eq("key", "invoice_style")
+      .maybeSingle();
+    INVOICE_STYLE = (data && data.value) || {};
+  } catch (e) {
+    // Never block the invoice on styling. A generator that refuses to open
+    // because a colour would not load is worse than a default-coloured
+    // invoice.
+    console.warn("invoice style: load failed, using defaults", e);
+    INVOICE_STYLE = {};
+  }
+  return INVOICE_STYLE;
+}
+
+function invStyleCss(cfg) {
+  const barText = invBarTextColor(cfg.accent, cfg.ink);
+  const paidText = invBarTextColor(cfg.row_fill, cfg.ink);
+  return `
+    #inv-sheet { color: ${cfg.ink}; }
+    #inv-sheet .inv-frame { border-color: ${cfg.frame}; }
+    #inv-sheet .inv-logo { width: ${cfg.logo_width}px; }
+    #inv-sheet .inv-heron { width: ${cfg.mark_width}px; }
+    #inv-sheet .inv-rule-top { background: ${cfg.accent}; }
+    #inv-sheet .inv-meta-row { color: ${cfg.ink}; }
+    #inv-sheet .inv-thead { background: ${cfg.accent}; color: ${barText}; }
+    #inv-sheet .inv-row { background: ${cfg.row_fill}; color: ${cfg.ink}; }
+    #inv-sheet .inv-note { color: ${cfg.ink}; }
+    #inv-sheet .inv-trow { color: ${cfg.muted}; }
+    #inv-sheet .inv-trow span:last-child { color: ${cfg.ink}; }
+    #inv-sheet .inv-tbar { background: ${cfg.accent}; color: ${barText}; }
+    #inv-sheet .inv-tbar-paid { background: ${cfg.row_fill}; color: ${paidText}; }
+    #inv-sheet .inv-welcome { color: ${cfg.muted}; }
+    #inv-sheet .inv-rule-a { background: ${cfg.accent}; }
+    #inv-sheet .inv-rule-b { background: ${cfg.frame}; }
+    #inv-sheet .inv-address { color: ${cfg.muted}; }
+  `;
+}
+
+// The footer line. Built from the three fields rather than one blob so it can
+// never print a half-filled template: a field left empty simply drops out,
+// separators and all.
+function invFooterText(cfg) {
+  const parts = [];
+  if (cfg.address) parts.push(cfg.address);
+  if (cfg.phone) parts.push(`Reservation: ${cfg.phone}`);
+  if (cfg.instagram) {
+    const handle = cfg.instagram.startsWith("@") ? cfg.instagram : "@" + cfg.instagram;
+    parts.push(`Instagram: ${handle}`);
+  }
+  return parts.join(". ");
+}
+
+function applyInvoiceStyle(override) {
+  const cfg = override || invStyle();
+  let el = document.getElementById("inv-style-overrides");
+  if (!el) {
+    el = document.createElement("style");
+    el.id = "inv-style-overrides";
+    // Appended last so it wins over the base rules without !important, which
+    // html2canvas handles more predictably than specificity tricks.
+    document.head.appendChild(el);
+  }
+  el.textContent = invStyleCss(cfg);
+
+  const addr = document.querySelector("#inv-sheet .inv-address");
+  if (addr) addr.textContent = invFooterText(cfg);
+  return cfg;
+}
+
+// ============================================================
+// INVOICE DESIGN TAB (manager+)
+// ============================================================
+// Two panes on one page, same shape as Vouchers: "Build Invoice" is the
+// day-to-day work, "Invoice Design" is set up once per restaurant. Panes
+// rather than separate pages so every existing inv* id and handler keeps
+// working untouched.
+const INV_TAB_KEY = "invLastTab";
+const INV_COLOR_KEYS = ["ink", "accent", "frame", "row_fill", "muted"];
+
+function invDefaultTab() {
+  if (typeof isManagerOrAdmin === "function" && !isManagerOrAdmin()) return "build";
+  return localStorage.getItem(INV_TAB_KEY) === "design" ? "design" : "build";
+}
+
+function invShowTab(tab) {
+  if (tab === "design" && typeof isManagerOrAdmin === "function" && !isManagerOrAdmin()) {
+    toast(t("Only a manager can change the invoice design"), "error");
+    tab = "build";
+  }
+  const activeCls =
+    "px-4 py-2 rounded-full text-sm font-medium bg-[#28547C] text-white transition";
+  const idleCls =
+    "px-4 py-2 rounded-full text-sm font-medium bg-white text-[#555] border border-[#E6E2DC] hover:bg-[#F8F6F2] transition";
+  const design = tab === "design";
+
+  // The BUILD pane is never hidden. It holds the invoice sheet itself, and
+  // the design controls are worthless without something to look at — you
+  // change a colour and watch the real page change under it.
+  document.getElementById("inv-pane-design")?.classList.toggle("hidden", !design);
+  const buildBtn = document.getElementById("inv-tab-build");
+  const designBtn = document.getElementById("inv-tab-design");
+  if (buildBtn) buildBtn.className = design ? idleCls : activeCls;
+  if (designBtn) designBtn.className = (design ? activeCls : idleCls) + " manager-only-ui";
+  if (typeof applyManagerOnlyUI === "function") applyManagerOnlyUI();
+
+  localStorage.setItem(INV_TAB_KEY, design ? "design" : "build");
+  if (design) invRenderStyleForm();
+  invFitPreview();
+}
+
+function invStyleForm() {
+  const color = (k) => {
+    const v = document.getElementById(`inv-c-${k}`)?.value;
+    return /^#[0-9a-f]{6}$/i.test(String(v || "").trim())
+      ? v.trim().toUpperCase()
+      : INVOICE_STYLE_DEFAULTS[k];
+  };
+  const num = (id, fb) => {
+    const n = Number(document.getElementById(id)?.value);
+    return isFinite(n) ? n : fb;
+  };
+  const text = (id) => String(document.getElementById(id)?.value || "").trim();
+  const cfg = {
+    logo_width: num("inv-logo-width", INVOICE_STYLE_DEFAULTS.logo_width),
+    mark_width: num("inv-mark-width", INVOICE_STYLE_DEFAULTS.mark_width),
+    address: text("inv-f-address"),
+    phone: text("inv-f-phone"),
+    instagram: text("inv-f-instagram"),
+  };
+  INV_COLOR_KEYS.forEach((k) => (cfg[k] = color(k)));
+  return cfg;
+}
+
+function invRenderStyleForm() {
+  const cfg = invStyle();
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.value = v;
+  };
+  INV_COLOR_KEYS.forEach((k) => {
+    set(`inv-c-${k}`, cfg[k]);
+    set(`inv-c-${k}-hex`, String(cfg[k]).toUpperCase());
+  });
+  set("inv-logo-width", cfg.logo_width);
+  set("inv-mark-width", cfg.mark_width);
+  set("inv-f-address", cfg.address);
+  set("inv-f-phone", cfg.phone);
+  set("inv-f-instagram", cfg.instagram);
+  invPreviewStyle();
+}
+
+function invSyncColor(pickerId, textEl) {
+  let v = String(textEl.value || "").trim();
+  if (v && !v.startsWith("#")) {
+    v = "#" + v;
+    textEl.value = v;
+  }
+  if (/^#[0-9a-f]{6}$/i.test(v)) {
+    const picker = document.getElementById(pickerId);
+    if (picker) picker.value = v;
+    invPreviewStyle();
+  }
+}
+
+// Repaints the REAL sheet from the controls without saving. There is no
+// separate mock-up: the thing on screen is the document that gets exported,
+// which is the only preview worth having for a page a guest receives.
+function invPreviewStyle() {
+  const cfg = invStyleForm();
+
+  INV_COLOR_KEYS.forEach((k) => {
+    const hex = document.getElementById(`inv-c-${k}-hex`);
+    if (hex && document.activeElement !== hex) hex.value = cfg[k];
+  });
+  const lw = document.getElementById("inv-logo-width-value");
+  if (lw) lw.textContent = cfg.logo_width + "px";
+  const mw = document.getElementById("inv-mark-width-value");
+  if (mw) mw.textContent = cfg.mark_width + "px";
+
+  const foot = document.getElementById("inv-footer-preview");
+  if (foot) {
+    const line = invFooterText(cfg);
+    foot.textContent = line || t("Nothing filled in yet — the footer will be blank.");
+    foot.className = line
+      ? "text-[11px] text-[#555] leading-snug"
+      : "text-[11px] text-[#B23B3B] leading-snug";
+  }
+
+  applyInvoiceStyle(cfg);
+}
+
+async function invSaveStyle() {
+  if (typeof isManagerOrAdmin === "function" && !isManagerOrAdmin()) {
+    toast(t("Only a manager can change the invoice design"), "error");
+    return;
+  }
+  const cfg = invStyleForm();
+  loader(true);
+  const { error } = await supabaseQuery(
+    () =>
+      db.from("app_settings").upsert({
+        key: "invoice_style",
+        value: cfg,
+        updated_at: new Date().toISOString(),
+      }),
+    "Failed to save invoice design",
+  );
+  loader(false);
+  if (error) {
+    toast(error.message || t("Unable to save settings"), "error");
+    return;
+  }
+  INVOICE_STYLE = cfg;
+  applyInvoiceStyle(cfg);
+  toast(t("Invoice design saved"));
+}
+
+async function invResetStyle() {
+  if (!confirm(t("Put the invoice design back to the built-in one? The address is kept."))) return;
+  // Address, phone and Instagram are the client's own details, not a design
+  // choice. "Back to defaults" on a colour panel must not quietly wipe them.
+  const keep = invStyle();
+  INVOICE_STYLE = {
+    ...INVOICE_STYLE_DEFAULTS,
+    address: keep.address,
+    phone: keep.phone,
+    instagram: keep.instagram,
+  };
+  invRenderStyleForm();
+  await invSaveStyle();
 }

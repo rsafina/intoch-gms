@@ -98,6 +98,10 @@ async function loadAppSettings() {
     loadReserveAppearance(APP_SETTINGS.reserve_appearance || {});
   if (typeof vcLoadStyle === "function")
     vcLoadStyle(APP_SETTINGS.voucher_style || {});
+  if (typeof invLoadStyle === "function") {
+    invLoadStyle(APP_SETTINGS.invoice_style || {});
+    if (typeof applyInvoiceStyle === "function") applyInvoiceStyle();
+  }
 }
 
 /**

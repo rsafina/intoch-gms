@@ -149,6 +149,32 @@ both files declare `const SUPABASE_URL`, and the redeclaration kills the page.
 Fifteen duplicated lines beat a booking form that white-screens. Both copies
 carry a comment pointing at the other; change one, change the other.
 
+### The invoice sheet is styled with LITERAL hex, never CSS variables
+
+`#inv-sheet` is rasterised by html2canvas for the PDF, and the stylesheet has
+warned since it was written that html2canvas is not reliable with CSS
+variables. So `applyInvoiceStyle()` (2026-08-23) builds a `<style>` block of
+literal hex values from `app_settings.invoice_style` rather than setting custom
+properties the way the reservation page does.
+
+Do not "modernise" this into `var()`. The failure mode is the worst kind: the
+colour resolves perfectly on screen and silently falls back in the exported PDF
+— a document that has already been sent to a guest before anyone notices.
+`tests/invoice-style.test.js` asserts the generated CSS contains no `var(`.
+
+**Bar text is derived, not configured.** The table header and totals bar print
+text on the accent colour, and that text is deliberately not one of the five
+settings: it flips between white and the ink colour based on the fill's
+luminance. A client picking a pale brand colour would otherwise print an
+invisible Total line, and would not find out until a guest asked.
+
+**The footer address was one particular restaurant's.** Until 2026-08-23 the
+invoice footer carried a real Yogyakarta street address plus `[nomor telepon]`
+and `[akun]` as unfilled placeholders, left over from the de-branding pass. It
+is now three separate fields, seeded EMPTY. Separate rather than one textarea
+so a client cannot ship an invoice with a placeholder still in it, and empty so
+a missing footer is obviously missing rather than confidently wrong.
+
 ### The voucher card is drawn, not a picture
 
 Until 2026-08-23 the downloadable voucher was text painted onto a fixed

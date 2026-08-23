@@ -4019,3 +4019,54 @@ union all
 select 'wa_campaign_audience.updated_at', count(*) from information_schema.columns
 where table_schema = 'public' and table_name = 'wa_campaign_audience' and column_name = 'updated_at';
 -- expect: 1, 1, 1
+
+-- ============================================================
+-- ## 20260823_invoice_style.sql
+-- ============================================================
+-- Makes the invoice sheet configurable: five colours, both logo sizes, and
+-- the footer address. Same shape as `voucher_style`.
+--
+-- Seeded with the values already hardcoded in the stylesheet, so applying
+-- this changes nothing on screen until somebody edits it in Settings.
+--
+-- THE ADDRESS IS THE EXCEPTION and is seeded EMPTY on purpose. Until now the
+-- invoice footer carried one particular restaurant's real street address in
+-- Yogyakarta, plus "[nomor telepon]" and "[akun]" as unfilled placeholders —
+-- left over from the de-branding pass. A new client printing an invoice would
+-- have posted somebody else's address to their guest. Empty renders nothing,
+-- which is wrong but obviously wrong, rather than confidently wrong.
+--
+-- Address, phone and Instagram are separate columns rather than one blob so
+-- the footer cannot be shipped half-filled, and so the phone can be reused
+-- elsewhere later without re-parsing a paragraph.
+
+insert into app_settings (key, value)
+values ('invoice_style', jsonb_build_object(
+          'ink',         '#28547C',
+          'accent',      '#3E8FCB',
+          'frame',       '#7FB8E0',
+          'row_fill',    '#CFE4F5',
+          'muted',       '#4795D0',
+          'logo_width',  172,
+          'mark_width',  62,
+          'address',     '',
+          'phone',       '',
+          'instagram',   ''))
+on conflict (key) do update
+set value = app_settings.value
+            || jsonb_build_object(
+                 'ink',        coalesce(app_settings.value->'ink',        '"#28547C"'::jsonb),
+                 'accent',     coalesce(app_settings.value->'accent',     '"#3E8FCB"'::jsonb),
+                 'frame',      coalesce(app_settings.value->'frame',      '"#7FB8E0"'::jsonb),
+                 'row_fill',   coalesce(app_settings.value->'row_fill',   '"#CFE4F5"'::jsonb),
+                 'muted',      coalesce(app_settings.value->'muted',      '"#4795D0"'::jsonb),
+                 'logo_width', coalesce(app_settings.value->'logo_width', '172'::jsonb),
+                 'mark_width', coalesce(app_settings.value->'mark_width', '62'::jsonb),
+                 'address',    coalesce(app_settings.value->'address',    '""'::jsonb),
+                 'phone',      coalesce(app_settings.value->'phone',      '""'::jsonb),
+                 'instagram',  coalesce(app_settings.value->'instagram',  '""'::jsonb));
+
+-- ---------- Confirm ----------
+select 'invoice_style' as checked, count(*) as found
+from app_settings where key = 'invoice_style';
+-- expect: 1
