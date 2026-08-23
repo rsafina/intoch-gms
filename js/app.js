@@ -4779,6 +4779,13 @@ function setResDetailsEnabled(enabled) {
   document.getElementById("res-gate-hint")?.classList.toggle("hidden", enabled);
 }
 
+function setResNewGuestFieldsVisible(visible) {
+  document.getElementById("res-new-guest")?.classList.toggle("hidden", !visible);
+  document
+    .getElementById("res-new-guest-extra")
+    ?.classList.toggle("hidden", !visible);
+}
+
 function createNewGuestFromSearch(prefix) {
   const resultsEl = document.getElementById(`${prefix}-guest-search-results`);
   if (resultsEl) {
@@ -4787,7 +4794,7 @@ function createNewGuestFromSearch(prefix) {
   }
 
   if (prefix === "res") {
-    document.getElementById("res-new-guest")?.classList.remove("hidden");
+    setResNewGuestFieldsVisible(true);
     setResDetailsEnabled(true);
     document.getElementById("res-guest-info")?.classList.add("hidden");
     currentResGuestId = null;
@@ -4797,6 +4804,8 @@ function createNewGuestFromSearch(prefix) {
     document.getElementById("res-name").value =
       document.getElementById("res-guest-search")?.value.trim() || "";
     document.getElementById("res-new-guest-phone").value = "";
+    document.getElementById("res-gender").value = "";
+    document.getElementById("res-company").value = "";
     populateAreaSelects();
   }
 }
@@ -4858,6 +4867,7 @@ async function selectGuestFromSearch(guestId, prefix) {
 
   const newGuestEl = document.getElementById(`${prefix}-new-guest`);
   if (newGuestEl) newGuestEl.classList.add("hidden");
+  if (prefix === "res") setResNewGuestFieldsVisible(false);
 }
 
 function clearGuestSelection(prefix) {
@@ -4888,7 +4898,7 @@ function clearGuestSelection(prefix) {
     // Re-gate. Without this, clearing the guest leaves a fully editable form
     // that cannot be saved, and the failure only shows up at the save button.
     setResDetailsEnabled(false);
-    document.getElementById("res-new-guest")?.classList.add("hidden");
+    setResNewGuestFieldsVisible(false);
   }
 }
 
@@ -4965,6 +4975,7 @@ async function lookupGuestManual(prefix) {
       </div>
     `;
     newGuestEl?.classList.add("hidden");
+    if (prefix === "res") setResNewGuestFieldsVisible(false);
     visitFieldsEl?.classList.remove("hidden");
     if (prefix === "res") populateAreaSelects();
   } else {
@@ -4982,7 +4993,8 @@ async function lookupGuestManual(prefix) {
         <span class="text-xs text-blue-700 font-medium">New guest — please fill in profile below</span>
       </div>
     `;
-    newGuestEl?.classList.remove("hidden");
+    if (prefix === "res") setResNewGuestFieldsVisible(true);
+    else newGuestEl?.classList.remove("hidden");
     visitFieldsEl?.classList.remove("hidden");
     if (prefix === "res") populateAreaSelects();
     if (prefix === "wi")
@@ -5536,7 +5548,11 @@ function openReservationModal(res = null) {
   resModalOriginalPhone = res?.guests?.phone || null;
   document.getElementById("res-guest-search").value = res?.guests?.name || "";
   document.getElementById("res-guest-info").classList.add("hidden");
-  document.getElementById("res-new-guest").classList.add("hidden");
+  setResNewGuestFieldsVisible(false);
+  document.getElementById("res-name").value = "";
+  document.getElementById("res-new-guest-phone").value = "";
+  document.getElementById("res-gender").value = "";
+  document.getElementById("res-company").value = "";
   // Opens gated. The edit path below re-enables it, because an existing
   // reservation already has a guest and there is nothing to choose.
   setResDetailsEnabled(false);

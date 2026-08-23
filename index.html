@@ -7569,62 +7569,18 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         <input type="hidden" id="res-phone" />
         <div id="res-guest-info" class="hidden mb-5"></div>
 
-        <div id="res-new-guest" class="hidden">
-          <div class="gold-bar mb-4"></div>
-          <p
-            class="text-xs text-[#C8A96B] font-medium mb-4 uppercase tracking-wider"
+        <div id="res-new-guest" class="hidden mb-3">
+          <input id="res-name" type="hidden" />
+          <label class="block text-xs font-medium text-[#555] mb-1.5"
+            >Phone
+            <span class="text-[#bbb] font-normal">(optional)</span></label
           >
-            New Guest Profile
-          </p>
-          <div class="grid grid-cols-2 gap-3 mb-3">
-            <div>
-              <label class="block text-xs font-medium text-[#555] mb-1.5"
-                >Full Name *</label
-              >
-              <input
-                id="res-name"
-                type="text"
-                placeholder="Guest name"
-                class="form-input"
-              />
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-[#555] mb-1.5"
-                >Phone
-                <span class="text-[#bbb] font-normal">(optional)</span></label
-              >
-              <input
-                id="res-new-guest-phone"
-                type="tel"
-                placeholder="08xxxxxxxxxx"
-                class="form-input"
-              />
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3 mb-3">
-            <div>
-              <label class="block text-xs font-medium text-[#555] mb-1.5"
-                >Gender</label
-              >
-              <select id="res-gender" class="form-input">
-                <option value="">—</option>
-                <option>Male</option>
-                <option>Female</option>
-                <option>Other</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-[#555] mb-1.5"
-                >Company</label
-              >
-              <input
-                id="res-company"
-                type="text"
-                placeholder="Company name (optional)"
-                class="form-input"
-              />
-            </div>
-          </div>
+          <input
+            id="res-new-guest-phone"
+            type="tel"
+            placeholder="08xxxxxxxxxx"
+            class="form-input"
+          />
         </div>
 
         <!-- Everything below is visible from the moment the modal opens, but
@@ -7766,6 +7722,33 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               placeholder="Special requests, dietary needs…"
               class="form-input resize-none"
             ></textarea>
+          </div>
+          <div id="res-new-guest-extra" class="hidden mb-4">
+            <div class="divider my-4"></div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-[#555] mb-1.5"
+                  >Gender</label
+                >
+                <select id="res-gender" class="form-input">
+                  <option value="">—</option>
+                  <option>Male</option>
+                  <option>Female</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-[#555] mb-1.5"
+                  >Company</label
+                >
+                <input
+                  id="res-company"
+                  type="text"
+                  placeholder="Company name (optional)"
+                  class="form-input"
+                />
+              </div>
+            </div>
           </div>
           <button
             onclick="saveReservation()"
