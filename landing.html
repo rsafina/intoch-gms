@@ -1,0 +1,3463 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Intoch, Sistem Manajemen Tamu & Membership untuk Restoran</title>
+    <meta
+      name="description"
+      content="Intoch membantu restoran mengelola reservasi, walk-in, dan program membership dalam satu dashboard. Hubungi tim kami untuk demo."
+    />
+    <link
+      rel="icon"
+      href="assets/intoch-favicon.png"
+      sizes="64x64"
+      type="image/png"
+    />
+    <link rel="apple-touch-icon" href="assets/intoch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Source+Code+Pro:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      document.documentElement.classList.add("js");
+    </script>
+    <style>
+      :root {
+        --bg: #fbfcfe;
+        --bg-alt: #eef1fb;
+        --bg-soft: #f5f7fd;
+        --card: rgba(255, 255, 255, 0.94);
+        --line: #e3ecf6;
+        --gold: #c8a96b;
+        --gold-dark: #b8954f;
+        --primary: #114fa1;
+        --primary-dark: #0d3c7c;
+        --primary-hover: #3a56a5;
+        --success: #5f8d4e;
+        --text: #17222e;
+        --text-sec: #5a6675;
+        --warning: #d4a017;
+        --danger: #c0554a;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: #fbfcfe;
+        color: var(--text);
+        line-height: 1.6;
+      }
+      h1,
+      h2,
+      h3 {
+        line-height: 1.12;
+        font-weight: 600;
+        color: var(--primary-dark);
+      }
+      img {
+        max-width: 100%;
+        display: block;
+      }
+      .container {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      /* ===== Image placeholder style ===== */
+      .img-placeholder {
+        position: relative;
+        overflow: hidden;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: var(--text-sec);
+        font-size: 0.85rem;
+      }
+      .img-placeholder:not(:has(img)) {
+        background: #f4f0e8;
+        border: 2px dashed var(--gold);
+        padding: 16px;
+      }
+      .img-placeholder:has(img) {
+        background: #ffffff;
+        border: 1px solid #e8e2d6;
+        padding: 0;
+      }
+      .img-placeholder img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: top center;
+        display: block;
+        background: #ffffff;
+      }
+      .img-placeholder.contain img {
+        object-fit: contain;
+      }
+
+      /* ===== Scroll reveal & micro-interactions ===== */
+      .reveal {
+        opacity: 0;
+        transform: translateY(28px);
+        transition:
+          opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+          transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        will-change: opacity, transform;
+      }
+      .reveal.in-view {
+        opacity: 1;
+        transform: none;
+      }
+      .reveal-stagger > * {
+        opacity: 0;
+        transform: translateY(22px);
+        transition:
+          opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+          transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .reveal-stagger.in-view > * {
+        opacity: 1;
+        transform: none;
+      }
+      .reveal-stagger.in-view > *:nth-child(1) {
+        transition-delay: 0.02s;
+      }
+      .reveal-stagger.in-view > *:nth-child(2) {
+        transition-delay: 0.09s;
+      }
+      .reveal-stagger.in-view > *:nth-child(3) {
+        transition-delay: 0.16s;
+      }
+      .reveal-stagger.in-view > *:nth-child(4) {
+        transition-delay: 0.23s;
+      }
+      .reveal-stagger.in-view > *:nth-child(5) {
+        transition-delay: 0.3s;
+      }
+      .reveal-stagger.in-view > *:nth-child(6) {
+        transition-delay: 0.37s;
+      }
+
+      nav {
+        transition:
+          box-shadow 0.3s ease,
+          background 0.3s ease;
+      }
+      nav.scrolled {
+        box-shadow: 0 8px 24px rgba(17, 79, 161, 0.08);
+        background: rgba(255, 255, 255, 0.97);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+        .reveal,
+        .reveal-stagger > *,
+        .js .hero-media {
+          opacity: 1 !important;
+          transform: none !important;
+          transition: none !important;
+        }
+      }
+
+      nav {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: rgba(255, 255, 255, 0.86);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border-bottom: 1px solid var(--line);
+      }
+      .nav-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 20px;
+        max-width: 1120px;
+        margin: 0 auto;
+      }
+      .nav-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .nav-logo img {
+        height: 40px;
+        width: 170px;
+        max-width: 100%;
+        object-fit: contain;
+        display: block;
+      }
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 26px;
+        /* Push the menu to the right, next to the language toggle,
+           instead of floating in the middle of the bar */
+        margin-left: auto;
+        margin-right: 22px;
+      }
+      .nav-links a {
+        color: var(--text);
+        text-decoration: none;
+        font-size: 0.95rem;
+        font-weight: 500;
+      }
+      .nav-links a:hover {
+        color: var(--primary);
+      }
+      .nav-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      /* ===== Language toggle (flag style) ===== */
+      .lang-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        background: rgba(255, 255, 255, 0.55);
+        border: 1px solid rgba(40, 84, 124, 0.18);
+        border-radius: 999px;
+        padding: 3px;
+        cursor: pointer;
+        font-family: inherit;
+        font-weight: 700;
+        font-size: 0.8rem;
+        color: var(--primary-dark);
+        transition: background 0.2s;
+      }
+      .lang-toggle:hover {
+        background: rgba(255, 255, 255, 0.9);
+      }
+      .lang-toggle svg {
+        width: 19px;
+        height: 13px;
+        border-radius: 2.5px;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+        display: block;
+      }
+      /* Segmented control: the highlighted flag = CURRENT language */
+      .lang-opt {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        opacity: 0.5;
+        transition:
+          opacity 0.2s,
+          background 0.2s;
+      }
+      .lang-opt.active {
+        opacity: 1;
+        background: #ffffff;
+        box-shadow: 0 1px 5px rgba(40, 84, 124, 0.2);
+      }
+      .btn {
+        display: inline-block;
+        background: var(--primary);
+        color: #fff !important;
+        padding: 13px 28px;
+        border-radius: 999px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 1rem;
+        transition:
+          background 0.2s,
+          transform 0.15s;
+        border: none;
+        cursor: pointer;
+      }
+      .btn:hover {
+        background: var(--primary-hover);
+        transform: translateY(-1px);
+      }
+      .btn-outline {
+        background: transparent;
+        color: var(--primary-dark) !important;
+        border: 2px solid var(--primary-dark);
+      }
+      .btn-outline:hover {
+        background: var(--primary-dark);
+        color: #fff !important;
+      }
+      .btn-gold {
+        background: var(--gold);
+      }
+      .btn-gold:hover {
+        background: var(--gold-dark);
+      }
+      .nav-links .btn {
+        padding: 10px 22px;
+        font-size: 0.9rem;
+      }
+      .hamburger {
+        display: none;
+        background: none;
+        border: none;
+        font-size: 1.6rem;
+        cursor: pointer;
+        color: var(--text);
+      }
+
+      /* ===== Hero ===== */
+      .hero-wrap {
+        position: relative;
+        background-image:
+          linear-gradient(
+            to bottom,
+            rgba(237, 231, 250, 0) 0%,
+            rgba(237, 231, 250, 0) 38%,
+            rgba(232, 224, 248, 0.35) 58%,
+            rgba(238, 232, 248, 0.72) 72%,
+            rgba(246, 242, 250, 0.93) 85%,
+            #fbfcfe 100%
+          ),
+          url("assets/holographic-abstract-background.avif");
+        background-position:
+          center top,
+          center top;
+        background-size:
+          100% 100%,
+          cover;
+        background-repeat: no-repeat, no-repeat;
+        background-color: #f8f5ed;
+      }
+      .hero-wrap::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.1);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .hero-wrap::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px;
+        height: 3px;
+        background: #fbfcfe;
+        z-index: 2;
+        pointer-events: none;
+      }
+      .hero {
+        padding: 82px 0 96px;
+        position: relative;
+        z-index: 1;
+      }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(390px, 0.92fr);
+        gap: 44px;
+        align-items: center;
+        position: relative;
+        z-index: 1;
+      }
+      .hero-copy {
+        max-width: 680px;
+      }
+      .eyebrow {
+        display: inline-block;
+        color: #ffffff;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        font-size: 0.78rem;
+        margin-bottom: 14px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.38);
+        padding: 6px 14px;
+        border-radius: 999px;
+        backdrop-filter: blur(6px);
+      }
+      .hero h1 {
+        font-family: "Source Code Pro", ui-monospace, SFMono-Regular, Menlo,
+          monospace;
+        font-size: clamp(2.1rem, 3.5vw, 3.5rem);
+        font-weight: 600;
+        line-height: 1.04;
+        margin-bottom: 16px;
+        letter-spacing: 0;
+        color: #173b5f;
+        text-shadow: 0 2px 18px rgba(255, 255, 255, 0.28);
+      }
+      .hero h1 em {
+        color: #b98536;
+        font-style: normal;
+      }
+      .hero-title-lock {
+        white-space: nowrap;
+      }
+      .hero h2 {
+        max-width: 520px;
+        margin: 0 0 22px;
+        color: rgba(48, 91, 130, 0.9);
+        font-family: "DM Sans", sans-serif;
+        font-size: 1.28rem;
+        font-weight: 700;
+        line-height: 1.35;
+        letter-spacing: 0;
+        text-shadow: 0 1px 10px rgba(255, 255, 255, 0.24);
+      }
+      .hero p.lead {
+        color: rgba(47, 77, 105, 0.88);
+        font-size: 1.12rem;
+        margin-bottom: 30px;
+        max-width: 500px;
+        text-shadow: 0 1px 10px rgba(255, 255, 255, 0.22);
+      }
+      .hero-ctas {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-bottom: 28px;
+      }
+      .hero-media {
+        position: relative;
+        min-height: 560px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: -34px;
+        padding: 18px 0 26px;
+        transition:
+          opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+          transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .js .hero-media {
+        opacity: 0;
+        transform: translateX(28px) scale(0.985);
+      }
+      .js .hero-media.is-visible {
+        opacity: 1;
+        transform: none;
+      }
+      .hero-media::before {
+        content: "";
+        position: absolute;
+        inset: 3% 16% 8% 13%;
+        border-radius: 34% 24% 30% 18%;
+        background: linear-gradient(
+          135deg,
+          rgba(155, 232, 214, 0.82),
+          rgba(205, 190, 248, 0.62)
+        );
+        transform: rotate(-2deg);
+        box-shadow: 0 28px 80px rgba(40, 84, 124, 0.16);
+      }
+      .hero-visual {
+        width: min(430px, 78%);
+        aspect-ratio: 0.82;
+        background: rgba(255, 255, 255, 0.48);
+        border-radius: 42px 42px 120px 42px;
+        box-shadow:
+          0 26px 56px rgba(40, 84, 124, 0.2),
+          0 10px 28px rgba(185, 133, 54, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.68);
+        backdrop-filter: blur(8px);
+        z-index: 1;
+      }
+      .hero-visual::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          circle at 22% 78%,
+          rgba(255, 223, 122, 0.2),
+          rgba(255, 223, 122, 0) 38%
+        );
+        pointer-events: none;
+      }
+      .hero-visual img {
+        object-position: center top;
+      }
+      .hero-note {
+        color: rgba(255, 255, 255, 0.86);
+        font-size: 0.85rem;
+        text-shadow: 0 2px 10px rgba(11, 28, 47, 0.18);
+      }
+      /* Compact pill cards: [icon] [label] [number] in one row,
+         same style as mobile so the photo stays visible */
+      .hero-metric {
+        position: absolute;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-width: 0;
+        padding: 11px 18px 11px 12px;
+        border-radius: 999px;
+        color: #22313f;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.86);
+        box-shadow:
+          0 18px 42px rgba(40, 84, 124, 0.16),
+          inset 0 1px 0 rgba(255, 255, 255, 0.82);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        white-space: nowrap;
+      }
+      .metric-head {
+        display: contents;
+      }
+      .metric-icon {
+        order: -1;
+        flex-shrink: 0;
+      }
+      /* Hide the descriptive sub-text; label + number tell the story */
+      .hero-metric > span:last-child {
+        display: none;
+      }
+      .metric-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #173b5f;
+        background: rgba(255, 255, 255, 0.62);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      }
+      .metric-icon svg {
+        width: 17px;
+        height: 17px;
+      }
+      .hero-metric .metric-label {
+        color: rgba(48, 91, 130, 0.72);
+        font-size: 0.74rem;
+        font-weight: 700;
+      }
+      .hero-metric strong {
+        color: #173b5f;
+        font-size: 1.3rem;
+        line-height: 1;
+        margin-left: 2px;
+      }
+      .hero-metric.top {
+        top: 44px;
+        right: -14px;
+        background: rgba(227, 213, 255, 0.82);
+      }
+      .hero-metric.bottom {
+        left: -8px;
+        bottom: 86px;
+        background: rgba(255, 229, 190, 0.82);
+      }
+      .hero-metric.side {
+        right: -6px;
+        bottom: 40px;
+        background: rgba(221, 247, 241, 0.82);
+      }
+      .hero-metric.risk {
+        left: -20px;
+        top: 168px;
+        background: rgba(255, 218, 232, 0.84);
+      }
+
+      /* ===== Seamless section transitions =====
+         A short band straddles the boundary between two sections,
+         half sits over the end of the previous section, half over the
+         start of this one, and fades the previous section's colour
+         out. That keeps the blend centred right on the seam instead of
+         reading as its own big gradient block. Footer is excluded.
+         NOTE: gradient stops use matching RGB with alpha 0 at the end
+         (not the "transparent" keyword), mixing a solid colour with
+         literal "transparent" interpolates through transparent BLACK
+         in most browsers, which produces a muddy grey band. */
+      .seam {
+        position: relative;
+      }
+      .seam::before {
+        content: "";
+        position: absolute;
+        top: -14px;
+        left: 0;
+        right: 0;
+        height: 28px;
+        z-index: 0;
+        pointer-events: none;
+      }
+      .seam > * {
+        position: relative;
+        z-index: 1;
+      }
+      .seam-from-cream::before {
+        background: none;
+      }
+      .seam-from-white::before {
+        background: none;
+      }
+      .seam-from-navy::before {
+        background: none;
+      }
+      .seam-from-bg-alt::before {
+        background: none;
+      }
+      /* Wider, softer variant, used where the two colours contrast a
+         lot (e.g. white <-> navy) so the eye still reads a gradual
+         wash of blue rather than a hard edge, without losing the
+         colour entirely. Eased stops keep it fuller for longer before
+         tapering off. */
+      .seam-wide::before {
+        top: -70px;
+        height: 140px;
+      }
+      .seam-wide.seam-from-white::before {
+        background: none;
+      }
+      .seam-wide.seam-from-navy::before {
+        background: none;
+      }
+
+      /* ===== Sections ===== */
+      section {
+        padding: 72px 0;
+      }
+      .section-head {
+        text-align: center;
+        max-width: 640px;
+        margin: 0 auto 48px;
+      }
+      .section-head .eyebrow {
+        margin-bottom: 10px;
+      }
+      .section-head h2 {
+        font-size: clamp(2rem, 3.2vw, 3rem);
+        font-weight: 800;
+        letter-spacing: 0;
+        margin-bottom: 14px;
+      }
+      .section-head p {
+        color: var(--text-sec);
+        font-size: 1.05rem;
+      }
+
+      /* ===== Problem / agitate ===== */
+      .problem {
+        background: #ffffff;
+        padding: 120px 0;
+        color: var(--text);
+      }
+      @media (max-width: 768px) {
+        .problem {
+          padding: 90px 0;
+        }
+      }
+      .problem h2,
+      .problem .section-head p {
+        color: var(--primary-dark);
+      }
+      .problem .section-head p {
+        opacity: 0.8;
+      }
+      .problem-grid {
+        display: grid;
+        grid-template-columns: 0.85fr 1.15fr;
+        gap: 44px;
+        align-items: center;
+      }
+      .problem-visual {
+        aspect-ratio: 3/4;
+        max-height: 440px;
+      }
+      .problem-list {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .problem-item {
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(40, 84, 124, 0.12);
+        border-radius: 14px;
+        padding: 16px 18px;
+        box-shadow: 0 8px 24px rgba(40, 84, 124, 0.06);
+        backdrop-filter: blur(8px);
+      }
+      .problem-item .mark {
+        flex-shrink: 0;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: rgba(212, 160, 23, 0.22);
+        color: var(--gold-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+      }
+      .problem-item p {
+        margin: 0;
+        color: var(--text-sec);
+        font-size: 0.98rem;
+      }
+      .problem-item strong {
+        color: var(--primary-dark);
+      }
+      .problem-punch {
+        margin-top: 28px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 1.2rem;
+        font-weight: 700;
+        line-height: 1.5;
+        color: var(--primary-dark);
+      }
+      .problem-punch em {
+        color: var(--gold-dark);
+        font-style: normal;
+      }
+
+      /* ===== Core features ===== */
+      .features-grid {
+        display: grid;
+        /* 4 keypoints -> 2x2 on desktop, 1 column on mobile */
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+        max-width: 920px;
+        margin: 0 auto;
+      }
+      .feature-card {
+        background: rgba(255, 255, 255, 0.78);
+        border-radius: 18px;
+        padding: 30px 26px;
+        box-shadow: 0 10px 30px rgba(40, 84, 124, 0.05);
+        border: 1px solid rgba(40, 84, 124, 0.1);
+        backdrop-filter: blur(8px);
+      }
+      .feature-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 14px;
+        background: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 18px;
+      }
+      .feature-icon.gold {
+        background: var(--gold);
+      }
+      .feature-icon.dark {
+        background: var(--primary-dark);
+      }
+      .feature-card h3 {
+        font-size: 1.4rem;
+        margin-bottom: 8px;
+      }
+      .feature-card p {
+        color: var(--text-sec);
+        font-size: 0.95rem;
+      }
+
+      /* ===== Feature spotlight (zigzag) ===== */
+      .spotlight {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 56px;
+        align-items: center;
+        padding: 46px 0;
+      }
+      .spotlight:not(:last-child) {
+        border-bottom: 1px solid #e8e2d6;
+      }
+      .spotlight.reverse .spotlight-text {
+        order: 2;
+      }
+      .spotlight.reverse .spotlight-visual {
+        order: 1;
+      }
+      .spotlight-tag {
+        display: inline-block;
+        color: var(--primary);
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        margin-bottom: 10px;
+      }
+      .spotlight-text h3 {
+        font-size: 2rem;
+        margin-bottom: 14px;
+      }
+      .spotlight-text p {
+        color: var(--text-sec);
+        font-size: 1.02rem;
+        margin-bottom: 16px;
+      }
+      .spotlight-text ul {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .spotlight-text ul li {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        color: var(--text-sec);
+        font-size: 0.95rem;
+      }
+      .spotlight-text ul li .chk {
+        flex-shrink: 0;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--success);
+        color: #fff;
+        font-size: 0.7rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 2px;
+      }
+      .spotlight-visual {
+        aspect-ratio: 16/10;
+        overflow: hidden;
+        border-radius: 14px;
+      }
+      .spotlight-visual img {
+        transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .spotlight-visual:hover img {
+        transform: scale(1.035);
+      }
+      .spotlight-visual.tall {
+        aspect-ratio: 4/3;
+      }
+      .spotlight figcaption {
+        text-align: center;
+        color: var(--text-sec);
+        font-size: 0.85rem;
+        margin-top: 10px;
+      }
+
+      /* ===== More features grid ===== */
+      .more-features {
+        background: var(--bg-alt);
+      }
+      .more-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 28px 32px;
+      }
+      .more-item {
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+      }
+      .more-icon {
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: #fff;
+        border: 1px solid #e0ddd7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+      }
+      .more-item h4 {
+        font-family: "DM Sans", sans-serif;
+        font-size: 1.02rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+        color: var(--text);
+      }
+      .more-item p {
+        color: var(--text-sec);
+        font-size: 0.9rem;
+      }
+
+      /* ===== How it works ===== */
+      .how {
+        background: #ffffff;
+      }
+      .how-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 32px;
+        position: relative;
+      }
+      .step {
+        text-align: center;
+        position: relative;
+      }
+      .step-num {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.15rem;
+        margin: 0 auto 18px;
+        font-family: "DM Sans", sans-serif;
+      }
+      .step h3 {
+        font-size: 1.35rem;
+        margin-bottom: 8px;
+      }
+      .step p {
+        color: var(--text-sec);
+        font-size: 0.95rem;
+      }
+
+      /* ===== Benefits / keunggulan ===== */
+      .benefits-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 28px;
+      }
+      .benefit-item {
+        display: flex;
+        gap: 16px;
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(40, 84, 124, 0.1);
+        border-radius: 16px;
+        padding: 22px;
+        box-shadow: 0 8px 24px rgba(40, 84, 124, 0.05);
+        backdrop-filter: blur(8px);
+      }
+      .benefit-check {
+        flex-shrink: 0;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: var(--success);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+      }
+      .benefit-item h3 {
+        font-size: 1.2rem;
+        margin-bottom: 4px;
+      }
+      .benefit-item p {
+        color: var(--text-sec);
+        font-size: 0.93rem;
+      }
+
+
+      /* ============================================================
+         FX LAYER — soft gradient wash, nudged by scroll.
+         Replaces the canvas grid/contour/particle textures: same job
+         (stop sections reading flat) with far less visual noise and no
+         per-frame painting. The shift is deliberately small; it should
+         register as depth, not as movement.
+         ============================================================ */
+      section[data-fx] {
+        position: relative;
+        isolation: isolate;
+      }
+      section[data-fx] > *:not(.fx-layer) {
+        position: relative;
+        z-index: 1;
+      }
+      .fx-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background-size: 100% 240%;
+        background-repeat: no-repeat;
+        background-position: 50% calc(50% + var(--fx-shift, 0%));
+        opacity: 0;
+        transition: opacity 1s ease;
+      }
+      .fx-layer.on {
+        opacity: 1;
+      }
+      /* Hues sampled straight from the hero image
+         (assets/holographic-abstract-background.avif):
+           cyan       #AFF0FF
+           periwinkle #B3C9FE
+           lavender   #D5C7FF
+         The hero shows them at full strength; everything below runs the same
+         family at a tenth of that, so the page feels of a piece with the hero
+         without ever competing with it. No gold here: gold stays on buttons
+         and inside the product mockups. */
+      [data-fx="cool"] .fx-layer {
+        background-image: linear-gradient(
+          168deg,
+          rgba(179, 201, 254, 0.1) 0%,
+          rgba(175, 240, 255, 0.05) 44%,
+          rgba(255, 255, 255, 0) 74%
+        );
+      }
+      [data-fx="soft"] .fx-layer {
+        background-image: linear-gradient(
+          200deg,
+          rgba(175, 240, 255, 0.1) 0%,
+          rgba(179, 201, 254, 0.06) 46%,
+          rgba(255, 255, 255, 0) 78%
+        );
+      }
+      [data-fx="mix"] .fx-layer {
+        background-image: linear-gradient(
+          150deg,
+          rgba(213, 199, 255, 0.09) 0%,
+          rgba(179, 201, 254, 0.06) 50%,
+          rgba(255, 255, 255, 0) 80%
+        );
+      }
+      [data-fx="warm"] .fx-layer {
+        background-image: linear-gradient(
+          190deg,
+          rgba(213, 199, 255, 0.085) 0%,
+          rgba(175, 240, 255, 0.055) 48%,
+          rgba(255, 255, 255, 0) 80%
+        );
+      }
+      [data-fx="cta"] .fx-layer {
+        background-image: linear-gradient(
+          160deg,
+          rgba(179, 201, 254, 0.12) 0%,
+          rgba(213, 199, 255, 0.08) 46%,
+          rgba(255, 255, 255, 0) 82%
+        );
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .fx-layer {
+          background-position: 50% 50% !important;
+        }
+      }
+
+      /* Decoder: height is locked in JS at arm time (see fx engine) so that
+         resolving glyphs cannot reflow the layout. Deliberately NOT
+         white-space: pre-wrap, which would render the source indentation. */
+      .decode-run {
+        color: var(--primary);
+        opacity: 0.55;
+      }
+
+      /* Count-up: tabular figures stop the number jittering as it climbs. */
+      [data-count] {
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* Glow bloom behind the metric cards. Radial tint, multiply-blended,
+         so it reads as coloured paper rather than emitted light. */
+      .fx-bloom {
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 0;
+        mix-blend-mode: multiply;
+        filter: blur(38px);
+        opacity: 0;
+        transition: opacity 1.2s ease;
+      }
+      .fx-bloom.on {
+        opacity: 1;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .fx-layer,
+        .fx-bloom {
+          display: none !important;
+        }
+      }
+
+      /* ============ TITLES: Source Code Pro ============
+         Monospace is not only the look asked for, it is what the decoder
+         wants: equal-width glyphs mean a scrambling letter cannot nudge
+         its neighbours mid-reveal. (Adobe ships this as "Source Code
+         Variable"; Google Fonts serves the same design as Source Code Pro.) */
+      h1,
+      h2,
+      h3,
+      h4,
+      .eyebrow,
+      .spotlight-tag,
+      .faq-item summary,
+      .metric-label,
+      .step-num,
+      [data-decode] {
+        font-family: "Source Code Pro", ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      h1,
+      h2 {
+        letter-spacing: -0.02em;
+      }
+      h3,
+      h4 {
+        letter-spacing: -0.01em;
+      }
+
+      /* Eyebrows were white-on-translucent-white, which was near invisible
+         once the warm background went. Brand chip instead. */
+      .section-head .eyebrow,
+      .problem .eyebrow {
+        color: var(--primary);
+        background: rgba(17, 79, 161, 0.07);
+        border: 1px solid rgba(17, 79, 161, 0.16);
+        backdrop-filter: none;
+      }
+
+      /* ================================================================
+         PRODUCT MOCKUPS  (replaces the three screenshots)
+         Rebuilt in HTML so they scale crisply, restyle with the palette,
+         and animate a region without an overlay sitting on top of them.
+         Tokens match the real GMS app: --primary #114FA1, --gold #c8a96b,
+         --success #5f8d4e. All names and figures are invented.
+         ================================================================ */
+      .mock {
+        position: relative;
+        border-radius: 14px;
+        background: #ffffff;
+        border: 1px solid var(--line);
+        box-shadow: 0 18px 46px rgba(17, 79, 161, 0.1);
+        overflow: hidden;
+        font-size: 11px;
+        line-height: 1.35;
+        color: var(--text);
+        container-type: inline-size;
+      }
+      .mock-body {
+        background: #f8fafd;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .mock-topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .mock-h {
+        font-family: "Source Code Pro", monospace;
+        font-weight: 600;
+        font-size: 15px;
+        color: var(--primary-dark);
+        letter-spacing: -0.01em;
+      }
+      .mock-sub {
+        color: var(--text-sec);
+        font-size: 10px;
+        margin-top: 2px;
+      }
+      .mock-btns {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+      .mock-btn {
+        border-radius: 7px;
+        padding: 6px 10px;
+        font-weight: 600;
+        font-size: 10px;
+        color: #fff;
+        white-space: nowrap;
+      }
+      .mock-btn.gold { background: var(--gold); }
+      .mock-btn.blue { background: #6b9bc2; }
+      .mock-btn.navy { background: var(--primary); }
+
+      .mock-card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 11px 12px;
+        position: relative;
+      }
+      .mock-card.accent {
+        border-left: 3px solid var(--gold);
+      }
+      .mock-label {
+        font-family: "Source Code Pro", monospace;
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--gold-dark);
+        font-weight: 600;
+      }
+      .mock-field {
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        padding: 7px 9px;
+        color: #9aa6b4;
+        background: #fff;
+        font-size: 10px;
+        flex: 1;
+        min-width: 0;
+      }
+      .mock-row {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .mock-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+      .mock-chip {
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 9px;
+        font-weight: 600;
+        border: 1px solid var(--line);
+        color: var(--text-sec);
+        background: #fff;
+        white-space: nowrap;
+      }
+      .mock-chip.on {
+        background: #6b9bc2;
+        border-color: #6b9bc2;
+        color: #fff;
+      }
+      .mock-guest {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 8px 0;
+        border-top: 1px solid var(--line);
+      }
+      .mock-time {
+        font-family: "Source Code Pro", monospace;
+        color: var(--primary-dark);
+        font-size: 10px;
+        width: 46px;
+        flex-shrink: 0;
+      }
+      .mock-name { font-weight: 700; font-size: 11px; }
+      .mock-meta { color: var(--text-sec); font-size: 9px; margin-top: 1px; }
+      .mock-tag {
+        display: inline-block;
+        margin-top: 4px;
+        background: rgba(95, 141, 78, 0.12);
+        color: #4a7040;
+        border-radius: 5px;
+        padding: 2px 7px;
+        font-size: 9px;
+        font-weight: 600;
+      }
+      .mock-status {
+        margin-left: auto;
+        flex-shrink: 0;
+        color: #4478b0;
+        background: rgba(107, 155, 194, 0.14);
+        border-radius: 999px;
+        padding: 3px 9px;
+        font-size: 9px;
+        font-weight: 600;
+      }
+      .mock-stats {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 7px;
+      }
+      .mock-stat {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 9px;
+      }
+      .mock-stat b {
+        display: block;
+        font-family: "Source Code Pro", monospace;
+        font-size: 17px;
+        font-weight: 600;
+        color: var(--primary-dark);
+        margin-top: 3px;
+      }
+      /* A card whose content runs edge to edge. The clipping that rounds the
+         table corners has to happen on an inner wrapper: put overflow:hidden
+         on the card itself and it clips the card's own ::after highlight ring
+         (inset -5px -6px, i.e. outside the box) and cuts the cue badge in half. */
+      .mock-card.mock-flush {
+        padding: 12px 0 0;
+        overflow: visible;
+      }
+      .mock-clip {
+        overflow: hidden;
+        border-radius: 0 0 9px 9px;
+      }
+      .mock-table { width: 100%; border-collapse: collapse; }
+      .mock-table th {
+        text-align: left;
+        font-family: "Source Code Pro", monospace;
+        font-size: 8.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-sec);
+        font-weight: 600;
+        padding: 8px 9px;
+        background: #f2f6fb;
+        border-bottom: 1px solid var(--line);
+      }
+      .mock-table td {
+        padding: 8px 9px;
+        border-bottom: 1px solid var(--line);
+        font-size: 10px;
+        vertical-align: middle;
+      }
+      .mock-table tr:last-child td { border-bottom: 0; }
+      .mock-code {
+        font-family: "Source Code Pro", monospace;
+        color: var(--text-sec);
+        font-size: 9px;
+      }
+      .mock-pill {
+        border-radius: 5px;
+        padding: 2px 7px;
+        font-size: 9px;
+        font-weight: 600;
+        background: rgba(95, 141, 78, 0.12);
+        color: #4a7040;
+      }
+      .mock-pill.co {
+        background: rgba(107, 155, 194, 0.16);
+        color: #35618c;
+      }
+      .dotrow { display: inline-flex; gap: 2px; vertical-align: middle; }
+      .dotrow i {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: #dfe6ee; display: block;
+      }
+      .dotrow i.f { background: var(--gold); }
+
+      /* ---- focus: the successor to the old mask + highlight overlay.
+         Instead of covering the panel, non-focused rows simply fade back. ---- */
+      .mock [data-part] {
+        transition: opacity 0.6s ease, filter 0.6s ease;
+      }
+      .mock.focusing [data-part] {
+        opacity: 0.34;
+        filter: saturate(0.5);
+      }
+      .mock.focusing [data-part].lit {
+        opacity: 1;
+        filter: none;
+      }
+      .mock [data-part] {
+        position: relative;
+      }
+      .mock [data-part].lit {
+        z-index: 1;
+      }
+      /* The ring lives on every part at opacity 0 rather than only on .lit,
+         so it can fade both ways. Defined only on .lit it would pop in and
+         out on every loop. */
+      .mock [data-part]::after {
+        content: "";
+        position: absolute;
+        inset: -5px -6px;
+        border-radius: 11px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.55s ease;
+        box-shadow: 0 0 0 2px var(--primary), 0 10px 26px rgba(17, 79, 161, 0.2);
+        background: linear-gradient(
+          120deg,
+          rgba(17, 79, 161, 0.06),
+          rgba(200, 169, 107, 0.08)
+        );
+      }
+      .mock [data-part].lit::after {
+        opacity: 1;
+      }
+      .mock-cue {
+        position: absolute;
+        top: -9px;
+        left: 12px;
+        z-index: 2;
+        font-family: "Source Code Pro", monospace;
+        font-size: 8.5px;
+        font-weight: 600;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: #fff;
+        background: var(--primary);
+        padding: 3px 8px;
+        border-radius: 999px;
+        white-space: nowrap;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+      }
+      .lit > .mock-cue { opacity: 1; }
+
+      /* Caret blinking in the Quick Walk-In field, so the panel reads as live */
+      .mock-caret {
+        display: inline-block;
+        width: 1px;
+        height: 10px;
+        background: var(--primary);
+        vertical-align: -1px;
+        animation: mockBlink 1.05s steps(1) infinite;
+      }
+      @keyframes mockBlink {
+        0%, 49% { opacity: 1; }
+        50%, 100% { opacity: 0; }
+      }
+
+      @container (max-width: 430px) {
+        .mock-stats { grid-template-columns: repeat(3, 1fr); }
+        .mock-hide-sm { display: none; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .mock.focusing [data-part] { opacity: 1; filter: none; }
+        .mock-caret { animation: none; }
+      }
+
+      #keunggulan {
+        background: var(--bg-soft);
+      }
+      #faq {
+        background: #ffffff;
+      }
+      /* ===== FAQ ===== */
+      .faq-list {
+        max-width: 780px;
+        margin: 0 auto;
+      }
+      .faq-item {
+        border-bottom: 1px solid var(--line);
+      }
+      .faq-item summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 20px 4px;
+        font-weight: 700;
+        font-size: 1.05rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: var(--primary-dark);
+      }
+      .faq-item summary::-webkit-details-marker {
+        display: none;
+      }
+      .faq-item summary .arrow {
+        transition: transform 0.2s;
+        color: var(--gold-dark);
+        flex-shrink: 0;
+        margin-left: 16px;
+      }
+      .faq-item[open] summary .arrow {
+        transform: rotate(180deg);
+      }
+      .faq-item p {
+        color: var(--text-sec);
+        padding: 0 4px 20px;
+        font-size: 0.96rem;
+      }
+
+      /* ---- FAQ accordion ----
+         <details> cannot be transitioned natively: it flips straight between
+         auto height and nothing. So the body is wrapped at runtime and its
+         height animated explicitly, keeping the element open until the close
+         animation has actually finished. */
+      .faq-body {
+        overflow: hidden;
+        will-change: height;
+      }
+      .faq-body.animating {
+        transition: height 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .faq-item summary .arrow {
+        transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .faq-item summary:focus-visible {
+        outline: 2px solid var(--primary);
+        outline-offset: 3px;
+        border-radius: 6px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .faq-body.animating {
+          transition: none;
+        }
+      }
+
+      /* ===== CTA / Contact ===== */
+      .cta-section {
+        background: var(--primary-dark);
+        color: #fff;
+        border-radius: 26px;
+        padding: 60px 40px;
+        text-align: center;
+      }
+      .cta-section h2 {
+        color: #fff;
+        font-size: 2.5rem;
+        margin-bottom: 14px;
+      }
+      .cta-section p {
+        opacity: 0.92;
+        max-width: 540px;
+        margin: 0 auto 30px;
+      }
+      .cta-buttons {
+        display: flex;
+        gap: 14px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .cta-section .btn-outline {
+        border-color: #fff;
+        color: #fff !important;
+      }
+      .cta-section .btn-outline:hover {
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      /* ===== Footer ===== */
+      footer {
+        padding: 44px 0 32px;
+        background: #ffffff;
+      }
+      .footer-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+        border-top: 1px solid #e8e2d6;
+        padding-top: 28px;
+      }
+      .footer-inner img {
+        height: 34px;
+        width: 130px;
+        max-width: 100%;
+        object-fit: contain;
+        display: block;
+      }
+      footer p,
+      footer a {
+        color: var(--text-sec);
+        font-size: 0.88rem;
+        text-decoration: none;
+      }
+      footer a:hover {
+        color: var(--primary);
+      }
+      .footer-links {
+        display: flex;
+        gap: 20px;
+      }
+
+      /* ===== Mobile ===== */
+      @media (max-width: 820px) {
+        .hero {
+          padding: 48px 0 54px;
+        }
+        .hero-grid {
+          gap: 34px;
+        }
+        .hero-copy {
+          order: 1;
+          max-width: 560px;
+          text-align: center;
+          margin: 0 auto;
+        }
+        .hero h1 {
+          font-size: clamp(1.65rem, 7.4vw, 2.4rem);
+          max-width: 560px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        .hero-title-lock {
+          white-space: normal;
+        }
+        .hero h2 {
+          max-width: 440px;
+          margin-left: auto;
+          margin-right: auto;
+          font-size: 1.08rem;
+          margin-bottom: 18px;
+        }
+        .hero p.lead {
+          max-width: 520px;
+          margin-left: auto;
+          margin-right: auto;
+          font-size: 1rem;
+        }
+        .hero-ctas {
+          justify-content: center;
+          margin-bottom: 0;
+        }
+        /* Keep the desktop look: image centered with the metric
+           cards floating on top of it, just scaled down */
+        .hero-media {
+          order: 2;
+          min-height: auto;
+          margin-left: 0;
+          padding: 10px 0 14px;
+          width: 100%;
+        }
+        .js .hero-media {
+          transform: translateY(18px) scale(0.985);
+        }
+        .hero-media::before {
+          inset: 4% 14% 6% 12%;
+          border-radius: 30px 30px 82px 30px;
+        }
+        .hero-visual {
+          width: min(66vw, 300px);
+          border-radius: 32px 32px 92px 32px;
+        }
+        /* Tidy compact pill on mobile: [icon] [label] [number]
+           in a single neat row, icons kept */
+        .hero-metric {
+          min-width: 0;
+          max-width: 48vw;
+          padding: 8px 14px 8px 10px;
+          border-radius: 999px;
+          text-align: left;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .hero-metric .metric-head {
+          display: contents;
+        }
+        .hero-metric .metric-icon {
+          order: -1;
+        }
+        .hero-metric.top {
+          top: 4px;
+          right: 0;
+          min-width: 0;
+          padding: 10px 12px;
+        }
+        .hero-metric.risk {
+          left: 0;
+          top: 22%;
+          min-width: 0;
+          padding: 10px 12px;
+        }
+        .hero-metric.bottom {
+          left: 2vw;
+          bottom: 4px;
+          min-width: 0;
+          padding: 10px 12px;
+        }
+        .hero-metric.side {
+          right: 0;
+          bottom: 24px;
+          min-width: 0;
+          padding: 10px 12px;
+        }
+        .hero-metric .metric-label {
+          font-size: 0.68rem;
+          white-space: nowrap;
+        }
+        /* Hide the descriptive sub-text on mobile so the cards stay
+           compact; the label + number still tell the story. Desktop
+           keeps the full wording. */
+        .hero-metric > span:last-child {
+          display: none;
+        }
+        .metric-icon {
+          width: 26px;
+          height: 26px;
+          flex-shrink: 0;
+        }
+        .metric-icon svg {
+          width: 14px;
+          height: 14px;
+        }
+        .hero-metric strong {
+          font-size: 1.1rem;
+          margin-left: 2px;
+        }
+        .lang-toggle {
+          padding: 6px 12px;
+          font-size: 0.8rem;
+        }
+        .hero-grid,
+        .problem-grid,
+        .benefits-grid,
+        .spotlight,
+        .more-grid,
+        .features-grid,
+        .how-grid {
+          grid-template-columns: 1fr;
+        }
+        .spotlight {
+          gap: 24px;
+          padding: 30px 0;
+        }
+        .spotlight.reverse .spotlight-text,
+        .spotlight.reverse .spotlight-visual {
+          order: initial;
+        }
+        .problem-visual {
+          max-height: 280px;
+          order: -1;
+          margin: 0 auto;
+        }
+        /* Center the 3 core feature cards on mobile */
+        .feature-card {
+          text-align: center;
+        }
+        .feature-card .feature-icon {
+          margin-left: auto;
+          margin-right: auto;
+        }
+        .hamburger {
+          display: block;
+        }
+        .nav-links {
+          display: none;
+          margin-left: 0;
+          margin-right: 0;
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          background: linear-gradient(
+            135deg,
+            rgba(231, 248, 252, 0.98),
+            rgba(239, 232, 252, 0.98)
+          );
+          border-bottom: 1px solid rgba(255, 255, 255, 0.68);
+          flex-direction: column;
+          padding: 20px;
+          gap: 16px;
+          box-shadow: 0 12px 24px rgba(11, 28, 47, 0.12);
+          z-index: 60;
+        }
+        .nav-links.open {
+          display: flex;
+        }
+        .nav-overlay {
+          display: none;
+          position: fixed;
+          inset: 0;
+          background: rgba(11, 28, 47, 0.28);
+          backdrop-filter: blur(3px);
+          -webkit-backdrop-filter: blur(3px);
+          z-index: 40;
+        }
+        .nav-overlay.open {
+          display: block;
+        }
+        section {
+          padding: 48px 0;
+        }
+        .section-head h2,
+        .cta-section h2 {
+          font-size: 1.9rem;
+        }
+        .cta-section {
+          padding: 40px 24px;
+        }
+      }
+      @media (max-width: 560px) {
+        .hero {
+          padding: 34px 0 38px;
+        }
+        .hero h1 {
+          font-size: clamp(1.45rem, 8.4vw, 1.95rem);
+        }
+        .hero p.lead {
+          font-size: 0.96rem;
+        }
+        .hero-ctas {
+          gap: 10px;
+        }
+        .hero-ctas .btn {
+          width: 100%;
+          justify-content: center;
+        }
+        .hero-visual {
+          width: min(62vw, 250px);
+        }
+        .hero-metric {
+          max-width: 46vw;
+        }
+        .hero-metric strong {
+          font-size: 1.05rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ===== NAV ===== -->
+    <nav>
+      <div class="nav-inner">
+        <div class="nav-logo">
+          <img src="assets/intoch-logo.png" alt="Intoch logo" />
+        </div>
+        <div class="nav-links" id="navLinks">
+          <a href="#fitur" data-i18n="nav.features">Fitur</a>
+          <a href="#cara-kerja" data-i18n="nav.how">Cara Kerja</a>
+          <a href="#faq">FAQ</a>
+          <a href="#kontak" class="btn" data-i18n="nav.contact">Hubungi Kami</a>
+        </div>
+        <div class="nav-actions">
+          <!-- Flag language toggle: highlighted flag = current language -->
+          <button
+            class="lang-toggle"
+            id="langToggle"
+            aria-label="Switch language / Ganti bahasa"
+          >
+            <span class="lang-opt lang-opt-id active">
+              <svg viewBox="0 0 60 30" aria-hidden="true">
+                <rect width="60" height="15" fill="#ce1126" />
+                <rect y="15" width="60" height="15" fill="#f5f5f5" />
+              </svg>
+              <span>ID</span>
+            </span>
+            <span class="lang-opt lang-opt-en">
+              <svg viewBox="0 0 60 30" aria-hidden="true">
+                <rect width="60" height="30" fill="#012169" />
+                <path
+                  d="M0,0 L60,30 M60,0 L0,30"
+                  stroke="#fff"
+                  stroke-width="6"
+                />
+                <path
+                  d="M0,0 L60,30 M60,0 L0,30"
+                  stroke="#C8102E"
+                  stroke-width="3.5"
+                />
+                <path d="M30,0 V30 M0,15 H60" stroke="#fff" stroke-width="10" />
+                <path
+                  d="M30,0 V30 M0,15 H60"
+                  stroke="#C8102E"
+                  stroke-width="6"
+                />
+              </svg>
+              <span>EN</span>
+            </span>
+          </button>
+          <button
+            class="hamburger"
+            id="navToggle"
+            aria-label="Buka menu"
+            aria-expanded="false"
+            aria-controls="navLinks"
+          >
+            ☰
+          </button>
+        </div>
+      </div>
+      <div class="nav-overlay" id="navOverlay"></div>
+    </nav>
+
+    <div class="hero-wrap">
+      <!-- ===== HERO ===== -->
+      <header class="hero">
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <!-- <p class="eyebrow">Guest & Membership Management</p> -->
+            <h1 data-i18n="hero.title" data-decode="1">
+              <span class="hero-title-lock"><em>Kenali Pelanggan</em></span>
+              Resto Anda
+            </h1>
+            <h2 data-i18n="hero.sub">
+              Cari tahu siapa dan seberapa sering mereka kembali.
+            </h2>
+            <p class="lead" data-i18n="hero.lead">
+              Ciptakan pengalaman yang lebih personal. Intoch menyatukan data
+              reservasi, walk-in, dan member dalam satu dashboard, sehingga Anda
+              selalu mengenali pelanggan, preferensi, dan riwayat kunjungannya.
+            </p>
+            <div class="hero-ctas">
+              <a href="#kontak" class="btn" data-i18n="hero.cta1"
+                >Coba Intoch Sekarang</a
+              >
+              <a href="#fitur" class="btn btn-outline" data-i18n="hero.cta2"
+                >Lihat Fitur</a
+              >
+            </div>
+          </div>
+          <!-- Hero portrait visual with floating product metrics. -->
+          <div class="hero-media">
+            <div class="img-placeholder hero-visual">
+              <img
+                src="assets/hero-new-group.png"
+                alt="Pengguna Intoch membawa laptop dengan dashboard restoran"
+              />
+            </div>
+            <div class="hero-metric risk">
+              <div class="metric-head">
+                <span class="metric-label">At Risk</span>
+                <span class="metric-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"
+                    />
+                    <path d="M12 9v4" />
+                    <path d="M12 17h.01" />
+                  </svg>
+                </span>
+              </div>
+              <strong data-count="10">10</strong>
+              <span data-i18n="metric.risk"
+                >pelanggan tidak datang 90 hari</span
+              >
+            </div>
+            <div class="hero-metric top">
+              <div class="metric-head">
+                <span class="metric-label">Repeat Guests</span>
+                <span class="metric-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M17 2v4" />
+                    <path d="M7 2v4" />
+                    <rect x="3" y="4" width="18" height="18" rx="3" />
+                    <path d="M3 10h18" />
+                    <path d="m9 16 2 2 4-4" />
+                  </svg>
+                </span>
+              </div>
+              <strong data-count="64%">64%</strong>
+              <span data-i18n="metric.repeat">naik bulan ini</span>
+            </div>
+            <div class="hero-metric bottom">
+              <div class="metric-head">
+                <span class="metric-label" data-i18n="metric.visitsLabel"
+                  >Kunjungan</span
+                >
+                <span class="metric-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="m3 17 6-6 4 4 8-8" />
+                    <path d="M14 7h7v7" />
+                  </svg>
+                </span>
+              </div>
+              <strong data-count="+32%">+32%</strong>
+              <span data-i18n="metric.visits">dari member aktif</span>
+            </div>
+            <div class="hero-metric side">
+              <div class="metric-head">
+                <span class="metric-label">Birthday Alerts</span>
+                <span class="metric-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M12 2c1.5 2 1.5 3.5 0 5-1.5-1.5-1.5-3 0-5Z" />
+                    <path d="M5 21V13a7 7 0 0 1 14 0v8" />
+                    <path d="M5 17h14" />
+                  </svg>
+                </span>
+              </div>
+              <strong data-count="18">18</strong>
+              <span data-i18n="metric.birthday">tamu minggu ini</span>
+            </div>
+          </div>
+        </div>
+      </header>
+    </div>
+    <!-- /.hero-wrap -->
+
+    <!-- ===== PROBLEM / AGITATE ===== -->
+    <section class="problem" data-fx="cool">
+      <div class="container">
+        <div class="section-head">
+          <p
+            class="eyebrow"
+            style="background: rgba(255, 255, 255, 0.12); color: #f4c76a"
+            data-i18n="problem.eyebrow"
+          >
+            Kedengaran Familiar?
+          </p>
+          <h2 data-i18n="problem.title">
+            Kalau Hubungan dengan Pelanggan Cuma Sebatas Transaksi…
+          </h2>
+          <p data-i18n="problem.sub">
+            …masalah-masalah ini yang biasanya muncul. Kalau salah satunya
+            kejadian di restoran Anda minggu ini, Anda nggak sendirian.
+          </p>
+        </div>
+        <div class="problem-grid">
+          <!-- PLACEHOLDER: Foto suasana restoran ramai / hectic saat jam sibuk. Rasio 3:4. -->
+          <div class="img-placeholder problem-visual">
+            <img
+              src="assets/ramai.png"
+              alt="Suasana restoran yang ramai saat jam sibuk"
+            />
+          </div>
+          <div>
+            <div class="problem-list">
+              <div class="problem-item">
+                <div class="mark">1</div>
+                <p data-i18n="problem.i1">
+                  <strong>Data reservasi tersebar</strong>, sebagian di
+                  WhatsApp, di spreadsheet, atau di buku. Karena dianggap nggak
+                  berharga, datanya dibiarkan nggak terkumpul.
+                </p>
+              </div>
+              <div class="problem-item">
+                <div class="mark">2</div>
+                <p data-i18n="problem.i2">
+                  <strong>Tamu setia diperlakukan seperti orang baru</strong>,
+                  nggak ada catatan siapa yang sering datang, siapa yang member.
+                </p>
+              </div>
+              <div class="problem-item">
+                <div class="mark">3</div>
+                <p data-i18n="problem.i3">
+                  <strong
+                    >Pelanggan baru dapat pengalaman luar biasa, tapi nggak
+                    pernah balik.</strong
+                  >
+                  Anda bahkan nggak tahu mereka pernah datang, jadi nggak pernah
+                  di-follow-up.
+                </p>
+              </div>
+              <div class="problem-item">
+                <div class="mark">4</div>
+                <p data-i18n="problem.i4">
+                  <strong
+                    >Anda punya banyak leads pelanggan untuk strategi
+                    penjualan</strong
+                  >, tapi nggak punya riwayat daya beli mereka untuk membidik
+                  yang tepat.
+                </p>
+              </div>
+            </div>
+            <p class="problem-punch" data-i18n="problem.punch">
+              Kami bikin Intoch supaya restoran
+              <em>nggak pernah lagi kehilangan jejak tamunya</em>, sesibuk apa
+              pun malam itu.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CORE FEATURES ===== -->
+    <section id="fitur" data-fx="soft">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow" data-i18n="features.eyebrow">Fitur Utama</p>
+          <h2 data-i18n="features.title">Semua yang Restoran Anda Butuhkan</h2>
+          <p data-i18n="features.sub">
+            Dari tamu datang sampai jadi pelanggan setia, Intoch menangani
+            seluruh perjalanannya dalam satu tempat.
+          </p>
+        </div>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon gold">🔄</div>
+            <h3 data-i18n="features.c1t">
+              Kenali Siapa yang Kembali ke Outlet Anda
+            </h3>
+            <p data-i18n="features.c1p">
+              Apresiasi pelanggan setia yang sudah berulang kali order, atau
+              ambil tindakan untuk menindaklanjuti pelanggan yang sudah lama
+              tidak kembali.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">💳</div>
+            <h3 data-i18n="features.c2t">Pahami Daya Beli Pelanggan Anda</h3>
+            <p data-i18n="features.c2p">
+              Dengan memahami kemampuan spending pelanggan, Anda bisa
+              menargetkan strategi penjualan yang tepat ke orang yang tepat.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon dark">🎂</div>
+            <h3 data-i18n="features.c3t">Kenali Kebiasaan Pelanggan Anda</h3>
+            <p data-i18n="features.c3p">
+              Berikan layanan yang lebih personal untuk pelanggan yang kembali,
+              mulai dari momen spesial mereka (ulang tahun) sampai menu
+              favoritnya.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon gold">⭐</div>
+            <h3 data-i18n="features.c4t">
+              Optimalkan Performa Google Business Anda
+            </h3>
+            <p data-i18n="features.c4p">
+              Ajak pelanggan mengisi review positif di Google lewat cara yang
+              fun dan menarik.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== FEATURE SPOTLIGHT ===== -->
+    <section id="tampilan" style="padding-top: 0" data-fx="mix">
+      <div class="container">
+        <!-- Spotlight 1: Fast Walk-In -->
+        <div class="spotlight">
+          <div class="spotlight-text">
+            <span class="spotlight-tag">Walk-In</span>
+            <h3 data-i18n="s1.title">
+              Kenapa Intoch paham pentingnya walk-in yang cepat
+            </h3>
+            <p data-i18n="s1.p">
+              Walk-in adalah momen di mana data pelanggan paling sering hilang,
+              nggak ada waktu mengisi form saat antrean makin panjang. Karena
+              itu Intoch bikin pencatatan tamu tanpa beban: cukup nama,
+              pelanggan langsung masuk sistem. Satu catatan itulah yang nanti
+              jadi riwayat kunjungan, insight spending, dan pelanggan yang
+              kembali lagi.
+            </p>
+            <ul>
+              <li>
+                <span class="chk">✓</span>
+                <span data-i18n="s1.l1"
+                  >Nggak membebani staf yang sibuk, satu form, dua kolom wajib
+                  saja</span
+                >
+              </li>
+              <li>
+                <span class="chk">✓</span>
+                <span data-i18n="s1.l2"
+                  >Setiap walk-in jadi data pelanggan, bukan catatan kertas yang
+                  hilang</span
+                >
+              </li>
+              <li>
+                <span class="chk">✓</span>
+                <span data-i18n="s1.l3"
+                  >Detail (kontak, jumlah pax, area) bisa menyusul saat lebih
+                  senggang</span
+                >
+              </li>
+            </ul>
+          </div>
+          <figure class="spotlight-visual-wrap">
+            <div class="mock" data-mock="walkin">
+              <div class="mock-body">
+                <div class="mock-topbar">
+                  <div>
+                    <div class="mock-h">Welcome!</div>
+                    <div class="mock-sub">Sunday, 12 July 2026</div>
+                  </div>
+                  <div class="mock-btns">
+                    <span class="mock-btn gold">Walk-In</span>
+                    <span class="mock-btn blue mock-hide-sm">+ Tambah Reservasi</span>
+                  </div>
+                </div>
+
+                <div class="mock-card accent" data-part="walkin">
+                  <span class="mock-cue">Quick Walk-In</span>
+                  <div class="mock-label">Quick Walk-In</div>
+                  <div class="mock-sub" style="margin-bottom: 8px">
+                    Nama &amp; no. hp, sisa detail bisa menyusul
+                  </div>
+                  <div class="mock-row">
+                    <span class="mock-field"
+                      >Siti Rahayu<span class="mock-caret"></span
+                    ></span>
+                    <span class="mock-field mock-hide-sm">Phone (optional)</span>
+                    <span class="mock-field" style="flex: 0 0 34px; text-align: center"
+                      >2</span
+                    >
+                    <span class="mock-btn gold">Tambah</span>
+                  </div>
+                </div>
+
+                <div class="mock-card" data-part="rest">
+                  <div class="mock-h" style="font-size: 12px">Reservasi Mendatang</div>
+                  <div class="mock-sub" style="margin-bottom: 7px">
+                    Showing reservations for Sunday 12 July
+                  </div>
+                  <div class="mock-guest" style="border-top: 0">
+                    <span class="mock-time">6:30 PM</span>
+                    <span>
+                      <span class="mock-name">Dewi Lestari</span>
+                      <span class="mock-meta">4 pax &middot; Indoor Dining &middot; M10</span>
+                    </span>
+                    <span class="mock-status">Reserved</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <figcaption data-i18n="s1.cap">
+              Quick Walk-In, dari nama tamu ke tercatat, dalam hitungan detik
+            </figcaption>
+          </figure>
+        </div>
+
+        <!-- Spotlight 2: All-in-one dashboard -->
+        <div class="spotlight reverse">
+          <div class="spotlight-text">
+            <span class="spotlight-tag">Dashboard</span>
+            <h3 data-i18n="s2.title">
+              Satu layar untuk lihat semua yang terjadi hari ini
+            </h3>
+            <p data-i18n="s2.p">
+              Staf bisa menambahkan walk-in manual atau cepat, membuat reservasi
+              baru, dan mengecek detail meja, semua dari dashboard yang sama.
+              Manajer bisa langsung lihat okupansi, tamu yang diharapkan datang,
+              dan siapa yang berulang tahun bulan ini.
+            </p>
+            <ul>
+              <li>
+                <span class="chk">✓</span>
+                <span data-i18n="s2.l1"
+                  >Reservasi mendatang & walk-in hari ini dalam satu layar</span
+                >
+              </li>
+              <li>
+                <span class="chk">✓</span>
+                <span data-i18n="s2.l2"
+                  >Okupansi area & jumlah tamu yang diharapkan datang</span
+                >
+              </li>
+              <li>
+                <span class="chk">✓</span>
+                <span data-i18n="s2.l3"
+                  >Notifikasi tamu yang berulang tahun bulan ini</span
+                >
+              </li>
+            </ul>
+          </div>
+          <figure class="spotlight-visual-wrap">
+            <!-- Screenshot asli halaman Dashboard Intoch -->
+            <!-- aspect-ratio matches the screenshot exactly = no white bars -->
+            <div class="mock" data-mock="dashboard">
+              <div class="mock-body">
+                <div class="mock-topbar">
+                  <div>
+                    <div class="mock-h">Welcome!</div>
+                    <div class="mock-sub">Sunday, 12 July 2026</div>
+                  </div>
+                  <div class="mock-btns">
+                    <span class="mock-btn gold">Walk-In</span>
+                    <span class="mock-btn blue mock-hide-sm">+ Tambah Reservasi</span>
+                  </div>
+                </div>
+
+                <div class="mock-card accent" data-part="walkin">
+                  <span class="mock-cue">Quick Walk-In</span>
+                  <div class="mock-label">Quick Walk-In</div>
+                  <div class="mock-row" style="margin-top: 7px">
+                    <span class="mock-field">Guest name *</span>
+                    <span class="mock-field mock-hide-sm">Phone (optional)</span>
+                    <span class="mock-btn gold">Tambah</span>
+                  </div>
+                </div>
+
+                <div class="mock-card" data-part="reservasi">
+                  <span class="mock-cue">Reservasi</span>
+                  <div class="mock-h" style="font-size: 12px">Reservasi Mendatang</div>
+                  <div class="mock-chips" style="margin: 7px 0 3px">
+                    <span class="mock-chip on">Hari Ini (2)</span>
+                    <span class="mock-chip">Besok (10)</span>
+                    <span class="mock-chip mock-hide-sm">+2 Hari (10)</span>
+                  </div>
+                  <div class="mock-guest">
+                    <span class="mock-time">6:30 PM</span>
+                    <span>
+                      <span class="mock-name">Dewi Lestari</span>
+                      <span class="mock-meta">4 pax &middot; Indoor Dining &middot; M10</span>
+                      <span class="mock-tag">High Spender</span>
+                    </span>
+                    <span class="mock-status">Reserved</span>
+                  </div>
+                  <div class="mock-guest">
+                    <span class="mock-time">7:00 PM</span>
+                    <span>
+                      <span class="mock-name">Bayu Pratama</span>
+                      <span class="mock-meta">8 pax &middot; VIP Room 1 &middot; Business Dinner</span>
+                      <span class="mock-tag">High Spender</span>
+                    </span>
+                    <span class="mock-status">Reserved</span>
+                  </div>
+                </div>
+
+                <div class="mock-card" data-part="walkinlist">
+                  <span class="mock-cue">Walk-In</span>
+                  <div class="mock-h" style="font-size: 12px">Walk-In Hari Ini</div>
+                  <div class="mock-sub">2 walk-ins on Sunday 12 July</div>
+                  <div class="mock-guest">
+                    <span class="mock-time">8:10 PM</span>
+                    <span>
+                      <span class="mock-name">Rangga Adi</span>
+                      <span class="mock-meta">3 pax &middot; Teras</span>
+                    </span>
+                    <span class="mock-status">Seated</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <figcaption data-i18n="s2.cap">
+              Dashboard, reservasi, walk-in, dan okupansi dalam satu tempat
+            </figcaption>
+          </figure>
+        </div>
+
+        <!-- Spotlight 3: Membership -->
+        <div class="spotlight">
+          <div class="spotlight-text">
+            <span class="spotlight-tag">Membership</span>
+            <h3 data-i18n="s3.title">
+              Kenali tamu setia Anda, setiap kali mereka datang
+            </h3>
+            <p data-i18n="s3.p">
+              Lacak kartu member keluarga & perusahaan, stiker loyalitas, dan
+              voucher yang masih berlaku, supaya tamu yang sering datang merasa
+              dikenali, bukan diperlakukan seperti tamu baru.
+            </p>
+            <ul>
+              <li>
+                <span class="chk">✓</span>
+                <span data-i18n="s3.l1"
+                  >Member perorangan, keluarga, maupun perusahaan</span
+                >
+              </li>
+              <li>
+                <span class="chk">✓</span>
+                <span data-i18n="s3.l2"
+                  >Progres stiker & voucher yang masih aktif</span
+                >
+              </li>
+              <li>
+                <span class="chk">✓</span>
+                <span data-i18n="s3.l3"
+                  >Pencarian cepat via nama, nomor member, atau telepon</span
+                >
+              </li>
+            </ul>
+          </div>
+          <figure class="spotlight-visual-wrap">
+            <!-- Screenshot asli halaman Membership Intoch -->
+            <!-- aspect-ratio matches the screenshot exactly = no white bars -->
+            <div class="mock" data-mock="membership">
+              <div class="mock-body">
+                <div class="mock-topbar">
+                  <div>
+                    <div class="mock-h">Membership</div>
+                    <div class="mock-sub">Family &amp; Company cards, stiker dan voucher</div>
+                  </div>
+                  <div class="mock-btns">
+                    <span class="mock-btn navy">+ Add Member</span>
+                  </div>
+                </div>
+
+                <div class="mock-stats" data-part="stats">
+                  <span class="mock-cue">Ringkasan</span>
+                  <div class="mock-stat"><span class="mock-label">Members</span><b>8</b></div>
+                  <div class="mock-stat"><span class="mock-label">Family</span><b>6</b></div>
+                  <div class="mock-stat"><span class="mock-label">Perusahaan</span><b>2</b></div>
+                  <div class="mock-stat mock-hide-sm"><span class="mock-label">Stickers</span><b>32</b></div>
+                  <div class="mock-stat mock-hide-sm"><span class="mock-label">Voucher</span><b>3</b></div>
+                </div>
+
+                <div class="mock-card mock-flush" data-part="table">
+                  <span class="mock-cue">Kartu &amp; Stiker</span>
+                  <div class="mock-clip">
+                  <table class="mock-table">
+                    <thead>
+                      <tr>
+                        <th>No.</th>
+                        <th>Member</th>
+                        <th>Type</th>
+                        <th class="mock-hide-sm">Telepon</th>
+                        <th>Stickers</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="mock-code">KR-F-006</td>
+                        <td><span class="mock-name">Slamet Riyadi</span></td>
+                        <td><span class="mock-pill">Family</span></td>
+                        <td class="mock-code mock-hide-sm">0812&middot;&middot;&middot;&middot;0098</td>
+                        <td>
+                          <span class="dotrow"><i></i><i></i><i></i><i></i><i></i></span>
+                          <span class="mock-code">0 / 15</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="mock-code">KR-F-001</td>
+                        <td><span class="mock-name">Agus Wijaya</span></td>
+                        <td><span class="mock-pill">Family</span></td>
+                        <td class="mock-code mock-hide-sm">0812&middot;&middot;&middot;&middot;0003</td>
+                        <td>
+                          <span class="dotrow"><i class="f"></i><i class="f"></i><i></i><i></i><i></i></span>
+                          <span class="mock-code">7 / 15</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="mock-code">KR-C-001</td>
+                        <td><span class="mock-name">PT Sinar Terang</span></td>
+                        <td><span class="mock-pill co">Perusahaan</span></td>
+                        <td class="mock-code mock-hide-sm">0812&middot;&middot;&middot;&middot;0008</td>
+                        <td>
+                          <span class="dotrow"><i class="f"></i><i class="f"></i><i></i><i></i><i></i></span>
+                          <span class="mock-code">2</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="mock-code">KR-F-004</td>
+                        <td><span class="mock-name">Nina Anggraini</span></td>
+                        <td><span class="mock-pill">Family</span></td>
+                        <td class="mock-code mock-hide-sm">0812&middot;&middot;&middot;&middot;0015</td>
+                        <td>
+                          <span class="dotrow"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i></span>
+                          <span class="mock-code">4 / 15</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <figcaption data-i18n="s3.cap">
+              Membership, kartu keluarga & perusahaan, stiker, dan voucher
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== MORE FEATURES ===== -->
+    <section class="more-features seam seam-from-cream">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow" data-i18n="more.eyebrow">Selengkapnya</p>
+          <h2 data-decode="1" data-i18n="more.title">Dan Masih Banyak Lagi</h2>
+          <p data-i18n="more.sub">
+            Fitur pendukung supaya operasional dan keputusan bisnis Anda lebih
+            terarah.
+          </p>
+        </div>
+        <div class="more-grid">
+          <div class="more-item">
+            <div class="more-icon">📊</div>
+            <div>
+              <h4 data-i18n="more.i1t">
+                Laporan Marketing, Operasional & Spending
+              </h4>
+              <p data-i18n="more.i1p">
+                Pola kunjungan, tamu baru vs. kembali, leaderboard top spender,
+                sampai performa promo, siap dibaca kapan saja.
+              </p>
+            </div>
+          </div>
+          <div class="more-item">
+            <div class="more-icon">🎁</div>
+            <div>
+              <h4 data-i18n="more.i2t">Promosi & Hadiah</h4>
+              <p data-i18n="more.i2p">
+                Buat promo dengan hadiah tertentu untuk mendorong kunjungan di
+                jam atau musim yang lebih sepi.
+              </p>
+            </div>
+          </div>
+          <div class="more-item">
+            <div class="more-icon">📄</div>
+            <div>
+              <h4 data-i18n="more.i3t">Detail Reservasi yang Bisa Diunduh</h4>
+              <p data-i18n="more.i3p">
+                Tamu bisa menerima dan mengunduh detail reservasinya sendiri,
+                jelas, rapi, tanpa perlu telepon bolak-balik.
+              </p>
+            </div>
+          </div>
+          <div class="more-item">
+            <div class="more-icon">🧾</div>
+            <div>
+              <h4 data-i18n="more.i4t">Riwayat Tamu Terpusat</h4>
+              <p data-i18n="more.i4p">
+                Reservasi, walk-in, dan profil tamu tersimpan di satu tempat,
+                restoran nggak pernah kehilangan data tamunya lagi.
+              </p>
+            </div>
+          </div>
+          <div class="more-item">
+            <div class="more-icon">🎂</div>
+            <div>
+              <h4 data-i18n="more.i5t">Pengingat Ulang Tahun Tamu</h4>
+              <p data-i18n="more.i5p">
+                Tahu siapa saja tamu yang berulang tahun bulan ini, momen yang
+                pas untuk sentuhan personal.
+              </p>
+            </div>
+          </div>
+          <div class="more-item">
+            <div class="more-icon">📱</div>
+            <div>
+              <h4 data-i18n="more.i6t">Akses dari Mana Saja</h4>
+              <p data-i18n="more.i6p">
+                Berbasis web dan responsif, terbuka dari tablet host, komputer
+                kasir, maupun ponsel manajer.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CARA KERJA ===== -->
+    <section id="cara-kerja" class="how seam seam-from-bg-alt">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow" data-i18n="how.eyebrow">Cara Kerja</p>
+          <h2 data-decode="1" data-i18n="how.title">Mulai dalam 3 Langkah</h2>
+          <p data-i18n="how.sub">
+            Tanpa instalasi rumit. Tim kami mendampingi proses onboarding Anda.
+          </p>
+        </div>
+        <div class="how-grid">
+          <div class="step">
+            <div class="step-num">1</div>
+            <h3 data-i18n="how.s1t">Konsultasi</h3>
+            <p data-i18n="how.s1p">
+              Ceritakan alur operasional restoran Anda. Kami rekomendasikan
+              setup dashboard, area, dan program membership yang paling sesuai.
+            </p>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <h3 data-i18n="how.s2t">Setup & Pelatihan</h3>
+            <p data-i18n="how.s2p">
+              Kami siapkan sistem sesuai kebutuhan Anda, lalu latih staf hingga
+              percaya diri memakai Quick Walk-In dan dashboard di operasional
+              harian.
+            </p>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <h3 data-i18n="how.s3t">Go-Live</h3>
+            <p data-i18n="how.s3p">
+              Restoran Anda mulai beroperasi dengan Intoch, didukung tim support
+              kami yang siap membantu kapan pun dibutuhkan.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== KEUNGGULAN ===== -->
+    <section id="keunggulan" class="seam seam-from-white" data-fx="warm">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow" data-i18n="why.eyebrow">Kenapa Intoch</p>
+          <h2 data-decode="1" data-i18n="why.title">Dibangun untuk Ritme Kerja Restoran</h2>
+          <p data-i18n="why.sub">
+            Bukan software korporat yang ribet, Intoch dirancang mengikuti cara
+            restoran benar-benar bekerja.
+          </p>
+        </div>
+        <div class="benefits-grid">
+          <div class="benefit-item">
+            <div class="benefit-check">✓</div>
+            <div>
+              <h3 data-i18n="why.b1t">Sederhana untuk Staf</h3>
+              <p data-i18n="why.b1p">
+                Didesain untuk operasional yang serba cepat. Tidak butuh
+                pelatihan berminggu-minggu untuk mulai dipakai.
+              </p>
+            </div>
+          </div>
+          <div class="benefit-item">
+            <div class="benefit-check">✓</div>
+            <div>
+              <h3 data-i18n="why.b2t">Satu Sistem, Bukan Lima</h3>
+              <p data-i18n="why.b2p">
+                Reservasi, walk-in, membership, dan laporan tergabung dalam satu
+                platform, tidak perlu berpindah-pindah aplikasi.
+              </p>
+            </div>
+          </div>
+          <div class="benefit-item">
+            <div class="benefit-check">✓</div>
+            <div>
+              <h3 data-i18n="why.b3t">Data Tamu Milik Anda</h3>
+              <p data-i18n="why.b3p">
+                Seluruh riwayat tamu dan member adalah aset restoran Anda
+                sendiri, tersimpan aman dan bisa diakses kapan saja.
+              </p>
+            </div>
+          </div>
+          <div class="benefit-item">
+            <div class="benefit-check">✓</div>
+            <div>
+              <h3 data-i18n="why.b4t">Didampingi Tim Lokal</h3>
+              <p data-i18n="why.b4p">
+                Onboarding, pelatihan staf, dan support dalam Bahasa Indonesia,
+                kami memahami operasional restoran di sini.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="seam seam-from-bg-alt">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">FAQ</p>
+          <h2 data-decode="1" data-i18n="faq.title">Pertanyaan yang Sering Ditanyakan</h2>
+        </div>
+        <div class="faq-list">
+          <details class="faq-item" open>
+            <summary>
+              <span data-i18n="faq.q1">Apakah data tamu kami aman?</span
+              ><span class="arrow">▾</span>
+            </summary>
+            <p data-i18n="faq.a1">
+              Data reservasi, walk-in, dan member disimpan di database milik
+              restoran Anda sendiri, bukan dibagikan ke pihak ketiga. Akses staf
+              diatur berdasarkan peran masing-masing.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>
+              <span data-i18n="faq.q2"
+                >Berapa lama staf butuh untuk terbiasa memakai Intoch?</span
+              ><span class="arrow">▾</span>
+            </summary>
+            <p data-i18n="faq.a2">
+              Alur inti, Quick Walk-In dan input reservasi, dirancang sederhana,
+              biasanya staf sudah nyaman dalam sekali shift pelatihan. Tim kami
+              mendampingi sampai staf percaya diri.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>
+              <span data-i18n="faq.q3"
+                >Apakah bisa dipakai di lebih dari satu perangkat
+                sekaligus?</span
+              ><span class="arrow">▾</span>
+            </summary>
+            <p data-i18n="faq.a3">
+              Bisa. Intoch berbasis web, jadi bisa dibuka bersamaan dari tablet
+              host, komputer kasir, dan ponsel manajer, datanya tetap sinkron
+              secara real-time.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>
+              <span data-i18n="faq.q4"
+                >Bagaimana kalau kami sudah punya data tamu dari sistem
+                lama?</span
+              ><span class="arrow">▾</span>
+            </summary>
+            <p data-i18n="faq.a4">
+              Tim kami bisa membantu proses migrasi data pada tahap onboarding,
+              supaya riwayat tamu dan member lama Anda tidak hilang.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>
+              <span data-i18n="faq.q5">Berapa biaya berlangganan Intoch?</span
+              ><span class="arrow">▾</span>
+            </summary>
+            <p data-i18n="faq.a5">
+              Biaya menyesuaikan skala dan kebutuhan restoran Anda. Hubungi tim
+              kami untuk konsultasi dan penawaran yang sesuai.
+            </p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CTA / KONTAK ===== -->
+    <section id="kontak" style="padding-top: 24px" data-fx="cta">
+      <div class="container">
+        <div class="cta-section">
+          <h2 data-decode="1" data-i18n="cta.title">
+            Siap Nggak Pernah Lagi Kehilangan Jejak Tamu?
+          </h2>
+          <p data-i18n="cta.sub">
+            Ceritakan kebutuhan restoran Anda kepada tim kami. Kami akan
+            menyiapkan demo dan penawaran yang disesuaikan dengan skala bisnis
+            Anda.
+          </p>
+          <div class="cta-buttons">
+            <!-- ================= TODO SEBELUM PUBLISH =================
+                 Nomor WhatsApp 6281234567890 di bawah MASIH PLACEHOLDER.
+                 Ganti di 3 tempat: href tombol ini, dan META.id.wa +
+                 META.en.wa di dalam blok script di bagian bawah file.
+                 Konfirmasi juga domain email: sales@intoch.app
+                 ========================================================= -->
+            <a
+              class="btn btn-gold"
+              id="waLink"
+              href="https://wa.me/6281234567890?text=Halo%2C%20saya%20tertarik%20dengan%20Intoch%20untuk%20restoran%20saya."
+              target="_blank"
+              rel="noopener"
+              >Chat via WhatsApp</a
+            >
+            <a
+              class="btn btn-outline"
+              href="mailto:sales@intoch.app?subject=Inquiry%20Intoch"
+              data-i18n="cta.email"
+              >Email Tim Kami</a
+            >
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer>
+      <div class="container footer-inner">
+        <img src="assets/intoch-logo.png" alt="Intoch logo" />
+        <div class="footer-links">
+          <a href="#fitur" data-i18n="nav.features">Fitur</a>
+          <a href="#cara-kerja" data-i18n="nav.how">Cara Kerja</a>
+          <a href="#faq">FAQ</a>
+          <a href="#kontak" data-i18n="nav.kontak">Kontak</a>
+        </div>
+        <p data-i18n="footer.copy">© 2026 Intoch. Hak cipta dilindungi.</p>
+      </div>
+    </footer>
+    <script>
+      (function () {
+        document.documentElement.classList.add("js");
+        var heroMedia = document.querySelector(".hero-media");
+        if (heroMedia) {
+          window.setTimeout(function () {
+            heroMedia.classList.add("is-visible");
+          }, 180);
+        }
+
+        var toggle = document.getElementById("navToggle");
+        var links = document.getElementById("navLinks");
+        var overlay = document.getElementById("navOverlay");
+
+        function openMenu() {
+          links.classList.add("open");
+          overlay.classList.add("open");
+          toggle.setAttribute("aria-expanded", "true");
+        }
+        function closeMenu() {
+          links.classList.remove("open");
+          overlay.classList.remove("open");
+          toggle.setAttribute("aria-expanded", "false");
+        }
+        function isOpen() {
+          return links.classList.contains("open");
+        }
+
+        toggle.addEventListener("click", function (e) {
+          e.stopPropagation();
+          isOpen() ? closeMenu() : openMenu();
+        });
+
+        // Close when a nav link is tapped
+        links.addEventListener("click", function (e) {
+          if (e.target.tagName === "A") closeMenu();
+        });
+
+        // Close when tapping the dimmed overlay (outside the menu)
+        overlay.addEventListener("click", closeMenu);
+
+        // Close on outside click anywhere else (safety net)
+        document.addEventListener("click", function (e) {
+          if (isOpen() && !links.contains(e.target) && e.target !== toggle) {
+            closeMenu();
+          }
+        });
+
+        // Close on Escape
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && isOpen()) closeMenu();
+        });
+
+        // Nav shadow once page is scrolled
+        var navEl = document.querySelector("nav");
+        function onScroll() {
+          navEl.classList.toggle("scrolled", window.scrollY > 8);
+        }
+        onScroll();
+        window.addEventListener("scroll", onScroll, { passive: true });
+
+        // Scroll-reveal: fade + rise elements into view as user scrolls
+        var prefersReduced = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        ).matches;
+
+        if (!prefersReduced && "IntersectionObserver" in window) {
+          var revealSelectors = [
+            ".section-head",
+            ".spotlight",
+            ".problem-item",
+            ".faq-item",
+            ".cta-section",
+            ".feature-card",
+          ];
+
+          revealSelectors.forEach(function (sel) {
+            document.querySelectorAll(sel).forEach(function (el) {
+              el.classList.add("reveal");
+            });
+          });
+
+          var observer = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                  entry.target.classList.add("in-view");
+                  observer.unobserve(entry.target);
+                }
+              });
+            },
+            { threshold: 0.15, rootMargin: "0px 0px -40px 0px" },
+          );
+
+          document
+            .querySelectorAll(".reveal, .reveal-stagger")
+            .forEach(function (el) {
+              observer.observe(el);
+            });
+        }
+
+        /* =====================================================
+           i18n: Indonesian (default, taken from the HTML itself)
+           <-> English (dictionary below).
+           To edit English copy, edit the EN object.
+           To edit Indonesian copy, edit the HTML as usual.
+           ===================================================== */
+        var EN = {
+          "nav.features": "Features",
+          "nav.how": "How It Works",
+          "nav.contact": "Contact Us",
+          "nav.kontak": "Contact",
+          "hero.title": "<em>Recognize Your</em> Restaurant Customers",
+          "hero.sub": "Find out who they are and how often they come back.",
+          "hero.lead":
+            "Create a more personal experience. Intoch brings reservation, walk-in, and member data together in one dashboard, so you always recognize your guests, their preferences, and their visit history.",
+          "hero.cta1": "Try Intoch Now",
+          "hero.cta2": "See Features",
+          "metric.risk": "guests inactive for 90 days",
+          "metric.repeat": "up this month",
+          "metric.visitsLabel": "Visits",
+          "metric.visits": "from active members",
+          "metric.birthday": "guests this week",
+          "problem.eyebrow": "Sound Familiar?",
+          "problem.title":
+            "When Your Customer Relationship Is Purely Transactional…",
+          "problem.sub":
+            "…these are the problems you're likely to face. If any of them happened at your restaurant this week, you're not alone.",
+          "problem.i1":
+            "<strong>Reservation data is scattered</strong>, some on WhatsApp, in spreadsheets, or in the book. Because it never looks valuable, it's left uncollected.",
+          "problem.i2":
+            "<strong>Loyal customers get treated like strangers</strong>, no record of who visits often or who's a member.",
+          "problem.i3":
+            "<strong>New customers get a wonderful experience, but never return.</strong> You don't even know they ever came, so you never follow up.",
+          "problem.i4":
+            "<strong>You have the customer leads for your sales strategy</strong>, but no history of their spending power to target the right ones.",
+          "problem.punch":
+            "We built Intoch so restaurants <em>never lose track of their guests again</em>, no matter how busy the night gets.",
+          "features.eyebrow": "Core Features",
+          "features.title": "Everything Your Restaurant Needs",
+          "features.sub":
+            "From first visit to loyal regular, Intoch handles the whole journey in one place.",
+          "features.c1t": "Know Who Returns to Your Outlet",
+          "features.c1p":
+            "Appreciate your loyal customers who have repeatedly ordered, or take the necessary actions to follow up with ones who haven't returned in a while.",
+          "features.c2t": "Acknowledge Your Customer's Spending Power",
+          "features.c2p":
+            "By acknowledging their spending capabilities, you can target the right sales strategy to the right person.",
+          "features.c3t": "Recognize Your Customer's Behaviors",
+          "features.c3p":
+            "Provide more personal service to returning customers, from their special occasions (birthdays) to their favorite menu.",
+          "features.c4t": "Optimize Your Google Business Performance",
+          "features.c4p":
+            "Make your customers fill in positive Google reviews in a fun and attractive way.",
+          "s1.title": "Why Intoch knows a quick walk-in matters",
+          "s1.p":
+            "Walk-ins are where customer data slips away the most, nobody has time to fill out forms while the queue keeps growing. So Intoch makes capturing a guest effortless: just a name, and the customer is in the system. That one record is what later becomes visit history, spending insight, and a customer who comes back.",
+          "s1.l1":
+            "No burden on busy staff, one form with only two required fields",
+          "s1.l2":
+            "Every walk-in becomes a customer record, not a lost paper note",
+          "s1.l3":
+            "Details (contact, party size, area) can follow when things calm down",
+          "s1.cap": "Quick Walk-In, from guest name to logged, in seconds",
+          "s2.title": "One screen to see everything happening today",
+          "s2.p":
+            "Staff can add manual or quick walk-ins, create new reservations, and check table details, all from the same dashboard. Managers instantly see occupancy, expected guests, and this month's birthdays.",
+          "s2.l1": "Upcoming reservations & today's walk-ins on one screen",
+          "s2.l2": "Area occupancy & expected guest count",
+          "s2.l3": "Alerts for guests celebrating birthdays this month",
+          "s2.cap":
+            "Dashboard, reservations, walk-ins, and occupancy in one place",
+          "s3.title": "Recognize your loyal guests, every time they come",
+          "s3.p":
+            "Track family & corporate member cards, loyalty stickers, and active vouchers, so frequent guests feel recognized, not treated like first-timers.",
+          "s3.l1": "Individual, family, and corporate members",
+          "s3.l2": "Sticker progress & active vouchers",
+          "s3.l3": "Quick search by name, member number, or phone",
+          "s3.cap":
+            "Membership, family & corporate cards, stickers, and vouchers",
+          "more.eyebrow": "More",
+          "more.title": "And There's More",
+          "more.sub":
+            "Supporting features to keep your operations and business decisions on track.",
+          "more.i1t": "Marketing, Operations & Spending Reports",
+          "more.i1p":
+            "Visit patterns, new vs. returning guests, top-spender leaderboards, and promo performance, ready to read anytime.",
+          "more.i2t": "Promotions & Rewards",
+          "more.i2p":
+            "Create promos with specific rewards to drive visits during slower hours or seasons.",
+          "more.i3t": "Downloadable Reservation Details",
+          "more.i3p":
+            "Guests can receive and download their own reservation details, clear and tidy, no back-and-forth phone calls.",
+          "more.i4t": "Centralized Guest History",
+          "more.i4p":
+            "Reservations, walk-ins, and guest profiles stored in one place, your restaurant never loses guest data again.",
+          "more.i5t": "Guest Birthday Reminders",
+          "more.i5p":
+            "Know which guests celebrate birthdays this month, the perfect moment for a personal touch.",
+          "more.i6t": "Access from Anywhere",
+          "more.i6p":
+            "Web-based and responsive, open it from the host's tablet, the cashier's computer, or the manager's phone.",
+          "how.eyebrow": "How It Works",
+          "how.title": "Get Started in 3 Steps",
+          "how.sub":
+            "No complicated installation. Our team guides your onboarding.",
+          "how.s1t": "Consultation",
+          "how.s1p":
+            "Tell us how your restaurant operates. We'll recommend the dashboard, area, and membership setup that fits best.",
+          "how.s2t": "Setup & Training",
+          "how.s2p":
+            "We configure the system to your needs, then train your staff until they're confident using Quick Walk-In and the dashboard in daily operations.",
+          "how.s3t": "Go-Live",
+          "how.s3p":
+            "Your restaurant starts running on Intoch, backed by our support team, ready to help whenever needed.",
+          "why.eyebrow": "Why Intoch",
+          "why.title": "Built for the Rhythm of Restaurant Work",
+          "why.sub":
+            "Not clunky corporate software, Intoch is designed around how restaurants actually work.",
+          "why.b1t": "Simple for Staff",
+          "why.b1p":
+            "Designed for fast-paced operations. No weeks of training needed to get started.",
+          "why.b2t": "One System, Not Five",
+          "why.b2p":
+            "Reservations, walk-ins, membership, and reports combined in one platform, no app-hopping.",
+          "why.b3t": "Your Guest Data Is Yours",
+          "why.b3p":
+            "All guest and member history is your restaurant's own asset, stored securely and accessible anytime.",
+          "why.b4t": "Local Team by Your Side",
+          "why.b4p":
+            "Onboarding, staff training, and support from a team that understands how restaurants here operate.",
+          "faq.title": "Frequently Asked Questions",
+          "faq.q1": "Is our guest data safe?",
+          "faq.a1":
+            "Reservation, walk-in, and member data is stored in your restaurant's own database, never shared with third parties. Staff access is controlled by role.",
+          "faq.q2": "How long does it take staff to get used to Intoch?",
+          "faq.a2":
+            "The core flows, Quick Walk-In and reservation entry, are designed to be simple, most staff are comfortable within one training shift. Our team stays with you until they're confident.",
+          "faq.q3": "Can it be used on multiple devices at once?",
+          "faq.a3":
+            "Yes. Intoch is web-based, so it can be open simultaneously on the host's tablet, the cashier's computer, and the manager's phone, with data synced in real time.",
+          "faq.q4": "What if we already have guest data from an old system?",
+          "faq.a4":
+            "Our team can help migrate your data during onboarding, so your existing guest and member history isn't lost.",
+          "faq.q5": "How much does Intoch cost?",
+          "faq.a5":
+            "Pricing depends on your restaurant's scale and needs. Contact our team for a consultation and a tailored quote.",
+          "cta.title": "Ready to Never Lose Track of a Guest Again?",
+          "cta.sub":
+            "Tell our team about your restaurant's needs. We'll prepare a demo and a proposal tailored to your business scale.",
+          "cta.email": "Email Our Team",
+          "footer.copy": "© 2026 Intoch. All rights reserved.",
+        };
+
+        // TODO SEBELUM PUBLISH: ganti 6281234567890 di kedua entri `wa` di
+        // bawah dengan nomor WhatsApp sales asli.
+        var META = {
+          id: {
+            title: "Intoch, Sistem Manajemen Tamu & Membership untuk Restoran",
+            desc: "Intoch membantu restoran mengelola reservasi, walk-in, dan program membership dalam satu dashboard. Hubungi tim kami untuk demo.",
+            wa: "https://wa.me/6281234567890?text=Halo%2C%20saya%20tertarik%20dengan%20Intoch%20untuk%20restoran%20saya.",
+          },
+          en: {
+            title:
+              "Intoch, Guest & Membership Management System for Restaurants",
+            desc: "Intoch helps restaurants manage reservations, walk-ins, and membership programs in one dashboard. Contact our team for a demo.",
+            wa: "https://wa.me/6281234567890?text=Hello%2C%20I%27m%20interested%20in%20Intoch%20for%20my%20restaurant.",
+          },
+        };
+
+        // Capture the Indonesian originals straight from the HTML
+        var i18nEls = document.querySelectorAll("[data-i18n]");
+        var ID = {};
+        i18nEls.forEach(function (el) {
+          var key = el.getAttribute("data-i18n");
+          if (!(key in ID)) ID[key] = el.innerHTML;
+        });
+
+        var langToggle = document.getElementById("langToggle");
+        var waLink = document.getElementById("waLink");
+        var metaDesc = document.querySelector('meta[name="description"]');
+        var currentLang = "id";
+
+        function setLang(lang) {
+          currentLang = lang;
+          var dict = lang === "en" ? EN : ID;
+          i18nEls.forEach(function (el) {
+            var key = el.getAttribute("data-i18n");
+            if (dict[key] != null) el.innerHTML = dict[key];
+          });
+          document.documentElement.lang = lang;
+          document.title = META[lang].title;
+          if (metaDesc) metaDesc.setAttribute("content", META[lang].desc);
+          if (waLink) waLink.setAttribute("href", META[lang].wa);
+          // Highlighted flag = current language
+          langToggle
+            .querySelector(".lang-opt-id")
+            .classList.toggle("active", lang === "id");
+          langToggle
+            .querySelector(".lang-opt-en")
+            .classList.toggle("active", lang === "en");
+          try {
+            localStorage.setItem("intoch-lang", lang);
+          } catch (e) {
+            /* private mode, ignore */
+          }
+        }
+
+        langToggle.addEventListener("click", function () {
+          setLang(currentLang === "id" ? "en" : "id");
+        });
+
+        // Restore saved preference (default: Indonesian)
+        var saved = null;
+        try {
+          saved = localStorage.getItem("intoch-lang");
+        } catch (e) {
+          /* ignore */
+        }
+        if (saved === "en") setLang("en");
+      })();
+    </script>
+    <!-- ================================================================
+         INTOCH FX ENGINE
+         Techniques ported from intoch-generator/lib/{backgrounds,theme}.js
+         and scenes/rolling-reveal.js.
+
+         Two things are deliberately NOT copied from the generator:
+
+         1. The generator paints text with ctx.fillText. Canvas text would
+            destroy SEO, break the ID/EN toggle, and make the copy
+            unselectable. The scramble ALGORITHM is ported; the renderer
+            stays real DOM.
+         2. The generator's palettes are dark. Everything here is
+            multiply-composited for a cream page.
+
+         This block must load AFTER the i18n script above: that script
+         caches each element's innerHTML as the Indonesian source of
+         truth, so mutating text before it runs would cache scrambled
+         junk permanently.
+         ================================================================ -->
+    <script>
+      (function () {
+        "use strict";
+
+        var reduce = window.matchMedia
+          ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          : false;
+        if (reduce) return;
+
+        /* rgba() kept from lib/theme.js: still used by the hero bloom. */
+        function toRGB(hex) {
+          var h = String(hex).replace("#", "").trim();
+          var x = h.length === 3 ? h.split("").map(function (c) { return c + c; }).join("") : h;
+          var n = parseInt(x, 16);
+          return isFinite(n)
+            ? { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 }
+            : { r: 11, g: 14, b: 26 };
+        }
+        function rgba(hex, a) {
+          var c = toRGB(hex);
+          return "rgba(" + c.r + "," + c.g + "," + c.b + "," + a + ")";
+        }
+
+        var cs = getComputedStyle(document.documentElement);
+        var ACCENT = (cs.getPropertyValue("--primary") || "#114fa1").trim();
+        var ACCENT2 = (cs.getPropertyValue("--gold") || "#c8a96b").trim();
+
+        /* ---------- gradient layers, nudged by scroll ----------
+           One passive scroll listener, rAF-throttled, writing a single CSS
+           custom property per visible section. No canvas, no per-frame
+           painting. The travel is intentionally tiny (-14%..14% of a
+           background-size that is 240% tall) so it reads as depth rather
+           than as something sliding around. */
+        var layers = [];
+        Array.prototype.forEach.call(
+          document.querySelectorAll("section[data-fx]"),
+          function (host) {
+            var d = document.createElement("div");
+            d.className = "fx-layer";
+            d.setAttribute("aria-hidden", "true");
+            host.insertBefore(d, host.firstChild);
+            layers.push({ host: host, el: d, on: false });
+          }
+        );
+
+        var ticking = false;
+        function updateLayers() {
+          ticking = false;
+          var vh = window.innerHeight || 1;
+          for (var i = 0; i < layers.length; i++) {
+            var L = layers[i];
+            var r = L.host.getBoundingClientRect();
+            if (r.bottom < -200 || r.top > vh + 200) continue;
+            /* p: 0 when the section's top enters the bottom of the viewport,
+               1 when its bottom leaves the top. */
+            var p = (vh - r.top) / (vh + r.height);
+            p = p < 0 ? 0 : p > 1 ? 1 : p;
+            L.el.style.setProperty("--fx-shift", (p * 20 - 10).toFixed(2) + "%");
+            if (!L.on) {
+              L.on = true;
+              L.el.classList.add("on");
+            }
+          }
+        }
+        function onScroll() {
+          if (!ticking) {
+            ticking = true;
+            requestAnimationFrame(updateLayers);
+          }
+        }
+        window.addEventListener("scroll", onScroll, { passive: true });
+        window.addEventListener("resize", onScroll);
+        updateLayers();
+
+        /* ================= DECODER =================
+           Algorithm from scenes/rolling-reveal.js: every junk glyph is a
+           pure hash of (line, char, tick), never Math.random(), so a given
+           frame is identical on every run. Rendered into DOM text, not canvas.
+           ========================================== */
+        var CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!<>-_/[]{}=+*^?#@$%&~";
+        function hash(a, b, c) {
+          var h = (a * 73856093) ^ (b * 19349663) ^ (c * 83492791);
+          h = Math.imul(h ^ (h >>> 15), 2246822507);
+          h = Math.imul(h ^ (h >>> 13), 3266489909);
+          return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+        }
+        /* 'tengah ke tepi' — centre outwards, the generator's default order. */
+        function delayOf(i, len, speed) {
+          var c = (len - 1) / 2;
+          return Math.abs(i - c) * speed;
+        }
+
+        var runs = [];
+        function decode(el) {
+          var html = el.innerHTML;
+          /* textContent carries the source newlines and indentation. Collapse
+             them, or the scramble animates 30 characters of whitespace and
+             every delay is computed against the wrong length. */
+          var plain = el.textContent.replace(/\s+/g, " ").trim();
+          if (!plain) return;
+
+          /* Freeze the rendered height so the centre-out reveal cannot push
+             the page around as glyphs resolve. */
+          var h = el.getBoundingClientRect().height;
+          if (h) el.style.minHeight = h + "px";
+
+          var speed = 0.028, roll = 0.42;
+          var len = plain.length;
+          var total = delayOf(0, len, speed) + roll;
+          var t0 = performance.now();
+          var rec = { el: el, html: html, done: false };
+          runs.push(rec);
+          el.classList.add("decode-run");
+
+          function step(now) {
+            if (rec.done) return;
+            var t = (now - t0) / 1000;
+            var out = "";
+            for (var i = 0; i < len; i++) {
+              var ch = plain[i];
+              if (ch === " " || ch === "\n") { out += ch; continue; }
+              var d = delayOf(i, len, speed);
+              if (t >= d + roll) out += ch;
+              else if (t < d) out += " ";
+              else {
+                var tick = Math.floor((t - d) * 26);
+                out += CHARS[Math.floor(hash(1, i, tick) * CHARS.length)];
+              }
+            }
+            el.textContent = out;
+            if (t < total) requestAnimationFrame(step);
+            else finish(rec);
+          }
+          requestAnimationFrame(step);
+        }
+        function finish(rec) {
+          if (rec.done) return;
+          rec.done = true;
+          rec.el.innerHTML = rec.html; /* restore exact markup, <em> and all */
+          rec.el.style.minHeight = "";
+          rec.el.classList.remove("decode-run");
+        }
+        function finishAll() {
+          runs.forEach(finish);
+          runs.length = 0;
+        }
+
+        function armDecoders() {
+          if (!("IntersectionObserver" in window)) return;
+          var seen = new WeakSet();
+          var dio = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (e) {
+                if (!e.isIntersecting || seen.has(e.target)) return;
+                seen.add(e.target);
+                dio.unobserve(e.target);
+                decode(e.target);
+              });
+            },
+            { threshold: 0.35 }
+          );
+          document.querySelectorAll("[data-decode]").forEach(function (el) { dio.observe(el); });
+        }
+
+        /* A language switch rewrites innerHTML underneath us. Any in-flight
+           decode would otherwise restore the previous language's markup. */
+        var toggle = document.getElementById("langToggle");
+        if (toggle) toggle.addEventListener("click", finishAll, true);
+
+
+        /* ================= FAQ ACCORDION =================
+           <details> has no animatable middle state, so each body is wrapped
+           and its height driven explicitly. Opening one closes whatever else
+           is open, so only a single answer is ever on screen.
+
+           Note this runs alongside the i18n script, which rewrites innerHTML
+           of [data-i18n] elements on language switch. The wrapper is added
+           AROUND those elements, never inside one, so a language switch
+           replaces the <p> text and leaves the accordion structure intact.
+           ========================================================= */
+        var faqItems = [].slice.call(document.querySelectorAll(".faq-item"));
+
+        faqItems.forEach(function (d) {
+          var summary = d.querySelector("summary");
+          if (!summary) return;
+
+          var body = document.createElement("div");
+          body.className = "faq-body";
+          while (summary.nextSibling) body.appendChild(summary.nextSibling);
+          d.appendChild(body);
+          d.__body = body;
+
+          if (!d.open) body.style.height = "0px";
+
+          summary.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            if (d.__busy) return;
+            if (d.open) closeItem(d);
+            else {
+              faqItems.forEach(function (o) {
+                if (o !== d && o.open) closeItem(o);
+              });
+              openItem(d);
+            }
+          });
+        });
+
+        function settle(d, body, finalHeight) {
+          d.__busy = true;
+          var done = function (e) {
+            if (e && e.target !== body) return;
+            body.removeEventListener("transitionend", done);
+            body.classList.remove("animating");
+            d.__busy = false;
+            if (finalHeight === null) {
+              body.style.height = "";   /* let it size to content again */
+            } else {
+              d.open = false;
+              body.style.height = "0px";
+            }
+          };
+          body.addEventListener("transitionend", done);
+          /* transitionend never fires under reduced motion (no transition),
+             so make sure the state still lands */
+          setTimeout(function () { if (d.__busy) done(); }, 520);
+        }
+
+        function openItem(d) {
+          var body = d.__body;
+          d.open = true;
+          body.classList.add("animating");
+          body.style.height = "0px";
+          /* read back so the browser registers 0 before the target height */
+          void body.offsetHeight;
+          body.style.height = body.scrollHeight + "px";
+          settle(d, body, null);
+        }
+
+        function closeItem(d) {
+          var body = d.__body;
+          body.classList.add("animating");
+          body.style.height = body.scrollHeight + "px";
+          void body.offsetHeight;
+          body.style.height = "0px";
+          settle(d, body, 0);
+        }
+
+        /* ================= COUNT-UP ================= */
+        function countUp(el) {
+          var raw = el.getAttribute("data-count");
+          var m = raw.match(/^([+\-]?)(\d+)(.*)$/);
+          if (!m) return;
+          var sign = m[1], target = parseInt(m[2], 10), suffix = m[3];
+          var dur = 1100, t0 = performance.now();
+          function step(now) {
+            var p = Math.min(1, (now - t0) / dur);
+            var e = 1 - Math.pow(1 - p, 3); /* easeOutCubic */
+            el.textContent = sign + Math.round(target * e) + suffix;
+            if (p < 1) requestAnimationFrame(step);
+          }
+          el.textContent = sign + "0" + suffix;
+          requestAnimationFrame(step);
+        }
+        if ("IntersectionObserver" in window) {
+          var cio = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (e) {
+                if (!e.isIntersecting) return;
+                cio.unobserve(e.target);
+                countUp(e.target);
+              });
+            },
+            { threshold: 0.6 }
+          );
+          document.querySelectorAll("[data-count]").forEach(function (el) { cio.observe(el); });
+        }
+
+        /* ================= MOCKUP CHOREOGRAPHY =================
+           Focus works by fading the non-focused rows back, so the highlighted
+           part is never covered and nothing gets cropped by a transform.
+
+           The multi-step panels loop for as long as they are on screen, and
+           stop the moment they leave it: a timer running against an invisible
+           panel is just battery drain.
+           ========================================================= */
+        var SEQ = {
+          walkin: ["walkin"],
+          dashboard: ["walkin", "reservasi", "walkinlist"],
+          membership: ["stats", "table"],
+        };
+        var HOLD = { dashboard: 1900, membership: 2300 };
+
+        function lit(el, name, on) {
+          var p = el.querySelector('[data-part="' + name + '"]');
+          if (p) p.classList.toggle("lit", on);
+        }
+
+        function makePlayer(el) {
+          var kind = el.getAttribute("data-mock");
+          var parts = SEQ[kind] || [];
+          var hold = HOLD[kind] || 1900;
+          var timer = null;
+          var i = 0;
+
+          return {
+            start: function () {
+              if (!parts.length || timer) return;
+              el.classList.add("focusing");
+
+              /* A single-part panel has nothing to cycle through: light it and
+                 leave it. Looping one item would be a blink, and with hold 0
+                 it would spin the timer flat out. */
+              if (parts.length < 2) {
+                lit(el, parts[0], true);
+                return;
+              }
+              var step = function () {
+                lit(el, parts[(i - 1 + parts.length) % parts.length], false);
+                lit(el, parts[i], true);
+                i = (i + 1) % parts.length;
+                timer = setTimeout(step, hold);
+              };
+              timer = setTimeout(step, 450);
+            },
+            stop: function () {
+              if (timer) {
+                clearTimeout(timer);
+                timer = null;
+              }
+            },
+          };
+        }
+
+        if ("IntersectionObserver" in window) {
+          var players = new WeakMap();
+          var mockIO = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (e) {
+                var pl = players.get(e.target);
+                if (!pl) return;
+                if (e.isIntersecting) pl.start();
+                else pl.stop();
+              });
+            },
+            { threshold: 0.35 }
+          );
+          document.querySelectorAll("[data-mock]").forEach(function (el) {
+            players.set(el, makePlayer(el));
+            mockIO.observe(el);
+          });
+        }
+
+        /* ================= BLOOM behind hero metrics ================= */
+
+
+        var heroMedia = document.querySelector(".hero-media");
+        if (heroMedia) {
+          var b = document.createElement("div");
+          b.className = "fx-bloom";
+          b.setAttribute("aria-hidden", "true");
+          b.style.cssText +=
+            ";left:8%;top:14%;width:64%;height:64%;background:radial-gradient(circle," +
+            rgba(ACCENT, 0.22) + " 0%," + rgba(ACCENT2, 0.1) + " 45%,rgba(255,255,255,0) 70%);";
+          heroMedia.insertBefore(b, heroMedia.firstChild);
+          requestAnimationFrame(function () { b.classList.add("on"); });
+        }
+      })();
+    </script>
+  </body>
+</html>
