@@ -8,9 +8,12 @@
 // reading item ids back out of the rendered DOM — which is closer to what a
 // real user does anyway.
 const fs = require("fs");
+const path = require("path");
 const { JSDOM } = require("jsdom");
 
-const ROOT = "/sessions/lucid-nifty-bell/mnt/Restoran/blueheron-gms";
+// Was an absolute path into a DIFFERENT repo on one particular machine, so
+// this suite could never run anywhere else. Anchored to this repo instead.
+const ROOT = path.join(__dirname, "..");
 const html = fs.readFileSync(ROOT + "/index.html", "utf8");
 const dom = new JSDOM(html, {
   runScripts: "outside-only",
@@ -27,6 +30,10 @@ w.toast = (m, kind) => console.log(`  toast[${kind || "ok"}]: ${m}`);
 // config.js is not loaded here, so t() (the i18n lookup) is stubbed as a
 // pass-through. Translation itself is covered by js/invoice.i18n.test.js.
 w.t = (s) => s;
+// Same reason: restaurantName() lives in config.js and reads app_settings.
+// The invoice header is not what this suite measures, so a fixed name keeps
+// the arithmetic under test isolated from the branding settings.
+w.restaurantName = () => "Restoran";
 w.currentPage = "invoice";
 Object.defineProperty(w.HTMLElement.prototype, "clientWidth", { value: 900 });
 

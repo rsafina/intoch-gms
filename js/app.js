@@ -90,6 +90,10 @@ async function loadAppSettings() {
   if (st.high_per_pax > 0) HIGH_SPEND_PER_PAX = Number(st.high_per_pax);
   if (st.sticky_days > 0) HIGH_SPENDER_STICKY_DAYS = Number(st.sticky_days);
   if (typeof applyMembershipSettings === "function") applyMembershipSettings();
+  // The staff app already has every app_settings row in hand here, so hand
+  // the branding row straight to the branding module instead of making it
+  // run a second query for a row we just fetched.
+  if (typeof initBranding === "function") initBranding(APP_SETTINGS.branding);
 }
 
 /**
@@ -585,10 +589,15 @@ function normalizePhone(value) {
 }
 
 function truncateNotes(text, maxChars = 200) {
-  const t = String(text ?? "").trim();
-  if (!t) return "";
-  if (t.length <= maxChars) return t;
-  return t.slice(0, maxChars) + "…";
+  // Named `trimmed`, not `t`: `t` is the translation helper, and a local
+  // binding of that name turns every t("...") in the same scope into
+  // "TypeError: t is not a function". See CLAUDE.md, "Never declare a local
+  // variable named t". Harmless here today, a landmine the moment somebody
+  // adds a translated string to this function.
+  const trimmed = String(text ?? "").trim();
+  if (!trimmed) return "";
+  if (trimmed.length <= maxChars) return trimmed;
+  return trimmed.slice(0, maxChars) + "…";
 }
 
 function formatSpendInput(element) {
@@ -694,6 +703,8 @@ const SETTINGS_SUBPAGES = [
   "prizes",
   "settings-menu",
   "settings-thresholds",
+  "settings-branding",
+  "settings-staff",
 ];
 
 function defaultSettingsTab() {
@@ -778,6 +789,11 @@ function navigateTo(page) {
     renderFullMenuLink();
   }
   if (page === "settings-thresholds") renderThresholdSettings();
+  if (page === "settings-branding") renderBrandingSettings();
+  // Always re-read from the database rather than trusting a cached list:
+  // this screen is the one place where "who can log in" is decided, and a
+  // stale list is how two people end up editing the same account.
+  if (page === "settings-staff") loadStaffUsers();
   if (page === "membership") loadMembership();
   if (page === "broadcast") loadBroadcast();
   if (isAdminDashboard) loadAdminDashboard();
@@ -1551,7 +1567,15 @@ function renderAdminAttention(items) {
 // (per Rere's call: this-month window + phone number visible).
 async function loadAdminBirthdays() {
   const { data, error } = await supabaseQuery(
-    () => db.from("guests").select("name, phone, birthday").not("birthday", "is", null),
+    () =>
+      db
+        .from("guests")
+        // `id` added 2026-08-23: the follow-up tick is keyed by guest id, and
+        // this is the only birthday query an admin's session runs (the
+        // front-desk dashboard is skipped at boot for admins to save egress),
+        // so without it the owner's birthday badge never lights up.
+        .select("id, name, phone, birthday")
+        .not("birthday", "is", null),
     "Failed to load admin dashboard birthdays",
   );
   const listEl = document.getElementById("admin-birthdays-list");
@@ -1574,15 +1598,27 @@ async function loadAdminBirthdays() {
     }))
     .sort((a, b) => a.day - b.day);
 
+  // Feeds the birthday badge for the OWNER. Her session skips the front-desk
+  // dashboard at boot (see initializeApplication), so this is the only
+  // birthday query she runs and without it her bell stays dark all day —
+  // which would make the notification useless to the person who asked for it.
+  const year = now.getFullYear();
+  await loadBirthdayGreetings(matches.map((g) => g.id), year);
+  computeBirthdayAlerts(data, thisMonth + 1, year);
+
   listEl.innerHTML = matches.length
     ? matches
-        .map(
-          (g) => `
-      <div class="flex justify-between items-center py-1 border-b border-[#F2EFE9] last:border-0">
-        <span>${formatGuestName(g)} <span class="text-[#999] text-xs">— ${monthNameLong(thisMonth + 1).slice(0, 3)} ${g.day}</span></span>
-        <span class="text-[#999] text-xs">${escapeHtml(g.phone || "—")}</span>
-      </div>`,
-        )
+        .map((g) => {
+          const greeted = isBirthdayGreeted(g.id, year);
+          return `
+      <div class="flex justify-between items-center gap-3 py-1.5 border-b border-[#F2EFE9] last:border-0 ${greeted ? "opacity-60" : ""}">
+        <span class="min-w-0 truncate">${formatGuestName(g)} <span class="text-[#999] text-xs">— ${monthNameLong(thisMonth + 1).slice(0, 3)} ${g.day}</span></span>
+        <span class="flex items-center gap-2 shrink-0">
+          <span class="text-[#999] text-xs">${escapeHtml(g.phone || "—")}</span>
+          ${birthdayFollowUpControls(g, year, "admin")}
+        </span>
+      </div>`;
+        })
         .join("")
     : '<p class="text-[#bbb]">No birthdays this month</p>';
 }
@@ -9999,7 +10035,12 @@ function computeDaysUntilBirthday(birthdayStr, today) {
   let bDay = parseInt(parts[2], 10);
   if (!bMonth || !bDay) return null;
 
-  const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  // `todayMidnight`, not `t` — see the note in truncateNotes().
+  const todayMidnight = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
 
   const buildOccurrence = (year) => {
     // Feb 29 in a non-leap year -> fall back to Feb 28
@@ -10010,26 +10051,134 @@ function computeDaysUntilBirthday(birthdayStr, today) {
     return new Date(year, bMonth - 1, bDay);
   };
 
-  let occurrence = buildOccurrence(t.getFullYear());
-  if (occurrence < t) {
-    occurrence = buildOccurrence(t.getFullYear() + 1);
+  let occurrence = buildOccurrence(todayMidnight.getFullYear());
+  if (occurrence < todayMidnight) {
+    occurrence = buildOccurrence(todayMidnight.getFullYear() + 1);
   }
 
   const msPerDay = 24 * 60 * 60 * 1000;
-  return Math.round((occurrence - t) / msPerDay);
+  return Math.round((occurrence - todayMidnight) / msPerDay);
 }
 
-// NOTE: this does NOT query the DB itself — it's fed the guest/birthday
-// array that loadDashboardBirthdays() or loadBirthdayGuestsReport() already
-// fetched, so the alert bell adds zero extra egress on top of those
-// existing widgets (both already pull id/name/birthday/phone for every
-// guest with a non-null birthday).
-function computeBirthdayAlerts(guestsData) {
+// ============================================================
+// BIRTHDAY FOLLOW-UP
+// ============================================================
+// The loop this serves:
+//   badge lights up -> staff opens the list -> sends a WhatsApp greeting
+//   -> ticks the guest off -> badge goes down, list stays.
+//
+// SCOPE OF THE BADGE (Rere, 2026-08-23): birthdays in the CURRENT CALENDAR
+// MONTH that have not been greeted, counting only those that have not
+// already passed. The month is what she wants visible; a birthday that was
+// on the 3rd cannot be un-missed on the 20th, and leaving it red for the
+// rest of the month trains people to ignore the badge. Passed birthdays stay
+// in the list, labelled, and can still be ticked or messaged.
+//
+// Guests with no phone number are shown but never counted: the front desk
+// cannot WhatsApp them, so a badge that includes them is a task nobody can
+// finish. The row says why and offers the manual tick instead.
+//
+// THE TICK IS SEPARATE FROM THE WHATSAPP BUTTON, on purpose, matching
+// reservation follow-up. Opening wa.me proves a chat window opened, not that
+// a message was sent, and staff get interrupted mid-send constantly.
+
+// Greetings already recorded, keyed "<guestId>:<year>". Keyed by year rather
+// than a bare id because the dashboard shows this year while the report can
+// be browsing next January, and the two must not contaminate each other.
+let birthdayGreetedKeys = new Set();
+
+function birthdayGreetKey(guestId, year) {
+  return `${guestId}:${year}`;
+}
+
+function isBirthdayGreeted(guestId, year) {
+  return birthdayGreetedKeys.has(birthdayGreetKey(guestId, year));
+}
+
+// Has this birthday already gone by in the month being shown?
+//
+// It cannot be answered with computeDaysUntilBirthday(). That function rolls
+// a past date forward to NEXT year, so a birthday on the 3rd read on the 15th
+// comes back as ~353 days, which is >= 0 and looks perfectly upcoming. A
+// first version of this feature used `daysUntil >= 0` and counted every
+// passed birthday as still outstanding; the test suite caught it.
+//
+// The lists that use this are already filtered to one calendar month, so
+// comparing the day of the month is both correct and unambiguous.
+function birthdayHasPassed(guest, today) {
+  const now = today || new Date();
+  if (!guest || !guest.birthday) return false;
+  const bdMonth = parseInt(String(guest.birthday).substring(5, 7), 10);
+  if (bdMonth !== now.getMonth() + 1) return false; // not this month, not our call
+  const bdDay = parseInt(String(guest.birthday).substring(8, 10), 10);
+  return bdDay < now.getDate();
+}
+
+// True when this guest still needs action: not greeted, has a phone, and the
+// date has not gone by. This one predicate drives the badge, the nav dots and
+// the row styling, so the three can never disagree.
+function birthdayNeedsFollowUp(guest, year, today) {
+  if (!guest || !guest.birthday) return false;
+  if (!guest.phone) return false;
+  if (isBirthdayGreeted(guest.id, year)) return false;
+  if (birthdayHasPassed(guest, today || new Date())) return false;
+  const daysUntil = computeDaysUntilBirthday(guest.birthday, today || new Date());
+  return daysUntil !== null && daysUntil >= 0;
+}
+
+// Reads which of these guests have already been greeted this year. Small
+// query by design: it is filtered to the ids on screen, so it costs one
+// round trip and a few dozen rows, not the whole table.
+async function loadBirthdayGreetings(guestIds, year) {
+  if (!guestIds || !guestIds.length) return;
+  const { data, error } = await supabaseQuery(
+    () =>
+      db
+        .from("birthday_greetings")
+        .select("guest_id")
+        .eq("birthday_year", year)
+        .in("guest_id", guestIds),
+    "Failed to load birthday greetings",
+  );
+  if (error) return; // leave the cache as-is; worst case a tick looks unticked
+  // Drop this year's stale entries for the ids we just asked about, so a
+  // greeting undone in another tab disappears here too.
+  guestIds.forEach((id) => birthdayGreetedKeys.delete(birthdayGreetKey(id, year)));
+  (data || []).forEach((r) =>
+    birthdayGreetedKeys.add(birthdayGreetKey(r.guest_id, year)),
+  );
+}
+
+// Feeds the badge. `monthShown` / `yearShown` are the month the CALLER just
+// loaded, and the guard below is the whole point of them: the birthday report
+// lets a manager browse to December, and without this the badge would
+// recompute from December's data and clear itself while August still has
+// people waiting to be greeted.
+function computeBirthdayAlerts(guestsData, monthShown, yearShown) {
   const today = new Date();
+  const currentMonth = today.getMonth() + 1;
+  const currentYear = today.getFullYear();
+  if (
+    (monthShown !== undefined && monthShown !== currentMonth) ||
+    (yearShown !== undefined && yearShown !== currentYear)
+  ) {
+    return; // not this month — the badge is not ours to touch
+  }
+
+  const monthStr = String(currentMonth).padStart(2, "0");
   birthdayAlertData = (guestsData || [])
-    .map((g) => ({ ...g, daysUntil: computeDaysUntilBirthday(g.birthday, today) }))
-    .filter((g) => g.daysUntil !== null && g.daysUntil >= 0 && g.daysUntil <= 7)
-    .sort((a, b) => a.daysUntil - b.daysUntil);
+    .filter((g) => g.birthday && String(g.birthday).substring(5, 7) === monthStr)
+    .map((g) => ({
+      ...g,
+      daysUntil: computeDaysUntilBirthday(g.birthday, today),
+      greeted: isBirthdayGreeted(g.id, currentYear),
+      needsFollowUp: birthdayNeedsFollowUp(g, currentYear, today),
+    }))
+    // Still to do first (soonest first), then the rest of the month by day.
+    .sort((a, b) => {
+      if (a.needsFollowUp !== b.needsFollowUp) return a.needsFollowUp ? -1 : 1;
+      return (a.daysUntil ?? 999) - (b.daysUntil ?? 999);
+    });
 
   renderBirthdayAlertBadge();
   renderBirthdayAlertPanel();
@@ -10037,10 +10186,14 @@ function computeBirthdayAlerts(guestsData) {
   updateBirthdayNavDots();
 }
 
+function birthdayDueCount() {
+  return birthdayAlertData.filter((g) => g.needsFollowUp).length;
+}
+
 function renderBirthdayAlertBadge() {
   const badge = document.getElementById("bd-alert-badge");
   if (!badge) return;
-  const count = birthdayAlertData.length;
+  const count = birthdayDueCount();
   if (count > 0) {
     badge.textContent = count > 9 ? "9+" : String(count);
     badge.classList.remove("hidden");
@@ -10049,36 +10202,158 @@ function renderBirthdayAlertBadge() {
   }
 }
 
+// Short label for how far away a birthday is. Past dates are the interesting
+// case: computeDaysUntilBirthday() rolls to NEXT year once the day has gone,
+// so a birthday earlier this month comes back as ~350 rather than a negative
+// number. Detect it by comparing the day of the month, not the day count.
+function birthdayDayLabel(guest, today) {
+  const now = today || new Date();
+  if (birthdayHasPassed(guest, now)) return { text: t("passed"), color: "#999" };
+  if (guest.daysUntil === 0) return { text: t("Today"), color: "#C0392B" };
+  if (guest.daysUntil === 1) return { text: t("Tomorrow"), color: "#C0392B" };
+  return { text: `in ${guest.daysUntil} days`, color: "#28547C" };
+}
+
 function renderBirthdayAlertPanel() {
   const list = document.getElementById("bd-alert-list");
   if (!list) return;
 
   if (!birthdayAlertData.length) {
-    list.innerHTML =
-      '<p class="text-xs text-[#bbb] text-center py-4">No birthdays in the next 7 days.</p>';
+    list.innerHTML = `<p class="text-xs text-[#bbb] text-center py-4">${t("No birthdays this month.")}</p>`;
     return;
   }
 
+  const year = new Date().getFullYear();
+  const today = new Date();
   list.innerHTML = birthdayAlertData
     .map((g) => {
-      const dayLabel =
-        g.daysUntil === 0 ? "Today" : g.daysUntil === 1 ? "Tomorrow" : `in ${g.daysUntil} days`;
-      const dayColor = g.daysUntil === 0 ? "#C0392B" : "#28547C";
+      const day = birthdayDayLabel(g, today);
+      const greeted = g.greeted;
       return `
-      <div
-        class="flex items-center justify-between py-2 border-b border-[#F5F3EF] last:border-0 cursor-pointer hover:bg-[#FAFAF8]"
-        style="border-radius: 6px; padding-left: 4px; padding-right: 4px"
-        onclick="goToBirthdayReport()"
-        title="Go to Reports → Marketing → Birthday Guests"
-      >
-        <div>
-          <p class="text-sm font-medium text-[#222]">${formatGuestName(g)}</p>
-          <p class="text-xs text-[#999]">${g.phone ? escapeHtml(fmt.phone(g.phone)) : "No phone on file"}</p>
+      <div class="py-2 border-b border-[#F5F3EF] last:border-0 ${greeted ? "opacity-60" : ""}"
+           style="border-radius: 6px; padding-left: 4px; padding-right: 4px">
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-[#222] truncate">${formatGuestName(g)}</p>
+            <p class="text-xs text-[#999]">${g.phone ? escapeHtml(fmt.phone(g.phone)) : t("No phone on file")}</p>
+          </div>
+          <span class="text-xs font-semibold whitespace-nowrap" style="color: ${day.color}">${day.text}</span>
         </div>
-        <span class="text-xs font-semibold" style="color: ${dayColor}">${dayLabel}</span>
+        <div class="flex items-center gap-3 mt-1.5">
+          ${birthdayFollowUpControls(g, year, "panel")}
+        </div>
       </div>`;
     })
     .join("");
+}
+
+// One renderer for the bell panel, the dashboard table and the report table,
+// so the three can never drift into showing different states for the same
+// guest.
+function birthdayFollowUpControls(guest, year, context) {
+  const greeted = isBirthdayGreeted(guest.id, year);
+  const refresh = context === "panel" ? "panel" : context;
+  if (greeted) {
+    return `
+      <span class="text-xs font-semibold text-[#1FAF5E] whitespace-nowrap">${t("Greeting sent")}</span>
+      <button onclick="unmarkBirthdayGreeted('${guest.id}', ${year})"
+              class="text-xs text-[#999] hover:underline whitespace-nowrap">${t("Undo")}</button>`;
+  }
+  const waBtn = guest.phone
+    ? `<button onclick="sendBirthdayGreeting('${guest.id}', ${year})"
+               class="text-xs text-[#1FAF5E] hover:underline whitespace-nowrap font-medium">${t("Send WhatsApp")}</button>`
+    : `<span class="text-xs text-[#C0392B] whitespace-nowrap">${t("No phone")}</span>`;
+  return `
+    ${waBtn}
+    <button onclick="markBirthdayGreeted('${guest.id}', ${year}, 'manual')"
+            class="text-xs text-[#28547C] hover:underline whitespace-nowrap">${t("Mark as sent")}</button>`;
+}
+
+// Opens WhatsApp. Does NOT tick the guest off — see the note at the top of
+// this section. The toast is the nudge, because the whole feature is
+// worthless if staff message people and never mark it.
+async function sendBirthdayGreeting(guestId, year) {
+  if (typeof waSendBirthday !== "function") return;
+  const opened = await waSendBirthday(guestId);
+  if (!opened) return;
+  toast(
+    CURRENT_LANG === "id"
+      ? "WhatsApp dibuka. Setelah pesan terkirim, tekan \"Tandai sudah dikirim\"."
+      : 'WhatsApp opened. Once you have sent it, press "Mark as sent".',
+  );
+}
+
+async function markBirthdayGreeted(guestId, year, method) {
+  const session = getStaffSession();
+  const { error } = await supabaseQuery(
+    () =>
+      db.from("birthday_greetings").insert({
+        guest_id: guestId,
+        birthday_year: year,
+        greeted_by: session?.id || null,
+        greeted_by_name: session?.display_name || session?.username || null,
+        method: method === "whatsapp" ? "whatsapp" : "manual",
+      }),
+    "Failed to mark birthday greeting",
+  );
+  // 23505 means somebody at another till ticked the same guest a moment ago.
+  // That is the desired end state, not an error to shout about.
+  const duplicate =
+    error &&
+    (error.code === "23505" || /duplicate key|unique/i.test(error.message || ""));
+  if (error && !duplicate) {
+    toast(error.message || t("Could not mark this as sent"), "error");
+    return;
+  }
+  birthdayGreetedKeys.add(birthdayGreetKey(guestId, year));
+  if (!duplicate) toast(t("Marked as sent"));
+  refreshBirthdayViews();
+}
+
+async function unmarkBirthdayGreeted(guestId, year) {
+  const { error } = await supabaseQuery(
+    () =>
+      db
+        .from("birthday_greetings")
+        .delete()
+        .eq("guest_id", guestId)
+        .eq("birthday_year", year),
+    "Failed to undo birthday greeting",
+  );
+  if (error) {
+    toast(error.message || t("Could not undo this"), "error");
+    return;
+  }
+  birthdayGreetedKeys.delete(birthdayGreetKey(guestId, year));
+  toast(t("Marked as not sent yet"));
+  refreshBirthdayViews();
+}
+
+// Re-renders whichever birthday surfaces are actually on screen. Reloads
+// rather than patching the DOM in place: a tick is rare and a stale row here
+// is exactly the failure this feature exists to prevent.
+function refreshBirthdayViews() {
+  if (isViewingStaffDashboard()) loadDashboardBirthdays();
+  if (currentPage === "reports") loadBirthdayGuestsReport();
+  if (currentPage === "dashboard" && currentStaffRole() === "admin")
+    loadAdminBirthdays();
+  // The panel is rendered from birthdayAlertData, which the loaders above
+  // refresh. If neither ran (the bell is open over some other page), redraw
+  // from what is already in memory so the row updates immediately.
+  const stillOpen = !document
+    .getElementById("bd-alert-panel")
+    ?.classList.contains("hidden");
+  if (stillOpen) {
+    birthdayAlertData = birthdayAlertData.map((g) => ({
+      ...g,
+      greeted: isBirthdayGreeted(g.id, new Date().getFullYear()),
+      needsFollowUp: birthdayNeedsFollowUp(g, new Date().getFullYear()),
+    }));
+    renderBirthdayAlertBadge();
+    renderBirthdayAlertPanel();
+    updateBirthdayReportBadge();
+    updateBirthdayNavDots();
+  }
 }
 
 function toggleBirthdayAlertPanel() {
@@ -10094,8 +10369,23 @@ document.addEventListener("click", (e) => {
   if (!wrap.contains(e.target)) panel.classList.add("hidden");
 });
 
+// The bell used to send everyone to Reports. Staff cannot open Reports
+// (STAFF_ALLOWED_PAGES excludes it), so for them that was a button that
+// bounced them to the dashboard with "Access restricted". Managers still go
+// to the report; everyone else goes to the birthday table on the dashboard,
+// which shows the same month and now carries the same buttons.
 function goToBirthdayReport() {
   document.getElementById("bd-alert-panel")?.classList.add("hidden");
+  if (!hasAccess("reports")) {
+    navigateTo(currentStaffRole() === "admin" ? "staff-dashboard" : "dashboard");
+    setTimeout(() => {
+      document
+        .getElementById("dash-bd-label")
+        ?.closest(".card")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+    return;
+  }
   navigateTo("reports");
   setReportsTab("marketing");
   setTimeout(() => {
@@ -10109,9 +10399,12 @@ function goToBirthdayReport() {
 function updateBirthdayReportBadge() {
   const el = document.getElementById("bd-report-soon-count");
   if (!el) return;
-  const count = birthdayAlertData.length;
+  const count = birthdayDueCount();
   if (count > 0) {
-    el.textContent = `${count} in next 7 days`;
+    el.textContent =
+      CURRENT_LANG === "id"
+        ? `${count} belum diucapkan`
+        : `${count} still to greet`;
     el.classList.remove("hidden");
   } else {
     el.classList.add("hidden");
@@ -10119,9 +10412,11 @@ function updateBirthdayReportBadge() {
 }
 
 // Red dot on the Reports sidebar item + the Marketing tab, so staff notice
-// there's something to act on before they even open the panel.
+// there's something to act on before they even open the panel. Driven by the
+// same due count as the badge: once everyone this month has been greeted the
+// dots go out, even though the list is still full of names.
 function updateBirthdayNavDots() {
-  const hasUpcoming = birthdayAlertData.length > 0;
+  const hasUpcoming = birthdayDueCount() > 0;
   [
     "nav-reports-dot",
     "nav-reports-cake",
@@ -10298,13 +10593,9 @@ async function loadDashboardBirthdays() {
 
   if (error) {
     tbody.innerHTML =
-      '<tr><td colspan="5" class="px-4 py-8 text-center text-[#bbb] text-sm">Failed to load data</td></tr>';
+      '<tr><td colspan="6" class="px-4 py-8 text-center text-[#bbb] text-sm">Failed to load data</td></tr>';
     return;
   }
-
-  // Feed the alert bell from this same fetch (id/name/birthday/phone for
-  // every guest with a non-null birthday) — no extra query needed.
-  computeBirthdayAlerts(bdData);
 
   // Month filtering happens here (client-side)
   const filtered = (bdData || []).filter((g) => {
@@ -10313,13 +10604,22 @@ async function loadDashboardBirthdays() {
   });
 
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-[#bbb] text-sm">
+    tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-[#bbb] text-sm">
       No birthdays this month.<br><span class="text-xs mt-1 block">Guests with birthdays this month will appear here.</span>
     </td></tr>`;
+    // Still recompute: everyone may simply have been greeted already, and
+    // the badge has to go out rather than keep the last count on screen.
+    computeBirthdayAlerts(bdData, currentMonth, currentYear);
     return;
   }
 
   const guestIds = filtered.map((g) => g.id);
+
+  // Who has already been greeted this year. Must be awaited BEFORE the badge
+  // is computed and before the rows render, or the first paint shows every
+  // guest as outstanding and the number is wrong for a moment.
+  await loadBirthdayGreetings(guestIds, currentYear);
+  computeBirthdayAlerts(bdData, currentMonth, currentYear);
   const { data: visitsData } = await supabaseQuery(
     () =>
       db
@@ -10345,13 +10645,17 @@ async function loadDashboardBirthdays() {
         daysUntil !== null && daysUntil >= 0 && daysUntil <= 7
           ? `<span class="inline-block ml-2 px-2 py-0.5 rounded-full text-[10px] font-semibold" style="background:#FEF3C7;color:#92400E;">${daysUntil === 0 ? "Today" : `in ${daysUntil}d`}</span>`
           : "";
+      const greeted = isBirthdayGreeted(g.id, currentYear);
       return `
-      <tr class="border-b border-[#F5F3EF]">
+      <tr class="border-b border-[#F5F3EF] ${greeted ? "opacity-60" : ""}">
         <td class="px-4 py-3 text-sm text-[#222] font-medium">${formatGuestName(g)}${soonTag}</td>
         <td class="px-4 py-3 text-sm text-[#555]">${bdDisplay}</td>
         <td class="px-4 py-3 text-sm text-[#999]">${escapeHtml(fmt.phone(g.phone))}</td>
         <td class="px-4 py-3 text-sm">${formatSpendingTierBadge(g.spending_tier)}</td>
         <td class="px-4 py-3 text-sm text-[#999]">${lastVisit}</td>
+        <td class="px-4 py-3 text-sm">
+          <div class="flex items-center gap-3">${birthdayFollowUpControls(g, currentYear, "dashboard")}</div>
+        </td>
       </tr>`;
     })
     .join("");
@@ -10417,12 +10721,9 @@ async function loadBirthdayGuestsReport() {
 
   if (error) {
     tbody.innerHTML =
-      '<tr><td colspan="5" class="px-4 py-8 text-center text-[#bbb] text-sm">Failed to load data</td></tr>';
+      '<tr><td colspan="6" class="px-4 py-8 text-center text-[#bbb] text-sm">Failed to load data</td></tr>';
     return;
   }
-
-  // Feed the alert bell from this same fetch — no extra query needed.
-  computeBirthdayAlerts(data);
 
   // Filter by birthday month and fetch last visit dates
   const filtered = (data || []).filter((g) => {
@@ -10433,12 +10734,20 @@ async function loadBirthdayGuestsReport() {
 
   if (!filtered.length) {
     const label = `${monthNameLong(birthdayViewMonth)} ${birthdayViewYear}`;
-    tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-[#bbb] text-sm">No birthdays found for ${label}. Guests with birthdays in this month will appear here.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-[#bbb] text-sm">No birthdays found for ${label}. Guests with birthdays in this month will appear here.</td></tr>`;
+    computeBirthdayAlerts(data, birthdayViewMonth, birthdayViewYear);
     return;
   }
 
   // Fetch last visit dates for these guests
   const guestIds = filtered.map((g) => g.id);
+
+  // Greeted state for the month BEING VIEWED, which is not necessarily the
+  // current one. computeBirthdayAlerts() ignores the badge unless the two
+  // match; the ticks in the table below are per-viewed-month either way, so
+  // a manager can look back at December and see who was greeted then.
+  await loadBirthdayGreetings(guestIds, birthdayViewYear);
+  computeBirthdayAlerts(data, birthdayViewMonth, birthdayViewYear);
   const { data: visitsData } = await supabaseQuery(
     () =>
       db
@@ -10461,13 +10770,17 @@ async function loadBirthdayGuestsReport() {
     .map((g) => {
       const bdDisplay = g.birthday ? fmt.date(g.birthday) : "—";
       const lastVisit = lastVisitMap[g.id] ? fmt.date(lastVisitMap[g.id]) : "—";
+      const greeted = isBirthdayGreeted(g.id, birthdayViewYear);
       return `
-      <tr class="border-b border-[#F5F3EF]">
+      <tr class="border-b border-[#F5F3EF] ${greeted ? "opacity-60" : ""}">
         <td class="px-4 py-3 text-sm text-[#222] font-medium">${formatGuestName(g)}</td>
         <td class="px-4 py-3 text-sm text-[#555]">${bdDisplay}</td>
         <td class="px-4 py-3 text-sm text-[#999]">${escapeHtml(fmt.phone(g.phone))}</td>
         <td class="px-4 py-3 text-sm">${formatSpendingTierBadge(g.spending_tier)}</td>
         <td class="px-4 py-3 text-sm text-[#999]">${lastVisit}</td>
+        <td class="px-4 py-3 text-sm">
+          <div class="flex items-center gap-3">${birthdayFollowUpControls(g, birthdayViewYear, "report")}</div>
+        </td>
       </tr>
     `;
     })
@@ -11161,7 +11474,12 @@ function renderSettingsTabs(activePage) {
     { page: "settings-menu", label: t("Menu & Dishes"), managerOnly: false },
     { page: "prizes", label: t("Prizes"), managerOnly: true },
     { page: "settings-thresholds", label: t("Thresholds"), managerOnly: true },
-  ];
+    { page: "settings-branding", label: t("Branding"), managerOnly: true },
+    // Staff is admin-only, so it is filtered OUT of the list below rather
+    // than hidden with a CSS class. A hidden-but-present tab would still be
+    // in the DOM for a manager to find, and this tab decides who can log in.
+    { page: "settings-staff", label: t("Staff"), adminOnly: true },
+  ].filter((tab) => !tab.adminOnly || currentStaffRole() === "admin");
   const activeCls =
     "px-4 py-2 rounded-full text-sm font-medium bg-[#28547C] text-white transition";
   const idleCls =
@@ -11671,4 +11989,537 @@ async function saveFullMenuLink() {
 
   await loadAppSettings();
   toast(t("Settings saved"));
+}
+
+
+// ============================================================
+// SETTINGS: BRANDING (manager+)
+// ============================================================
+// Uploads the client's own logo so one codebase can serve every restaurant
+// without a per-client fork of the HTML. The reading side (fallbacks, the
+// data-brand-logo swap, what this deliberately does NOT cover) lives in
+// config.template.js under "BRANDING".
+const BRAND_MAX_BYTES = 2 * 1024 * 1024; // keep in sync with the bucket limit
+
+// The voucher card is a fixed-size canvas: the PNG is drawn at exactly these
+// dimensions and every text position below the header is measured against
+// them. A background of a different shape does not crop, it stretches.
+const VOUCHER_BG_W = 1084;
+const VOUCHER_BG_H = 1940;
+
+const BRAND_SLOTS = {
+  full: { key: "logo_url", input: "brand-file-full", prefix: "logo" },
+  small: { key: "small_logo_url", input: "brand-file-small", prefix: "mark" },
+  voucher: { key: "voucher_bg_url", input: "brand-file-voucher", prefix: "voucher-bg" },
+};
+
+function renderBrandingSettings() {
+  if (!isManagerOrAdmin()) return; // hasAccess() already blocks staff
+  Object.keys(BRAND_SLOTS).forEach((slot) => {
+    const url = brandAsset(slot);
+    const img = document.getElementById(`brand-preview-${slot}`);
+    if (img && url) img.src = url;
+    const state = document.getElementById(`brand-state-${slot}`);
+    if (state) {
+      const custom = brandUrlOk(BRANDING && BRANDING[BRAND_SLOTS[slot].key]);
+      state.textContent = custom ? t("Custom image") : t("Default image");
+      state.className = custom
+        ? "text-[11px] font-semibold text-[#28547C]"
+        : "text-[11px] text-[#999]";
+    }
+    const reset = document.getElementById(`brand-reset-${slot}`);
+    if (reset)
+      reset.classList.toggle(
+        "hidden",
+        !brandUrlOk(BRANDING && BRANDING[BRAND_SLOTS[slot].key]),
+      );
+    const input = document.getElementById(BRAND_SLOTS[slot].input);
+    if (input) input.value = "";
+  });
+}
+
+function validateBrandFile(file) {
+  const allowed = ["image/jpeg", "image/png", "image/webp"];
+  if (!allowed.includes(file.type))
+    return t("Use a JPG, PNG or WebP file. SVG is not accepted.");
+  if (file.size > BRAND_MAX_BYTES) return t("Image must be under 2 MB.");
+  return null;
+}
+
+// Reads the real pixel size before upload. Used only to WARN: a logo has no
+// one correct size, but a voucher background of the wrong shape produces a
+// visibly stretched card and it is worth one confirm() to prevent that.
+function readImageSize(file) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ w: img.naturalWidth, h: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(null);
+    };
+    img.src = url;
+  });
+}
+
+async function uploadBrandImage(slot) {
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can change settings"), "error");
+    return;
+  }
+  const conf = BRAND_SLOTS[slot];
+  if (!conf) return;
+  const file = document.getElementById(conf.input)?.files?.[0];
+  if (!file) {
+    toast(t("Pick an image file first"), "error");
+    return;
+  }
+  const problem = validateBrandFile(file);
+  if (problem) {
+    toast(problem, "error");
+    return;
+  }
+
+  if (slot === "voucher") {
+    const size = await readImageSize(file);
+    if (size && (size.w !== VOUCHER_BG_W || size.h !== VOUCHER_BG_H)) {
+      const msg =
+        CURRENT_LANG === "id"
+          ? `Gambar ini ${size.w}x${size.h} piksel. Kartu voucher digambar pada ${VOUCHER_BG_W}x${VOUCHER_BG_H}, jadi ukuran lain akan tertarik/gepeng, bukan terpotong. Tetap unggah?`
+          : `This image is ${size.w}x${size.h} pixels. The voucher card is drawn at ${VOUCHER_BG_W}x${VOUCHER_BG_H}, so a different size stretches rather than crops. Upload anyway?`;
+      if (!confirm(msg)) return;
+    }
+  }
+
+  const btn = document.getElementById(`brand-upload-${slot}`);
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = t("Uploading...");
+  }
+  loader(true);
+  try {
+    const ext = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[
+      file.type
+    ];
+    // Timestamped filename, never a fixed one. Overwriting a fixed path would
+    // leave the old image in every browser cache and in WhatsApp's preview
+    // cache, so the change would look like it silently did not happen.
+    const path = `${conf.prefix}-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}.${ext}`;
+    const { error: upErr } = await db.storage
+      .from(BRAND_BUCKET)
+      .upload(path, file, { contentType: file.type, upsert: false });
+    if (upErr) {
+      toast(upErr.message || t("Upload failed. Please try again."), "error");
+      return;
+    }
+    const { data: pub } = db.storage.from(BRAND_BUCKET).getPublicUrl(path);
+    const url = pub?.publicUrl || null;
+    if (!brandUrlOk(url)) {
+      toast(t("Upload failed. Please try again."), "error");
+      return;
+    }
+
+    const previous = BRANDING ? BRANDING[conf.key] : null;
+    const saved = await saveBrandingValue(conf.key, url);
+    if (!saved) return;
+
+    // Best-effort cleanup of the replaced file. Never block on it: an
+    // orphaned image in storage is harmless, a failed save is not.
+    if (brandUrlOk(previous)) removeBrandImageByUrl(previous);
+    toast(t("Logo updated"));
+  } finally {
+    loader(false);
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = t("Upload");
+    }
+  }
+}
+
+async function resetBrandImage(slot) {
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can change settings"), "error");
+    return;
+  }
+  const conf = BRAND_SLOTS[slot];
+  if (!conf) return;
+  if (!confirm(t("Go back to the built-in image?"))) return;
+  const previous = BRANDING ? BRANDING[conf.key] : null;
+  loader(true);
+  const saved = await saveBrandingValue(conf.key, null);
+  loader(false);
+  if (!saved) return;
+  if (brandUrlOk(previous)) removeBrandImageByUrl(previous);
+  toast(t("Back to the built-in image"));
+}
+
+// Writes ONE key of the branding row, re-reading the row first so two people
+// editing different slots at the same time cannot wipe each other's upload.
+// Returns true on success.
+async function saveBrandingValue(key, url) {
+  const { data: fresh } = await supabaseQuery(
+    () =>
+      db.from("app_settings").select("value").eq("key", "branding").maybeSingle(),
+    "Failed to read branding settings",
+  );
+  const value = { ...((fresh && fresh.value) || {}), [key]: url };
+  const { error } = await supabaseQuery(
+    () =>
+      db.from("app_settings").upsert({
+        key: "branding",
+        value,
+        updated_at: new Date().toISOString(),
+      }),
+    "Failed to save branding",
+  );
+  if (error) {
+    toast(error.message || t("Unable to save settings"), "error");
+    return false;
+  }
+  await loadAppSettings(); // refreshes APP_SETTINGS, BRANDING and the visible logos
+  renderBrandingSettings();
+  return true;
+}
+
+function removeBrandImageByUrl(url) {
+  try {
+    const marker = `/object/public/${BRAND_BUCKET}/`;
+    const idx = String(url).indexOf(marker);
+    if (idx === -1) return;
+    const path = decodeURIComponent(String(url).slice(idx + marker.length));
+    db.storage
+      .from(BRAND_BUCKET)
+      .remove([path])
+      .catch((e) => console.warn("branding cleanup failed", e));
+  } catch (e) {
+    console.warn("branding cleanup failed", e);
+  }
+}
+
+// ============================================================
+// SETTINGS: STAFF CONFIGURATION (admin only)
+// ============================================================
+// Creates the accounts the front desk logs in with. Admin-only because this
+// screen sets roles, and a manager who could set roles could promote
+// themselves, which would make the whole role system decorative.
+//
+// TWO THINGS THIS SCREEN DOES NOT DO, both on purpose:
+//
+// 1. No delete. staff_users.id is a foreign key on visits, walk-ins,
+//    reservations, vouchers and campaign logs. Deleting a leaver would either
+//    fail or orphan a year of "who served this table". Deactivate instead:
+//    the account cannot log in, and the history keeps their name.
+//
+// 2. No security. PINs are plain text and the anon key is public, exactly as
+//    everywhere else in this app. This screen makes staff management possible
+//    for the owner; it does not make it safe. See CLAUDE.md, "Must be fixed
+//    before the first sale".
+const STAFF_ROLES = ["staff", "manager", "admin"];
+let allStaffUsers = [];
+
+function staffRoleLabel(role) {
+  return role === "admin" ? t("Admin") : role === "manager" ? t("Manager") : t("Staff");
+}
+
+async function loadStaffUsers() {
+  if (currentStaffRole() !== "admin") return; // hasAccess() already blocks the rest
+  const listEl = document.getElementById("staff-list");
+  if (listEl) listEl.innerHTML = '<div class="loading-skeleton h-20"></div>';
+  const { data, error } = await supabaseQuery(
+    () =>
+      db
+        .from("staff_users")
+        .select("id, username, display_name, role, is_active, created_at")
+        .order("is_active", { ascending: false })
+        .order("display_name"),
+    "Failed to load staff",
+  );
+  if (error) {
+    if (listEl)
+      listEl.innerHTML = `<p class="text-sm text-[#B23B3B]">${t("Could not load the staff list. Check the connection and try again.")}</p>`;
+    return;
+  }
+  allStaffUsers = data || [];
+  renderStaffUsers();
+}
+
+// Counts the admins who can still log in. The UI uses this to refuse the
+// action that would leave nobody able to reach this screen; the database
+// trigger refuses it again, because this check runs in public JavaScript.
+function activeAdminCount(excludeId) {
+  return allStaffUsers.filter(
+    (u) => u.role === "admin" && u.is_active && u.id !== excludeId,
+  ).length;
+}
+
+function renderStaffUsers() {
+  const listEl = document.getElementById("staff-list");
+  if (!listEl) return;
+  if (!allStaffUsers.length) {
+    listEl.innerHTML = `<p class="text-sm text-[#999]">${t("No staff accounts yet.")}</p>`;
+    return;
+  }
+  const me = currentStaffId();
+  listEl.innerHTML = allStaffUsers
+    .map((u) => {
+      const isMe = u.id === me;
+      const badge =
+        u.role === "admin"
+          ? "bg-[#8B5E3C] text-white"
+          : u.role === "manager"
+            ? "bg-[#28547C] text-white"
+            : "bg-[#E7E4DE] text-[#555]";
+      return `
+        <div class="flex items-center justify-between gap-3 py-3 border-b border-[#EDE9E3] last:border-0 ${u.is_active ? "" : "opacity-60"}">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-medium text-[#333]">${escapeHtml(u.display_name)}</span>
+              <span class="inline-block text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full ${badge}">${staffRoleLabel(u.role)}</span>
+              ${isMe ? `<span class="text-[11px] text-[#999]">${t("(you)")}</span>` : ""}
+              ${u.is_active ? "" : `<span class="text-[11px] font-semibold text-[#B23B3B]">${t("Inactive")}</span>`}
+            </div>
+            <div class="text-xs text-[#999] mt-0.5">${escapeHtml(u.username)}</div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button onclick="openStaffModal('${u.id}')" class="btn-ghost text-xs px-3 py-1.5">${t("Edit")}</button>
+            <button onclick="toggleStaffActive('${u.id}')" class="btn-ghost text-xs px-3 py-1.5">${u.is_active ? t("Deactivate") : t("Activate")}</button>
+          </div>
+        </div>`;
+    })
+    .join("");
+}
+
+function openStaffModal(staffId) {
+  if (currentStaffRole() !== "admin") {
+    toast(t("Only an admin can manage staff"), "error");
+    return;
+  }
+  const user = staffId ? allStaffUsers.find((u) => u.id === staffId) : null;
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.value = v ?? "";
+  };
+  set("staff-form-id", user ? user.id : "");
+  set("staff-form-name", user ? user.display_name : "");
+  set("staff-form-username", user ? user.username : "");
+  set("staff-form-pin", "");
+  set("staff-form-role", user ? user.role : "staff");
+
+  const title = document.getElementById("staff-modal-title");
+  if (title) title.textContent = user ? t("Edit Staff") : t("Add Staff");
+  const pinHint = document.getElementById("staff-form-pin-hint");
+  if (pinHint)
+    pinHint.textContent = user
+      ? t("Leave blank to keep the current PIN.")
+      : t("Exactly 4 digits. The staff member types this to log in.");
+
+  // Username is the login key and changing it silently locks someone out of
+  // a shift, so it is set once at creation and read-only afterwards.
+  const usernameEl = document.getElementById("staff-form-username");
+  if (usernameEl) usernameEl.readOnly = !!user;
+  const usernameNote = document.getElementById("staff-form-username-note");
+  if (usernameNote) usernameNote.classList.toggle("hidden", !user);
+
+  // Demoting yourself out of admin is how an owner loses their own system.
+  const roleEl = document.getElementById("staff-form-role");
+  const isSelf = !!user && user.id === currentStaffId();
+  if (roleEl) roleEl.disabled = isSelf;
+  const roleNote = document.getElementById("staff-form-role-self-note");
+  if (roleNote) roleNote.classList.toggle("hidden", !isSelf);
+
+  showModal("modal-staff");
+}
+
+// 0000, 1111, 1234, 4321 and friends. Not blocked, because the owner knows
+// their own restaurant better than this function does, but worth one prompt:
+// a guessable PIN on a shared front-desk PC is how one person's login ends up
+// recording another person's shift.
+function isWeakPin(pin) {
+  if (/^(\d)\1{3}$/.test(pin)) return true;
+  const digits = pin.split("").map(Number);
+  const ascending = digits.every((d, i) => i === 0 || d === digits[i - 1] + 1);
+  const descending = digits.every((d, i) => i === 0 || d === digits[i - 1] - 1);
+  return ascending || descending;
+}
+
+async function saveStaffUser() {
+  if (currentStaffRole() !== "admin") {
+    toast(t("Only an admin can manage staff"), "error");
+    return;
+  }
+  const staffId = document.getElementById("staff-form-id")?.value || "";
+  const displayName =
+    document.getElementById("staff-form-name")?.value.trim() || "";
+  // Lowercased on the way in, because login compares the username EXACTLY.
+  // "Rina" typed at the login screen would never match "rina" in the table,
+  // and the front desk would blame the PIN.
+  const username =
+    document.getElementById("staff-form-username")?.value.trim().toLowerCase() || "";
+  const pin = document.getElementById("staff-form-pin")?.value.trim() || "";
+  const role = document.getElementById("staff-form-role")?.value || "staff";
+  const existing = staffId ? allStaffUsers.find((u) => u.id === staffId) : null;
+  const isSelf = !!existing && existing.id === currentStaffId();
+
+  if (displayName.length < 2) {
+    toast(t("Name is required (min 2 characters)"), "error");
+    return;
+  }
+  if (!staffId && !/^[a-z0-9._-]{3,20}$/.test(username)) {
+    toast(
+      t("Username must be 3-20 characters: lowercase letters, numbers, dot, dash or underscore."),
+      "error",
+    );
+    return;
+  }
+  if (!STAFF_ROLES.includes(role)) {
+    toast(t("Pick a role"), "error");
+    return;
+  }
+  // A new account always needs a PIN; an edit may leave it blank to keep it.
+  if (!staffId && !/^\d{4}$/.test(pin)) {
+    toast(t("PIN must be exactly 4 digits"), "error");
+    return;
+  }
+  if (staffId && pin && !/^\d{4}$/.test(pin)) {
+    toast(t("PIN must be exactly 4 digits"), "error");
+    return;
+  }
+  if (pin && isWeakPin(pin)) {
+    const msg =
+      CURRENT_LANG === "id"
+        ? "PIN ini mudah ditebak. Tetap gunakan?"
+        : "That PIN is easy to guess. Use it anyway?";
+    if (!confirm(msg)) return;
+  }
+  // The role select is disabled for yourself, but a disabled input is one
+  // devtools click away from being enabled, so check the value too.
+  const effectiveRole = isSelf ? existing.role : role;
+  if (
+    existing &&
+    existing.role === "admin" &&
+    existing.is_active &&
+    effectiveRole !== "admin" &&
+    activeAdminCount(existing.id) === 0
+  ) {
+    toast(
+      t("This is the last active admin. Promote someone else to admin first."),
+      "error",
+    );
+    return;
+  }
+
+  const btn = document.getElementById("staff-save-button");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = t("Saving...");
+  }
+  try {
+    const payload = { display_name: displayName, role: effectiveRole };
+    if (pin) payload.pin = pin;
+    if (!staffId) {
+      payload.username = username;
+      payload.is_active = true;
+    }
+
+    const { error } = await supabaseQuery(
+      () =>
+        staffId
+          ? db.from("staff_users").update(payload).eq("id", staffId)
+          : db.from("staff_users").insert(payload),
+      "Failed to save staff",
+    );
+    if (error) {
+      // 23505 = unique violation, which here can only be the username.
+      const dup =
+        error.code === "23505" || /duplicate key|unique/i.test(error.message || "");
+      toast(
+        dup
+          ? t("That username is already taken. Pick another one.")
+          : error.message || t("Failed to save staff"),
+        "error",
+      );
+      return;
+    }
+
+    // Editing your own account leaves the cached session copy stale, so the
+    // sidebar would keep showing the old name until the next login.
+    if (isSelf) {
+      const session = getStaffSession();
+      if (session) {
+        setStaffSession({
+          ...session,
+          display_name: displayName,
+          role: effectiveRole,
+        });
+        applyRoleToNav();
+        const nameEl = document.getElementById("staff-display-name");
+        if (nameEl) nameEl.textContent = displayName;
+      }
+    }
+
+    hideModal("modal-staff");
+    toast(staffId ? t("Staff updated") : t("Staff added"));
+    if (pin && !staffId) {
+      // The PIN is never shown again anywhere, so say it once, now.
+      toast(
+        CURRENT_LANG === "id"
+          ? `Beri tahu ${displayName}: username ${username}, PIN ${pin}`
+          : `Tell ${displayName}: username ${username}, PIN ${pin}`,
+      );
+    }
+    loadStaffUsers();
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = t("Save Staff");
+    }
+  }
+}
+
+async function toggleStaffActive(staffId) {
+  if (currentStaffRole() !== "admin") {
+    toast(t("Only an admin can manage staff"), "error");
+    return;
+  }
+  const user = allStaffUsers.find((u) => u.id === staffId);
+  if (!user) return;
+
+  if (user.is_active) {
+    if (user.id === currentStaffId()) {
+      toast(t("You cannot deactivate your own account."), "error");
+      return;
+    }
+    if (user.role === "admin" && activeAdminCount(user.id) === 0) {
+      toast(
+        t("This is the last active admin. Promote someone else to admin first."),
+        "error",
+      );
+      return;
+    }
+    const msg =
+      CURRENT_LANG === "id"
+        ? `Nonaktifkan ${user.display_name}? Mereka tidak bisa login lagi, tapi riwayat kerjanya tetap tersimpan. Kalau sedang login di PC lain, efeknya baru terasa setelah logout.`
+        : `Deactivate ${user.display_name}? They can no longer log in, and their work history is kept. If they are already logged in on another PC, it takes effect when that session logs out.`;
+    if (!confirm(msg)) return;
+  }
+
+  const { error } = await supabaseQuery(
+    () =>
+      db
+        .from("staff_users")
+        .update({ is_active: !user.is_active })
+        .eq("id", staffId),
+    "Failed to update staff",
+  );
+  if (error) {
+    toast(error.message || t("Failed to update staff"), "error");
+    return;
+  }
+  toast(user.is_active ? t("Staff deactivated") : t("Staff reactivated"));
+  loadStaffUsers();
 }

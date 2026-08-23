@@ -776,6 +776,7 @@
             style="display: flex; align-items: center; justify-content: center"
           >
             <img
+              data-brand-logo="full"
               src="assets/full-logo.png"
               alt="Logo"
               style="
@@ -842,7 +843,7 @@
             class="sidebar-logo"
             style="background: transparent; border-radius: 6px"
           >
-            <img src="assets/full-logo.png" alt="Logo" />
+            <img data-brand-logo="full" src="assets/full-logo.png" alt="Logo" />
           </div>
         </div>
       </div>
@@ -1410,7 +1411,7 @@
       >
         <div class="flex items-center justify-between mb-2">
           <span class="text-sm font-semibold text-[#28547C]"
-            >Birthdays — next 7 days</span
+            >Birthdays this month</span
           >
         </div>
         <div id="bd-alert-list">
@@ -1420,7 +1421,7 @@
           onclick="goToBirthdayReport()"
           class="btn-ghost text-xs w-full mt-2 justify-center"
         >
-          View in Reports → Marketing
+          See the full list
         </button>
       </div>
     </div>
@@ -1849,12 +1850,17 @@
                     >
                       Last Visit
                     </th>
+                    <th
+                      class="text-left px-4 py-3 text-xs text-[#999] uppercase tracking-wider font-medium"
+                    >
+                      Follow Up
+                    </th>
                   </tr>
                 </thead>
                 <tbody id="dash-bd-table-body">
                   <tr>
                     <td
-                      colspan="5"
+                      colspan="6"
                       class="px-4 py-8 text-center text-[#bbb] text-sm"
                     >
                       Loading...
@@ -3380,7 +3386,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                      changing the jsPDF page size in invoice.js. -->
                 <div id="inv-sheet">
                   <div class="inv-frame">
-                    <img class="inv-logo" src="assets/full-logo.png" alt="Logo" />
+                    <img class="inv-logo" data-brand-logo="full" src="assets/full-logo.png" alt="Logo" />
                     <div class="inv-rule-top"></div>
 
                     <div class="inv-billto">BILL TO :</div>
@@ -3406,7 +3412,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     </div>
 
                     <div class="inv-footer">
-                      <img class="inv-heron" src="assets/small-logo.png" alt="" />
+                      <img class="inv-heron" data-brand-logo="small" src="assets/small-logo.png" alt="" />
                       <div class="inv-welcome">
                         We look forward to welcoming you :)
                       </div>
@@ -4415,7 +4421,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                       id="bd-report-soon-count"
                       class="hidden text-[11px] font-semibold px-2 py-0.5 rounded-full"
                       style="background: #fef3c7; color: #92400e"
-                      >0 in next 7 days</span
+                      >0 still to greet</span
                     >
                   </h3>
                   <p class="text-[#999] text-sm mt-0.5">
@@ -4501,12 +4507,17 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                       >
                         Last Visit Date
                       </th>
+                      <th
+                        class="text-left px-4 py-3 text-xs text-[#999] uppercase tracking-wider font-medium"
+                      >
+                        Follow Up
+                      </th>
                     </tr>
                   </thead>
                   <tbody id="bd-table-body">
                     <tr>
                       <td
-                        colspan="5"
+                        colspan="6"
                         class="px-4 py-8 text-center text-[#bbb] text-sm"
                       >
                         Loading...
@@ -6353,6 +6364,209 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           </div>
         </div>
       </section>
+
+      <!-- ===== SETTINGS: BRANDING (logo images, manager+) ===== -->
+      <section id="page-settings-branding" class="page-section p-8">
+        <div class="max-w-3xl mx-auto">
+          <div class="settings-tabs mb-6" data-settings-tabs></div>
+          <div class="mb-8">
+            <div class="gold-bar mb-3"></div>
+            <h1 class="font-display text-3xl font-semibold text-[#28547C]" data-i18n>
+              Branding
+            </h1>
+            <p class="text-[#999] text-sm mt-1" data-i18n>
+              The logo shown to guests on the reservation and thank-you pages, on the spin
+              page, on this app, and on invoices. Upload once here instead of asking for a
+              new build.
+            </p>
+          </div>
+
+          <div class="card p-4 mb-6 bg-[#FBF7EF] border border-[#EADFC7]">
+            <p class="text-xs text-[#7A6A4F] leading-relaxed" data-i18n>
+              One thing this does not change: the preview picture WhatsApp shows when
+              someone forwards the booking link. WhatsApp reads that from the page before
+              any code runs, so it stays a fixed file in the build and has to be changed at
+              deploy time.
+            </p>
+          </div>
+
+          <div class="card p-6 mb-5">
+            <div class="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <h2 class="font-display text-xl font-semibold text-[#28547C] mb-1" data-i18n>
+                  Main logo
+                </h2>
+                <p class="text-xs text-[#999] mb-3" data-i18n>
+                  The wide one. Used on the guest pages, the login screen, the sidebar and
+                  the invoice header. Transparent PNG looks best. Any shape works: it is
+                  fitted to a box, never stretched.
+                </p>
+                <span id="brand-state-full" class="text-[11px] text-[#999]" data-i18n-skip></span>
+              </div>
+              <div class="shrink-0 bg-[#F8F6F2] border border-[#EDE9E3] rounded-10 p-3">
+                <img
+                  id="brand-preview-full"
+                  src="assets/full-logo.png"
+                  alt="Current main logo"
+                  style="width: 150px; height: 70px; object-fit: contain; display: block"
+                />
+              </div>
+            </div>
+            <div class="flex items-end gap-3 flex-wrap mt-4">
+              <div class="flex-1 min-w-[240px]">
+                <input
+                  id="brand-file-full"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  class="form-input"
+                />
+                <p class="text-[11px] text-[#999] mt-1" data-i18n>
+                  JPG, PNG or WebP, max 2 MB.
+                </p>
+              </div>
+              <button id="brand-upload-full" onclick="uploadBrandImage('full')" class="btn-primary px-6 py-2.5 manager-only-ui" data-i18n>
+                Upload
+              </button>
+              <button id="brand-reset-full" onclick="resetBrandImage('full')" class="btn-ghost text-sm px-4 py-2.5 manager-only-ui hidden" data-i18n>
+                Use built-in
+              </button>
+            </div>
+          </div>
+
+          <div class="card p-6 mb-5">
+            <div class="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <h2 class="font-display text-xl font-semibold text-[#28547C] mb-1" data-i18n>
+                  Small mark
+                </h2>
+                <p class="text-xs text-[#999] mb-3" data-i18n>
+                  The square one. Used as the browser tab icon and the small mark at the
+                  bottom of an invoice. A square image, roughly 512 by 512, works best.
+                </p>
+                <span id="brand-state-small" class="text-[11px] text-[#999]" data-i18n-skip></span>
+              </div>
+              <div class="shrink-0 bg-[#F8F6F2] border border-[#EDE9E3] rounded-10 p-3">
+                <img
+                  id="brand-preview-small"
+                  src="assets/small-logo.png"
+                  alt="Current small mark"
+                  style="width: 70px; height: 70px; object-fit: contain; display: block"
+                />
+              </div>
+            </div>
+            <div class="flex items-end gap-3 flex-wrap mt-4">
+              <div class="flex-1 min-w-[240px]">
+                <input
+                  id="brand-file-small"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  class="form-input"
+                />
+                <p class="text-[11px] text-[#999] mt-1" data-i18n>
+                  JPG, PNG or WebP, max 2 MB.
+                </p>
+              </div>
+              <button id="brand-upload-small" onclick="uploadBrandImage('small')" class="btn-primary px-6 py-2.5 manager-only-ui" data-i18n>
+                Upload
+              </button>
+              <button id="brand-reset-small" onclick="resetBrandImage('small')" class="btn-ghost text-sm px-4 py-2.5 manager-only-ui hidden" data-i18n>
+                Use built-in
+              </button>
+            </div>
+          </div>
+
+          <div class="card p-6">
+            <div class="flex items-start justify-between gap-4 flex-wrap">
+              <div class="max-w-md">
+                <h2 class="font-display text-xl font-semibold text-[#28547C] mb-1" data-i18n>
+                  Voucher card design
+                </h2>
+                <p class="text-xs text-[#999] mb-3" data-i18n>
+                  This one is not a logo, it is the whole voucher card artwork. The guest's
+                  name, the code and the expiry date are drawn on top of it at fixed
+                  positions, so it must be 1084 by 1940 pixels and must leave the middle of
+                  the card empty for that text.
+                </p>
+                <span id="brand-state-voucher" class="text-[11px] text-[#999]" data-i18n-skip></span>
+              </div>
+              <div class="shrink-0 bg-[#F8F6F2] border border-[#EDE9E3] rounded-10 p-3">
+                <img
+                  id="brand-preview-voucher"
+                  src="assets/voucher-bg.jpg"
+                  alt="Current voucher card design"
+                  style="width: 78px; height: 140px; object-fit: contain; display: block"
+                />
+              </div>
+            </div>
+            <div class="flex items-end gap-3 flex-wrap mt-4">
+              <div class="flex-1 min-w-[240px]">
+                <input
+                  id="brand-file-voucher"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  class="form-input"
+                />
+                <p class="text-[11px] text-[#999] mt-1" data-i18n>
+                  JPG, PNG or WebP, max 2 MB, exactly 1084 x 1940 pixels.
+                </p>
+              </div>
+              <button id="brand-upload-voucher" onclick="uploadBrandImage('voucher')" class="btn-primary px-6 py-2.5 manager-only-ui" data-i18n>
+                Upload
+              </button>
+              <button id="brand-reset-voucher" onclick="resetBrandImage('voucher')" class="btn-ghost text-sm px-4 py-2.5 manager-only-ui hidden" data-i18n>
+                Use built-in
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== SETTINGS: STAFF (accounts + roles, admin only) ===== -->
+      <section id="page-settings-staff" class="page-section p-8">
+        <div class="max-w-3xl mx-auto">
+          <div class="settings-tabs mb-6" data-settings-tabs></div>
+          <div class="flex items-center justify-between mb-8 gap-4 flex-wrap">
+            <div>
+              <div class="gold-bar mb-3"></div>
+              <h1 class="font-display text-3xl font-semibold text-[#28547C]" data-i18n>
+                Staff
+              </h1>
+              <p class="text-[#999] text-sm mt-1" data-i18n>
+                Who can log in, and what they are allowed to see.
+              </p>
+            </div>
+            <button onclick="openStaffModal()" class="btn-primary">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span data-i18n>Add Staff</span>
+            </button>
+          </div>
+
+          <div class="card p-6 mb-6">
+            <div id="staff-list" class="divide-y divide-[#EDE9E3]">
+              <div class="loading-skeleton h-20"></div>
+            </div>
+          </div>
+
+          <div class="card p-5">
+            <h2 class="font-display text-lg font-semibold text-[#28547C] mb-2" data-i18n>
+              What each role can do
+            </h2>
+            <ul class="text-xs text-[#777] space-y-1.5 leading-relaxed">
+              <li><strong data-i18n>Staff</strong><span data-i18n> — the front desk. Dashboard, reservations, walk-ins, membership and broadcast. Can see areas and the dish list but cannot change them.</span></li>
+              <li><strong data-i18n>Manager</strong><span data-i18n> — everything staff can do, plus prizes, thresholds, branding, and deleting a reservation or voiding a walk-in.</span></li>
+              <li><strong data-i18n>Admin</strong><span data-i18n> — the owner. Everything a manager can do, plus the owner dashboard and this screen.</span></li>
+            </ul>
+            <p class="text-[11px] text-[#999] mt-3 leading-relaxed" data-i18n>
+              Accounts are never deleted, only deactivated. A deactivated person cannot log
+              in, and the visits, walk-ins and vouchers they recorded keep their name on
+              them. Deleting the account would erase that history.
+            </p>
+          </div>
+        </div>
+      </section>
     </main>
 
     <!-- ============================================================ -->
@@ -6448,6 +6662,73 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <button onclick="ceSetRowStatus('skipped')"
             class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#B4523F] hover:bg-[#9A4535]"
             data-i18n-skip>Lewati</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STAFF MODAL (Settings > Staff, admin only) -->
+    <div
+      id="modal-staff"
+      class="modal-overlay hidden"
+      onclick="if (event.target === this) hideModal('modal-staff');"
+    >
+      <div class="modal-box">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="font-display text-2xl font-semibold text-[#28547C]" id="staff-modal-title" data-i18n-skip>
+            Add Staff
+          </h2>
+          <button onclick="hideModal('modal-staff')" class="modal-close" aria-label="Close">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 10 10" fill="none">
+              <line x1="1.5" y1="1.5" x2="8.5" y2="8.5" stroke="white" stroke-width="1.8" stroke-linecap="round" />
+              <line x1="8.5" y1="1.5" x2="1.5" y2="8.5" stroke="white" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+        <input type="hidden" id="staff-form-id" />
+        <div class="grid grid-cols-1 gap-4 mb-4">
+          <div>
+            <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Name *</label>
+            <input id="staff-form-name" type="text" maxlength="60" placeholder="e.g. Rina Kusuma" class="form-input" />
+            <p class="text-[11px] text-[#999] mt-1" data-i18n>
+              Shown on the dashboard and against every visit they record.
+            </p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Username *</label>
+            <input id="staff-form-username" type="text" maxlength="20" autocomplete="off" placeholder="e.g. rina" class="form-input" />
+            <p class="text-[11px] text-[#999] mt-1" data-i18n>
+              Lowercase letters, numbers, dot, dash or underscore. This is what they type to
+              log in.
+            </p>
+            <p id="staff-form-username-note" class="text-[11px] text-[#B23B3B] mt-1 hidden" data-i18n>
+              The username cannot be changed after the account is created, because it is
+              what they log in with.
+            </p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>PIN</label>
+            <input id="staff-form-pin" type="text" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="4 digits" class="form-input" />
+            <p id="staff-form-pin-hint" class="text-[11px] text-[#999] mt-1" data-i18n-skip></p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Role *</label>
+            <select id="staff-form-role" class="form-input">
+              <option value="staff" data-i18n>Staff</option>
+              <option value="manager" data-i18n>Manager</option>
+              <option value="admin" data-i18n>Admin</option>
+            </select>
+            <p id="staff-form-role-self-note" class="text-[11px] text-[#B23B3B] mt-1 hidden" data-i18n>
+              You cannot change your own role. Ask another admin to do it.
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-3">
+          <button onclick="hideModal('modal-staff')" class="btn-ghost px-5 py-2.5" data-i18n>
+            Cancel
+          </button>
+          <button id="staff-save-button" onclick="saveStaffUser()" class="btn-primary px-6 py-2.5" data-i18n>
+            Save Staff
+          </button>
         </div>
       </div>
     </div>

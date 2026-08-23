@@ -112,6 +112,115 @@ const I18N_EXCEPTION_TERMS = new Set([
 
 // Indonesian translations, keyed by the English source string.
 const ID_DICT = {
+  // ── Birthday follow-up (added 2026-08-23) ─────────────────────────
+  "Send WhatsApp": "Kirim WA",
+  "Mark as sent": "Tandai sudah dikirim",
+  "Greeting sent": "Sudah diucapkan",
+  "Marked as sent": "Ditandai sudah dikirim",
+  "Marked as not sent yet": "Ditandai belum dikirim",
+  "Could not mark this as sent": "Tidak bisa menandai sudah dikirim",
+  "Could not undo this": "Tidak bisa membatalkan",
+  Undo: "Batalkan",
+  "No phone": "Tanpa nomor",
+  "No phone on file": "Nomor telepon belum ada",
+  "No birthdays this month.": "Tidak ada ulang tahun bulan ini.",
+  "Birthdays this month": "Ulang tahun bulan ini",
+  "See the full list": "Lihat daftar lengkap",
+  "Follow Up": "Follow Up",
+  // "Today" is already in this dictionary further down; do not add it twice,
+  // the later key silently wins and the two can drift apart.
+  Tomorrow: "Besok",
+  passed: "sudah lewat",
+
+  // ── Settings > Branding + Settings > Staff (added 2026-08-23) ──────
+  Branding: "Branding",
+  "The logo shown to guests on the reservation and thank-you pages, on the spin page, on this app, and on invoices. Upload once here instead of asking for a new build.":
+    "Logo yang dilihat tamu di halaman reservasi dan halaman terima kasih, di halaman spin, di aplikasi ini, dan di invoice. Cukup unggah di sini, tidak perlu minta build baru.",
+  "One thing this does not change: the preview picture WhatsApp shows when someone forwards the booking link. WhatsApp reads that from the page before any code runs, so it stays a fixed file in the build and has to be changed at deploy time.":
+    "Satu hal yang tidak ikut berubah: gambar pratinjau yang muncul di WhatsApp saat link reservasi diteruskan. WhatsApp membacanya sebelum kode apa pun jalan, jadi gambar itu tetap file tetap di dalam build dan hanya bisa diganti saat deploy.",
+  "Main logo": "Logo utama",
+  "The wide one. Used on the guest pages, the login screen, the sidebar and the invoice header. Transparent PNG looks best. Any shape works: it is fitted to a box, never stretched.":
+    "Yang memanjang. Dipakai di halaman tamu, layar login, sidebar, dan kepala invoice. PNG transparan paling bagus. Bentuk apa pun bisa: gambar disesuaikan ke dalam kotak, tidak pernah ditarik.",
+  "Small mark": "Ikon kecil",
+  "The square one. Used as the browser tab icon and the small mark at the bottom of an invoice. A square image, roughly 512 by 512, works best.":
+    "Yang berbentuk kotak. Dipakai sebagai ikon tab browser dan tanda kecil di bagian bawah invoice. Gambar persegi sekitar 512 x 512 paling bagus.",
+  "Voucher card design": "Desain kartu voucher",
+  "This one is not a logo, it is the whole voucher card artwork. The guest's name, the code and the expiry date are drawn on top of it at fixed positions, so it must be 1084 by 1940 pixels and must leave the middle of the card empty for that text.":
+    "Yang ini bukan logo, melainkan seluruh desain kartu voucher. Nama tamu, kode, dan tanggal berlaku digambar di atasnya pada posisi tetap, jadi ukurannya harus 1084 x 1940 piksel dan bagian tengah kartu harus dibiarkan kosong untuk teks itu.",
+  "JPG, PNG or WebP, max 2 MB.": "JPG, PNG, atau WebP, maks 2 MB.",
+  "JPG, PNG or WebP, max 2 MB, exactly 1084 x 1940 pixels.":
+    "JPG, PNG, atau WebP, maks 2 MB, tepat 1084 x 1940 piksel.",
+  Upload: "Unggah",
+  "Uploading...": "Mengunggah...",
+  "Use built-in": "Pakai bawaan",
+  "Custom image": "Gambar sendiri",
+  "Default image": "Gambar bawaan",
+  "Pick an image file first": "Pilih file gambar dulu",
+  "Use a JPG, PNG or WebP file. SVG is not accepted.":
+    "Gunakan file JPG, PNG, atau WebP. SVG tidak diterima.",
+  "Image must be under 2 MB.": "Gambar harus di bawah 2 MB.",
+  "Upload failed. Please try again.": "Unggah gagal. Silakan coba lagi.",
+  "Logo updated": "Logo diperbarui",
+  "Go back to the built-in image?": "Kembali ke gambar bawaan?",
+  "Back to the built-in image": "Kembali ke gambar bawaan",
+
+  "Who can log in, and what they are allowed to see.":
+    "Siapa yang bisa login, dan apa saja yang boleh mereka lihat.",
+  "Add Staff": "Tambah Staf",
+  "Edit Staff": "Ubah Staf",
+  "Save Staff": "Simpan Staf",
+  "No staff accounts yet.": "Belum ada akun staf.",
+  "Could not load the staff list. Check the connection and try again.":
+    "Daftar staf tidak bisa dimuat. Periksa koneksi lalu coba lagi.",
+  "(you)": "(Anda)",
+  Inactive: "Nonaktif",
+  Deactivate: "Nonaktifkan",
+  Activate: "Aktifkan",
+  "Name *": "Nama *",
+  "Shown on the dashboard and against every visit they record.":
+    "Ditampilkan di dashboard dan tercatat pada setiap kunjungan yang mereka input.",
+  "Username *": "Username *",
+  "Lowercase letters, numbers, dot, dash or underscore. This is what they type to log in.":
+    "Huruf kecil, angka, titik, strip, atau garis bawah. Ini yang mereka ketik saat login.",
+  "The username cannot be changed after the account is created, because it is what they log in with.":
+    "Username tidak bisa diubah setelah akun dibuat, karena inilah yang dipakai untuk login.",
+  "Leave blank to keep the current PIN.":
+    "Kosongkan kalau PIN tidak diubah.",
+  "Exactly 4 digits. The staff member types this to log in.":
+    "Tepat 4 angka. Ini yang diketik staf saat login.",
+  "Role *": "Peran *",
+  "You cannot change your own role. Ask another admin to do it.":
+    "Anda tidak bisa mengubah peran sendiri. Minta admin lain yang melakukannya.",
+  "What each role can do": "Apa yang bisa dilakukan tiap peran",
+  "— the front desk. Dashboard, reservations, walk-ins, membership and broadcast. Can see areas and the dish list but cannot change them.":
+    "— front desk. Dashboard, reservasi, walk-in, keanggotaan, dan broadcast. Bisa melihat area dan daftar menu, tapi tidak bisa mengubahnya.",
+  "— everything staff can do, plus prizes, thresholds, branding, and deleting a reservation or voiding a walk-in.":
+    "— semua yang bisa dilakukan staf, ditambah hadiah, thresholds, branding, serta menghapus reservasi atau membatalkan walk-in.",
+  "— the owner. Everything a manager can do, plus the owner dashboard and this screen.":
+    "— pemilik. Semua yang bisa dilakukan manager, ditambah dashboard pemilik dan halaman ini.",
+  "Accounts are never deleted, only deactivated. A deactivated person cannot log in, and the visits, walk-ins and vouchers they recorded keep their name on them. Deleting the account would erase that history.":
+    "Akun tidak pernah dihapus, hanya dinonaktifkan. Orang yang dinonaktifkan tidak bisa login, dan kunjungan, walk-in, serta voucher yang pernah mereka input tetap membawa nama mereka. Menghapus akun akan menghilangkan riwayat itu.",
+  "Only an admin can manage staff": "Hanya admin yang bisa mengelola staf",
+  "Only a manager can change settings":
+    "Hanya manager yang bisa mengubah pengaturan",
+  "Name is required (min 2 characters)": "Nama wajib diisi (min 2 karakter)",
+  "Username must be 3-20 characters: lowercase letters, numbers, dot, dash or underscore.":
+    "Username harus 3-20 karakter: huruf kecil, angka, titik, strip, atau garis bawah.",
+  "Pick a role": "Pilih peran",
+  "PIN must be exactly 4 digits": "PIN harus tepat 4 angka",
+  "This is the last active admin. Promote someone else to admin first.":
+    "Ini admin aktif terakhir. Jadikan orang lain admin dulu.",
+  "That username is already taken. Pick another one.":
+    "Username itu sudah dipakai. Pilih yang lain.",
+  "You cannot deactivate your own account.":
+    "Anda tidak bisa menonaktifkan akun sendiri.",
+  "Failed to save staff": "Gagal menyimpan staf",
+  "Failed to update staff": "Gagal memperbarui staf",
+  "Staff added": "Staf ditambahkan",
+  "Staff updated": "Staf diperbarui",
+  "Staff deactivated": "Staf dinonaktifkan",
+  "Staff reactivated": "Staf diaktifkan kembali",
+
   // Sidebar navigation
   // "Staff Dashboard" (admin-only, 2026-07-26): the owner looking at the
   // front-desk view.
@@ -1170,7 +1279,16 @@ const STAFF_ALLOWED_PAGES = new Set([
 // staff member the normal "Dashboard" entry ALREADY renders that exact page
 // — only admin gets the owner dashboard swapped in — so showing it to them
 // would put two identical destinations in the sidebar.
-const ADMIN_ONLY_PAGES = new Set(["staff-dashboard"]);
+// "settings-staff" (added 2026-08-23, Rere) is the screen that creates staff
+// accounts and sets their roles. Admin-only by decision: a manager who could
+// edit roles could promote themselves, which makes the role system decorative.
+//
+// NOTE this is a UI gate, not a security boundary. The anon key is public and
+// RLS is off, so anyone who can reach the app can write staff_users directly.
+// The one rule that is genuinely enforced is "never zero active admins",
+// which lives in a database trigger. See CLAUDE.md, "Must be fixed before the
+// first sale".
+const ADMIN_ONLY_PAGES = new Set(["staff-dashboard", "settings-staff"]);
 
 // Admin (owner/head-chef) gets full manager-level access to every page —
 // the only difference is the dashboard content, swapped in navigateTo().
@@ -1229,6 +1347,119 @@ function applyManagerOnlyUI() {
     el.style.display = isManager ? "" : "none";
   });
 }
+
+// ============================================================
+// BRANDING (per-client logo, configurable from Settings)
+// ============================================================
+// Every client runs byte-identical code, so the logo cannot be a file in the
+// repo. It is an upload in the `branding` storage bucket, with its public URL
+// in app_settings.branding.
+//
+// The files in assets/ stay, as the FALLBACK. That is deliberate:
+//   - a fresh client sees a working page before anyone uploads anything
+//   - a storage outage or a deleted object degrades to a logo, not a hole
+//   - the public pages render instantly and swap the logo when the fetch
+//     lands, instead of showing an empty box while waiting
+//
+// Three slots, because they are three different pictures and one image
+// cannot do all three jobs:
+//   full   the wide wordmark  -> guest pages, login, sidebar, invoice header
+//   small  the square mark    -> favicon, invoice watermark
+//   voucher the whole card artwork, 1084x1940 -> the downloadable voucher PNG
+//
+// WHAT THIS DOES NOT COVER: the og:image share card on the booking link.
+// WhatsApp's crawler does not run JavaScript, so that tag has to point at a
+// real file. Changing the logo here does not change the WhatsApp preview.
+// See CLAUDE.md, "WhatsApp constraints".
+const BRAND_BUCKET = "branding";
+const BRAND_FALLBACK = {
+  full: "assets/full-logo.png",
+  small: "assets/small-logo.png",
+  voucher: "assets/voucher-bg.jpg",
+};
+const BRAND_KEYS = {
+  full: "logo_url",
+  small: "small_logo_url",
+  voucher: "voucher_bg_url",
+};
+
+// null until loadBranding() has run. Deliberately NOT seeded with the
+// fallbacks, so brandAsset() can tell "not loaded yet" from "loaded, empty".
+let BRANDING = null;
+
+// A URL is only usable if it is an absolute http(s) URL. A half-saved value,
+// a relative path someone typed by hand, or a javascript: URI all fall back
+// to the bundled asset rather than rendering a broken image.
+function brandUrlOk(value) {
+  return typeof value === "string" && /^https?:\/\/\S+$/i.test(value.trim());
+}
+
+function brandAsset(slot) {
+  const key = BRAND_KEYS[slot];
+  const value = BRANDING && key ? BRANDING[key] : null;
+  return brandUrlOk(value) ? value.trim() : BRAND_FALLBACK[slot] || null;
+}
+
+// Reads the branding row. Pass the value in when the caller already has the
+// whole app_settings table in hand (the staff app does), so the app does not
+// pay for a second round trip on every load.
+async function loadBranding(preloaded) {
+  if (preloaded && typeof preloaded === "object") {
+    BRANDING = preloaded;
+    return BRANDING;
+  }
+  try {
+    const { data, error } = await db
+      .from("app_settings")
+      .select("value")
+      .eq("key", "branding")
+      .maybeSingle();
+    // An error here is not worth a toast on a guest-facing page: the fallback
+    // logo is already on screen and the guest is trying to book a table.
+    if (error) console.warn("branding: load failed, using bundled assets", error);
+    BRANDING = (data && data.value) || {};
+  } catch (e) {
+    console.warn("branding: load failed, using bundled assets", e);
+    BRANDING = {};
+  }
+  return BRANDING;
+}
+
+// Swaps every element marked data-brand-logo="full" | "small", plus the
+// favicon. Safe to call before loadBranding() (it just re-applies the
+// fallbacks) and safe to call repeatedly after a re-render.
+function applyBranding(root) {
+  const scope = root || document;
+  ["full", "small"].forEach((slot) => {
+    const url = brandAsset(slot);
+    if (!url) return;
+    scope.querySelectorAll(`[data-brand-logo="${slot}"]`).forEach((el) => {
+      // Only touch it if it differs, so a re-render does not restart the
+      // image download and make the logo blink.
+      if (el.tagName === "IMG") {
+        if (el.getAttribute("src") !== url) el.setAttribute("src", url);
+      } else {
+        const css = `url("${url}")`;
+        if (el.style.backgroundImage !== css) el.style.backgroundImage = css;
+      }
+    });
+  });
+  const favicon = brandAsset("small");
+  if (favicon) {
+    document
+      .querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]')
+      .forEach((el) => {
+        if (el.getAttribute("href") !== favicon) el.setAttribute("href", favicon);
+      });
+  }
+}
+
+// One call for the public pages: render with the bundled logo, then swap.
+async function initBranding(preloaded) {
+  await loadBranding(preloaded);
+  applyBranding();
+}
+
 
 // ══════════════════════════════════════════════════════════════
 // ymd(date) — the ONLY correct way to turn a Date into the

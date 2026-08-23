@@ -8,6 +8,7 @@
 // fail — correctly. That is also the operational warning: a front-desk PC
 // set to the wrong timezone will shift the reminder windows by a day.
 const fs = require("fs");
+const path = require("path");
 const vm = require("vm");
 
 if (!/Jakarta/.test(process.env.TZ || "")) {
@@ -17,7 +18,8 @@ if (!/Jakarta/.test(process.env.TZ || "")) {
   process.exit(2);
 }
 
-const src = fs.readFileSync("/tmp/bh/notify.js", "utf8");
+// Was an absolute /tmp scratch path (see the same fix in autorefresh.test.js).
+const src = fs.readFileSync(path.join(__dirname, "notify.js"), "utf8");
 
 function makeCtx(nowIso, openTime) {
   const RealDate = Date;

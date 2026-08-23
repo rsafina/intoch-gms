@@ -107,24 +107,41 @@ full read and write on every table. Needs a design decision first: staff current
 authenticate against a `staff_users` table with plain-text PINs and there is no
 real auth layer, so there is no `auth.uid()` for policies to key off.
 
-### 2. Per-client branding on the public pages
-`reserve.html` reads three things from the database already (`reservation_hours`,
-`full_menu`, and the `featured_dishes` cards with their uploaded photos). Everything
-else that makes it look like one particular restaurant is **hardcoded in the file**:
+Settings > Staff (2026-08-23) makes staff accounts manageable but changes none of
+this. It is an admin-only UI gate over the same public table. The one rule that is
+genuinely enforced is **never zero active admins**, and that lives in the
+`staff_users_guard_last_admin` trigger, not in the JavaScript, precisely because
+the JavaScript is public. Hash the PINs as part of the auth work, not before it:
+two half-fixes to the same problem are worse than one whole one.
 
-- the restaurant name, in roughly five places (tab title, og:site_name, headings)
+### 2. Per-client branding on the public pages
+**Half done (2026-08-23).** The IMAGES are now configurable: Settings > Branding
+uploads a main logo, a small mark and the voucher card artwork into a `branding`
+storage bucket, with the public URLs in `app_settings.branding`. Every surface
+reads them through `brandAsset()` / `applyBranding()` in `config.js`, with the
+files in `assets/` kept as the fallback so a client who has uploaded nothing still
+sees a working page. Covered: reserve, reservation-created,
+reservation-confirmation, spin, the staff app login and sidebar, the invoice, and
+the voucher canvas.
+
+Still hardcoded in the files, and still to do before client one:
+
+- the restaurant name in the page markup (tab title, og:site_name, headings) —
+  `restaurantName()` reads `app_settings.restaurant_name` in JS already, but the
+  HTML does not use it
 - the taglines
-- the background photo, the logo, the favicon, the share image
+- the background photo
 - the brand colour, written into the stylesheet
 - the WhatsApp number and the Google Maps link
 
-Onboarding a client currently means hand-editing that file, which is exactly the
-per-client forking the build-time config exists to prevent.
+**`og:image` can never be one of these.** The WhatsApp crawler does not run
+JavaScript, so the share card has to stay a real file in the build and gets
+changed at deploy time. Same for `og:site_name`. Do not "fix" this by swapping the
+tag in JS: it will look right in devtools and change nothing in WhatsApp.
 
-The fix follows the pattern already there: more `app_settings` keys for the text
-values, two more upload slots in the existing Storage bucket for logo and
-background, and the page reading them the way it already reads opening hours.
-Roughly a day. **Do this before client one.**
+The voucher background is a fixed-size canvas, not a logo slot: 1084 x 1940, with
+the middle band left empty for the drawn text. The upload screen checks the pixel
+size and warns.
 
 ### 3. Broken share preview on the booking page
 `reserve.html`'s og: tags point at `blueheron-gms.netlify.app`, which does not
@@ -216,6 +233,41 @@ in-window visits asks "did they eat here 5 times in these 9 days" and produces n
 client's earliest visit by less than 14 days. **Every new client starts with no history**,
 so without this their first two months of deltas are pure noise. This matters far more for
 a product than it did for Blue Heron.
+
+### `computeDaysUntilBirthday()` never returns a negative number
+
+It rolls a date that has already gone by forward to NEXT year's occurrence, so
+a birthday on the 3rd, read on the 15th, comes back as ~353. **`daysUntil >= 0`
+therefore does NOT mean "has not happened yet"** — it is true for every guest
+alive. The first cut of the birthday badge used exactly that test and counted
+every passed birthday as still outstanding; `tests/birthday-followup.test.js`
+caught it before it shipped. Use `birthdayHasPassed()`, which compares the day
+of the month, and only inside a list already scoped to one month.
+
+### The birthday badge is month-scoped and has a wrong-month guard
+
+Decided 2026-08-23 (Rere). The red number counts birthdays **in the current
+calendar month, not greeted, not already passed, and with a phone number on
+file**. The month list itself always shows everyone, including greeted, passed
+and phone-less guests: seeing who has a birthday this month is the point, the
+number is only the to-do part of it.
+
+The guard matters as much as the rule. `computeBirthdayAlerts()` owns the badge
+and is called by three different loaders, one of which is a report a manager can
+page forward to December in. It takes the month and year the caller loaded and
+**returns without touching the badge unless they match today's**. Remove that
+and browsing the report silently clears a badge that August still needs.
+
+Greeted state lives in `birthday_greetings`, one row per guest per calendar
+year, unique-indexed so two tills cannot both insert. It is deliberately NOT
+derived from `wa_outreach_log`: staff greet people at the table and from their
+own handsets, and those are legitimately done with no wa.me click behind them.
+The WhatsApp send is still logged to the outreach log like every other button;
+the two answer different questions.
+
+Opening WhatsApp does **not** tick the guest off. Same reasoning as
+`reservations.follow_up_done`: a chat window opening is not a message sent, and
+front desk staff get interrupted mid-send constantly.
 
 ### Guest names carry dates and titles
 

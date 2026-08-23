@@ -128,6 +128,22 @@ const WA_DEFAULT_TEMPLATES = {
       "Cukup tunjukkan voucher ini kepada staf kami saat pembayaran. " +
       "Kami tunggu kunjungan berikutnya!",
   },
+  // Added 2026-08-23 for the birthday follow-up. TRANSACTIONAL, like
+  // thank_you: it is addressed to one person on one day, so it must not be
+  // filtered by do_not_contact the way a promo blast is, and it must not
+  // count towards the 5-day resend warning — otherwise a guest who happened
+  // to get a campaign on Tuesday is skipped for their own birthday on
+  // Thursday. No {link}: there is no campaign behind it.
+  birthday: {
+    label: "Ulang Tahun (ucapan ke tamu)",
+    is_broadcast: false,
+    body:
+      "Halo {nama}!\n\n" +
+      "Selamat ulang tahun dari kami semua di {resto}. Semoga hari ini " +
+      "menyenangkan dan tahun ini membawa banyak hal baik untuk Bapak/Ibu.\n\n" +
+      "Kami akan senang sekali kalau bisa merayakannya bersama Anda di {resto}. " +
+      "Terima kasih sudah menjadi bagian dari cerita kami!",
+  },
   tag_default: {
     label: "Broadcast: Template Dasar Tag",
     is_broadcast: true,
@@ -366,6 +382,13 @@ function waFollowUpMessage(guestName, resDate, resTime, pax) {
   });
 }
 
+function waBirthdayMessage(guestName) {
+  return waRenderTemplate(waTemplateBody("birthday"), {
+    nama: waGreetName(guestName),
+    resto: WA_RESTAURANT_NAME,
+  });
+}
+
 // ── Send log ─────────────────────────────────────────────────
 // Fire-and-forget: a logging hiccup must never block the actual
 // WhatsApp handoff. "Clicked" is our best proxy for "sent".
@@ -500,4 +523,25 @@ function waReservationBtns(res) {
     return `<button onclick="waSendThankYouReservation('${res.id}')" class="${WA_BTN_CLASS}">WA Thanks</button>`;
   }
   return "";
+}
+
+// ── Birthday ─────────────────────────────────────────────────
+// Fetches the guest fresh rather than trusting the row on screen: the
+// birthday list can sit open on a front-desk PC all day, and a phone number
+// corrected in the meantime must be the one we message.
+//
+// Opening the chat does NOT mark the guest greeted. That tick is a separate,
+// deliberate action (see markBirthdayGreeted in app.js), matching how
+// reservation follow-up already works — staff regularly open WhatsApp, get
+// interrupted, and never send.
+async function waSendBirthday(guestId) {
+  await waLoadTemplates();
+  const { data, error } = await supabaseQuery(
+    () => db.from("guests").select("id, name, phone").eq("id", guestId).single(),
+    "Gagal memuat data tamu",
+  );
+  if (error || !data) return false;
+  const opened = waOpenChat(data.phone, waBirthdayMessage(data.name));
+  if (opened) waLogSend(data.id, "birthday", false);
+  return opened;
 }

@@ -214,6 +214,7 @@
     <div class="wrap">
       <div class="logo-plain">
         <img
+          data-brand-logo="full"
           src="assets/full-logo.png"
           alt="Restoran"
         />
@@ -309,6 +310,18 @@
       } catch (_) {
         /* page still works without the summary */
       }
+    </script>
+
+    <!-- Branding only. This page is otherwise pure client-side (it reads the
+         booking summary from sessionStorage), but it carries the restaurant's
+         logo, and that logo now lives in the database so one build can serve
+         every client. config.js supplies the Supabase client and the shared
+         initBranding() helper; both calls are guarded so the page still works
+         if either script fails to load. -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js"></script>
+    <script>
+      if (typeof initBranding === "function") initBranding();
     </script>
   </body>
 </html>

@@ -3474,3 +3474,232 @@ select 'functions', count(*) from pg_proc p join pg_namespace n on n.oid=p.prona
 where n.nspname='public' and p.proname in
   ('is_leap_year','next_birthday_occurrence','get_guests_for_birthday_view','create_spin_session','confirm_spin_session');
 -- expect: columns 14, views 2, functions 5
+
+-- ============================================================
+-- ## 20260823_branding_and_staff_config.sql
+-- ============================================================
+-- Two things, both needed before client one:
+--
+--   1. A `branding` storage bucket + an `app_settings.branding` row, so the
+--      logo shown on the guest pages, the staff app, the invoice and the
+--      voucher card can be changed from Settings instead of by editing files
+--      and redeploying. This is backlog item 2 in CLAUDE.md, the image half
+--      of it.
+--
+--   2. The guardrails behind the admin-only Staff Configuration screen:
+--      a case-insensitive unique username, and a check that the database
+--      itself refuses to leave the system with zero usable admins.
+--
+-- Idempotent, like everything else in this file. Safe to run twice.
+
+-- ---------- 1. BRANDING BUCKET ----------
+-- Public, because the guest pages read it with no auth, exactly like
+-- dish-images. 2 MB ceiling: a logo bigger than that is a mistake, and
+-- the voucher background (1084x1940 JPG) sits well under it.
+--
+-- SVG is deliberately NOT allowed. An SVG is a script-capable document and
+-- this bucket is world-writable under the current MVP policy model, so
+-- accepting one would let anybody host active content on the client's
+-- domain. PNG with transparency covers every real logo need.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('branding', 'branding', true, 2097152,
+        array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do nothing;
+
+drop policy if exists "Public read - branding" on storage.objects;
+DROP POLICY IF EXISTS "Public read - branding" ON storage.objects;
+CREATE POLICY "Public read - branding" ON storage.objects for select
+  using (bucket_id = 'branding');
+
+drop policy if exists "Public write - branding" on storage.objects;
+DROP POLICY IF EXISTS "Public write - branding" ON storage.objects;
+CREATE POLICY "Public write - branding" ON storage.objects for insert
+  with check (bucket_id = 'branding');
+
+drop policy if exists "Public update - branding" on storage.objects;
+DROP POLICY IF EXISTS "Public update - branding" ON storage.objects;
+CREATE POLICY "Public update - branding" ON storage.objects for update
+  using (bucket_id = 'branding');
+
+drop policy if exists "Public delete - branding" on storage.objects;
+DROP POLICY IF EXISTS "Public delete - branding" ON storage.objects;
+CREATE POLICY "Public delete - branding" ON storage.objects for delete
+  using (bucket_id = 'branding');
+
+-- ---------- 2. BRANDING SETTINGS ROW ----------
+-- All three keys start null, which means "use the file bundled in the repo".
+-- That is what makes this safe to deploy to a running client: nothing
+-- changes on screen until somebody uploads something.
+--
+--   logo_url        the wide wordmark: guest pages, login, sidebar, invoice
+--   small_logo_url  the square mark: favicon, invoice watermark
+--   voucher_bg_url  the whole voucher card artwork, NOT a logo (see below)
+insert into app_settings (key, value)
+values ('branding', jsonb_build_object(
+          'logo_url', null,
+          'small_logo_url', null,
+          'voucher_bg_url', null))
+on conflict (key) do update
+set value = app_settings.value
+            || jsonb_build_object(
+                 'logo_url', coalesce(app_settings.value->'logo_url', 'null'::jsonb),
+                 'small_logo_url', coalesce(app_settings.value->'small_logo_url', 'null'::jsonb),
+                 'voucher_bg_url', coalesce(app_settings.value->'voucher_bg_url', 'null'::jsonb));
+
+-- ---------- 3. STAFF USERNAME UNIQUENESS ----------
+-- staff_users.username already has a plain UNIQUE constraint, but login
+-- matches the username EXACTLY and case-sensitively. So "Rina" and "rina"
+-- are two different accounts that a human reads as one, and the front desk
+-- would blame the PIN when the wrong one is typed. There is already a
+-- LOWER(username) index; make it unique so the database refuses the pair.
+--
+-- If this fails, the client's table ALREADY contains a case-clashing pair.
+-- That is information, not a bug in this file: find them with
+--   select lower(username), count(*) from staff_users
+--   group by 1 having count(*) > 1;
+-- and rename one before re-running.
+drop index if exists idx_staff_users_username;
+create unique index if not exists idx_staff_users_username
+  on staff_users (lower(username));
+
+-- ---------- 4. NEVER ZERO ADMINS ----------
+-- The Staff Configuration screen blocks this in the UI, but the UI is
+-- public JavaScript and the anon key is public with it. The rule that
+-- actually matters has to live here.
+--
+-- Locking every admin out of a client's own system is unrecoverable without
+-- Rere opening the SQL editor for them, so it gets a database-side guard.
+create or replace function public.guard_last_admin()
+returns trigger
+language plpgsql
+as $$
+declare
+  v_active_admins int;
+begin
+  -- Only interested in changes that could REMOVE an active admin:
+  -- deleting one, deactivating one, or demoting one.
+  if tg_op = 'UPDATE'
+     and old.role = 'admin' and old.is_active
+     and new.role = 'admin' and new.is_active then
+    return new;
+  end if;
+  if tg_op = 'UPDATE' and not (old.role = 'admin' and old.is_active) then
+    return new;
+  end if;
+  if tg_op = 'DELETE' and not (old.role = 'admin' and old.is_active) then
+    return old;
+  end if;
+
+  select count(*) into v_active_admins
+  from staff_users
+  where role = 'admin' and is_active and id <> old.id;
+
+  if v_active_admins = 0 then
+    raise exception
+      'Cannot remove the last active admin. Promote another user to admin first.'
+      using errcode = 'check_violation';
+  end if;
+
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists staff_users_guard_last_admin on staff_users;
+create trigger staff_users_guard_last_admin
+  before update or delete on staff_users
+  for each row execute function public.guard_last_admin();
+
+-- ---------- 5. CONFIRM ----------
+select 'branding bucket' as checked,
+       count(*) as found from storage.buckets where id = 'branding'
+union all
+select 'branding setting', count(*) from app_settings where key = 'branding'
+union all
+select 'last-admin trigger', count(*) from pg_trigger
+  where tgname = 'staff_users_guard_last_admin';
+-- expect: 1, 1, 1
+
+-- ============================================================
+-- ## 20260823_birthday_followup.sql
+-- ============================================================
+-- Front desk sees a badge, opens the birthday list, sends a WhatsApp
+-- greeting, then ticks the guest off. The badge clears; the list stays,
+-- so anyone can still see whose birthday falls this month.
+--
+-- WHY A TABLE AND NOT wa_outreach_log:
+-- "we contacted this guest" and "a WhatsApp message was opened" are two
+-- different facts, and the app already keeps them apart everywhere else
+-- (reservations.follow_up_done vs the outreach log). Staff greet people at
+-- the table, by phone, or from their own handset, and all of those are
+-- legitimately "done" with no wa.me click behind them. Deriving the badge
+-- from the outreach log would either lose those or force a fake log row.
+--
+-- The WhatsApp send is STILL logged to wa_outreach_log like every other WA
+-- button. This table answers a different question.
+
+create table if not exists public.birthday_greetings (
+  id uuid primary key default gen_random_uuid(),
+  guest_id uuid not null references public.guests(id) on delete cascade,
+  -- The CALENDAR year the greeting belongs to, not the guest's birth year.
+  -- A guest is greeted once per year and becomes due again next year; this
+  -- is what makes the row expire on its own with no cleanup job.
+  birthday_year int not null,
+  greeted_at timestamptz not null default now(),
+  greeted_by uuid references public.staff_users(id),
+  -- Denormalised on purpose: the list has to show "ditandai oleh Rina"
+  -- without joining staff_users on every render, and it must keep saying so
+  -- after Rina's account is deactivated.
+  greeted_by_name text,
+  -- 'whatsapp' when the WA button was used, 'manual' when someone ticked the
+  -- box (greeted in person, called, messaged from their own phone).
+  method text not null default 'manual' check (method in ('whatsapp', 'manual'))
+);
+
+-- One greeting per guest per year, enforced here rather than in the UI.
+-- Two people at two tills opening the same list is the normal case, not the
+-- edge case, and without this they both insert.
+create unique index if not exists idx_birthday_greetings_guest_year
+  on public.birthday_greetings (guest_id, birthday_year);
+
+create index if not exists idx_birthday_greetings_year
+  on public.birthday_greetings (birthday_year);
+
+-- Same MVP security model as every other table here (public policy, staff
+-- auth handled app-side). Known debt, tightened with the rest at RLS time.
+alter table public.birthday_greetings enable row level security;
+drop policy if exists "Public full access - birthday_greetings" on public.birthday_greetings;
+create policy "Public full access - birthday_greetings" on public.birthday_greetings
+  for all using (true) with check (true);
+
+comment on table public.birthday_greetings is
+  'One row per guest per calendar year once the birthday greeting has been sent or marked done. Clears the birthday badge; the month list stays visible either way.';
+
+-- ---------- The birthday WhatsApp template ----------
+-- TRANSACTIONAL (is_broadcast = false), and that is a decision, not an
+-- oversight. A birthday greeting is addressed to one person on one day: it
+-- must not be filtered by do_not_contact the way a promo blast is, and it
+-- must not count towards the 5-day resend warning, or a guest who got a
+-- campaign on Tuesday would be skipped for their own birthday on Thursday.
+--
+-- No {link}, for the same reason the thank-you template has none: there is
+-- no campaign behind it and no promo page to point at.
+--
+-- No emoji. The front desk PC corrupts them into "?" on the WhatsApp handoff
+-- (2026-07-17 decision, applies to every template in this table).
+insert into wa_templates (key, label, body, is_broadcast) values
+  ('birthday', 'Ulang Tahun (ucapan ke tamu)',
+   E'Halo {nama}!\n\nSelamat ulang tahun dari kami semua di {resto}. Semoga hari ini menyenangkan dan tahun ini membawa banyak hal baik untuk Bapak/Ibu.\n\nKami akan senang sekali kalau bisa merayakannya bersama Anda di {resto}. Terima kasih sudah menjadi bagian dari cerita kami!',
+   false)
+on conflict (key) do nothing;
+
+-- ---------- Confirm ----------
+select 'birthday_greetings' as checked, count(*) as found
+from information_schema.tables
+where table_schema = 'public' and table_name = 'birthday_greetings'
+union all
+select 'unique guest+year', count(*) from pg_indexes
+where schemaname = 'public' and indexname = 'idx_birthday_greetings_guest_year'
+union all
+select 'birthday template', count(*) from wa_templates where key = 'birthday';
+-- expect: 1, 1, 1

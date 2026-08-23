@@ -456,6 +456,7 @@
     <div class="wrap">
       <div class="logo-plain">
         <img
+          id="brand-logo"
           src="assets/full-logo.png"
           alt="Restoran"
         />
@@ -823,7 +824,36 @@
         buildTimeSlots();
         loadFeaturedDishes(); // not awaited — the sheet is below the fold
         loadFullMenuLink(); // not awaited — hardcoded href works until this resolves
+        loadBrandLogo(); // not awaited — the bundled logo is already on screen
       })();
+
+      // ---- Logo (managed in staff app Settings > Branding) ----
+      // The bundled assets/full-logo.png renders first and is REPLACED only
+      // if the fetch returns a usable absolute URL. So a fresh client, a
+      // storage outage or a half-saved setting all show a logo rather than a
+      // gap, and the page never waits on this to become usable.
+      //
+      // The og:image share card is NOT swapped here on purpose: WhatsApp's
+      // crawler does not run JavaScript, so that tag has to stay a real file.
+      async function loadBrandLogo() {
+        try {
+          const { data } = await db
+            .from("app_settings")
+            .select("value")
+            .eq("key", "branding")
+            .maybeSingle();
+          const logo = data?.value?.logo_url;
+          if (typeof logo === "string" && /^https?:\/\/\S+$/i.test(logo.trim()))
+            $("brand-logo").src = logo.trim();
+          const mark = data?.value?.small_logo_url;
+          if (typeof mark === "string" && /^https?:\/\/\S+$/i.test(mark.trim()))
+            document
+              .querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]')
+              .forEach((el) => el.setAttribute("href", mark.trim()));
+        } catch (_) {
+          /* keep the bundled logo */
+        }
+      }
 
       // ---- Full menu link (shared with the landing page) ----
       async function loadFullMenuLink() {

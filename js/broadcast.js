@@ -50,6 +50,9 @@ const BC_PLACEHOLDERS = {
   thank_you: ["nama", "resto"],
   follow_up: ["nama", "resto", "tanggal", "jam", "pax"],
   voucher_ready: ["nama", "resto", "nominal", "kode", "berlaku"],
+  // Deliberately just the two. A birthday greeting that quotes the guest's
+  // last visit date or spend reads as surveillance rather than a greeting.
+  birthday: ["nama", "resto"],
   // {link} (2026-08-01): the promo page URL, so WhatsApp draws a preview
   // card with the promo image above the message. Broadcast-only — a
   // thank-you or reservation confirmation has no promo to link to.
@@ -395,6 +398,7 @@ function bcEditorAllowed(key) {
   if (key === "thank_you") return BC_PLACEHOLDERS.thank_you;
   if (key === "follow_up") return BC_PLACEHOLDERS.follow_up;
   if (key === "voucher_ready") return BC_PLACEHOLDERS.voucher_ready;
+  if (key === "birthday") return BC_PLACEHOLDERS.birthday;
   return BC_PLACEHOLDERS.broadcast;
 }
 
@@ -408,6 +412,7 @@ function bcRenderEditor() {
     "thank_you",
     "follow_up",
     "voucher_ready",
+    "birthday",
     "at_risk",
     "acquisition",
     "returning",

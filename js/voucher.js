@@ -32,15 +32,27 @@ const VC_HAIR = "rgba(71,149,208,0.45)";
 const VC_TOP = 470;
 const VC_BOTTOM = 1660;
 
+// The card background is now configurable: Settings > Branding uploads a
+// replacement into the `branding` bucket and vcBackground() picks it up.
+//
+// It is still NOT a logo swap. This renderer draws text onto the artwork at
+// fixed coordinates measured against VC_W x VC_H, so a replacement has to be
+// exactly 1084 x 1940 and has to leave the middle band empty. The upload
+// screen checks the pixel size and warns before accepting anything else.
+// assets/voucher-bg.jpg stays as the fallback for a client who has not
+// uploaded their own.
 const VC_ASSETS = {
-  // Restoran ARTWORK, still. voucher-bg.jpg is their cream card design
-  // (their logo, their "cita rasa jadi cerita" arc, their heron watermarks)
-  // and this renderer draws text onto it at fixed coordinates, so it cannot
-  // just be swapped for a differently-sized image without re-tuning the
-  // draw positions below. Replacing it is part of the branding work in
-  // CLAUDE.md, backlog item 2. Until then this card is NOT client-ready.
   bg: "assets/voucher-bg.jpg",
 };
+
+// brandAsset() lives in config.js and is absent in the node test harness,
+// so this degrades to the bundled file rather than throwing.
+function vcBackground() {
+  try {
+    if (typeof brandAsset === "function") return brandAsset("voucher") || VC_ASSETS.bg;
+  } catch (_) {}
+  return VC_ASSETS.bg;
+}
 
 // ── Small helpers ────────────────────────────────────────────
 function vcRupiah(n) {
@@ -143,6 +155,13 @@ function vcBrowserEnv() {
     loadImage(src) {
       return new Promise((resolve, reject) => {
         const img = new Image();
+        // A background served from Supabase Storage is cross-origin, and
+        // drawing a cross-origin image onto a canvas TAINTS it: the draw
+        // succeeds, and then toDataURL() throws a SecurityError and the
+        // download button silently does nothing. Requesting it anonymously
+        // (Storage answers with Access-Control-Allow-Origin) keeps the
+        // canvas clean. Harmless for the bundled same-origin file.
+        if (/^https?:\/\//i.test(String(src))) img.crossOrigin = "anonymous";
         img.onload = () => resolve(img);
         img.onerror = reject;
         img.src = src;
@@ -196,7 +215,11 @@ async function vcRenderVoucher(data, env) {
   ctx.fillStyle = "#F9F5F2";
   ctx.fillRect(0, 0, VC_W, VC_H);
 
-  const bg = await env.loadImage(VC_ASSETS.bg).catch(() => null);
+  // Falls back to the bundled artwork if the uploaded one fails to load, so
+  // a broken storage URL costs the client a generic card, not a blank one.
+  let bg = await env.loadImage(vcBackground()).catch(() => null);
+  if (!bg && vcBackground() !== VC_ASSETS.bg)
+    bg = await env.loadImage(VC_ASSETS.bg).catch(() => null);
   if (bg) ctx.drawImage(bg, 0, 0, VC_W, VC_H);
 
   const CX = VC_W / 2;

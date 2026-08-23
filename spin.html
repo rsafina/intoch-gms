@@ -285,7 +285,7 @@
       <!-- Header -->
       <div style="text-align: center; margin-bottom: 40px" class="fade-up">
         <div class="spin-logo">
-          <img src="assets/full-logo.png" alt="Logo" />
+          <img data-brand-logo="full" src="assets/full-logo.png" alt="Logo" />
         </div>
         <h1
           class="font-display"
@@ -376,6 +376,7 @@
             <canvas id="wheel-canvas" width="320" height="320"></canvas>
             <div id="wheel-center">
               <img
+                data-brand-logo="small"
                 src="assets/small-logo.png"
                 alt="sticker"
                 style="
@@ -487,6 +488,9 @@
     <div id="confetti-wrap" style="pointer-events: none"></div>
 
     <script src="js/config.js"></script>
+    <script>
+      if (typeof initBranding === "function") initBranding();
+    </script>
     <script>
       // ── State ──────────────────────────────────────────────────
       let prizes = [];

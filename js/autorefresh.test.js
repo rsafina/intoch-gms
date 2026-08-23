@@ -1,9 +1,13 @@
 // Extracts isSafeToAutoReload + attemptAutoReload from the patched app.js
 // and exercises them against a fake DOM + fake clock.
 const fs = require("fs");
+const path = require("path");
 const vm = require("vm");
 
-const src = fs.readFileSync("/tmp/bh/app.js", "utf8");
+// Was an absolute /tmp scratch path, left over from the session that wrote
+// this test. It made the suite pass only on that one machine and fail for
+// everyone else, which is worse than no test at all.
+const src = fs.readFileSync(path.join(__dirname, "app.js"), "utf8");
 const start = src.indexOf("function isSafeToAutoReload()");
 const endMark = "\nfunction setupRealtimeUpdates()";
 const end = src.indexOf(endMark);
