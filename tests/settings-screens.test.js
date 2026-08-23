@@ -221,6 +221,54 @@ const widths = [
 });
 ok("all six agree", new Set(widths).size === 1, widths.join(", "));
 
+console.log("\nEvery page is the same width and weight");
+// This drifts every time a page is added, and it is exactly the kind of thing
+// nobody notices until they flick between two tabs. Asserted rather than
+// eyeballed so it stays fixed.
+const sections = [...w.document.querySelectorAll("section[id^='page-']")];
+ok("all 16 page sections found", sections.length >= 16, String(sections.length));
+
+// page-invoice is the one deliberate exception: the A4 sheet sits beside the
+// form at its true 794px, and narrowing the page shrinks the preview.
+const widthOffenders = sections
+  .filter((sec) => sec.id !== "page-invoice")
+  .map((sec) => {
+    const wrap = sec.firstElementChild;
+    const cls = wrap ? [...wrap.classList].find((c) => c.startsWith("max-w-")) : "(none)";
+    return [sec.id, cls];
+  })
+  .filter(([, cls]) => cls !== "max-w-5xl");
+ok(
+  "every page except Invoice is max-w-5xl",
+  widthOffenders.length === 0,
+  widthOffenders.map((o) => o.join("=")).join(", "),
+);
+ok(
+  "Invoice keeps its wider layout on purpose",
+  [...w.document.getElementById("page-invoice").firstElementChild.classList].some((c) =>
+    c.startsWith("max-w-["),
+  ),
+);
+
+// Membership and Broadcast were the two that had lost font-semibold.
+const weightOffenders = sections
+  .map((sec) => [sec.id, sec.querySelector("h1")])
+  .filter(([, h1]) => h1 && !h1.classList.contains("font-semibold"))
+  .map(([id]) => id);
+ok(
+  "every page heading is font-semibold",
+  weightOffenders.length === 0,
+  weightOffenders.join(", "),
+);
+// And they should all be the same size too, or "consistent" is only half true.
+const h1Sizes = new Set(
+  sections
+    .map((sec) => sec.querySelector("h1"))
+    .filter(Boolean)
+    .map((h1) => [...h1.classList].find((c) => /^text-\d?xl$/.test(c)) || "(none)"),
+);
+ok("every page heading is the same size", h1Sizes.size === 1, [...h1Sizes].join(", "));
+
 console.log("\nCache busters were bumped for every JS file changed");
 // A fix that is not accompanied by a ?v= bump reaches nobody: the front desk
 // keeps running the cached copy and reports the bug as still present.

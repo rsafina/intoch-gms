@@ -340,7 +340,27 @@ it is about Rp 100k, which is small but recurring and per client.
 **Suggested order:** B now if a client asks for it, C when one is big enough to
 want automated confirmations, A only if the front desk stops being a PC.
 
-### 7. Port the promo function to a Cloudflare Worker
+### 7. Linking reservations, invoices and payments
+
+**Scoped 2026-08-23, not built.** Full spec: `RESERVATION_INVOICE_SPEC.md` in
+this repo. Read it before touching invoices — it records four decisions Rere
+took, and reversing one by accident is easy.
+
+The short version: invoices get a table and an optional `reservation_id`,
+payments are ROWS not columns (deposit schemes vary per restaurant, so
+`dp_amount`/`balance` would encode one client's habit as schema), and the
+outstanding balance IS the follow-up task — there is deliberately no "mark as
+paid" tick, because the payment rows are already the record.
+
+**This answers the question left open when invoices were built without a
+database in July**: yes it implies payment tracking, and managers may edit an
+issued invoice with a version trail.
+
+**It also raises the stakes on backlog item 1.** RLS is off, so adding
+financial records puts invoices and payments behind the same open door as
+everything else. Land RLS before or with this, not after.
+
+### 8. Port the promo function to a Cloudflare Worker
 `reference/promo-netlify-function.js`. Until then campaign promo links do not work.
 
 ---

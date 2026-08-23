@@ -2409,7 +2409,7 @@
           <div class="flex items-center justify-between mb-8">
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-heading text-3xl text-[#28547C]" data-i18n-skip>Membership</h1>
+              <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n-skip>Membership</h1>
               <p class="text-sm text-[#999] mt-1" data-i18n>
                 Family &amp; Company cards — stickers and vouchers
               </p>
@@ -2486,7 +2486,7 @@
                belong next to the thing that produced them. -->
           <div class="mb-6">
             <div class="gold-bar mb-3"></div>
-            <h1 class="font-heading text-3xl text-[#28547C]" data-i18n-skip>Broadcast</h1>
+            <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n-skip>Broadcast</h1>
             <p class="text-sm text-[#999] mt-1" data-i18n-skip>
               Kirim pesan WhatsApp satu per satu ke guest sesuai segmen, lalu
               lihat apakah mereka benar-benar kembali
@@ -3021,7 +3021,7 @@
 
       <!-- ===== WALK-INS ===== -->
       <section id="page-walkins" class="page-section p-8">
-        <div class="max-w-4xl mx-auto">
+        <div class="max-w-5xl mx-auto">
           <div
             class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-5"
           >
@@ -3200,6 +3200,13 @@
         responsibility (we warn on repeats found in the local history).
         The last 5 are kept in localStorage on THIS browser only.
       -->
+      <!-- The ONLY page that is not max-w-5xl, and deliberately so (2026-08-23).
+           The A4 sheet sits beside the form at its true 794px, and
+           invFitPreview() scales it by (available width / 794). At 5xl the
+           sheet's column is 488px, which renders the preview at 61% and the
+           footer address at about 6px — on the one page whose entire job is
+           previewing a document before it is sent. Every other page matches;
+           this one has a reason. -->
       <section id="page-invoice" class="page-section p-8">
         <div class="max-w-[1500px] mx-auto">
           <div class="mb-6">
@@ -3600,7 +3607,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         membership counters go wrong.
       -->
       <section id="page-vouchers" class="page-section p-8">
-        <div class="max-w-6xl mx-auto">
+        <div class="max-w-5xl mx-auto">
           <div class="mb-6">
             <div class="gold-bar mb-3"></div>
             <h1 class="font-heading text-3xl font-semibold text-[#28547C]">
