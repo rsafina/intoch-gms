@@ -50,7 +50,11 @@
 //   _resNotifyPrimed flag. Never go back to using set size for this.
 // ============================================================
 
-const RES_NOTIFY_MAX = 80; // pending-list cap
+// Row cap. Raised from 80 (2026-08-23): handled bookings now STAY in the list
+// instead of vanishing when ticked, so the same day's traffic occupies more
+// rows than it used to. The cap still exists because the one failure this bell
+// must never have is a genuinely new booking pushed off the bottom.
+const RES_NOTIFY_MAX = 150;
 const RES_NOTIFY_POLL_MS = 3 * 60 * 1000; // background catch-up poll
 const RES_NOTIFY_DEFAULT_OPEN = "10:00"; // fallback if app_settings hasn't loaded yet
 
@@ -370,9 +374,11 @@ function _resNotifyHandledRow(it) {
 
 // Collapsed by default and remembered per browser. Open by default would push
 // the two sections that need action below the fold on a busy day.
-let _resNotifyHandledOpen = false;
+let _resNotifyHandledOpen = true;
 try {
-  _resNotifyHandledOpen = localStorage.getItem("resNotifyHandledOpen") === "1";
+  // Open unless this browser has explicitly collapsed it. Reading "!== '0'"
+  // rather than "=== '1'" is what makes a first-time user get it open.
+  _resNotifyHandledOpen = localStorage.getItem("resNotifyHandledOpen") !== "0";
 } catch (_) {}
 
 function resNotifyToggleHandled() {
@@ -642,6 +648,13 @@ document.addEventListener("click", (e) => {
   const wrap = document.getElementById("bd-alert-wrap");
   const panel = document.getElementById("res-alert-panel");
   if (!wrap || !panel || panel.classList.contains("hidden")) return;
+  // A click on a control INSIDE the panel often re-renders the panel's list,
+  // which detaches the very node this handler is about to test. contains()
+  // then reports "outside" and the panel closes under the user's finger.
+  // Reported 2026-08-23: opening the "Sudah ditangani" accordion shut the
+  // whole dropdown. isConnected is false for a node that has been replaced,
+  // so this catches every such control rather than one button at a time.
+  if (!e.target.isConnected) return;
   if (!wrap.contains(e.target)) panel.classList.add("hidden");
 });
 

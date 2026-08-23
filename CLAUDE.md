@@ -222,7 +222,99 @@ down for a paying client.
 ### 5. Routing, file splitting, inline handlers
 The three reasons this repo exists. See the top of this file.
 
-### 6. Port the promo function to a Cloudflare Worker
+### 6. Sending the reservation card AND the message in one WhatsApp send
+
+**Scoped 2026-08-23 at Rere's request, NOT built.** Decide before quoting a
+client on it.
+
+**The constraint.** `wa.me` click-to-chat cannot carry an attachment. That is a
+platform fact, not a gap in this app, and it is why the voucher card and the
+reservation card are both attached by hand today. Anything that puts a picture
+and words into one send has to go around it.
+
+The front desk is a **Windows PC only** (confirmed by Rere, 2026-08-23). That
+single fact decides most of this, because the cheapest option only works on
+phones.
+
+---
+
+**Option A — Web Share API. Rejected for this client.**
+
+`navigator.share({ files, text })` hands WhatsApp the image and the caption in
+one tap. Solid on Android and iOS. On desktop Chrome it is documented as not
+fully supported and MDN flags the whole API as limited availability. On a
+Windows till it would feature-detect to false and change nothing.
+
+Half a day, no cost, no accounts. Worth adding *only* if staff start following
+up from their own handsets. Feature-detect with `navigator.canShare({files})`
+and fall through to today's download-and-attach, never assume it.
+
+---
+
+**Option B — Server-rendered preview card. RECOMMENDED.**
+
+Put a URL in the WhatsApp message and WhatsApp draws a picture above the text.
+One send, no attaching, works on every device including the PC.
+
+The obvious objection is "that needs server-side image rendering", and it does
+not. **The staff app already renders the card to a canvas** in
+`reservation-confirmation.html` (`downloadCard()`). The missing pieces are
+small:
+
+1. On confirm, upload that canvas PNG to Supabase Storage instead of only
+   offering it as a download. The `branding` bucket pattern already does
+   exactly this.
+2. A Cloudflare Worker route (`/r/:id`) that looks up the reservation, returns
+   a tiny HTML page whose `og:image` points at the stored PNG, and redirects a
+   human visitor to the real confirmation page.
+3. The WhatsApp follow-up message carries that URL.
+
+Cost is effectively zero: Cloudflare Workers' free tier is 100k requests/day
+and this is one request per booking. Rough effort: two days including the
+per-client deploy story.
+
+**The rules that will bite, all already learned here:**
+
+- The crawler does not run JavaScript. `og:` tags must be in the HTML the
+  Worker returns, which is the entire reason the Worker exists.
+- WhatsApp caches previews per URL, hard and for weeks. **One booking, one URL,
+  never edited.** A URL that has already been sent must never change its image.
+- Preview image: 300px+ wide, under 600 KB, or no card is drawn at all.
+- The sending client decides card size. Mobile gives a full-width card, Web and
+  Desktop a small thumbnail. Same URL, same tags, no code-side workaround. The
+  front desk will see the small one and should be told that is normal.
+
+---
+
+**Option C — WhatsApp Cloud API. The real answer, when there is budget.**
+
+A genuine image message with a caption, sent by the app, nobody attaching
+anything. Templates support an image header alongside body text.
+
+Also the only option that removes the ban risk behind the standing "no send
+all, ever" rule, because it is the sanctioned channel.
+
+Indonesian rates are per 24-hour CONVERSATION, not per message: utility about
+$0.0212 (~Rp 336), marketing about $0.0492 (~Rp 780), and conversations the
+guest starts are free. So confirming a booking costs roughly Rp 336, and every
+further message inside that day is included.
+
+Not free in the ways that matter more than money: Meta Business verification, a
+dedicated phone number that can no longer be used in the normal WhatsApp app,
+and template approval (usually automatic, up to 24 hours) for anything the
+restaurant initiates. Wording changes go through review again, which is a
+material change to how ops currently edits templates in Broadcast whenever they
+like.
+
+**Price it into the licence rather than absorbing it.** At 300 bookings a month
+it is about Rp 100k, which is small but recurring and per client.
+
+---
+
+**Suggested order:** B now if a client asks for it, C when one is big enough to
+want automated confirmations, A only if the front desk stops being a PC.
+
+### 7. Port the promo function to a Cloudflare Worker
 `reference/promo-netlify-function.js`. Until then campaign promo links do not work.
 
 ---

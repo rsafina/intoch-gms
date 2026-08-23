@@ -10436,6 +10436,14 @@ document.addEventListener("click", (e) => {
   const wrap = document.getElementById("bd-alert-wrap");
   const panel = document.getElementById("bd-alert-panel");
   if (!wrap || !panel || panel.classList.contains("hidden")) return;
+  // A click on a control INSIDE the panel often re-renders the panel's list,
+  // which detaches the very node this handler is about to test. contains()
+  // then reports "outside" and the panel closes under the user's finger.
+  // Reported 2026-08-23: the same thing happened on the reservation
+  // panel. Fixed here at the same time because "Mark as sent" and "Undo" in
+  // this panel re-render it exactly the same way. isConnected is false for a node that has been replaced,
+  // so this catches every such control rather than one button at a time.
+  if (!e.target.isConnected) return;
   if (!wrap.contains(e.target)) panel.classList.add("hidden");
 });
 

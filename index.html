@@ -1357,8 +1357,11 @@
           position: absolute;
           top: 48px;
           right: 0;
-          width: 300px;
-          max-height: 340px;
+          width: 340px;
+          /* Taller and viewport-aware (2026-08-23). 340px fitted about four
+             rows, which is nothing now that handled bookings stay listed. The
+             vh cap keeps it on screen on a laptop. */
+          max-height: min(72vh, 560px);
           overflow-y: auto;
           padding: 12px;
         "
@@ -1428,8 +1431,11 @@
           position: absolute;
           top: 48px;
           right: 0;
-          width: 300px;
-          max-height: 340px;
+          width: 340px;
+          /* Taller and viewport-aware (2026-08-23). 340px fitted about four
+             rows, which is nothing now that handled bookings stay listed. The
+             vh cap keeps it on screen on a laptop. */
+          max-height: min(72vh, 560px);
           overflow-y: auto;
           padding: 12px;
         "
@@ -8541,7 +8547,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
     <script src="js/config.js?v=9"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=12"></script>
+    <script src="js/app.js?v=13"></script>
     <script src="js/membership.js?v=4"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->
@@ -8555,7 +8561,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     <script src="js/campaign-editor.js?v=9"></script>
     <!-- voucher.js uses waTemplateBody/waOpenChat, so it must load after wa.js -->
     <script src="js/voucher.js?v=4"></script>
-    <script src="js/notify.js?v=6"></script>
+    <script src="js/notify.js?v=7"></script>
     <script src="js/version-check.js?v=1"></script>
     <!-- Invoice generator: rasterises the preview node and wraps it in a PDF.
          Both libraries are only needed on the Invoice page. -->

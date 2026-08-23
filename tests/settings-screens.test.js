@@ -190,6 +190,25 @@ ok(
 );
 w.eval("isManagerOrAdmin = () => true");
 
+console.log("\nNotification panels survive a click that re-renders them");
+// The bug: a control inside the panel replaces the list with innerHTML, which
+// detaches the clicked node. The document-level outside-click handler then
+// tests a node that is no longer in the document, contains() says "outside",
+// and the dropdown shuts under the user. Guarded with isConnected, which
+// covers every such control rather than one button at a time.
+const notifySrc = fs.readFileSync(path.join(ROOT, "js", "notify.js"), "utf8");
+ok(
+  "the reservation panel ignores clicks on detached nodes",
+  /res-alert-panel[\s\S]{0,600}?isConnected[\s\S]{0,200}?wrap\.contains/.test(notifySrc),
+);
+ok(
+  "the birthday panel does too",
+  /bd-alert-panel[\s\S]{0,700}?isConnected[\s\S]{0,200}?wrap\.contains/.test(appSrc),
+);
+// Both panels need room now that handled bookings stay listed.
+const panelHeights = [...html.matchAll(/max-height: min\(72vh, 560px\)/g)].length;
+ok("both dropdowns were given more height", panelHeights === 2, String(panelHeights));
+
 console.log("\nEvery Settings tab is the same width");
 // They had drifted to four different values, so the page jumped sideways on
 // every tab click.
