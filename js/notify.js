@@ -129,13 +129,44 @@ function _resNotifyClassify(it) {
   return "quiet";
 }
 
+// Held so logout can remove it. See the long note on _rtTodayChannel in
+// app.js: re-subscribing a channel that is already open throws, and that
+// throw used to take the whole bell down.
+let _resNotifyChannel = null;
+
+function teardownOnlineResNotify() {
+  if (_resNotifyPollTimer) {
+    clearInterval(_resNotifyPollTimer);
+    _resNotifyPollTimer = null;
+  }
+  if (_resNotifyChannel) {
+    try {
+      db.removeChannel(_resNotifyChannel);
+    } catch (e) {
+      console.warn("[res-notify] teardown failed", e);
+    }
+    _resNotifyChannel = null;
+  }
+  // Reset the "already seen" set too. After a logout the next person at this
+  // PC is a different shift: a booking they have never looked at must chime
+  // for them, not be silently treated as old news.
+  _resNotifySeenPending = new Set();
+  _resNotifyPrimed = false;
+  _resNotifyLive = false;
+  // setupOnlineResNotify() refuses to run twice via this flag. Clearing it is
+  // what lets the bell come back for the next person to log in; leaving it set
+  // would trade a crash for a permanently silent bell, which is worse because
+  // nothing on screen would say anything is wrong.
+  _resNotifyStarted = false;
+}
+
 async function _resNotifyFetch() {
   const today = _resNotifyToday();
 
   const { data, error } = await db
     .from("reservations")
     .select(
-      "id, reservation_date, reservation_time, pax, booking_name, follow_up_done, reminder_d1_ack_at, reminder_dday_ack_at, guests(name)",
+      "id, reservation_date, reservation_time, pax, booking_name, follow_up_done, follow_up_done_at, follow_up_done_by, reminder_d1_ack_at, reminder_dday_ack_at, guests(name)",
     )
     .eq("reservation_source", "Online Form")
     .is("deleted_at", null)
@@ -165,14 +196,48 @@ async function _resNotifyFetch() {
     time: String(row.reservation_time || "").slice(0, 5),
     pax: row.pax || 1,
     done: !!row.follow_up_done,
+    doneAt: row.follow_up_done_at || null,
+    doneBy: row.follow_up_done_by || null,
     d1Ack: !!row.reminder_d1_ack_at,
     ddayAck: !!row.reminder_dday_ack_at,
   }));
 }
 
+// Staff id -> display name, for the "handled by" line.
+//
+// Fetched separately rather than embedded in the reservations select
+// (`staff_users!reservations_follow_up_done_by_fkey(display_name)`), because
+// an embed depends on the foreign key having exactly the name PostgREST
+// expects. This schema has now produced three columns that existed in the
+// code and in no migration, so a hand-built client database is not something
+// to bet a working notification bell on. A handful of staff rows, cached for
+// the session, costs one query and cannot 400 the whole panel.
+let _resNotifyStaffNames = null;
+
+async function _resNotifyLoadStaffNames() {
+  if (_resNotifyStaffNames) return _resNotifyStaffNames;
+  try {
+    const { data, error } = await db
+      .from("staff_users")
+      .select("id, display_name");
+    if (error) throw error;
+    _resNotifyStaffNames = Object.fromEntries(
+      (data || []).map((r) => [r.id, r.display_name]),
+    );
+  } catch (e) {
+    console.warn("[res-notify] staff names unavailable", e);
+    _resNotifyStaffNames = {}; // rows just say "handled" with no name
+  }
+  return _resNotifyStaffNames;
+}
+
 async function _resNotifyRefresh({ chimeNew = false } = {}) {
   const items = await _resNotifyFetch();
   if (!items) return; // network hiccup — keep the last-known list rather than blanking it
+  // Not awaited before the counts below: the badge must not wait on a
+  // cosmetic lookup. It resolves before the panel is opened in practice, and
+  // a row with no name still reads correctly.
+  _resNotifyLoadStaffNames();
 
   const pending = items.filter((it) => _resNotifyClassify(it) === "pending");
   const incoming = items.filter((it) => _resNotifyClassify(it) === "incoming");
@@ -271,6 +336,53 @@ function _resNotifyRenderBadge() {
   }
 }
 
+// "Sudah ditangani": the third section (2026-08-23, Rere). A booking used to
+// vanish from this panel the moment it was ticked, which meant nobody could
+// see what the previous shift had already dealt with, and a mis-tick was
+// invisible and unrecoverable from here.
+//
+// Scoped to today and later on purpose. The fetch already filters to that,
+// and the panel has a row cap: letting last month's handled bookings in would
+// push a genuinely new one off the bottom, which is the one failure this
+// whole bell exists to prevent.
+function _resNotifyHandledRow(it) {
+  const who = it.doneBy && _resNotifyStaffNames ? _resNotifyStaffNames[it.doneBy] : null;
+  const when = it.doneAt
+    ? new Date(it.doneAt).toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+  const by = [who, when].filter(Boolean).join(" · ");
+  return `
+      <div class="py-2 border-b border-[#F0EDE7] last:border-0 opacity-60">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-[#333] truncate">${escapeHtml(it.name || "Tamu")}</p>
+            <p class="text-xs text-[#999]">${_resNotifyFmtDate(it.date)} · ${escapeHtml(it.time)} · ${it.pax} pax</p>
+          </div>
+          <span class="text-[10px] font-semibold text-[#1FAF5E] whitespace-nowrap">SUDAH</span>
+        </div>
+        <p class="text-[10px] text-[#aaa] mt-0.5">${by ? "Ditangani " + escapeHtml(by) : "Sudah ditangani"}</p>
+        <button onclick="resNotifyToggleDone('${it.id}')" class="text-[11px] text-[#999] hover:underline mt-0.5">Batalkan</button>
+      </div>`;
+}
+
+// Collapsed by default and remembered per browser. Open by default would push
+// the two sections that need action below the fold on a busy day.
+let _resNotifyHandledOpen = false;
+try {
+  _resNotifyHandledOpen = localStorage.getItem("resNotifyHandledOpen") === "1";
+} catch (_) {}
+
+function resNotifyToggleHandled() {
+  _resNotifyHandledOpen = !_resNotifyHandledOpen;
+  try {
+    localStorage.setItem("resNotifyHandledOpen", _resNotifyHandledOpen ? "1" : "0");
+  } catch (_) {}
+  _resNotifyRenderList();
+}
+
 function _resNotifyRow(it, kind) {
   const label =
     kind === "pending"
@@ -302,14 +414,20 @@ function _resNotifyRenderList() {
 
   const pending = _resNotifyItems.filter((it) => _resNotifyClassify(it) === "pending");
   const incoming = _resNotifyItems.filter((it) => _resNotifyClassify(it) === "incoming");
+  const handled = _resNotifyItems.filter((it) => _resNotifyClassify(it) === "quiet");
 
-  if (!pending.length && !incoming.length) {
+  if (!pending.length && !incoming.length && !handled.length) {
     list.innerHTML =
-      '<p class="text-xs text-[#bbb] text-center py-4">Semua reservasi online sudah ditangani ✓</p>';
+      '<p class="text-xs text-[#bbb] text-center py-4">Belum ada reservasi online</p>';
     return;
   }
 
   let html = "";
+
+  if (!pending.length && !incoming.length) {
+    html +=
+      '<p class="text-xs text-[#1FAF5E] text-center py-3">Semua reservasi online sudah ditangani ✓</p>';
+  }
 
   if (pending.length) {
     html +=
@@ -328,6 +446,20 @@ function _resNotifyRenderList() {
       ")</p>" +
       '<p class="text-[10px] text-[#999] mb-1 leading-snug">Hubungi tamu, pastikan jadi datang.</p>' +
       incoming.map((it) => _resNotifyRow(it, "incoming")).join("");
+  }
+
+  if (handled.length) {
+    html +=
+      '<button onclick="resNotifyToggleHandled()" class="w-full flex items-center justify-between text-left text-[11px] font-semibold text-[#777] ' +
+      (pending.length || incoming.length ? "mt-3 pt-3 border-t border-[#EDE9E3]" : "") +
+      '"><span>Sudah ditangani (' +
+      handled.length +
+      ")</span><span>" +
+      (_resNotifyHandledOpen ? "&#9652;" : "&#9662;") +
+      "</span></button>";
+    if (_resNotifyHandledOpen) {
+      html += handled.map((it) => _resNotifyHandledRow(it)).join("");
+    }
   }
 
   list.innerHTML = html;
@@ -536,7 +668,8 @@ function setupOnlineResNotify() {
     RES_NOTIFY_POLL_MS,
   );
 
-  db.channel("rt-online-res-bell")
+  _resNotifyChannel = db.channel("rt-online-res-bell");
+  _resNotifyChannel
     .on(
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "reservations" },

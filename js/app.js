@@ -349,8 +349,23 @@ async function initializeApplication() {
   navigateTo(lastPage);
 
   // ── Realtime: refresh today-sensitive UI on any reservation/visit change ──
-  setupRealtimeUpdates();
-  if (typeof setupOnlineResNotify === "function") setupOnlineResNotify();
+  //
+  // Each in its OWN try/catch, and not merged into one. These are two
+  // independent enhancements over an app that already works on its own
+  // timers, and a single try around both would still let a failure in the
+  // first one silently cost you the second. That is exactly the bug this
+  // replaces: one throw here left the front desk with no bell and no chime
+  // for a whole shift, with nothing on screen to say so.
+  try {
+    setupRealtimeUpdates();
+  } catch (e) {
+    console.error("realtime setup failed — live refresh is off", e);
+  }
+  try {
+    if (typeof setupOnlineResNotify === "function") setupOnlineResNotify();
+  } catch (e) {
+    console.error("online reservation bell setup failed", e);
+  }
 
   // ── Auto-refresh: prevents a PC left on overnight from silently logging
   // walk-ins/reservations against yesterday's date ──
@@ -498,8 +513,37 @@ function setupAutoRefresh() {
   }, AUTO_REFRESH_SAFETY_INTERVAL);
 }
 
+// Held so logout can tear it down. Without this, logging out and back in
+// produced a hard failure: db.channel() returns the EXISTING channel when one
+// with that topic is already open, and calling .on() on a channel that has
+// already been subscribed THROWS
+//
+//   cannot add `postgres_changes` callbacks for realtime:rt-today-updates
+//   after `subscribe()`
+//
+// which propagated out of initializeApplication() and killed every line after
+// it — the online-reservation bell, its chime, and the overnight auto-refresh.
+// Reported by Rere 2026-08-23 as "notifications and reservation updates don't
+// work unless I refresh the page". A page refresh cured it because a fresh
+// load starts with no channel. Reproduced against @supabase/supabase-js.
+let _rtTodayChannel = null;
+
+function teardownRealtimeUpdates() {
+  if (!_rtTodayChannel) return;
+  try {
+    db.removeChannel(_rtTodayChannel);
+  } catch (e) {
+    console.warn("realtime teardown failed", e);
+  }
+  _rtTodayChannel = null;
+}
+
 function setupRealtimeUpdates() {
   if (typeof IS_DEV !== "undefined" && IS_DEV) return; // dev: no realtime — saves a persistent connection + refetch bursts
+  // Idempotent by construction. Even with the logout teardown in place, this
+  // must never be the thing that throws: it runs in the middle of app boot
+  // and takes everything after it down with it.
+  teardownRealtimeUpdates();
   // Single channel for both tables — coalesces rapid bursts with a 1.5s debounce
   let _rtTimer = null;
   function scheduleRefresh() {
@@ -523,7 +567,8 @@ function setupRealtimeUpdates() {
     }, 1500);
   }
 
-  db.channel("rt-today-updates")
+  _rtTodayChannel = db.channel("rt-today-updates");
+  _rtTodayChannel
     .on(
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "reservations" },
@@ -658,6 +703,11 @@ async function loginStaff(event) {
 function logoutStaff() {
   clearStaffSession();
   localStorage.removeItem("lastPage");
+  // Tear the live connections down BEFORE clearing appInitialized. That flag
+  // is what lets the next login re-run the whole boot sequence, and without
+  // this the second login hits an already-subscribed channel and throws.
+  teardownRealtimeUpdates();
+  if (typeof teardownOnlineResNotify === "function") teardownOnlineResNotify();
   appInitialized = false;
   currentPage = "dashboard";
   document
@@ -2342,11 +2392,23 @@ function renderTableManagement() {
   section.innerHTML = `
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-3">
       <div>
-        <h2 class="font-heading text-2xl font-semibold text-[#28547C]">Table Configuration</h2>
-        <p class="text-sm text-[#999] mt-1">Manage physical tables by area and active status.</p>
+        <h2 class="font-heading text-2xl font-semibold text-[#28547C]">${t("Areas & Tables")}</h2>
+        <p class="text-sm text-[#999] mt-1">${t("Create the rooms and sections first, then add the tables inside each one.")}</p>
       </div>
-      <button onclick="openTableModal()" class="btn-primary px-4 py-2">Add Table</button>
+      <div class="flex items-center gap-2 flex-wrap">
+        <button onclick="openImportModal()" class="btn-ghost text-sm px-4 py-2 manager-only-ui">${t("Import")}</button>
+        <button onclick="openAreaModal()" class="btn-primary px-4 py-2 manager-only-ui">${t("Add Area")}</button>
+      </div>
     </div>
+    ${
+      allAreas.length
+        ? ""
+        : `<div class="card p-8 text-center">
+             <p class="text-sm text-[#777] mb-1">${t("No areas yet.")}</p>
+             <p class="text-xs text-[#999] mb-4">${t("An area is a room or section of the restaurant: Indoor, Terrace, VIP Room. Tables belong to one.")}</p>
+             <button onclick="openAreaModal()" class="btn-primary px-5 py-2 manager-only-ui">${t("Add the first area")}</button>
+           </div>`
+    }
     <div class="grid gap-4">
       ${allAreas
         .map((area) => {
@@ -2356,7 +2418,10 @@ function renderTableManagement() {
             <div class="flex items-center justify-between gap-3 mb-4">
               <div>
                 <h3 class="font-semibold text-[#28547C]">${escapeHtml(area.name)}</h3>
-                <p class="text-xs text-[#777]">${areaTables.length} table${areaTables.length === 1 ? "" : "s"}</p>
+                <p class="text-xs text-[#777]">${areaTables.length} table${areaTables.length === 1 ? "" : "s"} &middot; ${t("seats")} ${area.capacity || 0}
+                  <button onclick="openAreaModal('${area.id}')" class="text-[#28547C] hover:underline ml-2 manager-only-ui">${t("Edit")}</button>
+                  <button onclick="deleteArea('${area.id}')" class="text-[#B23B3B] hover:underline ml-1 manager-only-ui">${t("Remove")}</button>
+                </p>
               </div>
               <button type="button" onclick="openTableModal(null, '${area.id}')" class="text-xs text-[#5596CE] hover:underline">Add to area</button>
             </div>
@@ -12783,4 +12848,564 @@ async function resetReserveBackground() {
   if (!ok) return;
   if (brandUrlOk(previous)) removeBrandImageByUrl(previous);
   toast(t("Back to the built-in image"));
+}
+
+
+// ============================================================
+// AREAS: CREATE, RENAME, REMOVE
+// ============================================================
+// Until 2026-08-23 `areas` was SELECT-only: the four rows every database had
+// came from the migration seed and there was no way to add a fifth. That made
+// onboarding a client impossible without opening the SQL editor, since no two
+// restaurants have the same rooms.
+
+function openAreaModal(areaId) {
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can change areas"), "error");
+    return;
+  }
+  const area = areaId ? allAreas.find((a) => a.id === areaId) : null;
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.value = v ?? "";
+  };
+  set("area-edit-id", area ? area.id : "");
+  set("area-name", area ? area.name : "");
+  set("area-capacity", area ? area.capacity : "");
+  const title = document.getElementById("area-modal-title");
+  if (title) title.textContent = area ? t("Edit Area") : t("Add Area");
+  const btn = document.getElementById("area-save-button");
+  if (btn) btn.textContent = area ? t("Save Changes") : t("Create Area");
+  showModal("modal-area");
+}
+
+async function saveArea() {
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can change areas"), "error");
+    return;
+  }
+  const id = document.getElementById("area-edit-id")?.value || "";
+  const name = document.getElementById("area-name")?.value.trim() || "";
+  const capacityRaw = document.getElementById("area-capacity")?.value;
+  const capacity = parseInt(capacityRaw, 10);
+
+  if (name.length < 2) {
+    toast(t("Area name is required (min 2 characters)"), "error");
+    return;
+  }
+  if (!isFinite(capacity) || capacity < 0) {
+    toast(t("Seats must be 0 or more"), "error");
+    return;
+  }
+  // Case-insensitive, because "VIP Room" and "vip room" are the same room to
+  // everyone except the database, and two of them makes the area dropdown on
+  // the reservation form unusable.
+  const clash = allAreas.find(
+    (a) => a.id !== id && a.name.trim().toLowerCase() === name.toLowerCase(),
+  );
+  if (clash) {
+    toast(t("An area with that name already exists"), "error");
+    return;
+  }
+
+  const btn = document.getElementById("area-save-button");
+  if (btn) btn.disabled = true;
+  loader(true);
+  const { error } = await supabaseQuery(
+    () =>
+      id
+        ? db.from("areas").update({ name, capacity }).eq("id", id)
+        : db.from("areas").insert({ name, capacity }),
+    "Failed to save area",
+  );
+  loader(false);
+  if (btn) btn.disabled = false;
+  if (error) {
+    toast(error.message || t("Failed to save area"), "error");
+    return;
+  }
+  hideModal("modal-area");
+  toast(id ? t("Area updated") : t("Area created"));
+  await refreshAreasAndTables();
+}
+
+async function deleteArea(areaId) {
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can change areas"), "error");
+    return;
+  }
+  const area = allAreas.find((a) => a.id === areaId);
+  if (!area) return;
+  const tables = allTables.filter((tbl) => tbl.area_id === areaId);
+
+  // areas -> tables is ON DELETE CASCADE, but reservations.table_id has NO
+  // cascade, so the database will simply refuse to delete an area whose
+  // tables are booked. Say so up front instead of letting them press delete
+  // and read a foreign key error.
+  if (tables.length) {
+    const msg =
+      CURRENT_LANG === "id"
+        ? `Hapus "${area.name}" beserta ${tables.length} mejanya? Kalau ada meja yang sudah dipakai di reservasi, penghapusan akan ditolak dan tidak ada yang berubah.`
+        : `Delete "${area.name}" and its ${tables.length} table${tables.length === 1 ? "" : "s"}? If any of those tables is used by a reservation the delete is refused and nothing changes.`;
+    if (!confirm(msg)) return;
+  } else if (!confirm(t("Delete this area?"))) {
+    return;
+  }
+
+  loader(true);
+  const { error } = await supabaseQuery(
+    () => db.from("areas").delete().eq("id", areaId),
+    "Failed to delete area",
+  );
+  loader(false);
+  if (error) {
+    // 23503 = foreign key violation: a table in this area is on a booking.
+    const inUse =
+      error.code === "23503" || /foreign key|violates/i.test(error.message || "");
+    toast(
+      inUse
+        ? t("This area still has tables used by reservations, so it cannot be deleted. Deactivate the tables instead.")
+        : error.message || t("Failed to delete area"),
+      "error",
+    );
+    return;
+  }
+  toast(t("Area deleted"));
+  await refreshAreasAndTables();
+}
+
+// One place to reload both and repaint everything that reads them. Areas feed
+// the reservation form, the walk-in form and the capacity cards, so a stale
+// copy after an edit shows the old name in three places at once.
+async function refreshAreasAndTables() {
+  await loadAreas();
+  await loadTables();
+  populateAreaSelects();
+  renderAreas();
+}
+
+// ============================================================
+// AREAS & TABLES: IMPORT
+// ============================================================
+// Two ways in, because onboarding a restaurant is a one-off job that should
+// take two minutes rather than an evening:
+//
+//   1. Paste or upload a spreadsheet (CSV, or Excel via SheetJS loaded on
+//      demand). Columns: area, table, seats.
+//   2. Type a range: area "Indoor", names "A1-A12", seats 4.
+//
+// ADD ONLY, by decision (Rere, 2026-08-23). Anything whose name already
+// exists is skipped, never updated and never deleted. Re-importing a
+// corrected file cannot duplicate the rows that were already right, and
+// cannot silently rewrite live data from a stale column.
+let importRows = []; // [{area, table, seats, status}]
+
+function openImportModal() {
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can change areas"), "error");
+    return;
+  }
+  importRows = [];
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.value = v ?? "";
+  };
+  set("import-paste", "");
+  set("import-range-area", "");
+  set("import-range-names", "");
+  set("import-range-seats", "4");
+  const file = document.getElementById("import-file");
+  if (file) file.value = "";
+  // Existing areas offered as suggestions, but the field stays free text:
+  // the whole point of an import is that most of these areas do not exist yet.
+  const list = document.getElementById("import-area-options");
+  if (list)
+    list.innerHTML = allAreas
+      .map((a) => `<option value="${escapeHtml(a.name)}"></option>`)
+      .join("");
+  renderImportPreview();
+  showModal("modal-import");
+}
+
+// Splits one CSV line, honouring quotes. Restaurant data is full of commas
+// ("Terrace, upper") and a naive split() mangles exactly those rows.
+function parseCsvLine(line) {
+  const out = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        cur += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === "," || ch === "\t" || ch === ";") {
+      out.push(cur);
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  out.push(cur);
+  return out.map((v) => v.trim());
+}
+
+// Header names people actually type, in both languages. A file whose first
+// row is data rather than headers is still read: the header check has to
+// MATCH something, it does not just assume row one is a header.
+const IMPORT_HEADERS = {
+  area: ["area", "ruang", "ruangan", "section", "zona", "zone", "room"],
+  table: ["table", "meja", "table name", "nama meja", "no meja", "name", "nama"],
+  seats: ["seats", "kursi", "capacity", "kapasitas", "pax", "seat"],
+};
+
+function detectImportColumns(cells) {
+  const lower = cells.map((c) => String(c || "").trim().toLowerCase());
+  const find = (keys) => lower.findIndex((c) => keys.includes(c));
+  const area = find(IMPORT_HEADERS.area);
+  const table = find(IMPORT_HEADERS.table);
+  const seats = find(IMPORT_HEADERS.seats);
+  if (area === -1 || table === -1) return null; // not a header row
+  return { area, table, seats };
+}
+
+function parseImportText(text) {
+  const lines = String(text || "")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (!lines.length) return [];
+
+  let cols = { area: 0, table: 1, seats: 2 };
+  let start = 0;
+  const detected = detectImportColumns(parseCsvLine(lines[0]));
+  if (detected) {
+    cols = detected;
+    start = 1;
+  }
+
+  const rows = [];
+  for (let i = start; i < lines.length; i++) {
+    const cells = parseCsvLine(lines[i]);
+    const area = (cells[cols.area] || "").trim();
+    const table = (cells[cols.table] || "").trim();
+    const seatsRaw = cols.seats >= 0 ? cells[cols.seats] : "";
+    const seats = parseInt(seatsRaw, 10);
+    if (!area && !table) continue;
+    rows.push({
+      area,
+      table,
+      seats: isFinite(seats) && seats > 0 ? seats : null,
+    });
+  }
+  return rows;
+}
+
+// "A1-A12" -> A1..A12. Also "1-10", and plain comma lists.
+//
+// The prefix must match on both sides: "A1-B5" is not a range anybody means,
+// and silently producing 100 tables from it would be worse than refusing.
+function expandTableRange(input) {
+  const raw = String(input || "").trim();
+  if (!raw) return [];
+  const parts = raw.split(",").map((p) => p.trim()).filter(Boolean);
+  const out = [];
+  parts.forEach((part) => {
+    const m = part.match(/^([A-Za-z ._-]*?)(\d+)\s*[-–]\s*([A-Za-z ._-]*?)(\d+)$/);
+    if (!m) {
+      out.push(part);
+      return;
+    }
+    const [, p1, n1, p2, n2] = m;
+    if (p1.trim().toLowerCase() !== p2.trim().toLowerCase()) {
+      out.push(part); // not a range: keep it as one literal name
+      return;
+    }
+    const from = parseInt(n1, 10);
+    const to = parseInt(n2, 10);
+    if (!isFinite(from) || !isFinite(to)) {
+      out.push(part);
+      return;
+    }
+    const step = from <= to ? 1 : -1;
+    // A hard ceiling. A typo like "A1-A1000" should not try to create a
+    // thousand tables and time the browser out.
+    const count = Math.abs(to - from) + 1;
+    if (count > 200) {
+      out.push(part);
+      return;
+    }
+    // Keep the zero padding people use: "T01-T12" stays two digits.
+    const width = n1.length > 1 && n1.startsWith("0") ? n1.length : 0;
+    for (let n = from; step > 0 ? n <= to : n >= to; n += step) {
+      out.push(p1 + (width ? String(n).padStart(width, "0") : String(n)));
+    }
+  });
+  return out;
+}
+
+function addImportRange() {
+  const area = document.getElementById("import-range-area")?.value.trim() || "";
+  const names = document.getElementById("import-range-names")?.value || "";
+  const seats = parseInt(document.getElementById("import-range-seats")?.value, 10);
+  if (!area) {
+    toast(t("Pick or type an area first"), "error");
+    return;
+  }
+  const expanded = expandTableRange(names);
+  if (!expanded.length) {
+    toast(t("Type table names, e.g. A1-A12"), "error");
+    return;
+  }
+  expanded.forEach((table) =>
+    importRows.push({ area, table, seats: isFinite(seats) && seats > 0 ? seats : null }),
+  );
+  document.getElementById("import-range-names").value = "";
+  renderImportPreview();
+}
+
+function addImportPaste() {
+  const text = document.getElementById("import-paste")?.value || "";
+  const rows = parseImportText(text);
+  if (!rows.length) {
+    toast(t("Nothing to import. Check the pasted text."), "error");
+    return;
+  }
+  importRows.push(...rows);
+  renderImportPreview();
+}
+
+// Excel needs a parser. SheetJS is loaded ONLY when an .xlsx is actually
+// picked, so a client who never touches Excel never downloads it, and the app
+// gains no permanent dependency for a once-per-restaurant job.
+function importFilePicked() {
+  const file = document.getElementById("import-file")?.files?.[0];
+  if (!file) return;
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".csv") || name.endsWith(".txt") || name.endsWith(".tsv")) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const rows = parseImportText(reader.result);
+      if (!rows.length) {
+        toast(t("Nothing to import. Check the file."), "error");
+        return;
+      }
+      importRows.push(...rows);
+      renderImportPreview();
+    };
+    reader.readAsText(file);
+    return;
+  }
+  if (!name.endsWith(".xlsx") && !name.endsWith(".xls")) {
+    toast(t("Use a CSV or Excel file."), "error");
+    return;
+  }
+  loadSheetJs()
+    .then((XLSX) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const wb = XLSX.read(new Uint8Array(reader.result), { type: "array" });
+          const sheet = wb.Sheets[wb.SheetNames[0]];
+          // Read as a grid of raw cells and reuse the same parser the paste
+          // box uses, so both routes behave identically and there is one set
+          // of header rules to keep correct.
+          const grid = XLSX.utils.sheet_to_csv(sheet);
+          const rows = parseImportText(grid);
+          if (!rows.length) {
+            toast(t("Nothing to import. Check the file."), "error");
+            return;
+          }
+          importRows.push(...rows);
+          renderImportPreview();
+        } catch (e) {
+          console.warn("xlsx parse failed", e);
+          toast(t("Could not read that Excel file. Try saving it as CSV."), "error");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    })
+    .catch(() => {
+      toast(
+        t("Could not load the Excel reader. Save the file as CSV and try again."),
+        "error",
+      );
+    });
+}
+
+let _sheetJsPromise = null;
+function loadSheetJs() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  if (_sheetJsPromise) return _sheetJsPromise;
+  _sheetJsPromise = new Promise((resolve, reject) => {
+    const el = document.createElement("script");
+    el.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    el.onload = () => (window.XLSX ? resolve(window.XLSX) : reject(new Error("no XLSX")));
+    el.onerror = reject;
+    document.head.appendChild(el);
+  });
+  return _sheetJsPromise;
+}
+
+// Works out what each row WILL do before anything is written, and says so.
+// The whole point of add-only is that the user can see the skips and trust
+// that re-importing is safe.
+function classifyImportRows() {
+  const existingAreas = new Map(
+    allAreas.map((a) => [a.name.trim().toLowerCase(), a]),
+  );
+  const existingTables = new Set(
+    allTables.map((tb) => {
+      const area = allAreas.find((a) => a.id === tb.area_id);
+      return `${(area?.name || "").trim().toLowerCase()}|${tb.name.trim().toLowerCase()}`;
+    }),
+  );
+  const newAreas = new Set();
+  const seenTables = new Set();
+
+  return importRows.map((row) => {
+    const areaKey = row.area.trim().toLowerCase();
+    const tableKey = `${areaKey}|${row.table.trim().toLowerCase()}`;
+    let status;
+    if (!row.area || !row.table) {
+      status = "invalid";
+    } else if (existingTables.has(tableKey) || seenTables.has(tableKey)) {
+      // Duplicates WITHIN the pasted file count too — a spreadsheet with the
+      // same table twice would otherwise insert it twice.
+      status = "skip";
+    } else {
+      status = "add";
+      seenTables.add(tableKey);
+      if (!existingAreas.has(areaKey)) newAreas.add(row.area.trim());
+    }
+    return { ...row, status, newArea: !existingAreas.has(areaKey) };
+  });
+}
+
+function renderImportPreview() {
+  const el = document.getElementById("import-preview");
+  const btn = document.getElementById("import-apply-button");
+  if (!el) return;
+  if (!importRows.length) {
+    el.innerHTML = `<p class="text-xs text-[#999] text-center py-6">${t("Nothing queued yet. Paste a list, pick a file, or add a range above.")}</p>`;
+    if (btn) btn.disabled = true;
+    return;
+  }
+  const rows = classifyImportRows();
+  const adds = rows.filter((r) => r.status === "add");
+  const skips = rows.filter((r) => r.status === "skip");
+  const bad = rows.filter((r) => r.status === "invalid");
+  const newAreas = [...new Set(adds.filter((r) => r.newArea).map((r) => r.area.trim()))];
+
+  const pill = (r) =>
+    r.status === "add"
+      ? `<span class="text-[10px] font-semibold text-[#1FAF5E]">${t("ADD")}</span>`
+      : r.status === "skip"
+        ? `<span class="text-[10px] font-semibold text-[#999]">${t("EXISTS")}</span>`
+        : `<span class="text-[10px] font-semibold text-[#B23B3B]">${t("INVALID")}</span>`;
+
+  el.innerHTML =
+    `<div class="text-xs text-[#555] mb-2">
+       <strong>${adds.length}</strong> ${t("to add")}
+       ${skips.length ? ` &middot; ${skips.length} ${t("already there")}` : ""}
+       ${bad.length ? ` &middot; <span class="text-[#B23B3B]">${bad.length} ${t("unusable")}</span>` : ""}
+       ${newAreas.length ? `<div class="mt-1 text-[11px] text-[#777]">${t("New areas")}: ${escapeHtml(newAreas.join(", "))}</div>` : ""}
+     </div>
+     <div class="max-h-56 overflow-y-auto border border-[#EDE9E3] rounded-10">` +
+    rows
+      .map(
+        (r) => `
+        <div class="flex items-center justify-between gap-2 px-3 py-1.5 border-b border-[#F5F3EF] last:border-0 ${r.status === "add" ? "" : "opacity-60"}">
+          <span class="text-xs text-[#333] truncate">${escapeHtml(r.area || "—")} &middot; ${escapeHtml(r.table || "—")}${r.seats ? ` &middot; ${r.seats} ${t("seats")}` : ""}</span>
+          ${pill(r)}
+        </div>`,
+      )
+      .join("") +
+    "</div>";
+  if (btn) btn.disabled = adds.length === 0;
+}
+
+function clearImportQueue() {
+  importRows = [];
+  renderImportPreview();
+}
+
+async function applyImport() {
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can change areas"), "error");
+    return;
+  }
+  const rows = classifyImportRows().filter((r) => r.status === "add");
+  if (!rows.length) return;
+
+  const btn = document.getElementById("import-apply-button");
+  if (btn) btn.disabled = true;
+  loader(true);
+  try {
+    // Areas first: a table needs its area's id, and the areas in this file
+    // may not exist yet.
+    const existing = new Map(allAreas.map((a) => [a.name.trim().toLowerCase(), a.id]));
+    const wantedAreas = [
+      ...new Set(
+        rows
+          .map((r) => r.area.trim())
+          .filter((n) => !existing.has(n.toLowerCase())),
+      ),
+    ];
+
+    if (wantedAreas.length) {
+      // Capacity is left at 0 rather than guessed from the table seats: an
+      // area's capacity is a fire-code number the owner sets, not the sum of
+      // the chairs that happen to be in it today.
+      const { error } = await supabaseQuery(
+        () => db.from("areas").insert(wantedAreas.map((name) => ({ name, capacity: 0 }))),
+        "Failed to create areas",
+      );
+      if (error) {
+        toast(error.message || t("Failed to create areas"), "error");
+        return;
+      }
+      await loadAreas();
+      allAreas.forEach((a) => existing.set(a.name.trim().toLowerCase(), a.id));
+    }
+
+    const payload = rows
+      .map((r) => ({
+        name: r.table.trim(),
+        area_id: existing.get(r.area.trim().toLowerCase()),
+        capacity: r.seats || 2,
+        is_active: true,
+      }))
+      .filter((r) => r.area_id);
+
+    if (payload.length) {
+      const { error } = await supabaseQuery(
+        () => db.from("tables").insert(payload),
+        "Failed to create tables",
+      );
+      if (error) {
+        toast(error.message || t("Failed to create tables"), "error");
+        return;
+      }
+    }
+
+    hideModal("modal-import");
+    toast(
+      CURRENT_LANG === "id"
+        ? `${payload.length} meja ditambahkan${wantedAreas.length ? ` di ${wantedAreas.length} area baru` : ""}`
+        : `Added ${payload.length} table${payload.length === 1 ? "" : "s"}${wantedAreas.length ? ` across ${wantedAreas.length} new area${wantedAreas.length === 1 ? "" : "s"}` : ""}`,
+    );
+    importRows = [];
+    await refreshAreasAndTables();
+  } finally {
+    loader(false);
+    if (btn) btn.disabled = false;
+  }
 }

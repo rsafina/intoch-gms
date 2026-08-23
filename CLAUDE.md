@@ -203,13 +203,21 @@ role CHECK allows only `staff` and `manager`, while the code expects `admin` too
 The original database had that widened by hand. Assume there are more gaps like it
 and re-test the full run on an empty project before client one.
 
-**A second one surfaced 2026-08-23, and it was worse.** See "Two functions in this
-file can drift apart" below. Walk-ins and reservations could not be created at all
-on a database built from this file. Both defects share a cause: the live Blue Heron
-database was patched by hand, so the file was never the thing being exercised.
-Nothing here is trustworthy until a fresh project has been built from it AND the
-app has been driven through create-guest, create-walk-in, create-reservation,
-add-spend against that project.
+**Two more surfaced on 2026-08-23, from the same cause.**
+
+- The spending-tier function pair, which stopped walk-ins and reservations being
+  created at all. See "Two functions in this file can drift apart" below.
+- `wa_campaigns.status` and `wa_campaign_audience.status` / `updated_at`, used
+  throughout `campaign-editor.js` and created by no migration. The Broadcast
+  campaign list 400'd on every load.
+
+All three share a cause: the live Blue Heron database was patched by hand, so
+this file was never the thing being exercised. **Nothing here is trustworthy
+until a fresh project has been built from it AND every page of the app has been
+opened against that project** — not just create-guest, create-walk-in,
+create-reservation and add-spend, but Broadcast, Vouchers, Membership and
+Reports too. A column only missing from one screen is still a screen that is
+down for a paying client.
 
 ### 5. Routing, file splitting, inline handlers
 The three reasons this repo exists. See the top of this file.
@@ -317,6 +325,36 @@ Two rules from it:
   a real call, not a read. The self-test at the end of that section creates a
   throwaway guest, recalculates, and asserts NULL, because reading the definitions
   is exactly what failed to catch this for months.
+
+### Realtime channels MUST be torn down on logout
+
+`db.channel(topic)` returns the EXISTING channel when one with that topic is
+already open, and calling `.on()` on a channel that has already been subscribed
+**throws**:
+
+    cannot add `postgres_changes` callbacks for realtime:rt-today-updates
+    after `subscribe()`
+
+`logoutStaff()` used to reset `appInitialized` without removing the channels, so
+the next login re-ran the boot sequence, hit an already-subscribed channel and
+threw. The throw escaped `initializeApplication()` and **every line after it
+never ran** — the online-reservation bell, its chime, and the overnight
+auto-refresh. Reported 2026-08-23 as "notifications don't work unless I refresh
+the page"; a refresh cured it because a fresh load starts with no channel.
+
+Three rules came out of it:
+
+- Hold a reference to every channel and `db.removeChannel()` it in logout.
+  `tests/realtime-lifecycle.test.js` asserts this against the real
+  `@supabase/supabase-js`, and re-proves the library rule the bug rests on, so
+  it fails loudly if that ever changes.
+- **Every optional boot step gets its OWN try/catch.** Realtime, the bell,
+  auto-refresh and the version check are enhancements over an app that already
+  works on timers. None of them may take the others down. One shared try would
+  still have cost the front desk the bell.
+- A teardown must clear its once-only guards too (`_resNotifyStarted`), or a
+  crash is traded for something worse: a silent bell with nothing on screen
+  saying anything is wrong.
 
 ### `computeDaysUntilBirthday()` never returns a negative number
 

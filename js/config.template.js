@@ -112,6 +112,71 @@ const I18N_EXCEPTION_TERMS = new Set([
 
 // Indonesian translations, keyed by the English source string.
 const ID_DICT = {
+  // ── Areas, tables and import (added 2026-08-23) ───────────────────
+  "Areas & Tables": "Area & Meja",
+  "Create the rooms and sections first, then add the tables inside each one.":
+    "Buat ruangan dan bagiannya dulu, lalu tambahkan meja di dalam masing-masing.",
+  "Add Area": "Tambah Area",
+  "Edit Area": "Ubah Area",
+  "Create Area": "Buat Area",
+  "Add the first area": "Tambah area pertama",
+  "No areas yet.": "Belum ada area.",
+  "An area is a room or section of the restaurant: Indoor, Terrace, VIP Room. Tables belong to one.":
+    "Area adalah ruangan atau bagian dari restoran: Indoor, Teras, VIP Room. Setiap meja berada di salah satunya.",
+  "Area name *": "Nama area *",
+  "A room or section of the restaurant. Guests see this when they pick where to sit.":
+    "Ruangan atau bagian dari restoran. Tamu melihat ini saat memilih tempat duduk.",
+  "Seats in this area *": "Jumlah kursi di area ini *",
+  "Total covers, used by the capacity cards. This is the number the room actually holds, not the sum of the tables you happen to have set up today.":
+    "Total kursi, dipakai di kartu kapasitas. Ini kapasitas ruangannya, bukan jumlah kursi dari meja yang kebetulan tersusun hari ini.",
+  "Area name is required (min 2 characters)": "Nama area wajib diisi (min 2 karakter)",
+  "Seats must be 0 or more": "Jumlah kursi minimal 0",
+  "An area with that name already exists": "Area dengan nama itu sudah ada",
+  "Area created": "Area dibuat",
+  "Area updated": "Area diperbarui",
+  "Area deleted": "Area dihapus",
+  "Delete this area?": "Hapus area ini?",
+  "Failed to save area": "Gagal menyimpan area",
+  "Failed to delete area": "Gagal menghapus area",
+  "Only a manager can change areas": "Hanya manager yang bisa mengubah area",
+  "This area still has tables used by reservations, so it cannot be deleted. Deactivate the tables instead.":
+    "Area ini masih punya meja yang dipakai di reservasi, jadi tidak bisa dihapus. Nonaktifkan mejanya saja.",
+  seats: "kursi",
+  Import: "Impor",
+  "Import Areas & Tables": "Impor Area & Meja",
+  "Nothing is written until you press Add. Anything that already exists is skipped, so re-importing a corrected file is safe.":
+    "Tidak ada yang disimpan sampai Anda menekan Tambahkan. Yang sudah ada akan dilewati, jadi mengimpor ulang file yang sudah diperbaiki tetap aman.",
+  "Quick add by range": "Tambah cepat pakai rentang",
+  "Add to list": "Tambahkan ke daftar",
+  "A1-A12 becomes twelve tables. T01-T08 keeps the leading zero. Commas work too.":
+    "A1-A12 menjadi dua belas meja. T01-T08 tetap memakai angka nol di depan. Bisa juga dipisah koma.",
+  "Or paste a spreadsheet": "Atau tempel dari spreadsheet",
+  "Copy straight out of Excel, or pick a .csv or .xlsx file. A header row is detected if there is one.":
+    "Salin langsung dari Excel, atau pilih file .csv atau .xlsx. Baris judul akan dikenali otomatis kalau ada.",
+  "What will happen": "Yang akan terjadi",
+  "Clear list": "Kosongkan daftar",
+  "Add them": "Tambahkan",
+  "Nothing queued yet. Paste a list, pick a file, or add a range above.":
+    "Belum ada yang antre. Tempel daftar, pilih file, atau tambahkan rentang di atas.",
+  "Nothing to import. Check the pasted text.": "Tidak ada yang bisa diimpor. Cek teks yang ditempel.",
+  "Nothing to import. Check the file.": "Tidak ada yang bisa diimpor. Cek isi filenya.",
+  "Use a CSV or Excel file.": "Gunakan file CSV atau Excel.",
+  "Could not read that Excel file. Try saving it as CSV.":
+    "File Excel itu tidak bisa dibaca. Coba simpan sebagai CSV.",
+  "Could not load the Excel reader. Save the file as CSV and try again.":
+    "Pembaca Excel gagal dimuat. Simpan file sebagai CSV lalu coba lagi.",
+  "Pick or type an area first": "Pilih atau ketik areanya dulu",
+  "Type table names, e.g. A1-A12": "Ketik nama meja, misalnya A1-A12",
+  "to add": "akan ditambah",
+  "already there": "sudah ada",
+  unusable: "tidak terpakai",
+  "New areas": "Area baru",
+  ADD: "TAMBAH",
+  EXISTS: "SUDAH ADA",
+  INVALID: "TIDAK VALID",
+  "Failed to create areas": "Gagal membuat area",
+  "Failed to create tables": "Gagal membuat meja",
+
   // ── Reservation form appearance + voucher card design (2026-08-23) ──
   "Reservation Form": "Formulir Reservasi",
   "Everything a guest sees on the online booking page: how it looks, the dishes you feature, and where the full menu lives":

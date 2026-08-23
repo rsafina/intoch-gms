@@ -3905,3 +3905,117 @@ from app_settings where key = 'reserve_appearance'
 union all
 select 'voucher_style', count(*) from app_settings where key = 'voucher_style';
 -- expect: 1, 1
+
+-- ============================================================
+-- ## 20260823_campaign_status_columns.sql
+-- ============================================================
+-- FIXES A BROKEN PAGE. Without this, Broadcast > Campaign fails to load with
+-- a 400 and the console shows "Gagal memuat daftar campaign", because
+-- `ceLoadList()` orders by `wa_campaigns.status` and that column exists in NO
+-- migration in this file. Reported by Rere 2026-08-23.
+--
+-- THIS IS THE THIRD COLUMN THE CODE USES THAT THIS FILE NEVER CREATED
+-- (after the `admin` role and the spending-tier function pair). All three
+-- come from the same place: the live Blue Heron database was patched by hand
+-- and the migration file was never brought back into line. Assume there are
+-- more. The only reliable way to find them is to build a fresh project from
+-- this file and drive every page of the app against it.
+--
+-- ── Why no CHECK constraint ───────────────────────────────────────────
+-- The obvious thing is `check (status in ('draft','active','done'))`. It is
+-- deliberately NOT here.
+--
+-- Twice now a CHECK narrower than the code has taken a working screen down in
+-- production: `staff_users.role` refused `admin`, and `guests_spending_tier`
+-- refused a value a stale function was writing. On the audience table the code
+-- already writes four different values from three different places, and a
+-- fifth added next month would fail at the till rather than in review.
+--
+-- The allowed values are documented in COMMENT ON COLUMN instead. That is
+-- discoverable by anyone reading the schema and cannot break a save. Add the
+-- constraint later, once RLS work makes this schema stable and every writer
+-- has been audited.
+
+alter table public.wa_campaigns
+  add column if not exists status text not null default 'draft';
+
+comment on column public.wa_campaigns.status is
+  'draft = built but not started, active = currently sending, done = finished. Set by js/campaign-editor.js. Intentionally unconstrained, see the migration note.';
+
+alter table public.wa_campaign_audience
+  add column if not exists status     text not null default 'pending',
+  add column if not exists updated_at timestamptz;
+
+comment on column public.wa_campaign_audience.status is
+  'pending = not contacted yet, sent = message opened for this guest, done = manually marked finished, skipped = deliberately not contacted (see skip_reason). Intentionally unconstrained, see the migration note.';
+
+-- ---------- Backfill ----------
+-- A database that already has campaigns gets every one of them defaulted to
+-- 'draft', which would show finished work as unstarted and let the editor
+-- offer to "start" a campaign that ran last month. Derive the real state from
+-- the timestamps that were already being written.
+--
+-- ── Why this is gated instead of just filtered on status = 'draft' ─────
+-- `started_at` is NOT NULL DEFAULT now(), so EVERY campaign has one,
+-- including a genuine unstarted draft. "draft with a started_at" therefore
+-- does not mean "legacy running campaign", and a second run of this file
+-- would flip every real draft the user had since created to 'active'.
+-- Caught by running this section twice against a local Postgres.
+--
+-- The gate is "nobody has set a status yet", which is true exactly once: the
+-- run that adds the column. The moment anyone saves any campaign the backfill
+-- stops firing, so the file stays re-runnable.
+do $$
+declare
+  v_untouched boolean;
+begin
+  select not exists (select 1 from public.wa_campaigns where status <> 'draft')
+    into v_untouched;
+
+  if not v_untouched then
+    raise notice 'campaign status backfill skipped (statuses are already in use)';
+    return;
+  end if;
+
+  update public.wa_campaigns
+  set status = case when ended_at is not null then 'done' else 'active' end;
+
+  -- Same for the audience. A guest carrying a skip_reason was deliberately
+  -- passed over, and one with a row in the outreach log for this campaign was
+  -- demonstrably contacted. Everyone else is genuinely still pending.
+  update public.wa_campaign_audience
+  set status = 'skipped'
+  where coalesce(skip_reason, '') <> '';
+
+  update public.wa_campaign_audience a
+  set status = 'sent'
+  where a.status = 'pending'
+    and exists (
+      select 1 from public.wa_outreach_log l
+      where l.campaign_id = a.campaign_id
+        and l.guest_id = a.guest_id
+    );
+
+  raise notice 'campaign status backfill applied';
+end $$;
+
+-- ---------- Confirm ----------
+-- Runs the query the page actually runs. Reading the column list would not
+-- have caught this bug in the first place; issuing the failing order does.
+do $$
+begin
+  perform 1 from public.wa_campaigns order by status asc, started_at desc limit 1;
+  perform 1 from public.wa_campaign_audience order by status limit 1;
+  raise notice 'campaign list query OK (status + started_at both orderable)';
+end $$;
+
+select 'wa_campaigns.status' as checked, count(*) as found
+from information_schema.columns
+where table_schema = 'public' and table_name = 'wa_campaigns' and column_name = 'status'
+union all
+select 'wa_campaign_audience.status', count(*) from information_schema.columns
+where table_schema = 'public' and table_name = 'wa_campaign_audience' and column_name = 'status'
+union all
+select 'wa_campaign_audience.updated_at', count(*) from information_schema.columns
+where table_schema = 'public' and table_name = 'wa_campaign_audience' and column_name = 'updated_at';
+-- expect: 1, 1, 1

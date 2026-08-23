@@ -6905,6 +6905,122 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
 
+    <!-- AREA MODAL (Settings > Areas) -->
+    <div
+      id="modal-area"
+      class="modal-overlay hidden"
+      onclick="if (event.target === this) hideModal('modal-area');"
+    >
+      <div class="modal-box">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="font-heading text-2xl font-semibold text-[#28547C]" id="area-modal-title" data-i18n-skip>
+            Add Area
+          </h2>
+          <button onclick="hideModal('modal-area')" class="modal-close" aria-label="Close">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 10 10" fill="none">
+              <line x1="1.5" y1="1.5" x2="8.5" y2="8.5" stroke="white" stroke-width="1.8" stroke-linecap="round" />
+              <line x1="8.5" y1="1.5" x2="1.5" y2="8.5" stroke="white" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+        <input type="hidden" id="area-edit-id" />
+        <div class="grid grid-cols-1 gap-4 mb-5">
+          <div>
+            <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Area name *</label>
+            <input id="area-name" type="text" maxlength="60" placeholder="e.g. Terrace" class="form-input" />
+            <p class="text-[11px] text-[#999] mt-1" data-i18n>
+              A room or section of the restaurant. Guests see this when they pick where to sit.
+            </p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Seats in this area *</label>
+            <input id="area-capacity" type="number" min="0" max="2000" placeholder="e.g. 40" class="form-input settings-field" />
+            <p class="text-[11px] text-[#999] mt-1" data-i18n>
+              Total covers, used by the capacity cards. This is the number the room actually
+              holds, not the sum of the tables you happen to have set up today.
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-3">
+          <button onclick="hideModal('modal-area')" class="btn-ghost px-5 py-2.5" data-i18n>Cancel</button>
+          <button id="area-save-button" onclick="saveArea()" class="btn-primary px-6 py-2.5" data-i18n-skip>
+            Create Area
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMPORT MODAL (Settings > Areas) -->
+    <div
+      id="modal-import"
+      class="modal-overlay hidden"
+      onclick="if (event.target === this) hideModal('modal-import');"
+    >
+      <div class="modal-box" style="max-width: 680px">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="font-heading text-2xl font-semibold text-[#28547C]" data-i18n>
+            Import Areas &amp; Tables
+          </h2>
+          <button onclick="hideModal('modal-import')" class="modal-close" aria-label="Close">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 10 10" fill="none">
+              <line x1="1.5" y1="1.5" x2="8.5" y2="8.5" stroke="white" stroke-width="1.8" stroke-linecap="round" />
+              <line x1="8.5" y1="1.5" x2="1.5" y2="8.5" stroke="white" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+        <p class="text-xs text-[#999] mb-5" data-i18n>
+          Nothing is written until you press Add. Anything that already exists is skipped, so
+          re-importing a corrected file is safe.
+        </p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+          <div>
+            <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Quick add by range</label>
+            <div class="grid grid-cols-1 gap-2">
+              <input id="import-range-area" type="text" list="import-area-options" maxlength="60" placeholder="Area, e.g. Indoor Dining" class="form-input" />
+              <datalist id="import-area-options"></datalist>
+              <div class="flex gap-2">
+                <input id="import-range-names" type="text" maxlength="200" placeholder="A1-A12" class="form-input flex-1" />
+                <input id="import-range-seats" type="number" min="1" max="50" value="4" class="form-input" style="max-width:90px" title="Seats" />
+              </div>
+              <button onclick="addImportRange()" class="btn-ghost text-sm px-4 py-2 self-start" data-i18n>Add to list</button>
+            </div>
+            <p class="text-[11px] text-[#999] mt-1" data-i18n>
+              A1-A12 becomes twelve tables. T01-T08 keeps the leading zero. Commas work too.
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Or paste a spreadsheet</label>
+            <textarea id="import-paste" rows="4" class="form-input resize-none" placeholder="Area, Table, Seats&#10;Indoor Dining, A1, 4&#10;Indoor Dining, A2, 4&#10;VIP Room A, V1, 10"></textarea>
+            <div class="flex items-center gap-2 mt-2 flex-wrap">
+              <button onclick="addImportPaste()" class="btn-ghost text-sm px-4 py-2" data-i18n>Add to list</button>
+              <input id="import-file" type="file" accept=".csv,.tsv,.txt,.xlsx,.xls" class="form-input flex-1" style="min-width:150px" onchange="importFilePicked()" />
+            </div>
+            <p class="text-[11px] text-[#999] mt-1" data-i18n>
+              Copy straight out of Excel, or pick a .csv or .xlsx file. A header row is
+              detected if there is one.
+            </p>
+          </div>
+        </div>
+
+        <div class="mb-5">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-xs font-medium text-[#555]" data-i18n>What will happen</p>
+            <button onclick="clearImportQueue()" class="text-[11px] text-[#999] hover:underline" data-i18n>Clear list</button>
+          </div>
+          <div id="import-preview"></div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3">
+          <button onclick="hideModal('modal-import')" class="btn-ghost px-5 py-2.5" data-i18n>Cancel</button>
+          <button id="import-apply-button" onclick="applyImport()" class="btn-primary px-6 py-2.5" disabled data-i18n>
+            Add them
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- STAFF MODAL (Settings > Staff, admin only) -->
     <div
       id="modal-staff"
@@ -8423,9 +8539,9 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
 
-    <script src="js/config.js?v=8"></script>
+    <script src="js/config.js?v=9"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=11"></script>
+    <script src="js/app.js?v=12"></script>
     <script src="js/membership.js?v=4"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->
@@ -8439,7 +8555,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     <script src="js/campaign-editor.js?v=9"></script>
     <!-- voucher.js uses waTemplateBody/waOpenChat, so it must load after wa.js -->
     <script src="js/voucher.js?v=4"></script>
-    <script src="js/notify.js?v=5"></script>
+    <script src="js/notify.js?v=6"></script>
     <script src="js/version-check.js?v=1"></script>
     <!-- Invoice generator: rasterises the preview node and wraps it in a PDF.
          Both libraries are only needed on the Invoice page. -->
