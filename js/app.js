@@ -2337,7 +2337,7 @@ function renderTableManagement() {
   section.innerHTML = `
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-3">
       <div>
-        <h2 class="font-display text-2xl font-semibold text-[#28547C]">Table Configuration</h2>
+        <h2 class="font-heading text-2xl font-semibold text-[#28547C]">Table Configuration</h2>
         <p class="text-sm text-[#999] mt-1">Manage physical tables by area and active status.</p>
       </div>
       <button onclick="openTableModal()" class="btn-primary px-4 py-2">Add Table</button>
@@ -2562,7 +2562,7 @@ async function renderAreas() {
         <div class="flex items-start justify-between mb-4">
           <div>
             <span class="text-2xl mb-2 block">${c.icon}</span>
-            <h3 class="font-display text-xl font-semibold text-[#28547C]">${area.name}</h3>
+            <h3 class="font-heading text-xl font-semibold text-[#28547C]">${area.name}</h3>
           </div>
           <span class="text-2xl font-display font-semibold" style="color:${statusColor}">${remaining}</span>
         </div>

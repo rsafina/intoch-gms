@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&family=Source+Code+Pro:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <!-- Jost is used ONLY inside the invoice sheet. The printed invoice was
@@ -40,6 +40,24 @@
         background: var(--bg);
         color: var(--text);
         margin: 0;
+      }
+      /* Headings (2026-08-23, Rere). Source Code Pro — Google Fonts serves
+         the same typeface Adobe ships as "Source Code Variable", in static
+         weights rather than one variable file.
+
+         This is a SEPARATE class from .font-display on purpose. .font-display
+         is still Cormorant and still owns the dashboard stat numbers, the
+         clock and the sidebar name, which she wanted left alone. Changing
+         .font-display itself would have swept all 121 of its uses into
+         monospace in one go.
+
+         Monospace runs noticeably wider than Cormorant at the same px size,
+         so the tracking is pulled in slightly to stop long page titles from
+         wrapping where they used to fit. */
+      .font-heading {
+        font-family: "Source Code Pro", ui-monospace, SFMono-Regular, Menlo,
+          Consolas, monospace;
+        letter-spacing: -0.02em;
       }
       .font-display {
         font-family: "Cormorant Garamond", serif;
@@ -1436,7 +1454,7 @@
           <div class="flex items-center justify-between mb-8">
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-display text-3xl font-semibold text-[#28547C]" data-i18n>
+              <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
                 Welcome!
               </h1>
               <p class="text-[#999] text-sm mt-1" id="dashboard-date-label">
@@ -1530,7 +1548,7 @@
           <div class="card p-6 mb-8">
             <div class="flex items-center justify-between mb-5">
               <div>
-                <h2 class="font-display text-xl font-semibold text-[#28547C]">
+                <h2 class="font-heading text-xl font-semibold text-[#28547C]">
                   Upcoming Reservations
                 </h2>
                 <!-- The selected day's date now lives in the totals strip
@@ -1593,7 +1611,7 @@
           <div class="card p-6 mb-8">
             <div class="flex items-center justify-between mb-5">
               <div>
-                <h2 class="font-display text-xl font-semibold text-[#28547C]">
+                <h2 class="font-heading text-xl font-semibold text-[#28547C]">
                   Today's Walk-Ins
                 </h2>
                 <p
@@ -1684,7 +1702,7 @@
           <div class="card p-6 mb-8">
             <div class="flex items-start justify-between mb-4 gap-4">
               <div class="min-w-0">
-                <h2 class="font-display text-xl font-semibold text-[#28547C]">
+                <h2 class="font-heading text-xl font-semibold text-[#28547C]">
                   Prize Redemptions
                 </h2>
                 <p class="text-xs text-[#999] mt-1" id="dash-prize-label">
@@ -1797,7 +1815,7 @@
           <div class="card p-6 mb-8">
             <div class="flex items-start justify-between mb-4">
               <div>
-                <h2 class="font-display text-xl font-semibold text-[#28547C]">
+                <h2 class="font-heading text-xl font-semibold text-[#28547C]">
                   Birthday Guests
                 </h2>
                 <p class="text-xs text-[#999] mt-1" id="dash-bd-label">—</p>
@@ -1882,7 +1900,7 @@
           >
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-display text-3xl font-semibold text-[#28547C]">
+              <h1 class="font-heading text-3xl font-semibold text-[#28547C]">
                 Welcome!
               </h1>
               <p
@@ -2378,7 +2396,7 @@
           <div class="flex items-center justify-between mb-8">
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-display text-3xl text-[#28547C]" data-i18n-skip>Membership</h1>
+              <h1 class="font-heading text-3xl text-[#28547C]" data-i18n-skip>Membership</h1>
               <p class="text-sm text-[#999] mt-1" data-i18n>
                 Family &amp; Company cards — stickers and vouchers
               </p>
@@ -2455,7 +2473,7 @@
                belong next to the thing that produced them. -->
           <div class="mb-6">
             <div class="gold-bar mb-3"></div>
-            <h1 class="font-display text-3xl text-[#28547C]" data-i18n-skip>Broadcast</h1>
+            <h1 class="font-heading text-3xl text-[#28547C]" data-i18n-skip>Broadcast</h1>
             <p class="text-sm text-[#999] mt-1" data-i18n-skip>
               Kirim pesan WhatsApp satu per satu ke guest sesuai segmen, lalu
               lihat apakah mereka benar-benar kembali
@@ -2516,7 +2534,7 @@
           <div class="flex items-center justify-between mb-8">
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-display text-3xl font-semibold text-[#28547C]" data-i18n>
+              <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
                 Guest Database
               </h1>
               <p class="text-[#999] text-sm mt-1" data-i18n>
@@ -2731,7 +2749,7 @@
           <div class="flex items-center justify-between mb-8">
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-display text-3xl font-semibold text-[#28547C]" data-i18n-skip>
+              <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n-skip>
                 Reservations
               </h1>
               <p class="font-display text-lg font-semibold text-[#1F5480] mt-1" id="res-date-label">—</p>
@@ -2996,7 +3014,7 @@
           >
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-display text-3xl font-semibold text-[#28547C]" data-i18n>
+              <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
                 Walk-In Log
               </h1>
               <p class="text-[#999] text-sm mt-1" id="walkins-date-label">
@@ -3173,7 +3191,7 @@
         <div class="max-w-[1500px] mx-auto">
           <div class="mb-6">
             <div class="gold-bar mb-3"></div>
-            <h1 class="font-display text-3xl font-semibold text-[#28547C]">
+            <h1 class="font-heading text-3xl font-semibold text-[#28547C]">
               Invoice Generator
             </h1>
             <p class="text-[#999] text-sm mt-1">
@@ -3449,7 +3467,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         <div class="max-w-6xl mx-auto">
           <div class="mb-6">
             <div class="gold-bar mb-3"></div>
-            <h1 class="font-display text-3xl font-semibold text-[#28547C]">
+            <h1 class="font-heading text-3xl font-semibold text-[#28547C]">
               Vouchers
             </h1>
             <p class="text-[#999] text-sm mt-1">
@@ -3621,7 +3639,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="settings-tabs mb-6" data-settings-tabs></div>
           <div class="mb-8">
             <div class="gold-bar mb-3"></div>
-            <h1 class="font-display text-3xl font-semibold text-[#28547C]" data-i18n>
+            <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
               Area Capacity
             </h1>
             <p class="text-[#999] text-sm mt-1" data-i18n>
@@ -3646,7 +3664,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           >
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-display text-3xl font-semibold text-[#28547C]" data-i18n>
+              <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
                 Reports
               </h1>
               <p class="text-[#999] text-sm mt-1" id="reports-tab-desc">
@@ -4120,7 +4138,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <div class="card p-6">
               <div class="flex items-center justify-between mb-4">
                 <div>
-                  <h3 class="font-display text-lg font-semibold text-[#28547C]">
+                  <h3 class="font-heading text-lg font-semibold text-[#28547C]">
                     Top Guests by Visits
                   </h3>
                   <p class="text-[#999] text-sm mt-0.5">
@@ -4211,7 +4229,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <div class="card p-6">
               <div class="flex items-start justify-between mb-3">
                 <div>
-                  <h3 class="font-display text-lg font-semibold text-[#28547C]">
+                  <h3 class="font-heading text-lg font-semibold text-[#28547C]">
                     Top Spender Leaderboard
                   </h3>
                   <p class="text-[#999] text-sm mt-0.5">
@@ -4292,7 +4310,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 All Time
               </p>
               <h3
-                class="font-display text-lg font-semibold text-[#28547C] mb-6"
+                class="font-heading text-lg font-semibold text-[#28547C] mb-6"
               >
                 Google Review Promotion
               </h3>
@@ -4415,7 +4433,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <div class="card p-6">
               <div class="flex items-start justify-between mb-4">
                 <div>
-                  <h3 class="font-display text-lg font-semibold text-[#28547C] flex items-center gap-2">
+                  <h3 class="font-heading text-lg font-semibold text-[#28547C] flex items-center gap-2">
                     Birthday Guests
                     <span
                       id="bd-report-soon-count"
@@ -4531,7 +4549,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <div class="card p-6">
               <div class="flex items-start justify-between mb-4">
                 <div>
-                  <h3 class="font-display text-lg font-semibold text-[#28547C]">
+                  <h3 class="font-heading text-lg font-semibold text-[#28547C]">
                     At-Risk High Spenders
                   </h3>
                   <p class="text-[#999] text-sm mt-0.5">
@@ -4619,7 +4637,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                   Live — Today
                 </p>
                 <h3
-                  class="font-display text-lg font-semibold text-[#28547C] mb-4"
+                  class="font-heading text-lg font-semibold text-[#28547C] mb-4"
                 >
                   Today's Reservations
                 </h3>
@@ -4644,7 +4662,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                   Live — Today
                 </p>
                 <h3
-                  class="font-display text-lg font-semibold text-[#E8736A] mb-4"
+                  class="font-heading text-lg font-semibold text-[#E8736A] mb-4"
                 >
                   Today's Cancellations
                 </h3>
@@ -4671,7 +4689,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 Live Forecast
               </p>
               <h3
-                class="font-display text-lg font-semibold text-[#28547C] mb-4"
+                class="font-heading text-lg font-semibold text-[#28547C] mb-4"
               >
                 Upcoming Reservations
               </h3>
@@ -4757,7 +4775,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                   >
                     14-Day Window
                   </p>
-                  <h3 class="font-display text-lg font-semibold text-[#28547C]">
+                  <h3 class="font-heading text-lg font-semibold text-[#28547C]">
                     Peak Traffic
                   </h3>
                 </div>
@@ -5001,7 +5019,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 In Period
               </p>
               <h3
-                class="font-display text-lg font-semibold text-[#28547C] mb-4"
+                class="font-heading text-lg font-semibold text-[#28547C] mb-4"
               >
                 Reservation vs Walk-In vs Cancelled
               </h3>
@@ -5069,7 +5087,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                   >
                     In Period
                   </p>
-                  <h3 class="font-display text-lg font-semibold text-[#28547C]">
+                  <h3 class="font-heading text-lg font-semibold text-[#28547C]">
                     Reservation Sources
                   </h3>
                   <p class="text-xs text-[#999] mt-1">Top booking channels</p>
@@ -5152,7 +5170,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                       In Period
                     </p>
                     <h3
-                      class="font-display text-lg font-semibold text-[#28547C]"
+                      class="font-heading text-lg font-semibold text-[#28547C]"
                     >
                       Online Reservation Form
                     </h3>
@@ -5309,7 +5327,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                       All Time
                     </p>
                     <h3
-                      class="font-display text-lg font-semibold text-[#28547C]"
+                      class="font-heading text-lg font-semibold text-[#28547C]"
                     >
                       Repeat Guests
                     </h3>
@@ -5432,7 +5450,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <div class="card p-6">
               <div class="flex items-center justify-between gap-4 mb-4">
                 <div>
-                  <h3 class="font-display text-lg font-semibold text-[#28547C]">
+                  <h3 class="font-heading text-lg font-semibold text-[#28547C]">
                     Spending Summary
                   </h3>
                   <p class="text-sm text-[#999] mt-1">
@@ -5520,7 +5538,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <!-- Title row: spending segment + date range -->
             <div class="flex items-center justify-between gap-4 flex-wrap">
               <div>
-                <h2 class="font-display text-2xl font-semibold text-[#28547C]">
+                <h2 class="font-heading text-2xl font-semibold text-[#28547C]">
                   Spending Insights
                 </h2>
                 <p class="text-sm text-[#999] mt-1">
@@ -5667,7 +5685,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 <div>
                   <h3
                     id="wi-spend-a-title"
-                    class="font-display text-lg font-semibold text-[#28547C]"
+                    class="font-heading text-lg font-semibold text-[#28547C]"
                   >
                     High Average Spend Per Person
                   </h3>
@@ -5843,7 +5861,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 <div>
                   <h3
                     id="wi-spend-b-title"
-                    class="font-display text-lg font-semibold text-[#28547C]"
+                    class="font-heading text-lg font-semibold text-[#28547C]"
                   >
                     High Total Spending
                   </h3>
@@ -6023,7 +6041,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="flex items-center justify-between mb-8">
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-display text-3xl font-semibold text-[#28547C]" data-i18n>
+              <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
                 Spin Prizes
               </h1>
               <p class="text-[#999] text-sm mt-1" data-i18n>
@@ -6049,7 +6067,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
             <div class="card p-5 lg:col-span-1">
               <h2
-                class="font-display text-xl font-semibold text-[#28547C] mb-4"
+                class="font-heading text-xl font-semibold text-[#28547C] mb-4"
               >
                 Prizes
               </h2>
@@ -6167,7 +6185,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="flex items-center justify-between mb-8">
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-display text-3xl font-semibold text-[#28547C]" data-i18n>
+              <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
                 Menu &amp; Dishes
               </h1>
               <p class="text-[#999] text-sm mt-1" data-i18n>
@@ -6193,7 +6211,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div class="card p-5">
-              <h2 class="font-display text-xl font-semibold text-[#28547C] mb-1" data-i18n>
+              <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>
                 Signature Dishes
               </h2>
               <p class="text-xs text-[#999] mb-4" data-i18n>
@@ -6204,7 +6222,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               </div>
             </div>
             <div class="card p-5">
-              <h2 class="font-display text-xl font-semibold text-[#28547C] mb-1" data-i18n>
+              <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>
                 Chef's Special
               </h2>
               <p class="text-xs text-[#999] mb-4" data-i18n>
@@ -6215,7 +6233,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               </div>
             </div>
             <div class="card p-5">
-              <h2 class="font-display text-xl font-semibold text-[#28547C] mb-1" data-i18n>
+              <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>
                 Best Seller
               </h2>
               <p class="text-xs text-[#999] mb-4" data-i18n>
@@ -6228,7 +6246,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           </div>
 
           <div class="card p-6">
-            <h2 class="font-display text-xl font-semibold text-[#28547C] mb-1" data-i18n>
+            <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>
               Full Menu Link
             </h2>
             <p class="text-xs text-[#999] mb-4" data-i18n>
@@ -6265,7 +6283,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="settings-tabs mb-6" data-settings-tabs></div>
           <div class="mb-8">
             <div class="gold-bar mb-3"></div>
-            <h1 class="font-display text-3xl font-semibold text-[#28547C]" data-i18n>
+            <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
               Thresholds
             </h1>
             <p class="text-[#999] text-sm mt-1" data-i18n>
@@ -6274,7 +6292,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           </div>
 
           <div class="card p-6 mb-6">
-            <h2 class="font-display text-xl font-semibold text-[#28547C] mb-1" data-i18n>Spending Tier</h2>
+            <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>Spending Tier</h2>
             <p class="text-xs text-[#999] mb-5" data-i18n>
               A guest becomes a High Spender when one visit reaches either threshold. Reports and dashboards use these same numbers.
             </p>
@@ -6295,7 +6313,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           </div>
 
           <div class="card p-6 mb-6">
-            <h2 class="font-display text-xl font-semibold text-[#28547C] mb-1" data-i18n>Membership</h2>
+            <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>Membership</h2>
             <p class="text-xs text-[#999] mb-5" data-i18n>
               Sticker and voucher rules per card type. Changes apply to new transactions only — existing stickers and vouchers are not recalculated.
             </p>
@@ -6335,7 +6353,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           </div>
 
           <div class="card p-6 mb-6">
-            <h2 class="font-display text-xl font-semibold text-[#28547C] mb-1" data-i18n>Online Reservation Hours</h2>
+            <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>Online Reservation Hours</h2>
             <p class="text-xs text-[#999] mb-5" data-i18n>
               Booking window offered on the public reservation page. Enforced by the database, not just the form.
             </p>
@@ -6371,7 +6389,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="settings-tabs mb-6" data-settings-tabs></div>
           <div class="mb-8">
             <div class="gold-bar mb-3"></div>
-            <h1 class="font-display text-3xl font-semibold text-[#28547C]" data-i18n>
+            <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
               Branding
             </h1>
             <p class="text-[#999] text-sm mt-1" data-i18n>
@@ -6393,7 +6411,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="card p-6 mb-5">
             <div class="flex items-start justify-between gap-4 flex-wrap">
               <div>
-                <h2 class="font-display text-xl font-semibold text-[#28547C] mb-1" data-i18n>
+                <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>
                   Main logo
                 </h2>
                 <p class="text-xs text-[#999] mb-3" data-i18n>
@@ -6436,7 +6454,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="card p-6 mb-5">
             <div class="flex items-start justify-between gap-4 flex-wrap">
               <div>
-                <h2 class="font-display text-xl font-semibold text-[#28547C] mb-1" data-i18n>
+                <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>
                   Small mark
                 </h2>
                 <p class="text-xs text-[#999] mb-3" data-i18n>
@@ -6478,7 +6496,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="card p-6">
             <div class="flex items-start justify-between gap-4 flex-wrap">
               <div class="max-w-md">
-                <h2 class="font-display text-xl font-semibold text-[#28547C] mb-1" data-i18n>
+                <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>
                   Voucher card design
                 </h2>
                 <p class="text-xs text-[#999] mb-3" data-i18n>
@@ -6528,7 +6546,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="flex items-center justify-between mb-8 gap-4 flex-wrap">
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-display text-3xl font-semibold text-[#28547C]" data-i18n>
+              <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
                 Staff
               </h1>
               <p class="text-[#999] text-sm mt-1" data-i18n>
@@ -6551,7 +6569,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           </div>
 
           <div class="card p-5">
-            <h2 class="font-display text-lg font-semibold text-[#28547C] mb-2" data-i18n>
+            <h2 class="font-heading text-lg font-semibold text-[#28547C] mb-2" data-i18n>
               What each role can do
             </h2>
             <ul class="text-xs text-[#777] space-y-1.5 leading-relaxed">
@@ -6580,7 +6598,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       onclick="if (event.target === this) hideModal('ce-create-modal');"
     >
       <div class="modal-box">
-        <h2 class="font-display text-2xl text-[#28547C] mb-1" data-i18n-skip>
+        <h2 class="font-heading text-2xl text-[#28547C] mb-1" data-i18n-skip>
           Campaign Baru
         </h2>
         <p class="text-sm text-[#999] mb-5" data-i18n-skip>
@@ -6631,7 +6649,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       onclick="if (event.target === this) hideModal('ce-row-modal');"
     >
       <div class="modal-box">
-        <h2 class="font-display text-2xl text-[#28547C] mb-1" data-i18n-skip>
+        <h2 class="font-heading text-2xl text-[#28547C] mb-1" data-i18n-skip>
           <span id="ce-row-name"></span>
         </h2>
         <p class="text-sm text-[#999] mb-4" data-i18n-skip>
@@ -6674,7 +6692,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     >
       <div class="modal-box">
         <div class="flex items-center justify-between mb-6">
-          <h2 class="font-display text-2xl font-semibold text-[#28547C]" id="staff-modal-title" data-i18n-skip>
+          <h2 class="font-heading text-2xl font-semibold text-[#28547C]" id="staff-modal-title" data-i18n-skip>
             Add Staff
           </h2>
           <button onclick="hideModal('modal-staff')" class="modal-close" aria-label="Close">
@@ -6742,7 +6760,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       <div class="modal-box">
         <div class="flex items-center justify-between mb-6">
           <h2
-            class="font-display text-2xl font-semibold text-[#28547C]"
+            class="font-heading text-2xl font-semibold text-[#28547C]"
             id="dish-modal-title"
             data-i18n
           >
@@ -6866,7 +6884,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div>
             <h2
               id="wi-modal-title"
-              class="font-display text-2xl font-semibold text-[#28547C]"
+              class="font-heading text-2xl font-semibold text-[#28547C]"
             >
               Register Walk-In
             </h2>
@@ -7006,7 +7024,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       <div class="modal-box">
         <div class="flex items-center justify-between mb-6">
           <h2
-            class="font-display text-2xl font-semibold text-[#28547C]"
+            class="font-heading text-2xl font-semibold text-[#28547C]"
             id="res-modal-title"
           >
             New Reservation
@@ -7278,7 +7296,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       <div class="modal-box">
         <div class="flex items-center justify-between mb-6">
           <h2
-            class="font-display text-2xl font-semibold text-[#28547C]"
+            class="font-heading text-2xl font-semibold text-[#28547C]"
             id="table-modal-title"
           >
             Create Table
@@ -7395,7 +7413,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       <div class="modal-box">
         <div class="flex items-center justify-between mb-6">
           <h2
-            class="font-display text-2xl font-semibold text-[#28547C]"
+            class="font-heading text-2xl font-semibold text-[#28547C]"
             id="guest-modal-title"
           >
             New Guest
@@ -7605,7 +7623,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     >
       <div class="modal-box" style="max-width: 600px">
         <div class="flex items-center justify-between mb-6">
-          <h2 class="font-display text-2xl font-semibold text-[#28547C]">
+          <h2 class="font-heading text-2xl font-semibold text-[#28547C]">
             Guest Profile
           </h2>
           <button
@@ -7653,7 +7671,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     >
       <div class="modal-box" style="max-width: 400px">
         <div class="flex items-center justify-between mb-5">
-          <h2 class="font-display text-xl font-semibold text-[#28547C]">
+          <h2 class="font-heading text-xl font-semibold text-[#28547C]">
             Update Reservation
           </h2>
           <button
@@ -7702,7 +7720,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     >
       <div class="modal-box" style="max-width: 380px">
         <div class="flex items-center justify-between mb-5">
-          <h2 class="font-display text-xl font-semibold text-[#28547C]" id="void-reason-title">
+          <h2 class="font-heading text-xl font-semibold text-[#28547C]" id="void-reason-title">
             Remove Entry
           </h2>
           <button
@@ -7752,7 +7770,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     >
       <div class="modal-box" style="max-width: 380px">
         <div class="flex items-center justify-between mb-5">
-          <h2 class="font-display text-xl font-semibold text-[#28547C]">
+          <h2 class="font-heading text-xl font-semibold text-[#28547C]">
             Complete Visit
           </h2>
           <button
@@ -7850,7 +7868,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       <div class="modal-box" style="max-width: 420px">
         <div class="flex items-center justify-between mb-5">
           <h2
-            class="font-display text-xl font-semibold text-[#28547C]"
+            class="font-heading text-xl font-semibold text-[#28547C]"
             id="prize-modal-title"
           >
             Add Prize
@@ -7918,7 +7936,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     <!-- ===== MODAL: ADD MEMBER ===== -->
     <div id="modal-add-member" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-        <h2 class="font-display text-xl text-[#28547C] mb-4">Add Member</h2>
+        <h2 class="font-heading text-xl text-[#28547C] mb-4">Add Member</h2>
         <div class="space-y-3">
           <div>
             <label class="text-xs font-medium text-[#777]">Member Number</label>
@@ -7958,7 +7976,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[85vh] overflow-y-auto">
         <div class="flex items-start justify-between mb-1">
           <div>
-            <h2 class="font-display text-xl text-[#28547C]" id="md-name">—</h2>
+            <h2 class="font-heading text-xl text-[#28547C]" id="md-name">—</h2>
             <p class="text-xs font-mono text-[#999]" id="md-number">—</p>
           </div>
           <span id="md-type"></span>
@@ -7996,7 +8014,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     <!-- ===== MODAL: RECORD MEMBER SPEND ===== -->
     <div id="modal-member-txn" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-        <h2 class="font-display text-xl text-[#28547C] mb-1">Record Spend</h2>
+        <h2 class="font-heading text-xl text-[#28547C] mb-1">Record Spend</h2>
         <p class="text-xs text-[#999] mb-4" id="mt-member-label">—</p>
         <div class="space-y-3">
           <div>
@@ -8029,7 +8047,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
          bug the rename flow hit in July. -->
     <div id="modal-convert-visits" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[88vh] flex flex-col">
-        <h2 class="font-display text-xl text-[#28547C] mb-1">Konversi Kunjungan Lama</h2>
+        <h2 class="font-heading text-xl text-[#28547C] mb-1">Konversi Kunjungan Lama</h2>
         <p class="text-xs text-[#999]" id="cv-member-label">—</p>
         <p class="text-[11px] text-[#999] mt-2" id="cv-rule"></p>
 
@@ -8069,7 +8087,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
         <div class="flex items-start justify-between mb-1">
           <div>
-            <h2 class="font-display text-xl text-[#28547C]">Voucher card</h2>
+            <h2 class="font-heading text-xl text-[#28547C]">Voucher card</h2>
             <p class="text-xs text-[#999]" id="vch-card-meta">—</p>
           </div>
           <button onclick="hideModal('modal-standalone-voucher')" class="text-[#999] hover:text-[#555] text-xl leading-none px-2">&times;</button>
@@ -8123,7 +8141,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
         <div class="flex items-start justify-between mb-1">
           <div>
-            <h2 class="font-display text-xl text-[#28547C]">Voucher</h2>
+            <h2 class="font-heading text-xl text-[#28547C]">Voucher</h2>
             <p class="text-xs text-[#999]" id="vc-meta">—</p>
           </div>
           <button onclick="hideModal('modal-voucher-card')" class="text-[#999] hover:text-[#555] text-xl leading-none px-2">&times;</button>
