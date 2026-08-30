@@ -293,6 +293,39 @@ because a checker that quietly misses a column is worse than no checker.
 One thing that will look like a bug and is not: `idx_one_open_campaign` allows
 only ONE campaign with `ended_at IS NULL`. That is deliberate.
 
+### An empty-database migration run proves less than it looks like it does
+
+Learned expensively on 2026-08-30. `ALL_IN_ONE.sql` was verified by building
+it onto an empty Postgres twice, declared safe, and then failed on Rere's
+seeded Intoch database on the first real run.
+
+`recalculate_guest_spending_tier` sat 1,700 lines below the last redefinition
+of `calculate_guest_spending_tier`, which changes return shape to
+`TABLE(tier, qualified_at)`. Between them ran the `booking_name` backfill, an
+`update public.reservations`, which fires the reservations tier trigger, which
+called the old text-expecting version. The row stringified to
+`(medium_spender,)`, `guests_spending_tier_check` rejected it, and the whole
+migration aborted.
+
+**On an empty database that backfill matches no rows, so nothing fires.** The
+defect was invisible to every run that had been done.
+
+Two rules out of it:
+
+1. **Every backfill and data repair in this file is untested by an empty-run.**
+   They are all `WHERE` clauses that match nothing without data. Rehearse
+   changes on a database holding at least a guest, a visit with real spend,
+   and an Online Form reservation with a NULL `booking_name`. That fixture
+   reproduces this class in seconds.
+2. **The tier function pair must stay adjacent.** `recalculate_` goes directly
+   beneath the last `calculate_`, and moves with it. Both now carry a comment
+   saying so, and `tests/migration-order.test.js` fails if a top-level write
+   to visits or reservations appears before the pair agrees. That test flags
+   the pre-fix file and passes the fixed one.
+
+This is the same pair that broke on 2026-08-23. It has now drifted twice, once
+by definition and once by ordering, so treat any edit near it as high risk.
+
 ### 5. Routing, file splitting, inline handlers
 The three reasons this repo exists. See the top of this file.
 

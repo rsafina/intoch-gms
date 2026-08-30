@@ -1545,6 +1545,44 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- ---------- recalculate_guest_spending_tier: PAIRED WITH THE ABOVE ----------
+-- This MUST stay directly beneath the last definition of
+-- calculate_guest_spending_tier, and must move with it if that one ever moves.
+-- Everything after this point may write to visits or reservations, and any
+-- such write fires a trigger that calls this function. If the two disagree
+-- about the return shape at that moment, the write fails with a
+-- guests_spending_tier_check violation on a real guest row.
+--
+-- The full account of the two bugs this fixes is in the 20260823 section
+-- further down, where they were originally found.
+create or replace function recalculate_guest_spending_tier(p_guest_id uuid)
+returns void as $$
+declare
+  v_tier         text;
+  v_qualified_at timestamptz;
+begin
+  if p_guest_id is null then
+    return;
+  end if;
+
+  -- FROM, not SELECT ... INTO: calculate_guest_spending_tier returns a
+  -- TABLE(tier, qualified_at). Assigning the call to a single text variable
+  -- is what produced `(,)`. Do not "simplify" this back.
+  select t.tier, t.qualified_at
+    into v_tier, v_qualified_at
+  from calculate_guest_spending_tier(p_guest_id) as t;
+
+  update guests
+  set spending_tier            = v_tier,
+      tier_source              = 'auto',
+      tier_last_calculated_at  = now(),
+      high_spender_qualified_at = v_qualified_at
+  where id = p_guest_id
+    and tier_source = 'auto';
+end;
+$$ language plpgsql;
+
+
 -- ---------- 5. MEMBERSHIP RULES READ SETTINGS ----------
 -- Same contract and idempotency as 20260705_membership_merge; only the
 -- Family/Company constants and the 5-stickers-per-voucher divisor now
@@ -3755,32 +3793,23 @@ select 'birthday template', count(*) from wa_templates where key = 'birthday';
 -- Idempotent: create or replace, plus a repair pass that is a no-op on a
 -- healthy database.
 
-create or replace function recalculate_guest_spending_tier(p_guest_id uuid)
-returns void as $$
-declare
-  v_tier         text;
-  v_qualified_at timestamptz;
-begin
-  if p_guest_id is null then
-    return;
-  end if;
-
-  -- FROM, not SELECT ... INTO: calculate_guest_spending_tier returns a
-  -- TABLE(tier, qualified_at). Assigning the call to a single text variable
-  -- is what produced `(,)`. Do not "simplify" this back.
-  select t.tier, t.qualified_at
-    into v_tier, v_qualified_at
-  from calculate_guest_spending_tier(p_guest_id) as t;
-
-  update guests
-  set spending_tier            = v_tier,
-      tier_source              = 'auto',
-      tier_last_calculated_at  = now(),
-      high_spender_qualified_at = v_qualified_at
-  where id = p_guest_id
-    and tier_source = 'auto';
-end;
-$$ language plpgsql;
+-- The corrected definition that used to live HERE was MOVED UP on
+-- 2026-08-30, to sit immediately after the last redefinition of
+-- calculate_guest_spending_tier. See that copy for the function itself; the
+-- explanation above is kept here because this is where the bug was found.
+--
+-- WHY IT HAD TO MOVE. calculate_guest_spending_tier changes shape to
+-- TABLE(tier, qualified_at) at the "spending tier reads settings" section.
+-- The booking_name backfill (`update public.reservations ... set booking_name`)
+-- runs BEFORE this point and fires the reservations tier trigger, which calls
+-- recalculate_guest_spending_tier. With the fix down here, that trigger ran
+-- against the OLD text-expecting version and every affected guest failed
+-- guests_spending_tier_check with `(medium_spender,)`.
+--
+-- On an EMPTY database the backfill matches no rows, so nothing fires and the
+-- whole file runs clean. It only breaks on a database that already has Online
+-- Form reservations, which is to say every real one. Reported by Rere
+-- 2026-08-30 re-running this file against her seeded Intoch database.
 
 -- Repair pass. On a database where the CHECK constraint was in place this
 -- matches nothing, because the constraint is exactly what stopped the bad

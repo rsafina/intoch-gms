@@ -92,6 +92,37 @@ Note for whoever hits it next: `idx_one_open_campaign` allows only ONE
 campaign with `ended_at IS NULL`. That is deliberate, and it will look like a
 slug bug the first time it stops an insert.
 
+### Round 7, 2026-08-30: an empty database is not a test
+
+Round 6 was verified by building from empty, twice. That missed a defect that
+only exists on a database with rows in it, and Rere hit it re-running the file
+against her seeded Intoch database:
+
+8. **`recalculate_guest_spending_tier` was defined 1,700 lines after the last
+   redefinition of `calculate_guest_spending_tier`.** In between sits the
+   `booking_name` backfill, an `update public.reservations`, which fires the
+   reservations tier trigger, which calls the still-old text-expecting version
+   of a function whose partner now returns `TABLE(tier, qualified_at)`. The
+   row gets stringified to `(medium_spender,)` and fails
+   `guests_spending_tier_check`. The whole run aborts.
+
+   **On an empty database the backfill matches nothing, the trigger never
+   fires, and the file runs clean.** That is the entire reason it survived.
+
+   Fixed by moving the corrected definition to sit immediately beneath the
+   last `calculate_guest_spending_tier`. Both functions now carry a comment
+   saying they must move together.
+
+**So: an empty-database run proves the file is syntactically sound and
+re-runnable. It does NOT prove the file is safe on a client's database.**
+Anything guarded by a `WHERE` that matches no rows on an empty database is
+untested until you put rows there. Backfills and data repairs are exactly that
+shape, and this file is full of them.
+
+Rehearse a change like this on a database with at least: a guest, a visit
+carrying real spend, and an Online Form reservation with a NULL
+`booking_name`. That fixture alone reproduces this defect in seconds.
+
 ## Applying to a database with real data in it
 
 Rehearse first. Wrap the whole thing in a single `DO $$` block with
