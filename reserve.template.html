@@ -3,23 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Restoran — Reserve a Table</title>
-    <!-- Link preview (WhatsApp / Instagram / Facebook) -->
+    <title>__RESTAURANT_NAME__ — Reserve a Table</title>
+    <!-- Link preview (WhatsApp / Instagram / Facebook).
+         og:url and og:image MUST be absolute. A relative path here renders
+         no preview at all: the crawler fetches the page from its own host
+         and never resolves "/assets/...". Both are stamped in at build time
+         from SITE_URL by build-config.js. -->
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Restoran" />
-    <meta property="og:title" content="Restoran — Reserve a Table" />
+    <meta property="og:site_name" content="__RESTAURANT_NAME__" />
+    <meta property="og:title" content="__RESTAURANT_NAME__ — Reserve a Table" />
     <meta
       property="og:description"
-      content="Reservasi meja di Restoran. Isi form singkat, staff kami akan menghubungi Anda untuk konfirmasi."
+      content="Reservasi meja di __RESTAURANT_NAME__. Isi form singkat, staff kami akan menghubungi Anda untuk konfirmasi."
     />
-    <meta
-      property="og:url"
-      content="/reserve"
-    />
-    <meta
-      property="og:image"
-      content="/assets/og-share.jpg"
-    />
+    <meta property="og:url" content="__SITE_URL__/reserve" />
+    <meta property="og:image" content="__SITE_URL__/assets/og-share.jpg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />

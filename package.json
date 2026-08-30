@@ -6,7 +6,8 @@
   "scripts": {
     "build": "node build-config.js",
     "serve": "python3 -m http.server 8080",
-    "test": "node scripts/run-tests.js"
+    "test": "node scripts/run-tests.js",
+    "schema-check": "node scripts/schema-check.js"
   },
   "devDependencies": {
     "jsdom": "^24.0.0",

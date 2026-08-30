@@ -216,34 +216,82 @@ the middle band left empty for the drawn text. The upload screen checks the pixe
 size and warns.
 
 ### 3. Broken share preview on the booking page
-`reserve.html`'s og: tags point at `blueheron-gms.netlify.app`, which does not
-exist. The real Blue Heron site is `blue-heron.netlify.app`. So when a guest
-forwards the booking link on WhatsApp, the preview image fails to load.
+**Done 2026-08-30.** The description this entry used to carry was already out
+of date, and the real bug was worse than the one recorded.
 
-Cosmetic, but it is the first thing a guest sees when someone shares the link.
-**This is also live in the blueheron-gms repo**, not just here.
+What was actually wrong:
+
+- `og:url` and `og:image` were RELATIVE (`/reserve`, `/assets/og-share.jpg`).
+  Open Graph requires absolute URLs. A crawler resolves a relative one against
+  its own host, so the preview did not merely show a stale image, it showed
+  nothing at all, on every page, for every client.
+- `reservation-confirmation.html` and `spin.html` had no og: tags whatsoever.
+- All four pages said `Restoran` in the tab title and the card.
+
+Fixed by making all four guest pages templates and stamping them at build
+time. `build-config.js` now takes two more variables:
+
+- **`SITE_URL`** (REQUIRED) — the bare public origin, e.g.
+  `https://reservasi.klien.com`. No path, no trailing slash. The build fails
+  without it, deliberately: a missing SITE_URL is invisible until a guest
+  forwards a link, and by then it is uncacheable.
+- **`RESTAURANT_NAME`** (optional, defaults to `Restoran`) — warns when unset,
+  because a wrong name is embarrassing but not broken.
+
+**Every existing deployment must add SITE_URL before its next build.**
+
+`tests/share-preview.test.js` pins all of it: absolute URLs, no hardcoded
+host, no literal restaurant name in a head, and every template wired into
+both `build-config.js` and `.gitignore`.
+
+Still open, and NOT part of this: `js/campaign-editor.js`, `js/campaign.js`
+and `js/broadcast.js` hardcode `https://your-site.example` as the promo link
+origin, so every generated campaign link is currently wrong. Same root cause,
+different blast radius: those constants are asserted by 257 campaign-editor
+tests. Do it as its own change, feeding it the same SITE_URL.
+
+Also still hardcoded, and cosmetic by comparison: `reservation-confirmation.html`
+says `Restoran` in its body heading and in the Google Calendar link it builds.
+`restaurantName()` already exists to fix that.
 
 ### 4. The migration set does not build a database from zero
-Proven on 2026-08-22 while standing up the first fresh project: the base schema's
-role CHECK allows only `staff` and `manager`, while the code expects `admin` too.
-The original database had that widened by hand. Assume there are more gaps like it
-and re-test the full run on an empty project before client one.
+**Done 2026-08-30, and now provable on demand.**
 
-**Two more surfaced on 2026-08-23, from the same cause.**
+`migrations/ALL_IN_ONE.sql` has been built onto an empty Postgres, twice in a
+row, and runs clean and re-runnable. Two more missing objects were found and
+added, both of the same class as the earlier three:
 
-- The spending-tier function pair, which stopped walk-ins and reservations being
-  created at all. See "Two functions in this file can drift apart" below.
-- `wa_campaigns.status` and `wa_campaign_audience.status` / `updated_at`, used
-  throughout `campaign-editor.js` and created by no migration. The Broadcast
-  campaign list 400'd on every load.
+- **`wa_campaigns.slug`**, plus its unique index. Broadcast > Campaigns was
+  not degraded on a fresh client, it was unusable: `ceUniqueSlug()` selects on
+  `slug` before every save and `saveCampaign()` writes it, so no campaign
+  could be created at all.
+- **The `promo-images` storage bucket** and its four policies. Promo uploads
+  404, and the WhatsApp card URL is built by hand in `cePromoImageUrl()`, so
+  every campaign's share image resolved to nothing.
 
-All three share a cause: the live Blue Heron database was patched by hand, so
-this file was never the thing being exercised. **Nothing here is trustworthy
-until a fresh project has been built from it AND every page of the app has been
-opened against that project** — not just create-guest, create-walk-in,
-create-reservation and add-spend, but Broadcast, Vouchers, Membership and
-Reports too. A column only missing from one screen is still a screen that is
-down for a paying client.
+**Reading the SQL cannot find these. Only building it and asking the app can.**
+That is now a script rather than a memory:
+
+```
+1. run migrations/ALL_IN_ONE.sql on the empty Supabase project
+2. run scripts/schema-dump.sql in the same SQL editor, save the JSON
+3. npm run schema-check -- catalog.json
+```
+
+It compares every table, column, RPC argument and storage bucket the app
+references against what the database actually contains, and exits non-zero on
+anything missing. No local Postgres needed. Run it for every new client, after
+the migration and before handing anything over.
+
+Know its limits, they are written at the top of `scripts/schema-refs.js`: it
+proves an object EXISTS, never that its type, nullability, default or foreign
+key is right, and RLS and grants are entirely out of scope. A green run means
+"no missing object of the kind that has bitten us eight times", not "this
+database is correct". `tests/schema-refs.test.js` pins the scanner itself,
+because a checker that quietly misses a column is worse than no checker.
+
+One thing that will look like a bug and is not: `idx_one_open_campaign` allows
+only ONE campaign with `ended_at IS NULL`. That is deliberate.
 
 ### 5. Routing, file splitting, inline handlers
 The three reasons this repo exists. See the top of this file.

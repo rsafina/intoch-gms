@@ -52,6 +52,46 @@ defects:
 
 A history that cannot rebuild the thing it claims to describe is not a history.
 
+## Proving it before a client sees it
+
+Reading this file cannot tell you whether it is complete. Building a database
+from it and asking the application what it expects can.
+
+Two steps, neither of which needs Postgres installed locally:
+
+1. Run `ALL_IN_ONE.sql` on the empty Supabase project, exactly as client
+   setup does.
+2. Run `scripts/schema-dump.sql` in the same SQL editor, save the JSON it
+   returns to a file, and run `npm run schema-check -- catalog.json`.
+
+It compares every table, column, RPC argument and storage bucket the app code
+references against what actually got built, and exits non-zero on any that is
+missing. `scripts/schema-refs.js` documents what it does and does not cover:
+it proves an object EXISTS, never that its type, nullability, default or
+foreign key is right, and RLS and grants are out of scope entirely.
+
+### Round 6, 2026-08-30
+
+The first run of that check found two more of the same class, both of which
+would have shipped:
+
+6. **`wa_campaigns.slug` existed in no migration.** Broadcast > Campaigns was
+   not degraded, it was unusable: `ceUniqueSlug()` selects on `slug` before
+   every save and `saveCampaign()` writes it, so no campaign could be created
+   at all on a new client. Its unique index was missing too, and the code
+   depends on that index rather than merely benefiting from it.
+7. **The `promo-images` storage bucket existed in no migration.** Promo image
+   uploads 404, and because the public URL is built by hand in
+   `cePromoImageUrl()`, every campaign's WhatsApp share card would have
+   resolved to nothing.
+
+Both are now in this file, and the file has been rebuilt from empty twice to
+confirm it still runs clean and is still re-runnable.
+
+Note for whoever hits it next: `idx_one_open_campaign` allows only ONE
+campaign with `ended_at IS NULL`. That is deliberate, and it will look like a
+slug bug the first time it stops an insert.
+
 ## Applying to a database with real data in it
 
 Rehearse first. Wrap the whole thing in a single `DO $$` block with
