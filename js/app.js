@@ -4779,11 +4779,18 @@ function setResDetailsEnabled(enabled) {
   document.getElementById("res-gate-hint")?.classList.toggle("hidden", enabled);
 }
 
-function setResNewGuestFieldsVisible(visible) {
+// Shows or hides the new-guest fields. There are TWO blocks, not one:
+// name and phone sit directly under the guest search where they are typed,
+// and gender and company sit at the very bottom because nobody taking a
+// booking over the phone needs them before the date and the party size.
+//
+// Always toggle both through here. They describe the guest rather than the
+// reservation, and saveReservation() only reads them when creating a new
+// guest, so leaving either visible for an EXISTING guest offers a field that
+// is silently ignored.
+function setResNewGuestVisible(visible) {
   document.getElementById("res-new-guest")?.classList.toggle("hidden", !visible);
-  document
-    .getElementById("res-new-guest-extra")
-    ?.classList.toggle("hidden", !visible);
+  document.getElementById("res-new-guest-extra")?.classList.toggle("hidden", !visible);
 }
 
 function createNewGuestFromSearch(prefix) {
@@ -4794,7 +4801,7 @@ function createNewGuestFromSearch(prefix) {
   }
 
   if (prefix === "res") {
-    setResNewGuestFieldsVisible(true);
+    setResNewGuestVisible(true);
     setResDetailsEnabled(true);
     document.getElementById("res-guest-info")?.classList.add("hidden");
     currentResGuestId = null;
@@ -4804,8 +4811,6 @@ function createNewGuestFromSearch(prefix) {
     document.getElementById("res-name").value =
       document.getElementById("res-guest-search")?.value.trim() || "";
     document.getElementById("res-new-guest-phone").value = "";
-    document.getElementById("res-gender").value = "";
-    document.getElementById("res-company").value = "";
     populateAreaSelects();
   }
 }
@@ -4865,9 +4870,12 @@ async function selectGuestFromSearch(guestId, prefix) {
     populateAreaSelects();
   }
 
-  const newGuestEl = document.getElementById(`${prefix}-new-guest`);
-  if (newGuestEl) newGuestEl.classList.add("hidden");
-  if (prefix === "res") setResNewGuestFieldsVisible(false);
+  if (prefix === "res") {
+    setResNewGuestVisible(false);
+  } else {
+    const newGuestEl = document.getElementById(`${prefix}-new-guest`);
+    if (newGuestEl) newGuestEl.classList.add("hidden");
+  }
 }
 
 function clearGuestSelection(prefix) {
@@ -4898,7 +4906,7 @@ function clearGuestSelection(prefix) {
     // Re-gate. Without this, clearing the guest leaves a fully editable form
     // that cannot be saved, and the failure only shows up at the save button.
     setResDetailsEnabled(false);
-    setResNewGuestFieldsVisible(false);
+    setResNewGuestVisible(false);
   }
 }
 
@@ -4975,7 +4983,6 @@ async function lookupGuestManual(prefix) {
       </div>
     `;
     newGuestEl?.classList.add("hidden");
-    if (prefix === "res") setResNewGuestFieldsVisible(false);
     visitFieldsEl?.classList.remove("hidden");
     if (prefix === "res") populateAreaSelects();
   } else {
@@ -4993,8 +5000,7 @@ async function lookupGuestManual(prefix) {
         <span class="text-xs text-blue-700 font-medium">New guest — please fill in profile below</span>
       </div>
     `;
-    if (prefix === "res") setResNewGuestFieldsVisible(true);
-    else newGuestEl?.classList.remove("hidden");
+    newGuestEl?.classList.remove("hidden");
     visitFieldsEl?.classList.remove("hidden");
     if (prefix === "res") populateAreaSelects();
     if (prefix === "wi")
@@ -5548,11 +5554,7 @@ function openReservationModal(res = null) {
   resModalOriginalPhone = res?.guests?.phone || null;
   document.getElementById("res-guest-search").value = res?.guests?.name || "";
   document.getElementById("res-guest-info").classList.add("hidden");
-  setResNewGuestFieldsVisible(false);
-  document.getElementById("res-name").value = "";
-  document.getElementById("res-new-guest-phone").value = "";
-  document.getElementById("res-gender").value = "";
-  document.getElementById("res-company").value = "";
+  setResNewGuestVisible(false);
   // Opens gated. The edit path below re-enables it, because an existing
   // reservation already has a guest and there is nothing to choose.
   setResDetailsEnabled(false);
@@ -7081,7 +7083,41 @@ function exportReservationSources() {
 // ============================================================
 // COMPLETE VISIT
 // ============================================================
+// The arrival question belongs to reservations only, and only when there is
+// no visit row. Both open* functions reset it, so it can never be left over
+// from a previous open.
+function resetCompleteArrivedAsk() {
+  const ask = document.getElementById("complete-arrived-ask");
+  if (ask) ask.classList.add("hidden");
+  const yes = document.getElementById("complete-arrived-yes");
+  const no = document.getElementById("complete-arrived-no");
+  if (yes) yes.checked = false;
+  if (no) no.checked = false;
+  document.getElementById("complete-arrived-error")?.classList.add("hidden");
+  document.getElementById("complete-spend-block")?.classList.remove("hidden");
+  document.getElementById("complete-favmenu-block")?.classList.remove("hidden");
+  const btn = document.getElementById("complete-submit-btn");
+  if (btn) btn.textContent = t("Complete & Save");
+}
+
+// Picking "no" turns this modal into a no-show form: nothing to spend, no
+// favourite menu to record. Notes stay, because "booked, never called to
+// cancel" is worth writing down.
+function onCompleteArrivedChange() {
+  const came = document.getElementById("complete-arrived-yes")?.checked;
+  document.getElementById("complete-arrived-error")?.classList.add("hidden");
+  document
+    .getElementById("complete-spend-block")
+    ?.classList.toggle("hidden", !came);
+  document
+    .getElementById("complete-favmenu-block")
+    ?.classList.toggle("hidden", !came);
+  const btn = document.getElementById("complete-submit-btn");
+  if (btn) btn.textContent = came ? t("Complete & Save") : t("Mark as No Show");
+}
+
 async function openCompleteVisit(id, type) {
+  resetCompleteArrivedAsk();
   document.getElementById("complete-visit-id").value = id;
   document.getElementById("complete-type").value = type;
   document.getElementById("complete-spend").value = "";
@@ -7114,6 +7150,7 @@ async function openCompleteVisit(id, type) {
 }
 
 async function openCompleteReservation(resId) {
+  resetCompleteArrivedAsk();
   document.getElementById("complete-visit-id").value = resId;
   document.getElementById("complete-type").value = "reservation";
   document.getElementById("complete-spend").value = "";
@@ -7131,9 +7168,17 @@ async function openCompleteReservation(resId) {
         .from("visits")
         .select("spend_amount, notes, guest_id, guests(favorite_menu)")
         .eq("reservation_id", resId)
-        .single(),
+        .maybeSingle(),
     "Failed to load linked visit spend",
   );
+
+  // No visit row means nobody clicked Arrived, so the app genuinely does not
+  // know whether this table showed up. Ask rather than guess: guessing "they
+  // came" invents a visit for a no-show, and guessing "they didn't" throws
+  // away real money. Both were live bugs at Blue Heron.
+  if (!linkedVisit) {
+    document.getElementById("complete-arrived-ask")?.classList.remove("hidden");
+  }
   if (linkedVisit?.spend_amount != null) {
     document.getElementById("complete-spend").value = linkedVisit.spend_amount;
   }
@@ -7157,6 +7202,53 @@ async function confirmCompleteVisit() {
   const favoriteMenuInput = document
     .getElementById("complete-favorite-menu")
     .value.trim();
+
+  // ── The guest never came ────────────────────────────────────────────
+  // This branch runs BEFORE the spend check on purpose: a no-show has no
+  // spend to enter, and demanding one is what pushed staff into completing
+  // no-shows with a fake number in the first place.
+  //
+  // The booking goes to Cancelled (No Show), which is the status that has
+  // always existed for exactly this and which the reports already
+  // understand. No visit row is created, so the guest's history stays
+  // honest and the channel reports stop crediting arrivals that never
+  // happened.
+  const arrivedAsk = document.getElementById("complete-arrived-ask");
+  const askVisible = arrivedAsk && !arrivedAsk.classList.contains("hidden");
+  if (type === "reservation" && askVisible) {
+    const came = document.getElementById("complete-arrived-yes")?.checked;
+    const didNot = document.getElementById("complete-arrived-no")?.checked;
+    if (!came && !didNot) {
+      document
+        .getElementById("complete-arrived-error")
+        ?.classList.remove("hidden");
+      return;
+    }
+    if (didNot) {
+      loader(true);
+      const { error: noShowError } = await supabaseQuery(
+        () =>
+          db
+            .from("reservations")
+            .update({
+              status: "Cancelled (No Show)",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", id),
+        "Failed to mark reservation as no show",
+      );
+      loader(false);
+      if (noShowError) {
+        toast("Failed to save. Please try again.", "error");
+        return;
+      }
+      toast("Marked as no show");
+      hideModal("modal-complete-visit");
+      if (isViewingStaffDashboard()) loadDashboard();
+      if (currentPage === "reservations") loadReservations();
+      return;
+    }
+  }
 
   // Spend is mandatory — show inline error and abort if missing
   if (spendAmount === null || isNaN(spendAmount)) {
@@ -7236,15 +7328,64 @@ async function confirmCompleteVisit() {
     }
 
     // 2. Find the linked visit (created when guest Arrived) and save spend + mark Done
-    const { data: linkedVisit } = await supabaseQuery(
+    let { data: linkedVisit } = await supabaseQuery(
       () =>
         db
           .from("visits")
           .select("id, guest_id")
           .eq("reservation_id", id)
-          .single(),
+          .maybeSingle(),
       "Failed to find linked visit",
     );
+
+    // No linked visit means staff went Reserved -> Completed without ever
+    // clicking Arrived. Two completely different things cause that, and this
+    // branch used to do nothing at all for either of them: the reservation
+    // flipped to Completed, no visit row was written, the spend staff had
+    // just typed was discarded, and the toast still said "Visit completed".
+    //
+    // Measured at Blue Heron 2026-08-30: 15 reservations, 7.7% of every
+    // completed booking, 91 pax. Every one flipped on the reservation day
+    // between 16:00 and 21:30, which is front desk clearing the board at
+    // closing. Some of those guests ate; some never came.
+    //
+    // So the app asks (see the arrival question in openCompleteReservation)
+    // and only reaches this point when staff said the guest DID come. Same
+    // insert shape as updateResStatus("Arrived") - keep the two in step.
+    if (!linkedVisit) {
+      const { data: resRow } = await supabaseQuery(
+        () =>
+          db
+            .from("reservations")
+            .select("guest_id, reservation_date, pax, assigned_area, table_id")
+            .eq("id", id)
+            .single(),
+        "Failed to load reservation for visit",
+      );
+      if (resRow) {
+        const { data: createdVisit } = await supabaseQuery(
+          () =>
+            db
+              .from("visits")
+              .insert({
+                guest_id: resRow.guest_id,
+                reservation_id: id,
+                visit_type: "Reservation",
+                visit_date: resRow.reservation_date,
+                visit_time: getNowTime(),
+                pax: resRow.pax,
+                assigned_area: resRow.assigned_area,
+                table_id: resRow.table_id || null,
+                created_by: currentStaffId(),
+              })
+              .select("id, guest_id")
+              .single(),
+          "Failed to record visit for completed reservation",
+        );
+        if (createdVisit) linkedVisit = createdVisit;
+      }
+    }
+
     if (linkedVisit) {
       const { error: visitError } = await supabaseQuery(
         () =>
@@ -7282,6 +7423,26 @@ async function confirmCompleteVisit() {
       }
       guestIdForTier = linkedVisit.guest_id;
       visitIdForMembership = linkedVisit.id;
+    } else {
+      // The visit could not be found AND could not be created. Leaving the
+      // reservation Completed here would recreate exactly the silent
+      // data-loss this block exists to remove, so roll the status back and
+      // say so out loud. Reserved, not Arrived: there is no visit row, so
+      // the guest was never marked arrived in the first place.
+      await supabaseQuery(
+        () =>
+          db
+            .from("reservations")
+            .update({ status: "Reserved", updated_at: new Date().toISOString() })
+            .eq("id", id),
+        "Failed to rollback reservation status",
+      );
+      loader(false);
+      toast(
+        "Could not save the visit. Spend was not recorded, please try again.",
+        "error",
+      );
+      return;
     }
     loader(false);
   }
@@ -8447,6 +8608,41 @@ function renderOpsReservationSources(sources, totalBookings = 0) {
 
 let currentOnlineFormRows = [];
 
+// "Booked On" vs "Booked For". Added 2026-08-30 after the Blue Heron owner
+// read this report as an arrival log and could not find two bookings she knew
+// existed: they came in on 26 Aug FOR 28 Aug, and the table only showed the
+// 28th. Lead time is the ops-relevant part (a booking made two days ahead is
+// a different animal from one made 40 minutes ahead), so it rides along as
+// H-n rather than as its own column.
+function _ofBookedOn(r) {
+  if (!r.created_at) return "\u2014";
+  const d = new Date(r.created_at);
+  if (isNaN(d)) return "\u2014";
+  const when =
+    fmt.date(d) +
+    " \u00b7 " +
+    d.toLocaleTimeString(CURRENT_LANG === "id" ? "id-ID" : "en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  // Lead is measured in LOCAL calendar days via ymd(), never toISOString():
+  // a 23:30 Jakarta booking serialises as the previous day in UTC and would
+  // report H-1 on a same-day walk-up.
+  let lead = "";
+  if (r.reservation_date) {
+    const madeOn = ymd(d);
+    const days = Math.round(
+      (new Date(r.reservation_date + "T00:00:00") -
+        new Date(madeOn + "T00:00:00")) /
+        86400000,
+    );
+    if (days >= 0) lead = ` \u00b7 H-${days}`;
+  }
+  return (
+    escapeHtml(when) + (lead ? `<span class="text-[#bbb]">${lead}</span>` : "")
+  );
+}
+
 async function loadOpsOnlineFormReport() {
   const { from, to } = getOpsReportDateRange();
 
@@ -8464,7 +8660,7 @@ async function loadOpsOnlineFormReport() {
   const body = document.getElementById("ops-of-table-body");
   if (error) {
     if (body) {
-      body.innerHTML = `<tr><td colspan="6" class="px-3 py-8 text-center text-[#bbb]">${t("Could not load online form data")}</td></tr>`;
+      body.innerHTML = `<tr><td colspan="7" class="px-3 py-8 text-center text-[#bbb]">${t("Could not load online form data")}</td></tr>`;
     }
     return;
   }
@@ -8538,7 +8734,7 @@ async function loadOpsOnlineFormReport() {
 
   if (!body) return;
   if (!bookings.length) {
-    body.innerHTML = `<tr><td colspan="6" class="px-3 py-8 text-center text-[#bbb]">${t("No online form bookings in this period")}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="7" class="px-3 py-8 text-center text-[#bbb]">${t("No online form bookings in this period")}</td></tr>`;
     return;
   }
 
@@ -8571,6 +8767,7 @@ async function loadOpsOnlineFormReport() {
       <tr class="border-b border-[#F5F3EF]">
         <td class="px-3 py-2 text-[#555]">${nameHtml}</td>
         <td class="px-3 py-2 text-[#999] text-xs">${escapeHtml(r.guest_phone || "—")}</td>
+        <td class="px-3 py-2 text-[#999] text-xs">${_ofBookedOn(r)}</td>
         <td class="px-3 py-2 text-[#555] text-xs">${fmt.date(r.reservation_date)}${r.reservation_time ? ` · ${fmt.time(r.reservation_time)}` : ""}</td>
         <td class="px-3 py-2 text-right text-[#555]">${r.actual_pax || r.booked_pax || 0}</td>
         <td class="px-3 py-2 text-xs font-medium" style="color:${o.colour}">${o.label}</td>
@@ -8592,6 +8789,7 @@ function exportOnlineFormReport() {
       "Booking Alias",
       "Name Typed On Form",
       "Phone",
+      "Booked On",
       "Reservation Date",
       "Reservation Time",
       "Booked Pax",
@@ -8606,6 +8804,7 @@ function exportOnlineFormReport() {
       r.booking_alias || "",
       r.booking_name || "",
       r.guest_phone,
+      r.created_at || "",
       r.reservation_date,
       r.reservation_time,
       r.booked_pax,

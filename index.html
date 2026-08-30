@@ -5550,6 +5550,11 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                         <th
                           class="text-left px-3 py-2 text-[10px] text-[#999] uppercase tracking-wider font-medium"
                         >
+                          Booked On
+                        </th>
+                        <th
+                          class="text-left px-3 py-2 text-[10px] text-[#999] uppercase tracking-wider font-medium"
+                        >
                           Booked For
                         </th>
                         <th
@@ -6453,7 +6458,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       <section id="page-settings-menu" class="page-section p-8">
         <div class="max-w-5xl mx-auto">
           <div class="settings-tabs mb-6" data-settings-tabs></div>
-          <div class="mb-8">
+          <div class="flex items-center justify-between mb-8">
             <div>
               <div class="gold-bar mb-3"></div>
               <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
@@ -6464,6 +6469,20 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 you feature, and where the full menu lives
               </p>
             </div>
+            <button onclick="openDishModal()" class="btn-primary manager-only-ui">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span data-i18n>Add Dish</span>
+            </button>
           </div>
 
 
@@ -6598,23 +6617,6 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 Back to defaults
               </button>
             </div>
-          </div>
-
-          <div class="flex justify-end mb-3">
-            <button onclick="openDishModal()" class="btn-primary manager-only-ui">
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              <span data-i18n>Add Dish</span>
-            </button>
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -7572,18 +7574,32 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         <input type="hidden" id="res-phone" />
         <div id="res-guest-info" class="hidden mb-5"></div>
 
-        <div id="res-new-guest" class="hidden mb-3">
-          <input id="res-name" type="hidden" />
-          <label class="block text-xs font-medium text-[#555] mb-1.5"
-            >Phone
-            <span class="text-[#bbb] font-normal">(optional)</span></label
-          >
-          <input
-            id="res-new-guest-phone"
-            type="tel"
-            placeholder="08xxxxxxxxxx"
-            class="form-input"
-          />
+        <div id="res-new-guest" class="hidden">
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="block text-xs font-medium text-[#555] mb-1.5"
+                >Full Name *</label
+              >
+              <input
+                id="res-name"
+                type="text"
+                placeholder="Guest name"
+                class="form-input"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-[#555] mb-1.5"
+                >Phone
+                <span class="text-[#bbb] font-normal">(optional)</span></label
+              >
+              <input
+                id="res-new-guest-phone"
+                type="tel"
+                placeholder="08xxxxxxxxxx"
+                class="form-input"
+              />
+            </div>
+          </div>
         </div>
 
         <!-- Everything below is visible from the moment the modal opens, but
@@ -7726,33 +7742,37 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               class="form-input resize-none"
             ></textarea>
           </div>
-          <div id="res-new-guest-extra" class="hidden mb-4">
-            <div class="divider my-4"></div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-xs font-medium text-[#555] mb-1.5"
-                  >Gender</label
-                >
-                <select id="res-gender" class="form-input">
-                  <option value="">—</option>
-                  <option>Male</option>
-                  <option>Female</option>
-                  <option>Other</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-[#555] mb-1.5"
-                  >Company</label
-                >
-                <input
-                  id="res-company"
-                  type="text"
-                  placeholder="Company name (optional)"
-                  class="form-input"
-                />
-              </div>
+        <div id="res-new-guest-extra" class="hidden">
+          <div class="gold-bar mb-3"></div>
+          <p class="text-[11px] text-[#999] mb-3">
+            Optional details for the new guest. Can be filled in later from the
+            guest profile.
+          </p>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div>
+              <label class="block text-xs font-medium text-[#555] mb-1.5"
+                >Gender</label
+              >
+              <select id="res-gender" class="form-input">
+                <option value="">—</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-[#555] mb-1.5"
+                >Company</label
+              >
+              <input
+                id="res-company"
+                type="text"
+                placeholder="Company name (optional)"
+                class="form-input"
+              />
             </div>
           </div>
+        </div>
           <button
             onclick="saveReservation()"
             class="btn-primary w-full justify-center"
@@ -8284,7 +8304,54 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         </div>
         <input type="hidden" id="complete-visit-id" />
         <input type="hidden" id="complete-type" />
-        <div class="mb-4">
+        <!-- "Did this guest arrive?" — shown ONLY when the reservation has no
+             visit record, meaning nobody ever clicked Arrived. Added 2026-08-30.
+
+             Front desk uses Completed to clear the board at closing time, for
+             no-shows as well as for tables that ate. At Blue Heron 15
+             reservations were Completed with no visit behind them, every one
+             flipped on the day itself between 16:00 and 21:30. One button was
+             carrying two meanings and the reports could not tell them apart.
+             This asks, once, only in the case that is genuinely ambiguous. -->
+        <div
+          id="complete-arrived-ask"
+          class="hidden mb-4 p-3 rounded-10 bg-[#FDF6E9] border border-[#EEDFC0]"
+        >
+          <p class="text-sm font-medium text-[#8A6A2F] mb-1">
+            Did this guest arrive?
+          </p>
+          <p class="text-[11px] text-[#8A6A2F] mb-2.5 leading-snug">
+            Nobody marked them Arrived, so the system cannot tell. Completing a
+            no-show would count them as a guest who came.
+          </p>
+          <label
+            class="flex items-center gap-2 text-sm text-[#555] mb-1 cursor-pointer"
+          >
+            <input
+              type="radio"
+              name="complete-arrived"
+              id="complete-arrived-yes"
+              onchange="onCompleteArrivedChange()"
+            />
+            Yes, they came
+          </label>
+          <label class="flex items-center gap-2 text-sm text-[#555] cursor-pointer">
+            <input
+              type="radio"
+              name="complete-arrived"
+              id="complete-arrived-no"
+              onchange="onCompleteArrivedChange()"
+            />
+            No, they did not come
+          </label>
+          <p
+            id="complete-arrived-error"
+            class="hidden text-xs text-red-500 mt-1.5"
+          >
+            Please choose one before completing.
+          </p>
+        </div>
+        <div class="mb-4" id="complete-spend-block">
           <label class="block text-xs font-medium text-[#555] mb-1.5"
             >Spend Amount (Rp) <span class="text-red-500">*</span></label
           >
@@ -8306,7 +8373,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             Spend amount is required before completing.
           </p>
         </div>
-        <div class="mb-4">
+        <div class="mb-4" id="complete-favmenu-block">
           <label class="block text-xs font-medium text-[#555] mb-1.5"
             >Favorite Menu / Recent Order <span class="text-[#999] font-normal">(optional)</span></label
           >
@@ -8327,6 +8394,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <input id="complete-notes" type="text" class="form-input" />
         </div>
         <button
+          id="complete-submit-btn"
           onclick="confirmCompleteVisit()"
           class="btn-primary w-full justify-center"
         >
@@ -8678,9 +8746,9 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
 
-    <script src="js/config.js?v=10"></script>
+    <script src="js/config.js?v=12"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=15"></script>
+    <script src="js/app.js?v=17"></script>
     <script src="js/membership.js?v=4"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->
@@ -8694,7 +8762,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     <script src="js/campaign-editor.js?v=9"></script>
     <!-- voucher.js uses waTemplateBody/waOpenChat, so it must load after wa.js -->
     <script src="js/voucher.js?v=4"></script>
-    <script src="js/notify.js?v=7"></script>
+    <script src="js/notify.js?v=8"></script>
     <script src="js/version-check.js?v=1"></script>
     <!-- Invoice generator: rasterises the preview node and wraps it in a PDF.
          Both libraries are only needed on the Invoice page. -->

@@ -122,7 +122,7 @@ ok(
 );
 ok(
   "opening the modal gates it",
-  /res-new-guest"\)\.classList\.add\("hidden"\);[\s\S]{0,200}?setResDetailsEnabled\(false\)/.test(appSrc),
+  /res-guest-info"\)\.classList\.add\("hidden"\);\s*setResNewGuestVisible\(false\);[\s\S]{0,300}?setResDetailsEnabled\(false\);/.test(appSrc),
 );
 ok(
   "editing an existing reservation opens it",

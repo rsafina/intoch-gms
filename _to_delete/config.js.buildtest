@@ -7,9 +7,9 @@
 // placeholders below from the SUPABASE_URL / SUPABASE_ANON_KEY environment
 // variables set per client in the hosting dashboard.
 const IS_STAGING = false;
-const SUPABASE_URL = "__SUPABASE_URL__";
+const SUPABASE_URL = "https://example.supabase.co";
 const SUPABASE_ANON_KEY =
-  "__SUPABASE_ANON_KEY__";
+  "sb_publishable_testonly_notreal";
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 

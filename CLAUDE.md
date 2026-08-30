@@ -464,6 +464,70 @@ Two rules from it:
   throwaway guest, recalculates, and asserts NULL, because reading the definitions
   is exactly what failed to catch this for months.
 
+### "Completed" is not the button for clearing the board
+
+Ported from Blue Heron, 2026-08-30, where it was measured in live data.
+
+The visit row is written at exactly one moment: the `updateResStatus(id, "Arrived")`
+transition. Everything downstream hangs off it, spend, guest history, spending
+tier, membership stickers, and the arrival columns in every channel report.
+
+Front desk does not always click Arrived. At closing they go down the board and
+mark everything `Completed`, no-shows included, because Completed reads as
+"this line is done". **15 reservations at Blue Heron were Completed with no
+visit behind them, 7.7% of all completed bookings, 91 pax, every single one
+flipped on the reservation day between 16:00 and 21:30.**
+
+`confirmCompleteVisit()` used to do all its work inside `if (linkedVisit) { ... }`
+with no `else`, so with no visit row the reservation flipped to Completed, the
+spend was discarded, and the toast still said "Visit completed". Silent for weeks.
+
+**The fix is to ask, not to guess.** With no visit row the modal reveals
+`#complete-arrived-ask`:
+
+- **Yes** creates the visit (same shape as the Arrived insert, keep the two in
+  step), then spend / sticker / tier as normal.
+- **No** sets `Cancelled (No Show)` and demands no spend. That branch runs
+  BEFORE the mandatory-spend check on purpose: requiring a number for a no-show
+  is what pushed staff into completing them with a fake one.
+- **Nothing picked** refuses with an inline error.
+
+Auto-creating on its own was tried first and is wrong: it invents arrivals for
+no-shows. Blocking until Arrived is clicked was rejected too, because the front
+desk hits that wall exactly when they are busiest.
+
+**Two rules that generalise beyond this function:**
+
+- **A status written by a human at end of shift records their intent to tidy up,
+  not what happened.** Never infer an event from it. The visit row is the event,
+  which is why `online_reservation_performance` reads `arrived` from the visit
+  join and was right about these bookings the whole time. Any new metric must do
+  the same; counting `status = 'Completed'` counts a click.
+- Any code path writing `status = 'Completed'` on a reservation must first
+  establish that a visit exists. Grep `"Completed"` before adding another one.
+
+Covered by `tests/complete-reservation.test.js` (24), which slices the real
+function out of `app.js` and was mutation-checked against the pre-fix code.
+
+### The online form report shows "Booked On" as well as "Booked For"
+
+A booking taken on the 26th for the 28th showed only the 28th, so the owner
+read the report as an arrival log and concluded the notification bell had
+missed two bookings that it had in fact shown three times each. `_ofBookedOn()`
+renders date, time and lead as `H-n`. Lead days come from `ymd()`, never
+`toISOString()`, or a 23:30 Jakarta booking reports H-1 on a same-day walk-up.
+
+### The bell keeps firing until someone ticks it, and the status filter must allow that
+
+`notify.js` filtered `status in ('Reserved','Confirmed')`, so an online booking
+nobody followed up vanished from the red list the moment the guest was marked
+Arrived or Completed, contradicting the promise in its own header comment. One
+booking sat unfollowed and invisible for 17 days. The list is now
+`['Reserved','Confirmed','Arrived','Completed']`. Cancelled, No Show and Deleted
+stay out deliberately: chasing a follow-up on a cancelled booking is noise, and
+noise is what gets a bell ignored. This does not flood the panel, the `.or()`
+bound still drops anything both handled and past-dated.
+
 ### Realtime channels MUST be torn down on logout
 
 `db.channel(topic)` returns the EXISTING channel when one with that topic is

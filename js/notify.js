@@ -174,7 +174,21 @@ async function _resNotifyFetch() {
     )
     .eq("reservation_source", "Online Form")
     .is("deleted_at", null)
-    .in("status", ["Reserved", "Confirmed"])
+    // "Arrived" and "Completed" are in this list, added 2026-08-30. They were
+    // not, and the consequence was that an online booking nobody ever
+    // followed up dropped off the red list the moment the guest was marked
+    // arrived — the header above promises it "keeps firing until someone
+    // ticks it", and that promise was false. One booking sat unfollowed and
+    // invisible for 17 days at Blue Heron before anyone noticed.
+    //
+    // This does NOT flood the panel: the .or() below still drops anything
+    // both handled and past-dated, so a completed booking only survives here
+    // while it is either unticked or still in a reminder slot.
+    //
+    // Cancelled / No Show / Deleted stay out on purpose. Chasing a follow-up
+    // for a booking that is already cancelled is noise, and noise is what
+    // gets a bell ignored.
+    .in("status", ["Reserved", "Confirmed", "Arrived", "Completed"])
     // Still-unhandled bookings of ANY date, plus anything dated today
     // or later (those can still enter a reminder slot). Past bookings
     // already followed up are done with — excluding them keeps old
