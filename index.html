@@ -172,6 +172,26 @@
         padding-right: 34px;
         cursor: pointer;
       }
+      /* Time inputs sized to their content, for inline rows like the weekly
+         reservation hours grid. Same reason bc-select exists: .form-input is
+         width:100%, and a Tailwind w-* class only beats it by stylesheet
+         injection order, which is too fragile to build a seven-row grid on. */
+      input.form-input-inline {
+        width: 8.5rem;
+        border: 1.5px solid #e0ddd7;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 14px;
+        outline: none;
+        background: white;
+      }
+      input.form-input-inline:focus {
+        border-color: var(--primary);
+      }
+      input.form-input-inline:disabled {
+        background: #f8f6f2;
+        color: #bbb;
+      }
       /* Compact select for inline filter bars (Broadcast page) — same
          chevron as select.form-input but without the width:100% */
       select.bc-select {
@@ -6771,20 +6791,100 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             </div>
           </div>
 
+          <!-- ===== ONLINE RESERVATION AVAILABILITY =====
+               Four controls, most drastic first, so the one you reach for in a
+               hurry is the one at the top. All of them are enforced by
+               create_public_reservation in the database; the form only mirrors
+               them so a guest is not refused after filling everything in. -->
           <div class="card p-6 mb-6">
-            <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>Online Reservation Hours</h2>
+            <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>Online Reservation Availability</h2>
             <p class="text-xs text-[#999] mb-5" data-i18n>
-              Booking window offered on the public reservation page. Enforced by the database, not just the form.
+              When the public reservation page will accept a booking. Enforced by the database, not just the form. Staff can always book in this app regardless of what is set here.
             </p>
-            <div class="grid grid-cols-2 gap-4 sm:w-96">
-              <div>
-                <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Open</label>
-                <input id="set-res-open" type="time" class="form-input" />
+
+            <!-- 1. Pause -->
+            <div class="rounded-10 border border-[#EDE9E3] p-4 mb-5">
+              <label class="flex items-start gap-3 cursor-pointer">
+                <input id="set-res-paused" type="checkbox" class="mt-0.5" onchange="onResPausedToggle()" />
+                <span>
+                  <span class="block text-sm font-medium text-[#333]" data-i18n>Stop taking online reservations</span>
+                  <span class="block text-xs text-[#999] mt-0.5" data-i18n>For an unplanned closure. The form stops accepting anything until you turn this off.</span>
+                </span>
+              </label>
+              <div id="set-res-pause-wrap" class="hidden mt-3 pl-7">
+                <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Message shown to guests</label>
+                <input id="set-res-pause-msg" type="text" maxlength="200" class="form-input"
+                       placeholder="Tutup sementara. Silakan hubungi kami via WhatsApp." />
               </div>
-              <div>
-                <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Last booking</label>
-                <input id="set-res-close" type="time" class="form-input" />
+            </div>
+
+            <!-- 2. Minimum notice -->
+            <div class="mb-5">
+              <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Minimum days in advance</label>
+              <div class="w-40">
+                <input id="set-res-lead-days" type="number" min="0" max="90" step="1" class="form-input" oninput="onResLeadDaysInput()" />
               </div>
+              <!-- Outside the sized wrapper: inside it, the sentence wrapped
+                   onto three narrow lines and read worse than no hint. -->
+              <p id="set-res-lead-hint" class="text-xs text-[#999] mt-1.5"></p>
+            </div>
+
+            <!-- 3. Weekly hours. Rows are rendered by renderReservationWeek()
+                 rather than written out seven times here, so the day keys and
+                 the input ids can only be wrong in one place. -->
+            <div class="mb-5">
+              <p class="text-xs font-medium text-[#555] mb-2" data-i18n>Opening hours per day</p>
+              <div id="set-res-week" class="space-y-2"></div>
+              <p class="text-xs text-[#999] mt-2" data-i18n>
+                A closed day is refused for online bookings. You cannot close all seven: that would switch online booking off with no sign of it anywhere.
+              </p>
+            </div>
+
+            <!-- 4. Dated closures -->
+            <div class="rounded-10 border border-[#EDE9E3] p-4">
+              <p class="text-sm font-medium text-[#333] mb-1" data-i18n>Closed on specific dates</p>
+              <p class="text-xs text-[#999] mb-3" data-i18n>
+                For a holiday or a private buyout. A date set here beats the weekly hours above, so it can also OPEN a day you are normally closed.
+              </p>
+              <div class="flex flex-wrap items-end gap-3 mb-4">
+                <div class="w-44">
+                  <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Date</label>
+                  <input id="set-exc-date" type="date" class="form-input" />
+                </div>
+                <div class="w-56">
+                  <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>This date is</label>
+                  <select id="set-exc-mode" class="form-input" onchange="onExceptionModeChange()">
+                    <option value="closed" data-i18n>Closed all day</option>
+                    <option value="hours" data-i18n>Open, but different hours</option>
+                  </select>
+                </div>
+                <!-- `hidden` and `flex` on one element fight, and flex wins in
+                     Tailwind's output order, so the row would show even when
+                     it should not. The flex lives on an inner wrapper. -->
+                <div id="set-exc-hours" class="hidden">
+                  <div class="flex items-end gap-3">
+                    <div>
+                      <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Open</label>
+                      <input id="set-exc-open" type="time" class="form-input-inline" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Last booking</label>
+                      <input id="set-exc-close" type="time" class="form-input-inline" />
+                    </div>
+                  </div>
+                </div>
+                <div class="flex-1 min-w-[220px]">
+                  <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Reason shown to guests</label>
+                  <input id="set-exc-reason" type="text" maxlength="120" class="form-input"
+                         placeholder="Tutup untuk Idul Fitri" />
+                </div>
+                <button onclick="saveReservationException()" class="btn-ghost px-4 py-2.5 shrink-0" data-i18n>Add date</button>
+              </div>
+              <p id="set-exc-error" class="text-xs text-red-500 mb-2"></p>
+              <!-- Saved immediately on Add, NOT with Save Settings. Two save
+                   buttons on one screen is a trap, so the button says "Add
+                   date" and the list below is the confirmation. -->
+              <div id="set-exc-list"></div>
             </div>
           </div>
 
@@ -8794,7 +8894,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
     <script src="js/config.js?v=12"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=18"></script>
+    <script src="js/app.js?v=19"></script>
     <script src="js/membership.js?v=5"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->

@@ -11919,9 +11919,294 @@ function renderThresholdSettings() {
   set("set-com-min", com.min_spend ?? 2000000);
   set("set-com-voucher", com.voucher_amount ?? 500000);
   set("set-com-cap", com.cap ?? "");
-  set("set-res-open", rh.open ?? "10:00");
-  set("set-res-close", rh.close ?? "21:30");
+  renderReservationAvailability(rh);
   document.getElementById("settings-recalc-hint")?.classList.add("hidden");
+}
+
+// ============================================================
+// ONLINE RESERVATION AVAILABILITY
+// ============================================================
+// Keys "0".."6" are Sunday..Saturday, which is BOTH JavaScript getDay() and
+// Postgres extract(dow), so one key set is correct on both sides. Displayed
+// Monday first because that is how a restaurant reads a week; the key, not
+// the position, is what gets written.
+const RES_WEEKDAYS = [
+  { key: "1", label: "Monday" },
+  { key: "2", label: "Tuesday" },
+  { key: "3", label: "Wednesday" },
+  { key: "4", label: "Thursday" },
+  { key: "5", label: "Friday" },
+  { key: "6", label: "Saturday" },
+  { key: "0", label: "Sunday" },
+];
+
+function renderReservationAvailability(rh) {
+  const cfg = rh || {};
+  const weekly = cfg.weekly || {};
+  const flatOpen = cfg.open || "10:00";
+  const flatClose = cfg.close || "21:30";
+
+  const paused = !!cfg.online_paused;
+  const pausedEl = document.getElementById("set-res-paused");
+  if (pausedEl) pausedEl.checked = paused;
+  const msgEl = document.getElementById("set-res-pause-msg");
+  if (msgEl) msgEl.value = cfg.pause_message || "";
+  onResPausedToggle();
+
+  const leadEl = document.getElementById("set-res-lead-days");
+  if (leadEl) leadEl.value = Number.isFinite(+cfg.min_lead_days) ? +cfg.min_lead_days : 0;
+  onResLeadDaysInput();
+
+  const wrap = document.getElementById("set-res-week");
+  if (wrap) {
+    wrap.innerHTML = RES_WEEKDAYS.map((d) => {
+      // A missing weekday entry is NOT a closed day. Same rule as
+      // reservation_hours_for() in the database: a silent "no bookings
+      // accepted" is far worse than a wrong-but-visible window.
+      const day = weekly[d.key] || {};
+      const closed = !!day.closed;
+      return `
+      <div class="flex flex-wrap items-center gap-3">
+        <label class="flex items-center gap-2 w-40 shrink-0">
+          <input type="checkbox" id="set-res-open-${d.key}" ${closed ? "" : "checked"}
+                 onchange="onResDayToggle('${d.key}')" />
+          <span class="text-sm text-[#333]">${t(d.label)}</span>
+        </label>
+        <input type="time" id="set-res-from-${d.key}" class="form-input-inline"
+               value="${escapeHtml(day.open || flatOpen)}" ${closed ? "disabled" : ""} />
+        <span class="text-xs text-[#999]">&rarr;</span>
+        <input type="time" id="set-res-to-${d.key}" class="form-input-inline"
+               value="${escapeHtml(day.close || flatClose)}" ${closed ? "disabled" : ""} />
+        <span id="set-res-closed-${d.key}" class="text-xs text-[#C0392B] ${closed ? "" : "hidden"}">${t("Closed")}</span>
+      </div>`;
+    }).join("");
+  }
+
+  loadReservationExceptions();
+}
+
+// ------------------------------------------------------------
+// DATED CLOSURES (reservation_exceptions)
+// ------------------------------------------------------------
+// Saved on their own Add button, NOT with Save Settings. Two save buttons on
+// one screen is a trap: whichever one you press, half your edits are gone.
+let reservationExceptions = [];
+
+async function loadReservationExceptions() {
+  const list = document.getElementById("set-exc-list");
+  if (!list) return;
+  const { data } = await supabaseQuery(
+    () =>
+      db
+        .from("reservation_exceptions")
+        .select("*")
+        .gte("exception_date", ymd(new Date()))
+        .order("exception_date"),
+    "Failed to load dated closures",
+  );
+  // Past dates are deliberately not listed. They can no longer affect a
+  // booking, and a year of stale holidays would bury the two that matter.
+  reservationExceptions = data || [];
+  renderReservationExceptions();
+}
+
+function renderReservationExceptions() {
+  const list = document.getElementById("set-exc-list");
+  if (!list) return;
+  if (!reservationExceptions.length) {
+    list.innerHTML = `<p class="text-xs text-[#999]">${t("No dated closures. The weekly hours above apply to every date.")}</p>`;
+    return;
+  }
+  list.innerHTML = reservationExceptions
+    .map(
+      (e) => `
+    <div class="flex flex-wrap items-center gap-3 py-2 border-b border-[#F1EEE8] last:border-0">
+      <span class="text-sm font-medium text-[#333] w-40 shrink-0">${fmt.date(e.exception_date)}</span>
+      <span class="text-xs px-2 py-0.5 rounded-full ${
+        e.closed_all_day
+          ? "bg-[#FDEDEC] text-[#C0392B]"
+          : "bg-[#EEF4FD] text-[#1F4E79]"
+      }">${
+        e.closed_all_day
+          ? t("Closed all day")
+          : `${(e.open_time || "").slice(0, 5)} → ${(e.close_time || "").slice(0, 5)}`
+      }</span>
+      <span class="text-xs text-[#777] flex-1 min-w-[120px]">${escapeHtml(e.reason || "")}</span>
+      <button onclick="deleteReservationException('${e.exception_date}')"
+              class="text-xs text-[#C0392B] hover:underline">${t("Remove")}</button>
+    </div>`,
+    )
+    .join("");
+}
+
+function onExceptionModeChange() {
+  const mode = document.getElementById("set-exc-mode")?.value;
+  document.getElementById("set-exc-hours")?.classList.toggle("hidden", mode !== "hours");
+}
+
+async function saveReservationException() {
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can change settings"), "error");
+    return;
+  }
+  const err = document.getElementById("set-exc-error");
+  if (err) err.textContent = "";
+  const date = document.getElementById("set-exc-date")?.value || "";
+  const mode = document.getElementById("set-exc-mode")?.value || "closed";
+  const open = document.getElementById("set-exc-open")?.value || "";
+  const close = document.getElementById("set-exc-close")?.value || "";
+  const reason = (document.getElementById("set-exc-reason")?.value || "").trim() || null;
+  const fail = (m) => {
+    if (err) err.textContent = t(m);
+    return null;
+  };
+
+  if (!date) return fail("Pick a date.");
+  // A closure in the past cannot change any booking, and setting one is
+  // almost always a mistyped year.
+  if (date < ymd(new Date())) return fail("That date has already passed.");
+  if (mode === "hours") {
+    if (!open || !close) return fail("Set both an opening and a last booking time.");
+    if (open >= close) return fail("Last booking must be after opening.");
+  }
+
+  // Computed here rather than inline in the object below. A ternary in an
+  // object value (`open_time: mode === "hours" ? open : null`) makes
+  // scripts/schema-refs.js read the ternary's own `open :` as a column name,
+  // and schema-check then demands a `reservation_exceptions.open` column that
+  // will never exist. Keeping values simple keeps that scanner honest.
+  const closedAllDay = mode === "closed";
+  const openTime = closedAllDay ? null : open;
+  const closeTime = closedAllDay ? null : close;
+
+  // The date is the primary key, so re-adding a date REPLACES it rather than
+  // creating a second contradictory row for the same day.
+  loader(true);
+  const { error } = await supabaseQuery(
+    () =>
+      db.from("reservation_exceptions").upsert(
+        {
+          exception_date: date,
+          closed_all_day: closedAllDay,
+          open_time: openTime,
+          close_time: closeTime,
+          reason,
+        },
+        { onConflict: "exception_date" },
+      ),
+    "Failed to save the dated closure",
+  );
+  loader(false);
+  if (error) return fail("Could not save. Try again.");
+
+  document.getElementById("set-exc-date").value = "";
+  document.getElementById("set-exc-reason").value = "";
+  toast(t("Date saved"), "success");
+  loadReservationExceptions();
+}
+
+async function deleteReservationException(date) {
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can change settings"), "error");
+    return;
+  }
+  if (!confirm(t("Remove this dated closure? The weekly hours will apply to that date again."))) return;
+  loader(true);
+  const { error } = await supabaseQuery(
+    () => db.from("reservation_exceptions").delete().eq("exception_date", date),
+    "Failed to remove the dated closure",
+  );
+  loader(false);
+  if (error) {
+    toast(t("Could not remove it. Try again."), "error");
+    return;
+  }
+  toast(t("Removed"), "success");
+  loadReservationExceptions();
+}
+
+function onResPausedToggle() {
+  const on = !!document.getElementById("set-res-paused")?.checked;
+  document.getElementById("set-res-pause-wrap")?.classList.toggle("hidden", !on);
+}
+
+// Spelling out what the number means beats a label. "1" reading as "one day's
+// notice" or as "from tomorrow" are the same thing said two ways, and staff
+// read it differently depending on the day they are having.
+function onResLeadDaysInput() {
+  const el = document.getElementById("set-res-lead-days");
+  const hint = document.getElementById("set-res-lead-hint");
+  if (!hint) return;
+  const n = parseInt(el?.value, 10);
+  if (!Number.isFinite(n) || n <= 0) {
+    hint.textContent = t("0 means guests can book for today.");
+  } else if (n === 1) {
+    hint.textContent = t("Guests cannot book for today. Tomorrow is the earliest.");
+  } else {
+    hint.textContent = t("Guests must book at least") + " " + n + " " + t("days ahead.");
+  }
+}
+
+function onResDayToggle(key) {
+  const open = !!document.getElementById(`set-res-open-${key}`)?.checked;
+  ["from", "to"].forEach((part) => {
+    const el = document.getElementById(`set-res-${part}-${key}`);
+    if (el) el.disabled = !open;
+  });
+  document.getElementById(`set-res-closed-${key}`)?.classList.toggle("hidden", open);
+}
+
+// Reads the grid back into the stored shape, and derives the flat open/close
+// pair as the WIDEST window across the open days.
+//
+// The flat pair must keep existing: js/notify.js reads it to decide when the
+// D-1 reminder starts, and a guest page built before this change reads it to
+// build its time dropdown. Neither knows about `weekly`. Widest-window means
+// that dropdown is a superset, so no genuinely bookable slot is ever hidden;
+// the narrower per-day rule is enforced in the database, which is the real
+// gate.
+//
+// Returns null and shows the reason if the grid is unusable.
+function readReservationWeek() {
+  const weekly = {};
+  let widestOpen = null;
+  let widestClose = null;
+  let openDays = 0;
+
+  for (const d of RES_WEEKDAYS) {
+    const isOpen = !!document.getElementById(`set-res-open-${d.key}`)?.checked;
+    const from = document.getElementById(`set-res-from-${d.key}`)?.value || "";
+    const to = document.getElementById(`set-res-to-${d.key}`)?.value || "";
+    if (!isOpen) {
+      weekly[d.key] = { closed: true };
+      continue;
+    }
+    if (!from || !to) {
+      toast(`${t(d.label)}: ${t("set both an opening and a last booking time")}`, "error");
+      return null;
+    }
+    if (from >= to) {
+      toast(`${t(d.label)}: ${t("last booking must be after opening")}`, "error");
+      return null;
+    }
+    weekly[d.key] = { closed: false, open: from, close: to };
+    openDays++;
+    if (widestOpen === null || from < widestOpen) widestOpen = from;
+    if (widestClose === null || to > widestClose) widestClose = to;
+  }
+
+  // Refused rather than saved. All seven closed nulls the derived pair, which
+  // breaks the D-1 reminder and the guest time dropdown, and switches online
+  // booking off permanently with no error anywhere for anyone to notice.
+  if (openDays === 0) {
+    toast(
+      t("You cannot close all seven days. To stop taking bookings, use the pause switch above."),
+      "error",
+    );
+    return null;
+  }
+
+  return { weekly, open: widestOpen, close: widestClose };
 }
 
 function settingsNum(id) {
@@ -11945,8 +12230,13 @@ async function saveThresholdSettings() {
   const comMin = settingsNum("set-com-min");
   const comVoucher = settingsNum("set-com-voucher");
   const comCap = settingsNum("set-com-cap");
-  const resOpen = document.getElementById("set-res-open")?.value || "";
-  const resClose = document.getElementById("set-res-close")?.value || "";
+  // Returns null (having said why) when the grid is unusable, so the save
+  // has to bail before it writes anything.
+  const resWeek = readReservationWeek();
+  if (!resWeek) return;
+  const resLead = Math.max(0, Math.min(90, parseInt(document.getElementById("set-res-lead-days")?.value, 10) || 0));
+  const resPaused = !!document.getElementById("set-res-paused")?.checked;
+  const resPauseMsg = (document.getElementById("set-res-pause-msg")?.value || "").trim() || null;
 
   // These numbers drive money logic — validate strictly, reject silently
   // fixing anything. First problem is shown to the manager.
@@ -12015,7 +12305,20 @@ async function saveThresholdSettings() {
     },
     {
       key: "reservation_hours",
-      value: { open: resOpen, close: resClose },
+      // Spread the EXISTING value first. Writing a fresh object here is how
+      // this row previously lost anything it did not know about; the day this
+      // key gained more fields, a plain { open, close } write would have
+      // silently wiped the weekly grid, the lead time and the pause on every
+      // save of an unrelated setting.
+      value: {
+        ...(APP_SETTINGS.reservation_hours || {}),
+        open: resWeek.open,
+        close: resWeek.close,
+        weekly: resWeek.weekly,
+        min_lead_days: resLead,
+        online_paused: resPaused,
+        pause_message: resPauseMsg,
+      },
       updated_at: new Date().toISOString(),
     },
   ];

@@ -697,6 +697,9 @@
       const SAME_DAY_LEAD_MIN = 30; // must match the DB function
       const MAX_DAYS_AHEAD = 90; // must match the DB function
       let HOURS = { open: "10:00", close: "21:30" }; // fallback; real value from app_settings
+      let MIN_LEAD_DAYS = 0; // 0 = same-day booking allowed; from app_settings
+      // date string -> { closed_all_day, open_time, close_time, reason }
+      let DATE_EXCEPTIONS = {};
 
       // Indonesian messages for RPC rejection codes (validation itself is server-side)
       const ERR_ID = {
@@ -714,6 +717,11 @@
           " menit sebelumnya. Silakan pilih jam lain atau hubungi kami via WhatsApp.",
         duplicate:
           "Nomor ini sudah punya reservasi di tanggal tersebut. Untuk mengubahnya, silakan hubungi kami via WhatsApp.",
+        // Sent when the restaurant has switched online booking off. The
+        // server also returns its own `message`, which is preferred over this
+        // one because staff wrote it for this specific closure.
+        paused: "Kami sedang tidak menerima reservasi online. Silakan hubungi kami via WhatsApp.",
+        lead_time: "Reservasi harus dibuat beberapa hari sebelumnya. Mohon pilih tanggal lain.",
         network: "Koneksi bermasalah. Mohon coba lagi.",
       };
 
@@ -736,6 +744,56 @@
       function toMin(hhmm) {
         const [h, m] = hhmm.split(":").map(Number);
         return h * 60 + m;
+      }
+
+      // The earliest date a guest may pick. MIN_LEAD_DAYS of 0 is today,
+      // which is the default and what every client had before this existed.
+      function earliestDate() {
+        return addDays(todayLocal(), MIN_LEAD_DAYS);
+      }
+
+      // What is open on a given date, mirroring reservation_hours_for() in
+      // the database. The database stays the real gate; this exists so a
+      // guest is told BEFORE filling the form in, not after pressing Book.
+      //
+      // Keys "0".."6" are Sunday..Saturday, which is both getDay() here and
+      // extract(dow) there.
+      function hoursForDate(iso) {
+        const exc = DATE_EXCEPTIONS[iso];
+        if (exc) {
+          if (exc.closed_all_day)
+            return { closed: true, reason: exc.reason || null };
+          return {
+            closed: false,
+            open: (exc.open_time || "").slice(0, 5) || HOURS.open,
+            close: (exc.close_time || "").slice(0, 5) || HOURS.close,
+            reason: exc.reason || null,
+          };
+        }
+        const weekly = HOURS.weekly || {};
+        const day = weekly[String(new Date(iso + "T00:00:00").getDay())];
+        // A missing weekday entry falls back to the widest window and is
+        // NEVER treated as closed. Same rule as the database: showing a
+        // wrong-but-visible window beats silently refusing every date.
+        if (!day) return { closed: false, open: HOURS.open, close: HOURS.close, reason: null };
+        if (day.closed) return { closed: true, reason: null };
+        return {
+          closed: false,
+          open: day.open || HOURS.open,
+          close: day.close || HOURS.close,
+          reason: null,
+        };
+      }
+
+      // A closed date is not selectable, so nobody fills in a whole form for
+      // a day the restaurant is shut. Walks forward to the next open date.
+      function nextOpenDate(iso) {
+        let d = iso;
+        for (let i = 0; i < 120; i++) {
+          if (!hoursForDate(d).closed) return d;
+          d = addDays(d, 1);
+        }
+        return iso; // everything closed for four months: let the server say so
       }
 
       // Pax: typeable input; +/- buttons still work. The field is left
@@ -772,13 +830,25 @@
         const sel = $("f-time");
         const prev = sel.value;
         sel.innerHTML = '<option value="">--:--</option>';
-        const isToday = $("f-date").value === todayLocal();
+        const chosen = $("f-date").value || todayLocal();
+        const window = hoursForDate(chosen);
+        if (window.closed) {
+          sel.disabled = true;
+          showError(
+            window.reason
+              ? "Tutup pada tanggal ini: " + window.reason
+              : "Kami tutup pada tanggal ini. Mohon pilih tanggal lain.",
+          );
+          return;
+        }
+        sel.disabled = false;
+        const isToday = chosen === todayLocal();
         const now = new Date();
         const nowMin =
           now.getHours() * 60 + now.getMinutes() + SAME_DAY_LEAD_MIN;
         for (
-          let t = toMin(HOURS.open);
-          t <= toMin(HOURS.close);
+          let t = toMin(window.open);
+          t <= toMin(window.close);
           t += SLOT_MINUTES
         ) {
           if (isToday && t < nowMin) continue;
@@ -810,13 +880,10 @@
       // ---- Init ----
       (async function init() {
         const dateEl = $("f-date");
-        dateEl.min = todayLocal();
-        dateEl.max = addDays(todayLocal(), MAX_DAYS_AHEAD);
-        dateEl.value = todayLocal();
-        dateEl.addEventListener("change", buildTimeSlots);
 
-        // Opening hours from app_settings (fallback stays if fetch fails —
-        // the DB function is the real gate either way)
+        // Opening hours, lead time, pause and the weekly grid all live in one
+        // settings row, so this is still a single fetch. The fallback stays
+        // if it fails — the DB function is the real gate either way.
         try {
           const { data } = await db
             .from("app_settings")
@@ -824,9 +891,39 @@
             .eq("key", "reservation_hours")
             .maybeSingle();
           if (data?.value?.open && data?.value?.close) HOURS = data.value;
+          if (Number.isFinite(+data?.value?.min_lead_days))
+            MIN_LEAD_DAYS = Math.max(0, +data.value.min_lead_days);
+          if (data?.value?.online_paused) {
+            // Say so before anything is typed, rather than after Book.
+            showError(
+              (data.value.pause_message || "").trim() || ERR_ID.paused,
+            );
+            $("btn-submit").disabled = true;
+            return;
+          }
         } catch (_) {
           /* keep fallback */
         }
+
+        // Dated closures, so a shut date is unselectable rather than refused
+        // on submit. Only dates from today onwards: past ones cannot affect a
+        // booking and would just make the payload bigger.
+        try {
+          const { data } = await db
+            .from("reservation_exceptions")
+            .select("exception_date, closed_all_day, open_time, close_time, reason")
+            .gte("exception_date", todayLocal())
+            .order("exception_date");
+          for (const e of data || []) DATE_EXCEPTIONS[e.exception_date] = e;
+        } catch (_) {
+          /* the database still refuses a closed date on submit */
+        }
+
+        dateEl.min = earliestDate();
+        dateEl.max = addDays(todayLocal(), MAX_DAYS_AHEAD);
+        dateEl.value = nextOpenDate(earliestDate());
+        dateEl.addEventListener("change", buildTimeSlots);
+
         buildTimeSlots();
         loadFeaturedDishes(); // not awaited — the sheet is below the fold
         loadFullMenuLink(); // not awaited — hardcoded href works until this resolves
@@ -1044,7 +1141,19 @@
           });
           if (error) throw error;
           if (!data?.ok) {
-            showError(ERR_ID[data?.code] || ERR_ID.network);
+            // For a closed date and for a pause, the server's own message is
+            // what STAFF wrote for this specific closure ("Tutup untuk Idul
+            // Fitri"), and it beats any generic wording kept here. Everything
+            // else keeps the Indonesian copy above, because those messages
+            // are validation text written for guests, not for developers.
+            const staffWritten =
+              (data?.code === "outside_hours" && data?.closed_all_day) ||
+              data?.code === "paused";
+            showError(
+              (staffWritten && (data.message || "").trim()) ||
+                ERR_ID[data?.code] ||
+                ERR_ID.network,
+            );
             return;
           }
           // Pass a small summary to the confirmation page (no URL params — no PII in links)
