@@ -2921,7 +2921,7 @@ async function loadDashboardReservations(offset = 0, initialData = null) {
         db
           .from("reservations")
           .select(
-            "id, pax, status, guest_id, reservation_time, occasion, reservation_source, assigned_area, notes, guests(name,phone,booking_alias,spending_tier,tag,food_allergy,notes,favorite_menu), areas(name), tables(name)",
+            "id, pax, status, guest_id, reservation_time, occasion, reservation_source, assigned_area, notes, guests(name,phone,booking_alias,spending_tier,tag,food_allergy,notes,favorite_menu,last_order), areas(name), tables(name)",
           )
           .eq("reservation_date", date)
           .order("reservation_time"),
@@ -4099,6 +4099,7 @@ function openGuestModal(guest = null) {
   document.getElementById("g-birthday").value = guest?.birthday || "";
   document.getElementById("g-company").value = guest?.company || "";
   document.getElementById("g-allergy").value = guest?.food_allergy || "";
+  document.getElementById("g-last-order").value = guest?.last_order || "";
   document.getElementById("g-preference").value = guest?.preference || "";
   document.getElementById("g-favorite-menu").value =
     guest?.favorite_menu || "";
@@ -4269,6 +4270,7 @@ async function saveGuest() {
     birthday: document.getElementById("g-birthday").value || null,
     company: document.getElementById("g-company").value.trim() || null,
     food_allergy: document.getElementById("g-allergy").value.trim() || null,
+    last_order: document.getElementById("g-last-order").value.trim() || null,
     preference: document.getElementById("g-preference").value.trim() || null,
     favorite_menu:
       document.getElementById("g-favorite-menu").value.trim() || null,
@@ -4409,14 +4411,21 @@ async function viewGuestProfile(guestId) {
       </div>
       <div class="p-3 bg-[#FBF8EE] rounded-10 border border-[#E8E0D0]" id="fav-menu-card-${guest.id}">
         <div class="flex items-center justify-between mb-1">
-          <p class="text-[10px] text-[#C8A96B] uppercase tracking-wider">Recent Order</p>
-          <button onclick="startEditFavoriteMenu('${guest.id}')" class="text-[#999] hover:text-[#28547C] transition-colors" title="Edit favorite menu / recent order">
+          <p class="text-[10px] text-[#C8A96B] uppercase tracking-wider">Favorite</p>
+          <button onclick="startEditFavoriteMenu('${guest.id}')" class="text-[#999] hover:text-[#28547C] transition-colors" title="Edit favorite menu">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
         </div>
         <div id="fav-menu-view-${guest.id}">
           <p class="text-sm text-[#333]" id="fav-menu-text-${guest.id}">${guest.favorite_menu ? escapeHtml(guest.favorite_menu) : "—"}</p>
-          <p class="text-[10px] text-[#999] mt-0.5">${guest.favorite_menu ? "from last recorded visit" : "recorded at next Complete Visit"}</p>
+          <!-- The old caption said "from last recorded visit", which was true
+               of the field when it held both meanings and is a lie now.
+               Favorite only changes when someone changes it. -->
+          <p class="text-[10px] text-[#999] mt-0.5">${
+            guest.last_order
+              ? `${t("Last order")}: ${escapeHtml(guest.last_order)}`
+              : t("no order recorded yet")
+          }</p>
         </div>
       </div>
     </div>
@@ -5799,7 +5808,7 @@ async function loadReservations() {
   let query = db
     .from("reservations")
     .select(
-      "*, guests(name, phone, company, booking_alias, spending_tier, tag), areas(name), tables(name)",
+      "*, guests(name, phone, company, booking_alias, spending_tier, tag, food_allergy, favorite_menu, last_order), areas(name), tables(name)",
     )
     .eq("reservation_date", date)
     .order("reservation_time");
@@ -6101,7 +6110,7 @@ async function renderResSearchResults() {
         db
           .from("reservations")
           .select(
-            "*, guests(name, phone, company, booking_alias, spending_tier, tag), areas(name), tables(name)",
+            "*, guests(name, phone, company, booking_alias, spending_tier, tag, food_allergy, favorite_menu, last_order), areas(name), tables(name)",
           )
           .in("guest_id", resSearchActive.guestIds)
           // Deleted = staff data-entry mistake. It stays out of search for
@@ -7102,7 +7111,7 @@ async function openCompleteVisit(id, type) {
   document.getElementById("complete-type").value = type;
   document.getElementById("complete-spend").value = "";
   document.getElementById("complete-notes").value = "";
-  document.getElementById("complete-favorite-menu").value = "";
+  resetCompleteOrderFields();
   document.getElementById("complete-spend-error")?.classList.add("hidden");
   showModal("modal-complete-visit");
 
@@ -7112,7 +7121,7 @@ async function openCompleteVisit(id, type) {
     () =>
       db
         .from("visits")
-        .select("spend_amount, notes, guest_id, guests(favorite_menu)")
+        .select("spend_amount, notes, guest_id, guests(favorite_menu, last_order)")
         .eq("id", id)
         .single(),
     "Failed to load visit spend",
@@ -7123,10 +7132,7 @@ async function openCompleteVisit(id, type) {
   if (existing?.notes) {
     document.getElementById("complete-notes").value = existing.notes;
   }
-  if (existing?.guests?.favorite_menu) {
-    document.getElementById("complete-favorite-menu").value =
-      existing.guests.favorite_menu;
-  }
+  fillCompleteOrderFields(existing?.guests);
 }
 
 async function openCompleteReservation(resId) {
@@ -7135,7 +7141,7 @@ async function openCompleteReservation(resId) {
   document.getElementById("complete-type").value = "reservation";
   document.getElementById("complete-spend").value = "";
   document.getElementById("complete-notes").value = "";
-  document.getElementById("complete-favorite-menu").value = "";
+  resetCompleteOrderFields();
   document.getElementById("complete-spend-error")?.classList.add("hidden");
   hideModal("modal-res-actions");
   showModal("modal-complete-visit");
@@ -7146,7 +7152,7 @@ async function openCompleteReservation(resId) {
     () =>
       db
         .from("visits")
-        .select("spend_amount, notes, guest_id, guests(favorite_menu)")
+        .select("spend_amount, notes, guest_id, guests(favorite_menu, last_order)")
         .eq("reservation_id", resId)
         .maybeSingle(),
     "Failed to load linked visit spend",
@@ -7165,10 +7171,29 @@ async function openCompleteReservation(resId) {
   if (linkedVisit?.notes) {
     document.getElementById("complete-notes").value = linkedVisit.notes;
   }
-  if (linkedVisit?.guests?.favorite_menu) {
-    document.getElementById("complete-favorite-menu").value =
-      linkedVisit.guests.favorite_menu;
-  }
+  fillCompleteOrderFields(linkedVisit?.guests);
+}
+
+// The box starts EMPTY, not pre-filled with the last order. Pre-filling means
+// a staff member who just presses Complete re-saves last week's dish as if it
+// were tonight's, and the field stops meaning anything. Blank plus "leave
+// blank to keep what's saved" is the honest default.
+function resetCompleteOrderFields() {
+  const el = document.getElementById("complete-last-order");
+  if (el) el.value = "";
+  const tick = document.getElementById("complete-set-favorite");
+  if (tick) tick.checked = false;
+  setText("complete-current-favorite", "");
+}
+
+// Shows the favorite the guest already has, so ticking the box is a decision
+// about replacing something specific rather than a blind toggle.
+function fillCompleteOrderFields(guest) {
+  const fav = (guest && guest.favorite_menu) || "";
+  setText(
+    "complete-current-favorite",
+    fav ? `${t("Currently")}: ${fav}` : t("No favorite saved yet"),
+  );
 }
 
 async function confirmCompleteVisit() {
@@ -7179,9 +7204,11 @@ async function confirmCompleteVisit() {
   );
   const spendAmount = spend === "" ? null : parseFloat(spend);
   const notes = document.getElementById("complete-notes").value.trim() || null;
-  const favoriteMenuInput = document
-    .getElementById("complete-favorite-menu")
+  const lastOrderInput = document
+    .getElementById("complete-last-order")
     .value.trim();
+  const alsoSetFavorite = !!document.getElementById("complete-set-favorite")
+    ?.checked;
 
   // ── The guest never came ────────────────────────────────────────────
   // This branch runs BEFORE the spend check on purpose: a no-show has no
@@ -7432,14 +7459,14 @@ async function confirmCompleteVisit() {
   // Favorite menu / recent order is optional and overwrites the guest's
   // saved value only when staff actually typed something — leave existing
   // value untouched if the field was left blank.
-  if (guestIdForTier && favoriteMenuInput) {
+  // What they ate always lands in last_order. It only becomes their favorite
+  // when the tick says so, which is the whole point of splitting the two.
+  if (guestIdForTier && lastOrderInput) {
+    const guestUpdate = { last_order: lastOrderInput };
+    if (alsoSetFavorite) guestUpdate.favorite_menu = lastOrderInput;
     await supabaseQuery(
-      () =>
-        db
-          .from("guests")
-          .update({ favorite_menu: favoriteMenuInput })
-          .eq("id", guestIdForTier),
-      "Failed to save favorite menu",
+      () => db.from("guests").update(guestUpdate).eq("id", guestIdForTier),
+      "Failed to save the order",
     );
   }
 
@@ -11109,7 +11136,7 @@ const RES_EXPORT_HEADERS = ["Name", "Phone Number", "Date Time", "Notes", "Statu
 
 // Excel column widths, in characters. Notes is the only free-text field
 // and is what makes an unformatted export unreadable.
-const RES_EXPORT_WIDTHS = [26, 16, 18, 48, 18];
+const RES_EXPORT_WIDTHS = [26, 16, 18, 56, 18];
 
 // A real Excel datetime, not text, so the column sorts and filters as a
 // date instead of alphabetically.
@@ -11125,15 +11152,44 @@ function resExportDateTime(dateStr, timeStr) {
   return new Date(y, m - 1, d, hh || 0, mm || 0);
 }
 
+// The kitchen detail that belongs to the GUEST rather than to the booking,
+// appended under the booking's own note.
+//
+// One item per LINE, not comma-separated. The values themselves routinely
+// contain commas ("Nasi Goreng, Es Teh Manis"), so a comma-joined line is
+// ambiguous exactly where it matters most: reading an allergy off a printed
+// sheet. Newlines survive the .xlsx round trip; that was verified before this
+// was written.
+//
+// Allergies go LAST because they sit closest to the row below and are the
+// line a cook scans for. If that turns out to be the wrong way round on a
+// printout, move this one line.
+function guestExportExtras(guest) {
+  if (!guest) return "";
+  const parts = [];
+  const fav = (guest.favorite_menu || "").trim();
+  const last = (guest.last_order || "").trim();
+  const allergy = (guest.food_allergy || "").trim();
+  if (fav) parts.push(`Favorite: ${fav}`);
+  if (last) parts.push(`Last order: ${last}`);
+  if (allergy) parts.push(`Allergies: ${allergy}`);
+  return parts.join("\n");
+}
+
 // One export row. `fallbackDate` exists because the DASHBOARD query filters
 // on reservation_date and never selects it, so those rows carry no date of
 // their own and would export a blank Date Time column without it.
 function resExportRow(r, fallbackDate) {
+  const bookingNote = (r.notes || "").trim();
+  const extras = guestExportExtras(r.guests);
   return [
     r.guests ? guestDisplayName(r.guests) : "",
     r.guests?.phone || "",
     resExportDateTime(r.reservation_date || fallbackDate, r.reservation_time),
-    r.notes || "",
+    // The booking's own note leads: it is about THIS table tonight. The guest
+    // details follow. Either half can be missing without leaving a stray
+    // blank line at the top or bottom of the cell.
+    [bookingNote, extras].filter(Boolean).join("\n"),
     r.status || "",
   ];
 }

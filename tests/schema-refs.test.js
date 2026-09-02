@@ -157,6 +157,23 @@ console.log("\nA CRLF checkout scans identically to an LF one");
   ok("same columns either way", JSON.stringify(lf.tables) === JSON.stringify(crlf.tables));
 }
 
+console.log("\nAn unreadable payload is reported, and does not fail the run");
+{
+  const r = scan({
+    "js/a.js": `
+      const payload = { name: n, phone: p };
+      db.from("guests").update(payload).eq("id", id);
+      db.from("visits").insert({ guest_id: g });
+    `,
+  });
+  // The whole point: this is the shape half the codebase uses, so it must be
+  // VISIBLE without turning schema-check permanently red.
+  ok("the variable payload is listed", r.unreadable.length === 1 && r.unreadable[0].includes("update(payload)"));
+  ok("it is not counted as a dynamic .from()", r.dynamic.length === 0);
+  ok("a literal payload beside it is still read", r.tables.visits.includes("guest_id"));
+  ok("the table itself is still recorded", "guests" in r.tables);
+}
+
 console.log("\nA runtime table name is reported, never silently passed");
 {
   const r = scan({ "js/a.js": `db.from(tableName).select("id");` });

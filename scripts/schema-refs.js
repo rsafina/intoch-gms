@@ -229,6 +229,14 @@ function collect(root) {
   const rpcs = new Map();
   const buckets = new Set();
   const dynamic = [];
+  // Kept SEPARATE from `dynamic` on purpose. A non-literal .from() means the
+  // scanner does not know which TABLE is being used, which is a hole in the
+  // check. An unreadable payload means it knows the table and not the
+  // columns, which is a smaller hole and is the normal shape of half this
+  // codebase. Failing the run on 25 of these would make schema-check red
+  // every single time, and a check that is always red is a check nobody
+  // reads.
+  const unreadable = [];
 
   const add = (t, c) => {
     if (!IDENT.test(c)) return;
@@ -305,6 +313,22 @@ function collect(root) {
         for (const k of s[2].matchAll(/([A-Za-z_][A-Za-z0-9_]*)\s*:/g)) add(t, k[1]);
         for (const k of shorthandKeys(s[2])) add(t, k);
       }
+
+      // A payload held in a VARIABLE is invisible to the pattern above, which
+      // needs a literal `{` right after the paren. `db.from("guests")
+      // .update(payload)` is the shape saveGuest uses, and it hides eight real
+      // columns including food_allergy — so schema-check would pass a client
+      // database that 400s the moment anyone edits a guest.
+      //
+      // Resolving the variable properly means following assignments and later
+      // `payload.x = ...` mutations, which is a parser, not a regex. Until
+      // that exists, REPORT it rather than skip it silently: an unreadable
+      // payload the operator can see beats a clean run that proved nothing.
+      for (const s of chainNoStr.matchAll(
+        /\.(insert|update|upsert)\(\s*([A-Za-z_$][A-Za-z0-9_$]*)\s*\)/g,
+      )) {
+        unreadable.push(`${rel}: .from("${t}").${s[1]}(${s[2]})`);
+      }
     }
   }
 
@@ -322,6 +346,7 @@ function collect(root) {
     rpcs: Object.fromEntries([...rpcs].map(([k, v]) => [k, [...v].sort()])),
     buckets: [...buckets].sort(),
     dynamic,
+    unreadable,
   };
 }
 

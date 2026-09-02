@@ -8165,7 +8165,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         </div>
         <div class="mb-3">
           <label class="block text-xs font-medium text-[#555] mb-1.5"
-            ><span data-i18n>Favorite Menu / Recent Order</span>
+            ><span data-i18n>Favorite Menu</span>
             <span class="text-[#bbb] font-normal" data-i18n>(optional)</span></label
           >
           <input
@@ -8174,6 +8174,24 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             class="form-input"
             placeholder="e.g. Nasi Goreng, Es Teh Manis"
           />
+          <p class="text-[11px] text-[#999] mt-1" data-i18n>
+            What they always order. Only changes when you change it.
+          </p>
+        </div>
+        <div class="mb-3">
+          <label class="block text-xs font-medium text-[#555] mb-1.5"
+            ><span data-i18n>Last Order</span>
+            <span class="text-[#bbb] font-normal" data-i18n>(optional)</span></label
+          >
+          <input
+            id="g-last-order"
+            type="text"
+            class="form-input"
+            placeholder="e.g. Sate Ayam, Jus Alpukat"
+          />
+          <p class="text-[11px] text-[#999] mt-1" data-i18n>
+            Usually filled in for you at Complete Visit. Editable here if it needs correcting.
+          </p>
         </div>
         <div class="mb-3">
           <label class="block text-xs font-medium text-[#555] mb-1.5"
@@ -8482,19 +8500,30 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             Spend amount is required before completing.
           </p>
         </div>
+        <!-- What they ate goes to guests.last_order, ALWAYS. It only becomes
+             their favorite if the box below is ticked. Before 2026-09-02 this
+             one field wrote straight to favorite_menu, so recording last
+             night's meal erased the dish the guest always orders. -->
         <div class="mb-4" id="complete-favmenu-block">
           <label class="block text-xs font-medium text-[#555] mb-1.5"
-            >Favorite Menu / Recent Order <span class="text-[#999] font-normal">(optional)</span></label
+            >What did they order? <span class="text-[#999] font-normal">(optional)</span></label
           >
           <input
-            id="complete-favorite-menu"
+            id="complete-last-order"
             type="text"
             placeholder="e.g. Nasi Goreng, Es Teh Manis"
             class="form-input"
           />
           <p class="text-[11px] text-[#999] mt-1">
-            Shown on this guest's future visits. Leave blank to keep what's already saved.
+            Saved as this guest's last order. Leave blank to keep what's already saved.
           </p>
+          <label class="flex items-start gap-2 mt-2.5 cursor-pointer">
+            <input id="complete-set-favorite" type="checkbox" class="mt-0.5" />
+            <span class="text-xs text-[#555]">
+              Also make this their favorite
+              <span id="complete-current-favorite" class="block text-[11px] text-[#999] mt-0.5"></span>
+            </span>
+          </label>
         </div>
         <div class="mb-4">
           <label class="block text-xs font-medium text-[#555] mb-1.5"
@@ -8894,7 +8923,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
     <script src="js/config.js?v=12"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=19"></script>
+    <script src="js/app.js?v=20"></script>
     <script src="js/membership.js?v=5"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->

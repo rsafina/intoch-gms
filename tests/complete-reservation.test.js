@@ -144,7 +144,10 @@ function makeCtx(state, arrived) {
     "complete-type": { value: "reservation" },
     "complete-spend": { value: "450000", focus() {} },
     "complete-notes": { value: "" },
-    "complete-favorite-menu": { value: "" },
+    // Renamed 2026-09-02: what a guest ate now saves to guests.last_order,
+    // and only becomes their favorite when the tick below is set.
+    "complete-last-order": { value: "" },
+    "complete-set-favorite": { checked: false },
     "complete-spend-error": { classList: cls() },
     "complete-arrived-ask": { classList: askClasses },
     "complete-arrived-yes": { checked: arrived === "yes" },

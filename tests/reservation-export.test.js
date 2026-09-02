@@ -39,8 +39,11 @@ const ctx = {
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
 };
 vm.createContext(ctx);
-vm.runInContext([lift("resExportDateTime"), lift("resExportRow"), lift("resExportRowAsText")].join("\n"), ctx);
-const { resExportDateTime, resExportRow, resExportRowAsText } = ctx;
+vm.runInContext(
+  [lift("resExportDateTime"), lift("guestExportExtras"), lift("resExportRow"), lift("resExportRowAsText")].join("\n"),
+  ctx,
+);
+const { resExportDateTime, resExportRow, resExportRowAsText, guestExportExtras } = ctx;
 
 console.log("\nDate Time is a real local datetime, never a UTC-shifted one");
 
@@ -117,6 +120,79 @@ check("the dashboard fallback date is used when the row has none", () => {
 check("a row's own date beats the fallback", () => {
   const row = resExportRow({ reservation_date: "2026-09-01", reservation_time: "19:30" }, "2026-09-03");
   assert.strictEqual(row[2].getDate(), 1);
+});
+
+console.log("\nNotes carries the guest's kitchen detail under the booking note");
+
+check("favorite, last order and allergies are appended, each on its own line", () => {
+  const row = resExportRow({
+    reservation_date: "2026-09-01", reservation_time: "19:30",
+    notes: "Window seat", status: "Reserved",
+    guests: { name: "Alia", phone: "0812", favorite_menu: "Nasi Goreng", last_order: "Sate Ayam", food_allergy: "Kacang" },
+  });
+  assert.strictEqual(
+    row[3],
+    "Window seat\nFavorite: Nasi Goreng\nLast order: Sate Ayam\nAllergies: Kacang",
+  );
+});
+
+check("a value containing a comma stays readable", () => {
+  // The reason these are newline-joined and not comma-joined: a comma-joined
+  // line cannot be read back apart when the values have commas in them, and
+  // the allergy is the one you must not misread.
+  const out = guestExportExtras({ favorite_menu: "Nasi Goreng, Es Teh Manis", food_allergy: "Kacang, udang" });
+  assert.strictEqual(out, "Favorite: Nasi Goreng, Es Teh Manis\nAllergies: Kacang, udang");
+});
+
+check("no booking note leaves no leading blank line", () => {
+  const row = resExportRow({
+    reservation_date: "2026-09-01", reservation_time: "19:30", notes: null, status: "Reserved",
+    guests: { name: "Alia", phone: "0812", food_allergy: "Kacang" },
+  });
+  assert.strictEqual(row[3], "Allergies: Kacang");
+});
+
+check("no guest detail leaves no trailing blank line", () => {
+  const row = resExportRow({
+    reservation_date: "2026-09-01", reservation_time: "19:30", notes: "Window seat", status: "Reserved",
+    guests: { name: "Alia", phone: "0812" },
+  });
+  assert.strictEqual(row[3], "Window seat");
+});
+
+check("neither present is still an empty cell", () => {
+  const row = resExportRow({
+    reservation_date: "2026-09-01", reservation_time: "19:30", status: "Reserved",
+    guests: { name: "Alia", phone: "0812" },
+  });
+  assert.strictEqual(row[3], "");
+});
+
+check("blank and whitespace-only guest fields are skipped, not labelled", () => {
+  assert.strictEqual(guestExportExtras({ favorite_menu: "   ", last_order: "", food_allergy: null }), "");
+  assert.strictEqual(guestExportExtras(null), "");
+});
+
+check("every query that feeds an export fetches the three guest fields", () => {
+  // The export can only write what the query fetched, and a missing column is
+  // silent: the cell is just blank. Named functions rather than a pattern,
+  // because "any query selecting guests(...)" also catches the walk-in edit
+  // modal, which has no business carrying kitchen detail.
+  const feeders = [
+    "async function loadReservations()",       // the day list
+    "async function renderResSearchResults",   // cross-date search results
+    "async function loadDashboardReservations", // the dashboard day tabs
+  ];
+  for (const fn of feeders) {
+    const i = src.indexOf(fn);
+    assert.ok(i > -1, "export feeder is gone or renamed: " + fn);
+    const body = src.slice(i, i + 2000);
+    const m = body.match(/guests\(([^)]*)\)/);
+    assert.ok(m, fn + " no longer joins guests at all");
+    for (const field of ["food_allergy", "favorite_menu", "last_order"]) {
+      assert.ok(m[1].includes(field), `${fn} does not fetch ${field}, so that line exports blank`);
+    }
+  }
 });
 
 console.log("\nThe CSV fallback flattens the Date instead of writing [object Object]");

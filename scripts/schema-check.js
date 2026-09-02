@@ -101,6 +101,18 @@ if (refs.dynamic.length) {
   console.log("");
 }
 
+// Reported, but NOT failed on. The table is known and only the columns are
+// unverified, which is the normal shape of most writes in this codebase. It
+// is here so nobody reads "No missing objects" as "every column was proved".
+if (refs.unreadable?.length) {
+  console.log(
+    `NOTE: ${refs.unreadable.length} insert/update call(s) pass a payload variable, so their COLUMNS were not checked.`,
+  );
+  console.log("      The table is known; only the column list is invisible to this scanner.");
+  for (const d of refs.unreadable) console.log(`  ${d}`);
+  console.log("");
+}
+
 if (!gaps.length) {
   console.log("No missing objects.");
   process.exit(refs.dynamic.length ? 1 : 0);
