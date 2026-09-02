@@ -32,9 +32,14 @@ begin
       E'No guests in this database.\n\nRun demo/01_seed_3_months.sql first, then this file.';
   end if;
 
-  -- A seeded demo has ~64 guests. A real restaurant has hundreds. 200 is well
-  -- clear of the demo and well under any real book, so it catches the mistake
-  -- that matters: pasting this into the wrong database.
+  -- A seeded demo has 120 guests (01_seed_3_months.sql, raised from 64 on
+  -- 2026-09-01). A real restaurant has hundreds: Blue Heron had 682 on
+  -- 2026-09-01. 200 sits clear of the demo and well under the real book, so it
+  -- catches the mistake that matters: pasting this into the wrong database.
+  --
+  -- Raising this much above 200 would stop it catching Blue Heron, which is
+  -- the exact database it exists to protect. Raise it only alongside a bigger
+  -- seed, and only as far as that seed needs.
   if v_guests > 200 then
     raise exception
       E'This database has % guests, which looks like a REAL restaurant rather than a demo.\n\nThis script attaches invented visits and spending to existing guests. On real data that corrupts their spending tiers, their visit history and every report built on them.\n\nIf you are certain, raise the limit in the guard at the top of this file.',
