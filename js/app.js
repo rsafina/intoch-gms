@@ -3076,6 +3076,23 @@ async function attachGuestVisitCounts(rows) {
   });
 }
 
+// Which column of this payload the database does not have, or null.
+//
+// PostgREST reports it two ways depending on version and on whether the
+// schema cache or Postgres itself rejected it:
+//   PGRST204  "Could not find the 'last_order' column of 'guests' ..."
+//   42703     'column "last_order" of relation "guests" does not exist'
+// The name is only trusted when it is actually a key we sent, so an
+// unrelated error can never quietly delete a field from someone's edit.
+function guestMissingColumnFrom(error, payload) {
+  const text = `${error?.code || ""} ${error?.message || ""} ${error?.details || ""}`;
+  if (!/PGRST204/.test(text) && !/42703/.test(text) && !/column/i.test(text)) return null;
+  for (const key of Object.keys(payload || {})) {
+    if (new RegExp(`['"\`]${key}['"\`]`).test(text)) return key;
+  }
+  return null;
+}
+
 // Render the guest-level extras (total visits, allergies, notes) shown under
 // each guest on the dashboard reservation and walk-in cards.
 function renderGuestExtras(guest, visitCount) {
@@ -4302,13 +4319,41 @@ async function saveGuest() {
   }
 
   loader(true);
-  const { error } = await supabaseQuery(
-    () =>
-      id
-        ? db.from("guests").update(payload).eq("id", id)
-        : db.from("guests").insert(payload),
-    id ? "Failed to update guest" : "Failed to create guest",
-  );
+  const saveGuestRow = (body) =>
+    supabaseQuery(
+      () =>
+        id
+          ? db.from("guests").update(body).eq("id", id)
+          : db.from("guests").insert(body),
+      id ? "Failed to update guest" : "Failed to create guest",
+    );
+
+  let { error } = await saveGuestRow(payload);
+
+  // A client database that has not had the latest migrations_ALL_IN_ONE run
+  // is missing whichever column this app version added most recently, and
+  // PostgREST rejects the WHOLE update for one unknown column. So a form that
+  // was working yesterday silently stops saving anything — including the food
+  // allergy, which is the field that matters most.
+  //
+  // This happened for real on 2026-09-02, hours after guests.last_order was
+  // added to this payload: an allergy typed into the guest form never reached
+  // the database and nobody could see why.
+  //
+  // Rather than lose the whole edit, drop the column the database does not
+  // have, save the rest, and say plainly what is missing and how to fix it.
+  const missingColumn = error && guestMissingColumnFrom(error, payload);
+  if (missingColumn) {
+    const retryPayload = { ...payload };
+    delete retryPayload[missingColumn];
+    ({ error } = await saveGuestRow(retryPayload));
+    if (!error) {
+      toast(
+        `Saved, but "${missingColumn}" was skipped: this database is missing that column. Run migrations/ALL_IN_ONE.sql.`,
+        "error",
+      );
+    }
+  }
   loader(false);
 
   if (error) {
