@@ -3153,6 +3153,17 @@ function renderPaginationControls(
   `;
 }
 
+// The dashboard list is paginated, but the export is the whole selected
+// day, not the visible page. Exporting page 2 of 4 would be a bug report.
+function exportDashboardReservations() {
+  const date = getDashboardDate(dashboardReservationOffset);
+  return downloadReservationSheet(
+    `export-reservations-${date}`,
+    (dashboardResData || []).map((r) => resExportRow(r, date)),
+    date,
+  );
+}
+
 function dashResNextPage() {
   const totalPages = Math.ceil(dashboardResData.length / DASH_PAGE_SIZE);
   if (dashboardResPage < totalPages - 1) {
@@ -7016,40 +7027,6 @@ async function cancelReservation(resId) {
 }
 
 function exportReservations() {
-  if (!allReservations.length) {
-    toast("No reservations to export", "error");
-    return;
-  }
-
-  const headers = [
-    "Date",
-    "Time",
-    "Guest",
-    "Phone",
-    "Spending Tier",
-    "Pax",
-    "Area",
-    "Table",
-    "Occasion",
-    "Reservation Source",
-    "Status",
-    "Notes",
-  ];
-  const rows = allReservations.map((r) => [
-    r.reservation_date,
-    r.reservation_time,
-    r.guests?.name || "",
-    r.guests?.phone || "",
-    formatSpendingTierLabel(r.guests?.spending_tier),
-    r.pax,
-    r.areas?.name || "",
-    r.tables?.name || "",
-    r.occasion || "",
-    r.reservation_source || "",
-    r.status,
-    r.notes || "",
-  ]);
-
   // While a search is active `allReservations` holds the (cross-date)
   // result set, so the export follows what's on screen. The filename says
   // so — otherwise a search export is indistinguishable from a day export.
@@ -7060,9 +7037,12 @@ function exportReservations() {
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "")
         .slice(0, 40)
-    : TODAY;
-  downloadCsv(`export-reservations-${slug || TODAY}.csv`, headers, rows);
-  toast("Reservations exported");
+    : resSelectedDate || TODAY;
+  return downloadReservationSheet(
+    `export-reservations-${slug || TODAY}`,
+    allReservations.map((r) => resExportRow(r)),
+    resSearchActive ? "Search results" : slug || TODAY,
+  );
 }
 
 function exportReservationSources() {
@@ -11116,6 +11096,110 @@ function downloadCsv(filename, headers, rows) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// ============================================================
+// RESERVATION EXPORT (Excel)
+// ============================================================
+// Five columns, agreed 2026-09-01. The front desk reads this sheet to WORK
+// a service, not to audit one, so pax, area, table, occasion, source and
+// spending tier were deliberately left out. They are all still on the
+// reservation row if this ever needs widening again.
+const RES_EXPORT_HEADERS = ["Name", "Phone Number", "Date Time", "Notes", "Status"];
+
+// Excel column widths, in characters. Notes is the only free-text field
+// and is what makes an unformatted export unreadable.
+const RES_EXPORT_WIDTHS = [26, 16, 18, 48, 18];
+
+// A real Excel datetime, not text, so the column sorts and filters as a
+// date instead of alphabetically.
+//
+// Built from LOCAL parts on purpose. `new Date("2026-09-01")` is parsed as
+// UTC and renders as 31 August at UTC+7, which is the same trap ymd()
+// exists to avoid. See CLAUDE.md, "Dates".
+function resExportDateTime(dateStr, timeStr) {
+  if (!dateStr) return "";
+  const [y, m, d] = String(dateStr).split("-").map(Number);
+  if (!y || !m || !d) return "";
+  const [hh, mm] = String(timeStr || "").split(":").map(Number);
+  return new Date(y, m - 1, d, hh || 0, mm || 0);
+}
+
+// One export row. `fallbackDate` exists because the DASHBOARD query filters
+// on reservation_date and never selects it, so those rows carry no date of
+// their own and would export a blank Date Time column without it.
+function resExportRow(r, fallbackDate) {
+  return [
+    r.guests ? guestDisplayName(r.guests) : "",
+    r.guests?.phone || "",
+    resExportDateTime(r.reservation_date || fallbackDate, r.reservation_time),
+    r.notes || "",
+    r.status || "",
+  ];
+}
+
+// Excel cannot hold a Date the way the CSV fallback needs it, so flatten.
+function resExportRowAsText(row) {
+  return row.map((v) =>
+    v instanceof Date
+      ? `${ymd(v)} ${String(v.getHours()).padStart(2, "0")}:${String(v.getMinutes()).padStart(2, "0")}`
+      : v,
+  );
+}
+
+// SheetJS is lazy-loaded from a CDN (see loadSheetJs), so it can fail on a
+// blocked or offline front-desk PC. When it does the export still happens,
+// as CSV, rather than the button appearing to do nothing.
+async function downloadReservationSheet(baseName, rows, sheetName) {
+  if (!rows.length) {
+    toast("No reservations to export", "error");
+    return;
+  }
+
+  let XLSX;
+  try {
+    XLSX = await loadSheetJs();
+  } catch (e) {
+    downloadCsv(`${baseName}.csv`, RES_EXPORT_HEADERS, rows.map(resExportRowAsText));
+    toast("Excel could not load, exported as CSV instead", "error");
+    return;
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet([RES_EXPORT_HEADERS, ...rows], {
+    cellDates: true,
+  });
+  ws["!cols"] = RES_EXPORT_WIDTHS.map((w) => ({ wch: w }));
+  // Filter dropdowns on the header, so a 200-row day is sortable and
+  // filterable without the reader setting anything up first.
+  //
+  // No frozen header pane: `ws["!freeze"]` is a SheetJS Pro feature and the
+  // free build we load from the CDN drops it silently. Verified by reading
+  // the produced file back - no <pane> element is written. Do not re-add it
+  // and assume it works.
+  ws["!autofilter"] = {
+    ref: XLSX.utils.encode_range({
+      s: { r: 0, c: 0 },
+      e: { r: rows.length, c: RES_EXPORT_HEADERS.length - 1 },
+    }),
+  };
+
+  // Explicit d/m/y so the sheet reads the same on an Indonesian and an
+  // English copy of Excel. Left to Excel's default it follows the reader's
+  // locale and 01/09 silently becomes 9 January somewhere.
+  for (let i = 0; i < rows.length; i++) {
+    const cell = ws[XLSX.utils.encode_cell({ r: i + 1, c: 2 })];
+    if (cell && cell.t === "d") cell.z = "dd/mm/yyyy hh:mm";
+  }
+
+  const wb = XLSX.utils.book_new();
+  // Excel rejects a sheet name over 31 chars or containing : \ / ? * [ ]
+  XLSX.utils.book_append_sheet(
+    wb,
+    ws,
+    String(sheetName || "Reservations").replace(/[:\\/?*[\]]/g, "-").slice(0, 31),
+  );
+  XLSX.writeFile(wb, `${baseName}.xlsx`);
+  toast("Reservations exported");
 }
 
 // ============================================================

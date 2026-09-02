@@ -81,13 +81,15 @@ let membersCache = [];
 let memberSearchQuery = "";
 let memberTypeFilter = "all";
 let currentMemberId = null;
+let memberLastVisitMap = {}; // guest_id -> last_visit_date (from get_guest_visit_summary)
+let memberSort = { key: null, dir: 1 }; // key: "no" | "stickers" | "lastvisit"
 
 // ------------------------------------------------------------
 // PAGE LOAD
 // ------------------------------------------------------------
 async function loadMembership() {
   loader(true);
-  const [{ data: members }, { data: voucherStats }] = await Promise.all([
+  const [{ data: members }, { data: voucherStats }, { data: visitSummary }] = await Promise.all([
     supabaseQuery(
       () =>
         db
@@ -100,10 +102,18 @@ async function loadMembership() {
       () => db.from("member_vouchers").select("id, redeemed"),
       "Failed to load voucher stats",
     ),
+    // Same server-side RPC the guest list uses (see renderGuestsTable in
+    // app.js) - avoids downloading every row of the visits table just to
+    // find one date per member.
+    supabaseQuery(() => db.rpc("get_guest_visit_summary"), "Failed to load last visit dates"),
   ]);
   loader(false);
 
   membersCache = members || [];
+  memberLastVisitMap = {};
+  (visitSummary || []).forEach((v) => {
+    memberLastVisitMap[v.guest_id] = v.last_visit_date;
+  });
   loadMemberBadgeMap(); // keep badges in sync
 
   const totalStickers = membersCache.reduce((s, m) => s + (m.total_stickers || 0), 0);
@@ -167,14 +177,66 @@ function memberTypeBadge(type) {
 // deliberately NOT cleaned on save, because the same field is synced to
 // guests.name by saveMember and a silent rewrite there would propagate.
 function memberReadingName(m) {
+  const nickname = ((m && m.nickname) || "").trim();
+  if (nickname) return nickname;
   const raw = (m && m.full_name) || "";
   if (typeof waStripHonorific !== "function") return raw;
   return waStripHonorific(raw) || raw;
 }
 
+// Members without a linked guest (see "no guest link" in the row markup
+// below) have no visit history to pull a date from. Sorting always parks
+// those at the bottom, in either direction, so real dates stay grouped.
+function memberLastVisit(m) {
+  return m.guest_id ? memberLastVisitMap[m.guest_id] || null : null;
+}
+
+function toggleMemberSort(key) {
+  if (memberSort.key === key) {
+    memberSort.dir *= -1;
+  } else {
+    memberSort = { key, dir: 1 };
+  }
+  renderMemberList();
+}
+
+// Runs on every render (including the very first one) so the icon is
+// visible before any column has been clicked, not just after.
+function updateMemberSortArrows() {
+  ["no", "stickers", "lastvisit"].forEach((key) => {
+    const el = document.getElementById(`mbr-sort-arrow-${key}`);
+    if (!el) return;
+    const active = memberSort.key === key;
+    el.textContent = active ? (memberSort.dir === 1 ? "▲" : "▼") : "⇅";
+    el.className = active ? "text-[#28547C]" : "text-[#9DB8CE]";
+  });
+}
+
+function sortMemberRows(rows) {
+  if (!memberSort.key) return rows;
+  const { key, dir } = memberSort;
+  const sorted = [...rows];
+  sorted.sort((a, b) => {
+    if (key === "no") return dir * a.member_number.localeCompare(b.member_number);
+    if (key === "stickers") return dir * ((a.total_stickers || 0) - (b.total_stickers || 0));
+    if (key === "lastvisit") {
+      const av = memberLastVisit(a);
+      const bv = memberLastVisit(b);
+      if (!av && !bv) return 0;
+      if (!av) return 1; // no visit data always last
+      if (!bv) return -1;
+      return dir * (new Date(av) - new Date(bv));
+    }
+    return 0;
+  });
+  return sorted;
+}
+
 function renderMemberList() {
   const tbody = document.getElementById("mbr-table-body");
   if (!tbody) return;
+
+  updateMemberSortArrows();
 
   let rows = membersCache;
   if (memberTypeFilter !== "all") rows = rows.filter((m) => m.member_type === memberTypeFilter);
@@ -189,10 +251,11 @@ function renderMemberList() {
         (m.phone_number || "").includes(memberSearchQuery),
     );
   }
+  rows = sortMemberRows(rows);
 
   if (!rows.length) {
     tbody.innerHTML =
-      '<tr><td colspan="7" class="text-center text-sm text-[#999] py-8">No members found</td></tr>';
+      '<tr><td colspan="8" class="text-center text-sm text-[#999] py-8">No members found</td></tr>';
     return;
   }
 
@@ -206,12 +269,13 @@ function renderMemberList() {
       </td>
       <td class="py-3 px-4">${memberTypeBadge(m.member_type)}</td>
       <td class="py-3 px-4 text-sm text-[#555]">${fmt.phone(m.phone_number)}</td>
-      <td class="py-3 px-4">${stickerDots(m)}</td>
+      <td class="py-3 px-4 whitespace-nowrap">${stickerDots(m)}</td>
       <td class="py-3 px-4 text-center">
         ${m.available_vouchers > 0 ? `<span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#FDF3E0] text-[#8B6F47]">${m.available_vouchers} voucher${m.available_vouchers > 1 ? "s" : ""}</span>` : '<span class="text-xs text-[#CCC]">—</span>'}
       </td>
+      <td class="py-3 px-4 text-sm text-[#555]">${fmt.date(memberLastVisit(m))}</td>
       <td class="py-3 px-4 text-right">
-        <button onclick="event.stopPropagation(); openMemberTxn(${m.id})" class="text-xs font-medium text-white bg-[#28547C] hover:bg-[#1f4060] px-3 py-1.5 rounded-lg transition-colors">+ Spend</button>
+        <button onclick="event.stopPropagation(); openMemberTxn(${m.id})" class="text-xs font-medium text-white bg-[#28547C] hover:bg-[#1f4060] px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">+ Spend</button>
       </td>
     </tr>`,
     )
@@ -337,7 +401,7 @@ function onAddMemberPhoneInput() {
 }
 
 async function saveNewMember() {
-  const member_number = document.getElementById("am-number").value.trim();
+  const member_number = document.getElementById("am-number").value.replace(/\s+/g, "");
   const member_type = document.getElementById("am-type").value;
   const full_name = document.getElementById("am-name").value.trim();
   const phone_number = document.getElementById("am-phone").value.trim();
@@ -543,6 +607,69 @@ async function viewMemberDetail(memberId) {
   // The "Konversi kunjungan lama" button is manager-only; re-apply after
   // the modal is shown so a staff login never sees it.
   if (typeof applyManagerOnlyUI === "function") applyManagerOnlyUI();
+}
+
+// ------------------------------------------------------------
+// EDIT MEMBER PROFILE (member number + nickname)
+// Guest name and phone are read-only here: both come from the linked
+// guest record and are edited on the guest profile, not here.
+// ------------------------------------------------------------
+function openEditMemberProfile(memberId) {
+  const m = membersCache.find((x) => x.id === memberId);
+  if (!m) return;
+  currentMemberId = memberId;
+  setText("em-guest-name", m.guests ? formatGuestName(m.guests) : memberReadingName(m));
+  setText("em-phone", fmt.phone(m.phone_number));
+  document.getElementById("em-number").value = m.member_number;
+  document.getElementById("em-nickname").value = m.nickname || "";
+  document.getElementById("em-error").textContent = "";
+  hideModal("modal-member-detail");
+  showModal("modal-edit-member");
+}
+
+async function saveMemberProfile() {
+  const memberId = currentMemberId;
+  const member_number = document.getElementById("em-number").value.replace(/\s+/g, "");
+  const nickname = document.getElementById("em-nickname").value.trim() || null;
+  const errEl = document.getElementById("em-error");
+  errEl.textContent = "";
+
+  if (!member_number) return (errEl.textContent = "Member number is required.");
+
+  loader(true);
+  try {
+    const { data: dup } = await supabaseQuery(
+      () =>
+        db.from("members").select("id").eq("member_number", member_number).neq("id", memberId).maybeSingle(),
+      "Duplicate check failed",
+    );
+    if (dup) {
+      errEl.textContent = `Member number ${member_number} already exists.`;
+      return;
+    }
+
+    const { error } = await supabaseQuery(
+      () => db.from("members").update({ member_number, nickname }).eq("id", memberId),
+      "Failed to save member profile",
+    );
+    if (error) {
+      errEl.textContent = "Could not save. Try again.";
+      return;
+    }
+
+    const cached = membersCache.find((x) => x.id === memberId);
+    if (cached) {
+      cached.member_number = member_number;
+      cached.nickname = nickname;
+    }
+
+    hideModal("modal-edit-member");
+    renderMemberList();
+    toast("Member profile updated", "success");
+    viewMemberDetail(memberId);
+  } finally {
+    loader(false);
+  }
 }
 
 // ------------------------------------------------------------

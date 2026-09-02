@@ -66,6 +66,37 @@ console.log("\nA colon inside a string is not a column name");
   ok("the interpolated message is not a column", !r.tables.visits.includes("deleted"));
 }
 
+console.log("\nES6 shorthand keys are columns too");
+{
+  // The live miss: `.update({ member_number, nickname })` named two real
+  // columns and the scanner saw neither, because neither is followed by a
+  // colon. schema-check would then pass a client database missing the
+  // column, which is a screen that 400s on their first day.
+  const r = scan({
+    "js/a.js": `
+      db.from("members").update({ member_number, nickname }).eq("id", id);
+      db.from("areas").insert({ name, capacity, is_active: true });
+    `,
+  });
+  ok("both shorthand keys are collected", r.tables.members.includes("member_number") && r.tables.members.includes("nickname"));
+  ok("shorthand and normal keys mix", ["capacity", "is_active", "name"].every((c) => r.tables.areas.includes(c)));
+}
+
+console.log("\nShorthand reading must not invent columns");
+{
+  const r = scan({
+    "js/a.js": `
+      db.from("visits").insert({ guest_id: id, meta: { source, channel } });
+      db.from("guests").update({ ...patch, name: n });
+    `,
+  });
+  // meta is jsonb. Its keys describe the value, not the table.
+  ok("a nested object's keys are not columns", !r.tables.visits.includes("source") && !r.tables.visits.includes("channel"));
+  ok("the real column survives the nesting", r.tables.visits.includes("guest_id"));
+  ok("a spread is not a column", !r.tables.guests.includes("patch"));
+  ok("the key beside the spread survives", r.tables.guests.includes("name"));
+}
+
 console.log("\nComments are prose, not queries");
 {
   const r = scan({

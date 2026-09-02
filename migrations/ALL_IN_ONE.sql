@@ -4236,3 +4236,37 @@ select 'promo-images policies', count(*)
 from pg_policies
 where schemaname = 'storage' and tablename = 'objects' and policyname like '%promo-images%';
 -- expect: 1, 1, 1, 4
+
+-- ## 20260831_member_nickname.sql
+-- ============================================================
+-- MEMBER NICKNAME
+-- Ported from blueheron-gms, 2026-08-31.
+--
+-- Purely additive. One nullable column, no default, no backfill,
+-- nothing existing dropped or renamed. Safe to run during service,
+-- and safe to run twice like the rest of this file.
+--
+-- WHY:
+--   Front desk wants a short alias for a member (e.g. "Alif") that is
+--   independent of members.full_name, which is staff-facing record
+--   data synced from the linked guest at signup and not meant to be
+--   casually edited. nickname is optional display-only text: the
+--   Membership page shows it first and falls back to the existing
+--   name (memberReadingName in js/membership.js) when it is empty.
+-- ============================================================
+
+alter table public.members
+  add column if not exists nickname text;
+
+comment on column public.members.nickname is
+  'Optional short display alias, shown ahead of full_name on the Membership page. Never overwritten automatically.';
+
+-- ---------- Confirm ----------
+select 'members.nickname' as checked, count(*) as found
+from information_schema.columns
+where table_schema = 'public' and table_name = 'members' and column_name = 'nickname';
+-- expect: 1
+
+-- Rollback (only if nothing has been written yet):
+--   alter table public.members
+--     drop column if exists nickname;

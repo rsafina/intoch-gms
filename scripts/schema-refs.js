@@ -176,6 +176,52 @@ function chainAfter(src, i) {
   return out;
 }
 
+// ES6 shorthand keys in an insert/update payload. `.update({ member_number,
+// nickname })` names two real columns, but the `key:` regex below sees
+// neither, because neither is followed by a colon. A column the scanner
+// cannot see is a column schema-check will not demand, which is how a
+// client ships with a screen that 400s.
+//
+// Only DEPTH 1 is read. A nested object is a jsonb value, and its keys are
+// not columns of this table. A trailing fragment is dropped too: the
+// insert/update regex stops at the first `}`, so a payload containing a
+// nested object arrives here truncated, and its last entry may be half an
+// identifier.
+function shorthandKeys(objSrc) {
+  const start = objSrc.indexOf("{");
+  if (start === -1) return [];
+  const keys = [];
+  let depth = 0;
+  let entry = "";
+  let closed = false;
+  const take = () => {
+    const e = entry.trim();
+    if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(e)) keys.push(e);
+    entry = "";
+  };
+  for (let i = start; i < objSrc.length; i++) {
+    const ch = objSrc[i];
+    if ("([{".includes(ch)) {
+      depth++;
+      if (depth === 1) continue; // the opening brace itself
+    } else if (")]}".includes(ch)) {
+      depth--;
+      if (depth === 0) {
+        take();
+        closed = true;
+        break;
+      }
+    } else if (ch === "," && depth === 1) {
+      take();
+      continue;
+    }
+    if (depth >= 1) entry += ch;
+  }
+  // Never reached the closing brace: the payload was cut off mid-entry.
+  if (!closed) entry = "";
+  return keys;
+}
+
 const IDENT = /^[a-z_][a-z0-9_]*$/;
 
 function collect(root) {
@@ -255,8 +301,10 @@ function collect(root) {
 
       for (const s of chainNoStr.matchAll(
         /\.(insert|update|upsert)\(\s*(\[?\s*\{[\s\S]*?\}\s*\]?)/g,
-      ))
+      )) {
         for (const k of s[2].matchAll(/([A-Za-z_][A-Za-z0-9_]*)\s*:/g)) add(t, k[1]);
+        for (const k of shorthandKeys(s[2])) add(t, k);
+      }
     }
   }
 
@@ -277,7 +325,7 @@ function collect(root) {
   };
 }
 
-module.exports = { collect, blankLiterals, stripComments, chainAfter, sourceFiles };
+module.exports = { collect, blankLiterals, stripComments, chainAfter, shorthandKeys, sourceFiles };
 
 if (require.main === module) {
   console.log(JSON.stringify(collect(path.join(__dirname, "..")), null, 2));

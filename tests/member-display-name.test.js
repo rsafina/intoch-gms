@@ -89,6 +89,20 @@ console.log("\n── the untitled members must come through untouched ──");
   eq("'Bapa' is deliberately not stripped", r({ full_name: "Bapa Tommy PT. Lapi" }), "Bapa Tommy PT. Lapi");
 }
 
+console.log("\n── nickname wins over full_name when it is set ──");
+{
+  // A nickname is what the front desk actually calls the member. It is
+  // display-only and is NEVER honorific-stripped: staff typed it
+  // themselves, so "Pak Yock" as a nickname is a deliberate choice.
+  eq("nickname replaces the name", r({ full_name: "Ibu Alia", nickname: "Alif" }), "Alif");
+  eq("nickname kept verbatim", r({ full_name: "Ibu Alia", nickname: "Pak Yock" }), "Pak Yock");
+  eq("empty nickname falls back", r({ full_name: "Ibu Alia", nickname: "" }), "Alia");
+  eq("null nickname falls back", r({ full_name: "Ibu Alia", nickname: null }), "Alia");
+  eq("whitespace-only nickname falls back", r({ full_name: "Ibu Alia", nickname: "   " }), "Alia");
+  eq("padded nickname is trimmed", r({ full_name: "Ibu Alia", nickname: "  Alif  " }), "Alif");
+  eq("nickname with no full_name", r({ nickname: "Alif" }), "Alif");
+}
+
 console.log("\n── degenerate input must never blank a row ──");
 {
   eq("null member", r(null), "");

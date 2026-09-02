@@ -1588,6 +1588,14 @@
                   id="res-pagination-controls"
                   class="flex items-center gap-1.5"
                 ></div>
+                <!-- Exports the whole selected day tab, not the visible
+                     page. See exportDashboardReservations in app.js. -->
+                <button
+                  onclick="exportDashboardReservations()"
+                  class="text-xs text-[#5596CE] hover:underline"
+                >
+                  Export Excel
+                </button>
                 <button
                   onclick="navigateTo('reservations')"
                   class="text-xs text-[#C8A96B] hover:underline"
@@ -2474,12 +2482,13 @@
             <table class="w-full">
               <thead>
                 <tr class="bg-[#FBFAF7] text-left text-[11px] uppercase tracking-widest text-[#999]">
-                  <th class="py-3 px-4 font-medium">No.</th>
+                  <th class="py-3 px-4 font-medium cursor-pointer select-none hover:text-[#555] whitespace-nowrap" onclick="toggleMemberSort('no')"><span class="inline-flex items-center gap-1">No. <span id="mbr-sort-arrow-no"></span></span></th>
                   <th class="py-3 px-4 font-medium">Member</th>
                   <th class="py-3 px-4 font-medium">Type</th>
                   <th class="py-3 px-4 font-medium">Phone</th>
-                  <th class="py-3 px-4 font-medium">Stickers</th>
+                  <th class="py-3 px-4 font-medium cursor-pointer select-none hover:text-[#555] whitespace-nowrap" onclick="toggleMemberSort('stickers')"><span class="inline-flex items-center gap-1">Stickers <span id="mbr-sort-arrow-stickers"></span></span></th>
                   <th class="py-3 px-4 font-medium text-center">Vouchers</th>
+                  <th class="py-3 px-4 font-medium cursor-pointer select-none hover:text-[#555] whitespace-nowrap" onclick="toggleMemberSort('lastvisit')"><span class="inline-flex items-center gap-1">Last Visit <span id="mbr-sort-arrow-lastvisit"></span></span></th>
                   <th class="py-3 px-4"></th>
                 </tr>
               </thead>
@@ -2784,7 +2793,7 @@
                 onclick="exportReservations()"
                 class="btn-ghost flex items-center gap-2"
               >
-                Export CSV
+                Export Excel
               </button>
               <button onclick="openReservationModal()" class="btn-primary">
                 <svg
@@ -8484,7 +8493,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         <div class="space-y-3">
           <div>
             <label class="text-xs font-medium text-[#777]">Member Number</label>
-            <input id="am-number" placeholder="e.g. BFC-F29" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#28547C]" />
+            <input id="am-number" placeholder="e.g. BFC-F29" oninput="this.value = this.value.replace(/\s+/g, '')" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#28547C]" />
           </div>
           <div>
             <label class="text-xs font-medium text-[#777]">Card Type</label>
@@ -8548,9 +8557,46 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         <button onclick="cvOpen(currentMemberId)" class="manager-only-ui w-full mt-4 border border-[#C8A96B] text-[#8B6F47] text-sm font-medium py-2.5 rounded-xl hover:bg-[#FDF9F0]">
           🕘 Konversi kunjungan lama jadi stiker
         </button>
+        <button onclick="openEditMemberProfile(currentMemberId)" class="w-full mt-3 border border-[#EDE9E3] text-[#555] text-sm font-medium py-2.5 rounded-xl hover:bg-[#F8F6F2]">
+          ✎ Edit Membership Profile
+        </button>
         <div class="flex gap-3 mt-3">
           <button onclick="hideModal('modal-member-detail')" class="flex-1 border border-[#EDE9E3] text-[#555] text-sm font-medium py-2.5 rounded-xl hover:bg-[#F8F6F2]">Close</button>
           <button onclick="openMemberTxn(currentMemberId)" class="flex-1 bg-[#28547C] hover:bg-[#1f4060] text-white text-sm font-medium py-2.5 rounded-xl">+ Record Spend</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MODAL: EDIT MEMBER PROFILE =====
+         Guest name and phone are read-only: both belong to the linked
+         guest record, edited on the guest profile, not here. Member
+         number and nickname are the only fields that live on members
+         itself. -->
+    <div id="modal-edit-member" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <h2 class="font-display text-xl text-[#28547C] mb-4">Edit Membership Profile</h2>
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs font-medium text-[#777]">Guest Name</label>
+            <p id="em-guest-name" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm bg-[#F8F6F2] text-[#777]">—</p>
+          </div>
+          <div>
+            <label class="text-xs font-medium text-[#777]">Phone Number</label>
+            <p id="em-phone" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm bg-[#F8F6F2] text-[#777]">—</p>
+          </div>
+          <div>
+            <label class="text-xs font-medium text-[#777]">Member Number</label>
+            <input id="em-number" oninput="this.value = this.value.replace(/\s+/g, '')" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#28547C]" />
+          </div>
+          <div>
+            <label class="text-xs font-medium text-[#777]">Nickname</label>
+            <input id="em-nickname" placeholder="optional - shown instead of the guest name" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#28547C]" />
+          </div>
+          <p id="em-error" class="text-xs text-red-500"></p>
+        </div>
+        <div class="flex gap-3 mt-5">
+          <button onclick="hideModal('modal-edit-member'); viewMemberDetail(currentMemberId)" class="flex-1 border border-[#EDE9E3] text-[#555] text-sm font-medium py-2.5 rounded-xl hover:bg-[#F8F6F2]">Cancel</button>
+          <button onclick="saveMemberProfile()" class="flex-1 bg-[#28547C] hover:bg-[#1f4060] text-white text-sm font-medium py-2.5 rounded-xl">Save</button>
         </div>
       </div>
     </div>
@@ -8748,8 +8794,8 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
     <script src="js/config.js?v=12"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=17"></script>
-    <script src="js/membership.js?v=4"></script>
+    <script src="js/app.js?v=18"></script>
+    <script src="js/membership.js?v=5"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->
     <script src="js/wa.js?v=11"></script>
