@@ -27,26 +27,43 @@
 -- reports look like a restaurant rather than like random numbers. Measured
 -- against Blue Heron prod on 2026-09-01, over its own last 90 days:
 --
---                        REAL          THIS SEED
---   visits / 90 days     685           287
---   distinct guests      597           120
---   visits per guest     1.15          2.4
---   average pax          4.56          5.01
---   median pax           3             3
---   median spend         672.000       659.000
---   p90 spend            1.996.000     1.886.000
---   High Spenders        38%           35%
+--                                    REAL          THIS SEED
+--   visits / 90 days                  685           287
+--   distinct guests                   597           120
+--   visits per guest                  1.15          2.4
+--   average pax                       4.56          4.85
+--   median pax                        3             3
+--   median spend                      672.000       672.000
+--   p90 spend                         1.996.000     2.226.000
+--   visits at/over 300k per head      18%           18%
+--   guests AVERAGING over 300k/head   18%           18%
+--   p90 average per head              363.000       339.000
+--   High Spenders                     38%           55%
 --
--- The spend shape matches closely. VISITS PER GUEST deliberately does not:
--- a real restaurant is overwhelmingly one-time guests, and a demo seeded that
--- way has almost nothing in its loyal, VIP and at-risk segments. 2.4 is the
--- compromise, chosen 2026-09-01.
+-- The spend shape matches closely. TWO figures deliberately do not:
+--
+-- 1. VISITS PER GUEST. A real restaurant is overwhelmingly one-time guests,
+--    and a demo seeded that way has almost nothing in its loyal, VIP and
+--    at-risk segments. 2.4 is the compromise, chosen 2026-09-01.
+--
+-- 2. HIGH SPENDERS, and it follows directly from 1. A guest qualifies if ANY
+--    visit crosses the line, so 2.4 visits each is 2.4 chances against the
+--    real 1.15. The per-VISIT rates above match reality exactly; the per-GUEST
+--    badge cannot also match while the ratio is inflated. Do not "fix" the
+--    55% by flattening the spend distribution: that breaks the reports, which
+--    read visits, to make one badge look right.
 --
 -- The per-pax figure is what the tuning is really about: the High Spender
 -- threshold is Rp 300.000 per pax OR Rp 1.000.000 on one visit, and the real
 -- median per-pax is Rp 192.000. So a realistic spread puts guests on BOTH
 -- sides of the line. Seeding round numbers would either make everyone High or
 -- nobody, and the tier badges would look broken in a demo.
+--
+-- The upper TAIL matters as much as the median, and was missing until
+-- 2026-09-02. Uniform bands topped out around Rp 276.000 a head, so no visit
+-- ever crossed the per-pax line and the "High Average Spend Per Person"
+-- report was permanently empty on seeded data. See the big-night multiplier
+-- in the spend expression below.
 --
 -- ── Deterministic ─────────────────────────────────────────────────────
 -- Wipe + re-seed gives you the SAME restaurant every time, down to the rupiah.
@@ -327,7 +344,7 @@ select
     -- Corporate events: the 20-to-40 groups a restaurant gets a few times a
     -- month. These are the reason p90 spend is three times the median, and
     -- without them the spend chart is a narrow band with no tail.
-    when v.pat = 'corporate' then 8 + ((v.idx * 3 + v.k) % 13)
+    when v.pat = 'corporate' then 8 + ((v.idx * 3 + v.k) % 10)
     -- Roughly one visit in 23 is a celebration: a family table of 8 to 15.
     when (v.idx * 7 + v.k * 11) % 20 = 0 then 8 + ((v.idx * 5 + v.k) % 7)
     -- Everything else is what a restaurant mostly serves, couples and small
@@ -364,11 +381,29 @@ select
     -- make every guest High and the tier badge stops meaning anything. An
     -- early attempt did exactly that: 56 of 64.
     case v.pat
-      when 'corporate' then 115000 + pg_temp.rnd(v.idx || ':' || v.k || ':s') *  95000
-      when 'vip'       then 132000 + pg_temp.rnd(v.idx || ':' || v.k || ':s') * 158000
-      when 'loyal'     then 114000 + pg_temp.rnd(v.idx || ':' || v.k || ':s') * 132000
-      else                  106000 + pg_temp.rnd(v.idx || ':' || v.k || ':s') * 128000
+      when 'corporate' then 106000 + pg_temp.rnd(v.idx || ':' || v.k || ':s') *  87000
+      when 'vip'       then 122000 + pg_temp.rnd(v.idx || ':' || v.k || ':s') * 146000
+      when 'loyal'     then 105000 + pg_temp.rnd(v.idx || ':' || v.k || ':s') * 122000
+      else                   98000 + pg_temp.rnd(v.idx || ':' || v.k || ':s') * 119000
     end
+    -- A "big night": wine, a set menu, a celebration. Roughly one visit in
+    -- five, lifted 1.5x to 2.1x on the per-head figure.
+    --
+    -- Without this the bands above are near-uniform and top out around
+    -- Rp 276.000 a head, so NO visit ever crossed the Rp 300.000 per-pax
+    -- High Spender line and the "High Average Spend Per Person" report was
+    -- permanently empty. Half the spending model went untested.
+    --
+    -- The real restaurant, measured 2026-09-02: 18% of visits are at or over
+    -- Rp 300.000 a head, and 18% of guests AVERAGE above it, with a p90 of
+    -- Rp 363.000. A uniform band cannot produce that shape; it needs a tail.
+    -- NOT applied to corporate. A 20-cover banquet already produces a large
+    -- bill through party size; stacking a wine-night multiplier on top of it
+    -- pushed p90 spend to Rp 2.6jt against a real Rp 2.0jt, all of it from a
+    -- handful of implausible invoices.
+    * (case when v.pat <> 'corporate' and (v.idx * 11 + v.k * 7) % 4 = 0
+            then 1.9 + pg_temp.rnd(v.idx || ':' || v.k || ':big') * 0.9
+            else 1.0 end)
     * (case when extract(isodow from v.visit_date) in (6, 7) then 1.18 else 1.0 end)
     * v.pax
   ) / 1000) * 1000 as spend_amount,

@@ -112,6 +112,27 @@ const I18N_EXCEPTION_TERMS = new Set([
 
 // Indonesian translations, keyed by the English source string.
 const ID_DICT = {
+  // ── Day run sheet (added 2026-09-04) ──────────────────────
+  // Only words that actually CHANGE are listed. "Pax", "Area", "Deposit"
+  // and "DP" are the same in both languages and are deliberately absent:
+  // i18nTranslate() returns a value for any key it finds and
+  // i18nTranslateTree() then assigns it to nodeValue, so an identity
+  // mapping rewrites the node with the value it already had. The
+  // MutationObserver in i18n.js reschedules a full re-translate on any
+  // mutation, which makes an identity entry a self-feeding loop with no
+  // fixpoint. A word that is already correct needs no entry at all.
+  // "Close", "Notes", "reservations", "Not yet placed" and "pax" are
+  // already in this dictionary further down and are not repeated here:
+  // a duplicate key is silently the last one to win.
+  "Day Run Sheet": "Lembar Harian",
+  "Run Sheet": "Lembar Harian",
+  "Could not load the run sheet.": "Gagal memuat lembar harian.",
+  "No bookings for this day.": "Tidak ada reservasi untuk hari ini.",
+  Print: "Cetak",
+  Printed: "Dicetak",
+  Time: "Jam",
+  Name: "Nama",
+  Table: "Meja",
   // ── Invoice design (added 2026-08-23) ─────────────────────────────
   "Build Invoice": "Buat Invoice",
   "Invoice Design": "Desain Invoice",

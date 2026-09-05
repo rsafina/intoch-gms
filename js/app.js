@@ -6248,7 +6248,15 @@ document.addEventListener("click", (e) => {
 // table can serve several parties in a day at different hours (regular
 // tables can't — see LEGACY_BOOKING_HOURS/isVipTableId above).
 // ============================================================
-const RES_OCCUPANCY_STATUSES = ["Reserved", "Arrived", "Completed"];
+// "Confirmed" is a legal status in the reservations CHECK constraint and the
+// reports at getResOutcome()/upcoming already count it as an upcoming
+// booking, but it was missing here until 2026-09-04. Nothing sets it yet,
+// so the gap was invisible. It stops being invisible the moment a recorded
+// deposit payment promotes a booking to Confirmed: every paid booking would
+// have vanished from the occupancy summary and from the day run sheet, both
+// of which read this list. Added before the feature that would have exposed
+// it, which is why adding it changes nothing observable today.
+const RES_OCCUPANCY_STATUSES = ["Reserved", "Confirmed", "Arrived", "Completed"];
 const VIP_TIMELINE_START_MIN = 10 * 60; // 10:00
 const VIP_TIMELINE_END_MIN = 21 * 60; // 21:00
 
@@ -8463,6 +8471,12 @@ async function loadWalkInSpendingInsights() {
     if (!highAverage.length) {
       if (highAverageEmpty) highAverageEmpty.classList.remove("hidden");
       if (highAverageTable) highAverageTable.classList.add("hidden");
+      // Render the EMPTY result rather than just hiding the table. Skipping
+      // this leaves the pager showing the previous result set — the screen
+      // said "No guests matched" and "6-10 of 30" at the same time, and the
+      // stale _spendData meant clicking a page number would have paged
+      // through guests from the last date range.
+      renderSpendPage("average", [], 1);
     } else {
       if (highAverageEmpty) highAverageEmpty.classList.add("hidden");
       if (highAverageTable) highAverageTable.classList.remove("hidden");
@@ -8474,6 +8488,7 @@ async function loadWalkInSpendingInsights() {
     if (!highTotal.length) {
       if (highTotalEmpty) highTotalEmpty.classList.remove("hidden");
       if (highTotalTable) highTotalTable.classList.add("hidden");
+      renderSpendPage("total", [], 1); // same stale-pager bug as section A
     } else {
       if (highTotalEmpty) highTotalEmpty.classList.add("hidden");
       if (highTotalTable) highTotalTable.classList.remove("hidden");
@@ -8493,8 +8508,11 @@ const _spendData = { average: [], total: [] };
 const _spendPage = { average: 1, total: 1 };
 
 function renderSpendPage(type, data, page) {
-  // Store latest data so goSpendPage can reference it without re-fetching
-  if (data) _spendData[type] = data;
+  // Store latest data so goSpendPage can reference it without re-fetching.
+  // `data != null`, not `data`: an EMPTY array is the meaningful "this filter
+  // matched nothing" answer and must replace the previous result set, or the
+  // pager keeps offering pages of guests that are no longer on screen.
+  if (data != null) _spendData[type] = data;
   const allRows = _spendData[type];
   _spendPage[type] = page;
 

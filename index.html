@@ -776,6 +776,119 @@
         color: #4795d0;
         margin-top: 10px;
       }
+    
+      /* ===== DAY RUN SHEET (2026-09-04) =====================
+         Screen: an overlay preview with Close and Print, the same
+         see-it-then-print shape staff already know from the invoice
+         generator. Print: everything except the paper is hidden.
+
+         The paper is deliberately fixed light with black ink and
+         pt units. It is going to a printer, so it must not inherit
+         a screen theme or a rem scale the browser may have changed. */
+      #run-sheet-root {
+        position: fixed;
+        inset: 0;
+        z-index: 70;
+        overflow: auto;
+        background: #EDE9E3;
+        padding: 24px 16px 64px;
+      }
+      body.run-sheet-open { overflow: hidden; }
+      .rs-toolbar {
+        max-width: 780px;
+        margin: 0 auto 16px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+      }
+      .rs-paper {
+        max-width: 780px;
+        margin: 0 auto;
+        background: #FFFFFF;
+        color: #000000;
+        padding: 28px 32px 20px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 10.5pt;
+        line-height: 1.35;
+      }
+      .rs-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        border-bottom: 2px solid #000000;
+        padding-bottom: 8px;
+        margin-bottom: 12px;
+      }
+      .rs-brand { font-size: 13pt; font-weight: 700; margin: 0; }
+      .rs-title { font-size: 9pt; letter-spacing: 0.12em; text-transform: uppercase; margin: 2px 0 0; }
+      .rs-head-right { text-align: right; }
+      .rs-date { font-size: 11pt; font-weight: 700; margin: 0; }
+      .rs-count { font-size: 9pt; margin: 2px 0 0; }
+      .rs-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 10px;
+        margin-bottom: 14px;
+      }
+      .rs-sum-cell {
+        border: 1px solid #000000;
+        padding: 4px 8px;
+        display: flex;
+        flex-direction: column;
+        min-width: 92px;
+      }
+      .rs-sum-unplaced { border-style: dashed; }
+      .rs-sum-area { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; }
+      .rs-sum-figs { font-size: 11pt; font-weight: 700; }
+      .rs-table { width: 100%; border-collapse: collapse; }
+      .rs-table th,
+      .rs-table td {
+        border-bottom: 1px solid #999999;
+        padding: 5px 6px 5px 0;
+        text-align: left;
+        vertical-align: top;
+      }
+      .rs-table th {
+        border-bottom: 1.5px solid #000000;
+        font-size: 8.5pt;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .rs-table td.rs-time { font-weight: 700; white-space: nowrap; }
+      .rs-table td.rs-name { font-weight: 700; }
+      .rs-table .rs-num { text-align: right; width: 42px; white-space: nowrap; }
+      .rs-table .rs-notes { font-size: 9pt; }
+      .rs-table .rs-dep { white-space: nowrap; font-size: 9pt; }
+      .rs-muted { color: #777777; }
+      .rs-empty { padding: 24px 0; font-style: italic; }
+      .rs-foot { margin-top: 14px; font-size: 8pt; color: #555555; }
+
+      @media print {
+        /* Hide the app, keep the paper. Anchored on body.run-sheet-open so
+           printing from anywhere else in the app is untouched. */
+        body.run-sheet-open > *:not(#run-sheet-root) { display: none !important; }
+        body.run-sheet-open { overflow: visible; }
+        #run-sheet-root {
+          position: static;
+          padding: 0;
+          background: #FFFFFF;
+          overflow: visible;
+        }
+        .rs-toolbar { display: none !important; }
+        .rs-paper {
+          max-width: none;
+          margin: 0;
+          padding: 0;
+          box-shadow: none;
+        }
+        /* A booking must never be split across a page break: half a row at
+           the bottom of page one is how a table gets missed at the gate. */
+        .rs-table tr { page-break-inside: avoid; }
+        .rs-table thead { display: table-header-group; }
+        @page { margin: 12mm; }
+      }
     </style>
   </head>
   <body>
@@ -2814,6 +2927,12 @@
                 class="btn-ghost flex items-center gap-2"
               >
                 Export Excel
+              </button>
+              <button
+                onclick="openRunSheet()"
+                class="btn-ghost flex items-center gap-2"
+              >
+                Run Sheet
               </button>
               <button onclick="openReservationModal()" class="btn-primary">
                 <svg
@@ -8923,7 +9042,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
     <script src="js/config.js?v=12"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=21"></script>
+    <script src="js/app.js?v=22"></script>
     <script src="js/membership.js?v=5"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->
@@ -8944,6 +9063,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="js/invoice.js?v=9"></script>
+    <script src="js/runsheet.js?v=1"></script>
     <!-- vouchers.js uses the voucher-card canvas helpers in voucher.js
          (membership card) for its own card, so it must load after it. -->
     <script src="js/vouchers.js?v=3"></script>
@@ -8969,5 +9089,8 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         });
       });
     </script>
+      <!-- Day run sheet overlay. Must stay a DIRECT child of body: the
+         print rule hides body's other children by selector. -->
+    <div id="run-sheet-root" class="hidden"></div>
   </body>
 </html>
