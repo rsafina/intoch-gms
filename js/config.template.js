@@ -125,13 +125,15 @@ const ID_DICT = {
     "Mati secara default. Selama belum ada area yang diaktifkan, form reservasi tidak meminta tamu memilih area dan tetap berjalan seperti sekarang.",
   "Minimum guests": "Minimum tamu",
   "Minimum spend (Rp)": "Minimum belanja (Rp)",
-  "Deposit (% of minimum spend)": "Deposit (% dari minimum belanja)",
+  // "Deposit (Rp)" is deliberately absent: it is identical in both languages
+  // and an identity mapping self-feeds through the MutationObserver.
   "Leave any of these blank for no rule. Guests see them on the booking form before they choose.":
     "Kosongkan jika tidak ada aturan. Tamu melihat ketentuan ini di form reservasi sebelum memilih.",
   "Minimum guests must be 1 or more": "Minimum tamu harus 1 atau lebih",
-  "Deposit must be between 0 and 100 percent": "Deposit harus antara 0 dan 100 persen",
-  "A deposit percentage needs a minimum spend to calculate from":
-    "Persentase deposit butuh minimum belanja sebagai dasar hitungannya",
+  "This deposit is larger than the minimum spend.":
+    "Deposit ini lebih besar dari minimum belanja.",
+  "Staff only": "Khusus staf",
+  "Needs deposit": "Perlu deposit",
   "Minimum guests cannot be higher than the seats in this area":
     "Minimum tamu tidak boleh lebih besar dari jumlah kursi di area ini",
   // ── Day run sheet (added 2026-09-04) ──────────────────────

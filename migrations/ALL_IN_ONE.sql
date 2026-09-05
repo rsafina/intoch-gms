@@ -4741,14 +4741,17 @@ alter table public.areas
   add column if not exists min_pax            integer,
   add column if not exists min_spend          numeric,
   add column if not exists deposit_pct        numeric,
+  add column if not exists deposit_amount     numeric,
   add column if not exists is_bookable_online boolean not null default false;
 
 comment on column public.areas.min_pax is
   'Smallest party this area accepts online. NULL means no minimum.';
 comment on column public.areas.min_spend is
-  'Minimum spend in rupiah. NULL means none. Also the base the suggested deposit is a percentage OF, so an area with a deposit_pct and no min_spend produces no suggested figure.';
+  'Minimum spend in rupiah. NULL means none. Purely a condition the guest is told about: since 2026-09-05 the deposit is a flat figure and no longer derived from this.';
 comment on column public.areas.deposit_pct is
-  'Suggested deposit as a percentage of min_spend. NULL means this area asks for no deposit by default. Staff may still add one by hand.';
+  'SUPERSEDED 2026-09-05 by deposit_amount and no longer read by anything. Kept rather than dropped because dropping is the one irreversible move here. Do not start writing to it again.';
+comment on column public.areas.deposit_amount is
+  'Deposit as a flat rupiah figure. NULL, or 0, means this area asks for no deposit by default. Independent of min_spend, so an area may ask for a deposit without setting any minimum spend. Staff may still add or waive one by hand per booking.';
 comment on column public.areas.is_bookable_online is
   'Off by default ON PURPOSE. An existing database may hold private rooms or staff-only zones, and defaulting to true would publish every one of them the moment this file runs. With no area bookable, the public form hides the picker and behaves exactly as it did before.';
 
@@ -4923,7 +4926,7 @@ as $function$
     -- take the form offline the moment this file is applied.
     if p_area_id is not null then
       select a.id, a.name, a.capacity, a.min_pax, a.min_spend,
-             a.deposit_pct, a.is_bookable_online
+             a.deposit_amount, a.is_bookable_online
         into v_area
         from areas a
        where a.id = p_area_id;
@@ -4950,11 +4953,17 @@ as $function$
       -- SNAPSHOT, not a live rule. Editing the minimum spend in Settings
       -- next month must not silently rewrite what this guest was told they
       -- owed. Same reasoning as copying guest details onto an invoice.
-      if v_area.deposit_pct is not null and v_area.min_spend is not null then
+      -- A flat rupiah figure since 2026-09-05, not a percentage of min_spend.
+      -- It no longer depends on min_spend at all, so an area may ask for a
+      -- deposit with no minimum spend set.
+      --
+      -- `> 0` is deliberate. A stored 0 would mark the booking as owing money
+      -- and put "DP Rp 0" in front of the guest, which is worse than silent.
+      if v_area.deposit_amount is not null and v_area.deposit_amount > 0 then
         v_dep_req  := true;
-        v_dep_amt  := round(v_area.min_spend * v_area.deposit_pct / 100.0);
-        v_dep_note := format('Area rule: %s%% of %s minimum spend',
-                             v_area.deposit_pct, v_area.name);
+        v_dep_amt  := round(v_area.deposit_amount);
+        v_dep_note := format('Area rule: Rp %s deposit for %s',
+                             round(v_area.deposit_amount), v_area.name);
       end if;
     end if;
 
@@ -5039,10 +5048,10 @@ from information_schema.columns
 where table_schema = 'public' and table_name = 'areas'
   and column_name = 'is_bookable_online'
 union all
-select 'areas condition columns (3)', count(*)
+select 'areas condition columns (4)', count(*)
 from information_schema.columns
 where table_schema = 'public' and table_name = 'areas'
-  and column_name in ('min_pax', 'min_spend', 'deposit_pct')
+  and column_name in ('min_pax', 'min_spend', 'deposit_pct', 'deposit_amount')
 union all
 select 'reservations deposit columns (3)', count(*)
 from information_schema.columns
@@ -5065,15 +5074,28 @@ where n.nspname = 'public' and p.proname = 'create_public_reservation'
 union all
 select 'no area is bookable online yet',
        case when count(*) = 0 then 1 else 0 end
-from areas where is_bookable_online = true;
--- expect: 1, 3, 3, 1, 1, 1, 1
+from areas where is_bookable_online = true
+union all
+-- The rows above prove the COLUMNS exist. They say nothing about the function
+-- body actually running in this database. A half-applied run, or someone
+-- re-running an older copy of this file, gives seven green rows while the old
+-- percentage logic quietly keeps computing deposits. This row reads the live
+-- definition and checks the new logic is in it and the old logic is gone.
+select 'the live function uses the flat deposit amount',
+       case when pg_get_functiondef(p.oid) like '%v_area.deposit_amount%'
+             and pg_get_functiondef(p.oid) not like '%v_area.deposit_pct%'
+            then 1 else 0 end
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname = 'create_public_reservation';
+-- expect: 1, 4, 3, 1, 1, 1, 1, 1
 --
 -- The last line is deliberate. Applying this file must leave the public form
 -- behaving exactly as it did. Rere turns areas on one at a time, afterwards.
 
 -- Rollback (only if nothing has been written yet):
 --   alter table public.areas drop column if exists min_pax, drop column if exists min_spend,
---     drop column if exists deposit_pct, drop column if exists is_bookable_online;
+--     drop column if exists deposit_pct, drop column if exists deposit_amount,
+--     drop column if exists is_bookable_online;
 --   alter table public.reservations drop column if exists deposit_required,
 --     drop column if exists deposit_expected, drop column if exists deposit_rule_note;
 --   -- and re-run the previous definition of create_public_reservation.

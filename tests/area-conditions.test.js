@@ -54,7 +54,7 @@ eq("formatting nothing gives nothing", sandbox.areaFormatRupiah(null), "");
 
 console.log("\nBoth save paths carry the new columns");
 const save = body("saveArea");
-for (const col of ["is_bookable_online", "min_pax", "min_spend", "deposit_pct"]) {
+for (const col of ["is_bookable_online", "min_pax", "min_spend", "deposit_amount"]) {
   // Twice: once in the update branch, once in the insert branch. Patching
   // only the update is the classic version of this bug, and it looks fine
   // until somebody creates a NEW area.
@@ -65,18 +65,39 @@ ok("rupiah goes through the shared parser", save.includes("areaParseRupiah("));
 
 console.log("\nRules that cannot be satisfied are refused before they are saved");
 ok(
-  "a deposit percent with no minimum spend is blocked",
-  /depPct !== null && minSpend === null/.test(save),
-);
-ok(
   "a minimum above the area's own capacity is blocked",
   /minPax !== null && capacity > 0 && minPax > capacity/.test(save),
 );
-ok("out-of-range deposit percent is blocked", /depPct < 0 \|\| depPct > 100/.test(save));
+// The deposit is a flat rupiah figure now. It has nothing to calculate from,
+// so the old "needs a minimum spend" refusal is gone ON PURPOSE and must not
+// creep back: an area may ask for a deposit with no minimum spend at all.
+ok(
+  "a deposit no longer depends on a minimum spend",
+  !/depAmount !== null && minSpend === null/.test(save) &&
+    !save.includes("A deposit percentage needs a minimum spend"),
+);
+ok("nothing computes a percentage any more", !/\/ 100/.test(save));
+// A typed 0 must reach the database as NULL. Stored as 0 it would mark the
+// booking as owing money and show the guest "DP Rp 0".
+ok("a typed zero deposit is stored as no deposit", /depRaw === 0 \? null : depRaw/.test(save));
+
+console.log("\nA deposit above the minimum spend warns instead of refusing");
+const hint = body("refreshAreaDepositHint");
+ok("the comparison is deposit against minimum spend", /deposit > minSpend/.test(hint));
+ok("it toggles a hint rather than returning early", hint.includes("classList.toggle"));
+ok("saveArea does not refuse on it", !/deposit > minSpend/.test(save));
+
+console.log("\nMoney boxes reformat on blur, never mid-keystroke");
+ok("min spend reformats on blur", /id="area-min-spend"[^>]*onblur="onAreaMoneyBlur/.test(html));
+ok("deposit reformats on blur", /id="area-deposit-amount"[^>]*onblur="onAreaMoneyBlur/.test(html));
+ok("neither is wired to oninput", !/id="area-(min-spend|deposit-amount)"[^>]*oninput=/.test(html));
+const blur = body("onAreaMoneyBlur");
+ok("blur round-trips through the shared parser and formatter",
+   blur.includes("areaParseRupiah(") && blur.includes("areaFormatRupiah("));
 
 console.log("\nThe modal fills in what is already stored");
 const open = body("openAreaModal");
-for (const id of ["area-min-pax", "area-min-spend", "area-deposit-pct", "area-bookable"]) {
+for (const id of ["area-min-pax", "area-min-spend", "area-deposit-amount", "area-bookable"]) {
   ok(`${id} is populated when editing`, open.includes(id));
 }
 ok("stored rupiah is formatted for display", open.includes("areaFormatRupiah("));
@@ -102,8 +123,8 @@ ok("the pause switch is still written", settingsBlock.includes("online_paused:")
 console.log("\nThe screen has the fields the code reads");
 for (const id of [
   "set-res-max-pax", "set-res-max-days",
-  "area-bookable", "area-min-pax", "area-min-spend", "area-deposit-pct",
-  "area-conditions-wrap",
+  "area-bookable", "area-min-pax", "area-min-spend", "area-deposit-amount",
+  "area-conditions-wrap", "area-deposit-hint",
 ]) {
   ok(`#${id} exists in index.html`, html.includes(`id="${id}"`));
 }
@@ -116,7 +137,7 @@ ok("the switch is wired to the toggle", html.includes('onchange="onAreaBookableT
 console.log("\nThe database agrees with the screen");
 // The app writing a column the migration never created fails at runtime with
 // a message nobody reading the UI would connect to a migration.
-for (const col of ["min_pax", "min_spend", "deposit_pct", "is_bookable_online"]) {
+for (const col of ["min_pax", "min_spend", "deposit_pct", "deposit_amount", "is_bookable_online"]) {
   ok(`areas.${col} is created by the migration`, new RegExp(`add column if not exists ${col}\\b`, "i").test(sqlSrc));
 }
 for (const col of ["deposit_required", "deposit_expected", "deposit_rule_note"]) {
@@ -134,14 +155,53 @@ ok(
   "the settings keys are merged, not assigned",
   /value \? 'max_pax'/.test(sqlSrc) && /value \? 'max_days_ahead'/.test(sqlSrc),
 );
+// The function is redefined more than once across ALL_IN_ONE.sql, so anchor
+// to the LAST definition or this reads a superseded body and passes wrongly.
+const fnStart = sqlSrc.toLowerCase().lastIndexOf("create or replace function public.create_public_reservation");
+// Bounded at the function's own terminator, NOT the end of the file. Slicing
+// to the end swept the confirm block in, and the confirm block legitimately
+// mentions deposit_pct (it asserts the live body does not use it), which made
+// "the function no longer reads deposit_pct" fail against its own guard.
+const fnEnd = sqlSrc.indexOf("$function$;", fnStart);
+const fnSrc = sqlSrc.slice(fnStart, fnEnd === -1 ? undefined : fnEnd);
+ok(
+  "the booking function snapshots the flat amount, not a percentage",
+  /v_dep_amt\s*:=\s*round\(v_area\.deposit_amount\)/.test(fnSrc),
+);
+ok(
+  "a zero deposit does not mark a booking as owing money",
+  /v_area\.deposit_amount > 0/.test(fnSrc),
+);
+ok(
+  "the function no longer reads deposit_pct",
+  !/v_area\.deposit_pct/.test(fnSrc),
+);
+ok(
+  "the deposit no longer depends on min_spend",
+  !/deposit_amount is not null and v_area\.min_spend is not null/i.test(fnSrc),
+);
+// Column checks pass on a half-applied run while the OLD function body is
+// still live. The confirm block has to read the deployed definition too.
+ok(
+  "a confirm row reads the live function body, not just the columns",
+  /pg_get_functiondef\(p\.oid\)[\s\S]{0,200}v_area\.deposit_amount/.test(sqlSrc) &&
+    /not like '%v_area\.deposit_pct%'/.test(sqlSrc),
+);
+
+console.log("\nThe capacity cards say which areas are live");
+const cards = body("renderAreas");
+ok("a bookable area is marked apart from a staff-only one", /is_bookable_online/.test(cards) && cards.includes('t("Staff only")'));
+ok("the deposit gets its own chip", cards.includes('t("Needs deposit")'));
+ok("the chips go through the escaping helper", body("areaChip").includes("escapeHtml("));
 
 console.log("\nEvery new phrase is translatable, and none of them loop");
 const dict = cfgSrc.slice(cfgSrc.indexOf("const ID_DICT = {"));
 for (const phrase of [
   "Booking limits", "Largest party", "Guests can book this area online",
-  "Minimum guests", "Minimum spend (Rp)", "Deposit (% of minimum spend)",
+  "Minimum guests", "Minimum spend (Rp)",
   "Bookable online", "Minimum guests must be 1 or more",
-  "A deposit percentage needs a minimum spend to calculate from",
+  "This deposit is larger than the minimum spend.",
+  "Staff only", "Needs deposit",
 ]) {
   ok(`"${phrase}" has an Indonesian entry`, dict.includes(`"${phrase}":`));
 }

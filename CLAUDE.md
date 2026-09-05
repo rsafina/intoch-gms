@@ -76,6 +76,13 @@ Forking that per client is unmaintainable by client three. Instead:
 
 One repo, N deployments, byte-identical code. A fix pushed once reaches every client.
 
+**`js/config.js` is a BUILD ARTEFACT. Edit `js/config.template.js`.** Everything
+outside the two Supabase constants is copied through verbatim, `ID_DICT`
+included, so a translation added to `config.js` alone works locally, passes a
+casual glance, and is silently erased by the next deploy. `tests/` read the
+TEMPLATE for exactly this reason: a test that passes while the app is broken is
+worse than no test. Keep the two dictionaries identical when editing by hand.
+
 **This does not hide the key.** The anon key is still readable in the published JavaScript,
 as it always was and always will be. This is a maintenance fix, not a security fix.
 

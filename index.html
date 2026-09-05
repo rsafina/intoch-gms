@@ -7353,10 +7353,15 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         <div class="pt-4 mb-5 border-t border-[#EDE9E3]">
           <label class="flex items-start gap-3 cursor-pointer">
             <input id="area-bookable" type="checkbox" class="mt-0.5" onchange="onAreaBookableToggle()" />
-            <span class="text-sm text-[#333]" data-i18n>Guests can book this area online
-              <span class="block text-xs text-[#999] mt-0.5" data-i18n>Off by default. While no area is switched on, the booking form does not ask guests to choose one and works exactly as it does today.</span>
-            </span>
+            <span class="text-sm text-[#333]" data-i18n>Guests can book this area online</span>
           </label>
+          <!-- Sibling <p>, not a nested span inside the <label>. The nested
+               version rendered inline with the label text, losing its size
+               and colour. This matches the two helper lines above, which do
+               render correctly. -->
+          <p class="text-[11px] text-[#999] mt-1 pl-7" data-i18n>
+            Off by default. While no area is switched on, the booking form does not ask guests to choose one and works exactly as it does today.
+          </p>
 
           <div id="area-conditions-wrap" class="hidden mt-4 pl-7 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
@@ -7365,11 +7370,11 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             </div>
             <div>
               <label class="block text-[11px] text-[#777] mb-1" data-i18n>Minimum spend (Rp)</label>
-              <input id="area-min-spend" type="text" inputmode="numeric" placeholder="e.g. 1.500.000" class="form-input" />
+              <input id="area-min-spend" type="text" inputmode="numeric" placeholder="e.g. 1.500.000" class="form-input" onblur="onAreaMoneyBlur(this)" />
             </div>
             <div>
-              <label class="block text-[11px] text-[#777] mb-1" data-i18n>Deposit (% of minimum spend)</label>
-              <input id="area-deposit-pct" type="number" min="0" max="100" step="1" placeholder="e.g. 50" class="form-input" />
+              <label class="block text-[11px] text-[#777] mb-1" data-i18n>Deposit (Rp)</label>
+              <input id="area-deposit-amount" type="text" inputmode="numeric" placeholder="e.g. 500.000" class="form-input" onblur="onAreaMoneyBlur(this)" />
             </div>
           </div>
           <p id="area-deposit-hint" class="hidden text-[11px] mt-2 pl-7"></p>
@@ -9095,9 +9100,9 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
 
-    <script src="js/config.js?v=14"></script>
+    <script src="js/config.js?v=15"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=25"></script>
+    <script src="js/app.js?v=26"></script>
     <script src="js/membership.js?v=5"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->

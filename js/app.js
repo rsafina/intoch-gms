@@ -2398,9 +2398,16 @@ function areaConditionsLine(area) {
   if (area.min_pax != null) bits.push(`${t("min")} ${area.min_pax} ${t("pax")}`);
   if (area.min_spend != null)
     bits.push(`${t("min")} Rp ${Number(area.min_spend).toLocaleString("id-ID")}`);
-  if (area.deposit_pct != null) bits.push(`${t("DP")} ${area.deposit_pct}%`);
+  if (area.deposit_amount != null && Number(area.deposit_amount) > 0)
+    bits.push(`${t("DP")} Rp ${Number(area.deposit_amount).toLocaleString("id-ID")}`);
   const detail = bits.length ? ` &middot; ${bits.join(" &middot; ")}` : "";
   return `<p class="text-[11px] text-[#5F8D4E] mt-0.5">${t("Bookable online")}${detail}</p>`;
+}
+
+// A chip is a label, never area-supplied text, so the only thing that reaches
+// it is a number or a translated string.
+function areaChip(label, bg, fg) {
+  return `<span class="text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap" style="background:${bg};color:${fg}">${escapeHtml(String(label))}</span>`;
 }
 
 function renderTableManagement() {
@@ -2646,15 +2653,55 @@ async function renderAreas() {
       const statusColor =
         pct >= 90 ? "#E05252" : pct >= 70 ? "#D4A017" : "#5F8D4E";
 
+      // The rules, at a glance. Deliberately NOT expressed as a card
+      // background colour: the bar already carries the per-area colour and
+      // the big number already carries occupancy, so a third colour meaning
+      // on the same card would leave none of them readable. Bookable areas
+      // get a left edge and a faint tint, the rules themselves get chips.
+      const bookable = !!area.is_bookable_online;
+      const depositAmt =
+        area.deposit_amount != null && Number(area.deposit_amount) > 0
+          ? Number(area.deposit_amount)
+          : null;
+      const chips = [];
+      if (bookable) {
+        chips.push(areaChip(t("Bookable online"), "#EAF3E5", "#4A7A3A"));
+        if (area.min_pax != null)
+          chips.push(
+            areaChip(`${t("min")} ${area.min_pax} ${t("pax")}`, "#F1EFE9", "#6B6459"),
+          );
+        if (area.min_spend != null)
+          chips.push(
+            areaChip(
+              `${t("min")} Rp ${Number(area.min_spend).toLocaleString("id-ID")}`,
+              "#F1EFE9",
+              "#6B6459",
+            ),
+          );
+        // Called out separately from the other conditions, because it is the
+        // only rule that asks the guest for money before they arrive.
+        if (depositAmt !== null)
+          chips.push(
+            areaChip(
+              `${t("Needs deposit")} · Rp ${depositAmt.toLocaleString("id-ID")}`,
+              "#FBF0D9",
+              "#96701A",
+            ),
+          );
+      } else {
+        chips.push(areaChip(t("Staff only"), "#F1EFE9", "#8A8375"));
+      }
+
       return `
-      <div class="card p-6">
-        <div class="flex items-start justify-between mb-4">
+      <div class="card p-6" style="${bookable ? "background:#FCFDFA;border-left:3px solid #5F8D4E;" : ""}">
+        <div class="flex items-start justify-between mb-2">
           <div>
             <span class="text-2xl mb-2 block">${c.icon}</span>
             <h3 class="font-heading text-xl font-semibold text-[#28547C]">${area.name}</h3>
           </div>
           <span class="text-2xl font-display font-semibold" style="color:${statusColor}">${remaining}</span>
         </div>
+        <div class="flex flex-wrap gap-1 mb-4">${chips.join("")}</div>
         <div class="flex justify-between text-xs text-[#999] mb-2">
           <span>Capacity: ${area.capacity}</span>
           <span>Reserved: ${reserved}</span>
@@ -13685,6 +13732,34 @@ function areaFormatRupiah(n) {
   return Number.isFinite(num) ? Math.round(num).toLocaleString("id-ID") : "";
 }
 
+// Reformats a money box the moment the person leaves it, and never while they
+// are still typing: rewriting the value mid-keystroke moves the caret to the
+// end and people lose their place halfway through a number.
+function onAreaMoneyBlur(el) {
+  if (!el) return;
+  const n = areaParseRupiah(el.value);
+  el.value = n === null ? "" : areaFormatRupiah(n);
+  refreshAreaDepositHint();
+}
+
+// A deposit larger than the minimum spend WARNS rather than refuses. It is
+// almost always a typo, but it is not impossible, and refusing it would also
+// block the restaurant that wants a flat deposit on an area with no minimum
+// spend at all. Nothing breaks quietly here: the guest sees both figures.
+function refreshAreaDepositHint() {
+  const hint = document.getElementById("area-deposit-hint");
+  if (!hint) return;
+  const on = !!document.getElementById("area-bookable")?.checked;
+  const minSpend = areaParseRupiah(document.getElementById("area-min-spend")?.value);
+  const deposit = areaParseRupiah(document.getElementById("area-deposit-amount")?.value);
+  const odd = on && deposit !== null && minSpend !== null && deposit > minSpend;
+  hint.classList.toggle("hidden", !odd);
+  if (odd) {
+    hint.textContent = t("This deposit is larger than the minimum spend.");
+    hint.style.color = "#D4A017";
+  }
+}
+
 // The conditions only mean anything for an area guests can actually book, so
 // they stay hidden until the switch is on. Hidden, not disabled: a disabled
 // field that still holds a number looks like a rule that is in force.
@@ -13693,6 +13768,7 @@ function onAreaBookableToggle() {
   document.getElementById("area-conditions-wrap")?.classList.toggle("hidden", !on);
   document.getElementById("area-conditions-note")?.classList.toggle("hidden", !on);
   if (!on) document.getElementById("area-deposit-hint")?.classList.add("hidden");
+  else refreshAreaDepositHint();
 }
 
 function openAreaModal(areaId) {
@@ -13710,10 +13786,14 @@ function openAreaModal(areaId) {
   set("area-capacity", area ? area.capacity : "");
   set("area-min-pax", area && area.min_pax != null ? area.min_pax : "");
   set("area-min-spend", area && area.min_spend != null ? areaFormatRupiah(area.min_spend) : "");
-  set("area-deposit-pct", area && area.deposit_pct != null ? area.deposit_pct : "");
+  set(
+    "area-deposit-amount",
+    area && area.deposit_amount != null ? areaFormatRupiah(area.deposit_amount) : "",
+  );
   const bookableEl = document.getElementById("area-bookable");
   if (bookableEl) bookableEl.checked = !!(area && area.is_bookable_online);
   onAreaBookableToggle();
+  refreshAreaDepositHint();
   const title = document.getElementById("area-modal-title");
   if (title) title.textContent = area ? t("Edit Area") : t("Add Area");
   const btn = document.getElementById("area-save-button");
@@ -13755,28 +13835,20 @@ async function saveArea() {
   const minPaxRaw = document.getElementById("area-min-pax")?.value;
   const minPax = minPaxRaw === "" || minPaxRaw == null ? null : parseInt(minPaxRaw, 10);
   const minSpend = areaParseRupiah(document.getElementById("area-min-spend")?.value);
-  const depPctRaw = document.getElementById("area-deposit-pct")?.value;
-  const depPct = depPctRaw === "" || depPctRaw == null ? null : Number(depPctRaw);
+  // A typed 0 is stored as NULL. "Deposit: 0" and "no deposit" are the same
+  // intention, but a stored 0 would mark bookings as owing money and show the
+  // guest "DP Rp 0".
+  const depRaw = areaParseRupiah(document.getElementById("area-deposit-amount")?.value);
+  const depAmount = depRaw === 0 ? null : depRaw;
 
   if (minPax !== null && (!isFinite(minPax) || minPax < 1)) {
     toast(t("Minimum guests must be 1 or more"), "error");
     return;
   }
-  if (depPct !== null && (!isFinite(depPct) || depPct < 0 || depPct > 100)) {
-    toast(t("Deposit must be between 0 and 100 percent"), "error");
-    return;
-  }
-  // A deposit percentage is a percentage OF the minimum spend. Without one
-  // there is nothing to take a percentage of, so the invoice would be raised
-  // with a blank figure and somebody would have to guess. Refuse it here,
-  // where the person can still see what they typed.
-  if (depPct !== null && minSpend === null) {
-    toast(
-      t("A deposit percentage needs a minimum spend to calculate from"),
-      "error",
-    );
-    return;
-  }
+  // The old "a deposit percentage needs a minimum spend" refusal is gone on
+  // purpose: a flat rupiah deposit has nothing to calculate from, so it no
+  // longer depends on min_spend. Deposit larger than min_spend is a warning
+  // on the screen, not a refusal. See refreshAreaDepositHint().
   // min_pax above capacity is a rule no booking can ever satisfy. The area
   // would simply never accept anyone, with nothing on screen saying why.
   if (minPax !== null && capacity > 0 && minPax > capacity) {
@@ -13801,7 +13873,7 @@ async function saveArea() {
               is_bookable_online: bookable,
               min_pax: minPax,
               min_spend: minSpend,
-              deposit_pct: depPct,
+              deposit_amount: depAmount,
             })
             .eq("id", id)
         : db.from("areas").insert({
@@ -13810,7 +13882,7 @@ async function saveArea() {
             is_bookable_online: bookable,
             min_pax: minPax,
             min_spend: minSpend,
-            deposit_pct: depPct,
+            deposit_amount: depAmount,
           }),
     "Failed to save area",
   );
