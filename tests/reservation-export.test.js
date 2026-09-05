@@ -84,29 +84,64 @@ check("a missing or malformed date exports blank, not Invalid Date", () => {
   assert.strictEqual(resExportDateTime("not-a-date", "19:30"), "");
 });
 
-console.log("\nThe row is the five agreed columns, in order");
+console.log("\nThe row is the seven agreed columns, in order");
 
-check("a full row maps to Name, Phone, Date Time, Notes, Status", () => {
+check("a full row maps to Name, Phone, Date Time, Pax, Area, Notes, Status", () => {
   const row = resExportRow({
     reservation_date: "2026-09-01",
     reservation_time: "19:30",
+    pax: 6,
     notes: "Window seat",
     status: "Reserved",
     guests: { name: "Ibu Alia", phone: "081234567890" },
+    areas: { name: "Outdoor Smoking" },
   });
-  assert.strictEqual(row.length, 5);
+  assert.strictEqual(row.length, 7);
   assert.strictEqual(row[0], "Alia");
   assert.strictEqual(row[1], "081234567890");
   assert.ok(row[2] instanceof Date);
-  assert.strictEqual(row[3], "Window seat");
-  assert.strictEqual(row[4], "Reserved");
+  assert.strictEqual(row[3], 6);
+  assert.strictEqual(row[4], "Outdoor Smoking");
+  assert.strictEqual(row[5], "Window seat");
+  assert.strictEqual(row[6], "Reserved");
+});
+
+// Pax and Area exist so that printing this sheet by habit is no longer
+// harmful. If either can come out blank on a normal booking, that is the
+// whole point defeated.
+check("pax and area survive every query path the export is fed from", () => {
+  // Day list, search and dashboard all select `pax` and `areas(name)`.
+  const fromList = resExportRow({
+    reservation_date: "2026-09-01", reservation_time: "19:30", pax: 2,
+    status: "Reserved", guests: { name: "A", phone: "1" }, areas: { name: "Indoor" },
+  });
+  assert.strictEqual(fromList[3], 2);
+  assert.strictEqual(fromList[4], "Indoor");
+});
+
+check("a booking with no area yet exports a blank cell, not a sentence", () => {
+  const row = resExportRow({
+    reservation_date: "2026-09-01", reservation_time: "19:30", pax: 4,
+    status: "Reserved", guests: { name: "A", phone: "1" },
+  });
+  assert.strictEqual(row[4], "", "an area column full of prose cannot be filtered");
+});
+
+check("pax of zero is exported as 0, not as blank", () => {
+  // `||` would turn a legitimate 0 into an empty cell. Guarding the nullish
+  // case only is the difference between "nobody" and "not recorded".
+  const row = resExportRow({
+    reservation_date: "2026-09-01", reservation_time: "19:30", pax: 0,
+    status: "Reserved", guests: { name: "A", phone: "1" },
+  });
+  assert.strictEqual(row[3], 0);
 });
 
 check("a reservation with no linked guest still exports a row", () => {
   const row = resExportRow({ reservation_date: "2026-09-01", reservation_time: "19:30", status: "Reserved" });
   assert.strictEqual(row[0], "");
   assert.strictEqual(row[1], "");
-  assert.strictEqual(row[3], "", "null notes must be blank, not the string null");
+  assert.strictEqual(row[5], "", "null notes must be blank, not the string null");
 });
 
 check("the dashboard fallback date is used when the row has none", () => {
@@ -131,7 +166,7 @@ check("favorite, last order and allergies are appended, each on its own line", (
     guests: { name: "Alia", phone: "0812", favorite_menu: "Nasi Goreng", last_order: "Sate Ayam", food_allergy: "Kacang" },
   });
   assert.strictEqual(
-    row[3],
+    row[5],
     "Window seat\nFavorite: Nasi Goreng\nLast order: Sate Ayam\nAllergies: Kacang",
   );
 });
@@ -149,7 +184,7 @@ check("no booking note leaves no leading blank line", () => {
     reservation_date: "2026-09-01", reservation_time: "19:30", notes: null, status: "Reserved",
     guests: { name: "Alia", phone: "0812", food_allergy: "Kacang" },
   });
-  assert.strictEqual(row[3], "Allergies: Kacang");
+  assert.strictEqual(row[5], "Allergies: Kacang");
 });
 
 check("no guest detail leaves no trailing blank line", () => {
@@ -157,7 +192,7 @@ check("no guest detail leaves no trailing blank line", () => {
     reservation_date: "2026-09-01", reservation_time: "19:30", notes: "Window seat", status: "Reserved",
     guests: { name: "Alia", phone: "0812" },
   });
-  assert.strictEqual(row[3], "Window seat");
+  assert.strictEqual(row[5], "Window seat");
 });
 
 check("neither present is still an empty cell", () => {
@@ -165,7 +200,7 @@ check("neither present is still an empty cell", () => {
     reservation_date: "2026-09-01", reservation_time: "19:30", status: "Reserved",
     guests: { name: "Alia", phone: "0812" },
   });
-  assert.strictEqual(row[3], "");
+  assert.strictEqual(row[5], "");
 });
 
 check("blank and whitespace-only guest fields are skipped, not labelled", () => {
@@ -209,7 +244,7 @@ check("a Date becomes a sortable yyyy-mm-dd hh:mm string", () => {
 });
 
 check("a blank Date Time survives the flattening", () => {
-  assert.strictEqual(resExportRowAsText(["a", "b", "", "d", "e"])[2], "");
+  assert.strictEqual(resExportRowAsText(["a", "b", "", 2, "Indoor", "d", "e"])[2], "");
 });
 
 console.log("\nWhat gets exported is what is on screen");
@@ -262,11 +297,23 @@ check("a CDN failure falls back to CSV rather than failing silently", () => {
   assert.ok(body.includes("resExportRowAsText"), "fallback would write [object Object]");
 });
 
-check("the header row is the agreed five and nothing else", () => {
-  const m = src.match(/const RES_EXPORT_HEADERS = \[([^\]]*)\]/);
+check("the header row is the agreed seven and nothing else", () => {
+  const m = src.match(/const RES_EXPORT_HEADERS = \[([\s\S]*?)\]/);
   assert.ok(m, "RES_EXPORT_HEADERS missing");
   const cols = m[1].split(",").map((c) => c.trim().replace(/^"|"$/g, "")).filter(Boolean);
-  assert.deepStrictEqual(cols, ["Name", "Phone Number", "Date Time", "Notes", "Status"]);
+  assert.deepStrictEqual(cols, [
+    "Name", "Phone Number", "Date Time", "Pax", "Area", "Notes", "Status",
+  ]);
+});
+
+check("there is one column width for every header", () => {
+  // A short widths array does not throw; it silently leaves the last
+  // columns at Excel's default and the sheet looks unformatted.
+  const h = src.match(/const RES_EXPORT_HEADERS = \[([\s\S]*?)\]/)[1];
+  const w = src.match(/const RES_EXPORT_WIDTHS = \[([^\]]*)\]/)[1];
+  const nHeaders = h.split(",").map((c) => c.trim()).filter(Boolean).length;
+  const nWidths = w.split(",").map((c) => c.trim()).filter(Boolean).length;
+  assert.strictEqual(nWidths, nHeaders, `${nWidths} widths for ${nHeaders} columns`);
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

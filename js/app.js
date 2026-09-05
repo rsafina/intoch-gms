@@ -11191,15 +11191,32 @@ function downloadCsv(filename, headers, rows) {
 // ============================================================
 // RESERVATION EXPORT (Excel)
 // ============================================================
-// Five columns, agreed 2026-09-01. The front desk reads this sheet to WORK
-// a service, not to audit one, so pax, area, table, occasion, source and
-// spending tier were deliberately left out. They are all still on the
-// reservation row if this ever needs widening again.
-const RES_EXPORT_HEADERS = ["Name", "Phone Number", "Date Time", "Notes", "Status"];
+// Seven columns. Five were agreed 2026-09-01; Pax and Area were added
+// 2026-09-04 when the day run sheet arrived.
+//
+// The original five deliberately left pax and area out, on the reasoning
+// that the front desk reads this to WORK a service, not to audit one. That
+// reasoning did not survive contact with the floor: this spreadsheet was
+// being PRINTED and handed to security, who need to know how many people
+// are arriving and where they are sitting. The run sheet is the right paper
+// for that job now, but the two sit side by side on the same page and
+// somebody will print this one out of habit. Adding the two columns means
+// the wrong choice is no longer a harmful one.
+//
+// Table, occasion, source and spending tier are still deliberately out.
+const RES_EXPORT_HEADERS = [
+  "Name",
+  "Phone Number",
+  "Date Time",
+  "Pax",
+  "Area",
+  "Notes",
+  "Status",
+];
 
 // Excel column widths, in characters. Notes is the only free-text field
 // and is what makes an unformatted export unreadable.
-const RES_EXPORT_WIDTHS = [26, 16, 18, 56, 18];
+const RES_EXPORT_WIDTHS = [26, 16, 18, 6, 18, 56, 18];
 
 // A real Excel datetime, not text, so the column sorts and filters as a
 // date instead of alphabetically.
@@ -11249,6 +11266,11 @@ function resExportRow(r, fallbackDate) {
     r.guests ? guestDisplayName(r.guests) : "",
     r.guests?.phone || "",
     resExportDateTime(r.reservation_date || fallbackDate, r.reservation_time),
+    r.pax ?? "",
+    // A booking with no area yet exports a BLANK cell rather than the run
+    // sheet's "Not yet placed" wording. This is a spreadsheet: blank filters
+    // and sorts cleanly, a sentence in a column of area names does not.
+    r.areas?.name || "",
     // The booking's own note leads: it is about THIS table tonight. The guest
     // details follow. Either half can be missing without leaving a stray
     // blank line at the top or bottom of the cell.
