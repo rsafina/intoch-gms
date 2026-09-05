@@ -35,16 +35,56 @@
         padding: 0;
       }
       :root {
-        --primary: #5596ce;
-        --dark: #28547c;
-        --gold: #c8a96b;
+        /* ── Brand tokens (2026-09-05). ONE PLACE. ───────────────────
+           Every brand colour in the app resolves here. Before this, 728
+           values were hardcoded across 20 files, which is why the colours
+           could not be changed. Status colours (green, red, amber) are NOT
+           here on purpose: they mean something and never follow the brand.
+
+           --brand and --accent are the two a restaurant sets. Everything
+           else is derived from them, and derived to PASS contrast rather
+           than to look pleasant. Two of these fix long-standing failures:
+           the old button blue (5596CE) under white text was 3.16:1 and the
+           old gold (C8A96B) on cream was 2.08:1, against a 4.5 bar. */
+        --brand: #5B4CBD;          /* primary fill. white on it: 6.54 */
+        --brand-hover: #4A3DA3;    /* pressed/hover. white on it: 8.44 */
+        --brand-ink: #4F41A8;      /* headings. on cream: 7.33, matched to the old navy */
+        --brand-deep: #453897;     /* dark panels. on cream: 8.59 */
+        --brand-deepest: #3C3084;  /* deepest. on cream: 9.99 */
+        --brand-muted: #7565D6;    /* de-emphasised */
+        --brand-soft: #A99BF0;     /* soft accents on dark */
+        --brand-tint: #E4E0F8;     /* selected row / chip background */
+        --brand-tint2: #F4F2FD;    /* faintest wash */
+        --accent: #E24701;         /* FILLS ONLY. 3.79 on cream, so never small text */
+        --accent-hover: #C63D01;   /* also the text-safe orange: 4.78 on cream */
+        --accent-strong: #B23600;  /* 5.69 on cream */
+        --accent-tint: #F7C9AF;
+        --accent-tint2: #FBEDE4;
+        /* RGB triplets for the few places that need alpha, e.g.
+           rgb(var(--brand-ink-rgb) / 0.12). A settings screen that changes
+           --brand MUST set --brand-rgb in the same write, or a shadow keeps
+           the old hue while everything around it moves. */
+        --brand-rgb: 91 76 189;
+        --brand-ink-rgb: 79 65 168;
+        --brand-hover-rgb: 74 61 163;
+        --brand-deep-rgb: 69 56 151;
+        --brand-deepest-rgb: 60 48 132;
+        --brand-soft-rgb: 169 155 240;
+        --accent-rgb: 226 71 1;
+        --accent-hover-rgb: 198 61 1;
+        --accent-strong-rgb: 178 54 0;
+
+
+        --primary: var(--brand);
+        --dark: var(--brand-ink);
+        --gold: var(--accent);
         /* ── Configurable from Settings > Reservation Form (2026-08-23) ──
            These four carry the bundled defaults. applyReserveAppearance()
            overwrites them at runtime from app_settings.reserve_appearance.
            Leaving the real values here means the page renders correctly
            before the fetch lands, and stays correct if it never does. */
         --rf-bg-image: url("assets/background-generic.jpg");
-        --rf-glass: rgba(40, 84, 124, 0.6);
+        --rf-glass: rgb(var(--brand-ink-rgb) / 0.6);
         --rf-logo-max-h: 72px;
       }
       html,
@@ -101,7 +141,7 @@
         filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.35));
       }
       .card {
-        /* navy glass (#28547C base), colour and opacity set in Settings */
+        /* navy glass (var(--brand-ink) base), colour and opacity set in Settings */
         background: var(--rf-glass);
         backdrop-filter: blur(14px);
         -webkit-backdrop-filter: blur(14px);
@@ -120,7 +160,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 8px 26px rgba(85, 150, 206, 0.4);
+        box-shadow: 0 8px 26px rgb(var(--brand-rgb) / 0.4);
         animation: pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1);
       }
       @keyframes pop {
@@ -155,7 +195,7 @@
       .summary {
         margin: 20px auto 4px;
         padding: 14px 16px;
-        border: 1px dashed rgba(200, 169, 107, 0.45);
+        border: 1px dashed rgb(var(--accent-rgb) / 0.45);
         border-radius: 12px;
         font-size: 14px;
         color: #e8dfc9;

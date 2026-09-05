@@ -72,16 +72,16 @@ function ok(label, cond, detail) {
 
 console.log("\nColours fall back per field, not wholesale");
 T.set(null);
-eq("nothing saved gives the built-in sheet", T.invStyle().ink, "#28547C");
+eq("nothing saved gives the built-in sheet", T.invStyle().ink, "#4F41A8");
 T.set({ ink: "#1B2A3A" });
 eq("one field set", T.invStyle().ink, "#1B2A3A");
-eq("the rest keep their defaults", T.invStyle().accent, "#3E8FCB");
+eq("the rest keep their defaults", T.invStyle().accent, "#4A3DA3");
 // A half-typed hex from the text box must not reach the sheet.
 T.set({ ink: "#1B2", accent: "#C8A96B" });
-eq("a broken colour falls back alone", T.invStyle().ink, "#28547C");
+eq("a broken colour falls back alone", T.invStyle().ink, "#4F41A8");
 eq("the good one beside it survives", T.invStyle().accent, "#C8A96B");
 T.set({ ink: "navy" });
-eq("a colour name is rejected", T.invStyle().ink, "#28547C");
+eq("a colour name is rejected", T.invStyle().ink, "#4F41A8");
 
 console.log("\nLogo sizes are clamped to what fits an A4 sheet");
 T.set({ logo_width: 200 });
@@ -99,21 +99,27 @@ eq("a numeric string is accepted", T.invStyle().logo_width, 220);
 
 console.log("\nBar text picks itself, so a Total line is never invisible");
 // This is the reason bar text is NOT one of the five settings.
-eq("white on the default blue bar", T.invBarTextColor("#3E8FCB", "#28547C"), "#FFFFFF");
-eq("white on a dark bar", T.invBarTextColor("#1B2A3A", "#28547C"), "#FFFFFF");
+eq("white on the default blue bar", T.invBarTextColor("#4A3DA3", "#4F41A8"), "#FFFFFF");
+eq("white on a dark bar", T.invBarTextColor("#1B2A3A", "#4F41A8"), "#FFFFFF");
 // A client picking a pale brand colour is exactly the case that would
 // otherwise print white-on-cream.
-eq("ink on a pale bar", T.invBarTextColor("#F4EDE3", "#28547C"), "#28547C");
-eq("ink on near-white", T.invBarTextColor("#FFFFFF", "#28547C"), "#28547C");
-eq("ink on the default row fill", T.invBarTextColor("#CFE4F5", "#28547C"), "#28547C");
+eq("ink on a pale bar", T.invBarTextColor("#F4EDE3", "#4F41A8"), "#4F41A8");
+eq("ink on near-white", T.invBarTextColor("#FFFFFF", "#4F41A8"), "#4F41A8");
+eq("ink on the default row fill", T.invBarTextColor("#CFE4F5", "#4F41A8"), "#4F41A8");
 
+// Brand colours moved from navy/gold to purple/orange on 2026-09-05. The
+// expectations below track the DEFAULTS, so they moved with them:
+// #28547C -> #4F41A8 (headings) and #3E8FCB -> #4A3DA3 (accent). What these
+// tests actually protect is unchanged: the invoice sheet must be written in
+// literal hex, because html2canvas cannot resolve CSS variables and the PDF
+// would silently lose the colour while the screen looked perfect.
 console.log("\nThe generated CSS is literal, because html2canvas needs it to be");
 T.set(null);
 const css = T.invStyleCss(T.invStyle());
 // If a var() ever creeps in here, the PDF can silently lose the colour while
 // the screen looks perfect. That is the failure this whole approach avoids.
 ok("no CSS variables in the output", !/var\(/.test(css), css.match(/var\([^)]*\)/g));
-ok("colours are written as literal hex", /background: #3E8FCB/.test(css));
+ok("colours are written as literal hex", /background: #4A3DA3/.test(css));
 ok("the logo width is a real px value", /\.inv-logo \{ width: 172px/.test(css));
 ok("every rule is scoped to the sheet", css.trim().split("\n").every((l) => !l.trim() || l.includes("#inv-sheet")));
 

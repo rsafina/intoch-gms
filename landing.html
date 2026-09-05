@@ -26,13 +26,53 @@
     </script>
     <style>
       :root {
+        /* ── Brand tokens (2026-09-05). ONE PLACE. ───────────────────
+           Every brand colour in the app resolves here. Before this, 728
+           values were hardcoded across 20 files, which is why the colours
+           could not be changed. Status colours (green, red, amber) are NOT
+           here on purpose: they mean something and never follow the brand.
+
+           --brand and --accent are the two a restaurant sets. Everything
+           else is derived from them, and derived to PASS contrast rather
+           than to look pleasant. Two of these fix long-standing failures:
+           the old button blue (5596CE) under white text was 3.16:1 and the
+           old gold (C8A96B) on cream was 2.08:1, against a 4.5 bar. */
+        --brand: #5B4CBD;          /* primary fill. white on it: 6.54 */
+        --brand-hover: #4A3DA3;    /* pressed/hover. white on it: 8.44 */
+        --brand-ink: #4F41A8;      /* headings. on cream: 7.33, matched to the old navy */
+        --brand-deep: #453897;     /* dark panels. on cream: 8.59 */
+        --brand-deepest: #3C3084;  /* deepest. on cream: 9.99 */
+        --brand-muted: #7565D6;    /* de-emphasised */
+        --brand-soft: #A99BF0;     /* soft accents on dark */
+        --brand-tint: #E4E0F8;     /* selected row / chip background */
+        --brand-tint2: #F4F2FD;    /* faintest wash */
+        --accent: #E24701;         /* FILLS ONLY. 3.79 on cream, so never small text */
+        --accent-hover: #C63D01;   /* also the text-safe orange: 4.78 on cream */
+        --accent-strong: #B23600;  /* 5.69 on cream */
+        --accent-tint: #F7C9AF;
+        --accent-tint2: #FBEDE4;
+        /* RGB triplets for the few places that need alpha, e.g.
+           rgb(var(--brand-ink-rgb) / 0.12). A settings screen that changes
+           --brand MUST set --brand-rgb in the same write, or a shadow keeps
+           the old hue while everything around it moves. */
+        --brand-rgb: 91 76 189;
+        --brand-ink-rgb: 79 65 168;
+        --brand-hover-rgb: 74 61 163;
+        --brand-deep-rgb: 69 56 151;
+        --brand-deepest-rgb: 60 48 132;
+        --brand-soft-rgb: 169 155 240;
+        --accent-rgb: 226 71 1;
+        --accent-hover-rgb: 198 61 1;
+        --accent-strong-rgb: 178 54 0;
+
+
         --bg: #fbfcfe;
         --bg-alt: #eef1fb;
         --bg-soft: #f5f7fd;
         --card: rgba(255, 255, 255, 0.94);
-        --line: #e3ecf6;
-        --gold: #c8a96b;
-        --gold-dark: #b8954f;
+        --line: var(--brand-tint);
+        --gold: var(--accent);
+        --gold-dark: var(--accent-hover);
         --primary: #114fa1;
         --primary-dark: #0d3c7c;
         --primary-hover: #3a56a5;
@@ -231,7 +271,7 @@
         align-items: center;
         gap: 2px;
         background: rgba(255, 255, 255, 0.55);
-        border: 1px solid rgba(40, 84, 124, 0.18);
+        border: 1px solid rgb(var(--brand-ink-rgb) / 0.18);
         border-radius: 999px;
         padding: 3px;
         cursor: pointer;
@@ -266,7 +306,7 @@
       .lang-opt.active {
         opacity: 1;
         background: #ffffff;
-        box-shadow: 0 1px 5px rgba(40, 84, 124, 0.2);
+        box-shadow: 0 1px 5px rgb(var(--brand-ink-rgb) / 0.2);
       }
       .btn {
         display: inline-block;
@@ -395,11 +435,11 @@
         line-height: 1.04;
         margin-bottom: 16px;
         letter-spacing: 0;
-        color: #173b5f;
+        color: var(--brand-deepest);
         text-shadow: 0 2px 18px rgba(255, 255, 255, 0.28);
       }
       .hero h1 em {
-        color: #b98536;
+        color: var(--accent-strong);
         font-style: normal;
       }
       .hero-title-lock {
@@ -460,7 +500,7 @@
           rgba(205, 190, 248, 0.62)
         );
         transform: rotate(-2deg);
-        box-shadow: 0 28px 80px rgba(40, 84, 124, 0.16);
+        box-shadow: 0 28px 80px rgb(var(--brand-ink-rgb) / 0.16);
       }
       .hero-visual {
         width: min(430px, 78%);
@@ -468,7 +508,7 @@
         background: rgba(255, 255, 255, 0.48);
         border-radius: 42px 42px 120px 42px;
         box-shadow:
-          0 26px 56px rgba(40, 84, 124, 0.2),
+          0 26px 56px rgb(var(--brand-ink-rgb) / 0.2),
           0 10px 28px rgba(185, 133, 54, 0.14);
         border: 1px solid rgba(255, 255, 255, 0.68);
         backdrop-filter: blur(8px);
@@ -508,7 +548,7 @@
         background: rgba(255, 255, 255, 0.72);
         border: 1px solid rgba(255, 255, 255, 0.86);
         box-shadow:
-          0 18px 42px rgba(40, 84, 124, 0.16),
+          0 18px 42px rgb(var(--brand-ink-rgb) / 0.16),
           inset 0 1px 0 rgba(255, 255, 255, 0.82);
         backdrop-filter: blur(14px);
         -webkit-backdrop-filter: blur(14px);
@@ -532,7 +572,7 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        color: #173b5f;
+        color: var(--brand-deepest);
         background: rgba(255, 255, 255, 0.62);
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
       }
@@ -546,7 +586,7 @@
         font-weight: 700;
       }
       .hero-metric strong {
-        color: #173b5f;
+        color: var(--brand-deepest);
         font-size: 1.3rem;
         line-height: 1;
         margin-left: 2px;
@@ -688,10 +728,10 @@
         gap: 14px;
         align-items: flex-start;
         background: rgba(255, 255, 255, 0.72);
-        border: 1px solid rgba(40, 84, 124, 0.12);
+        border: 1px solid rgb(var(--brand-ink-rgb) / 0.12);
         border-radius: 14px;
         padding: 16px 18px;
-        box-shadow: 0 8px 24px rgba(40, 84, 124, 0.06);
+        box-shadow: 0 8px 24px rgb(var(--brand-ink-rgb) / 0.06);
         backdrop-filter: blur(8px);
       }
       .problem-item .mark {
@@ -740,8 +780,8 @@
         background: rgba(255, 255, 255, 0.78);
         border-radius: 18px;
         padding: 30px 26px;
-        box-shadow: 0 10px 30px rgba(40, 84, 124, 0.05);
-        border: 1px solid rgba(40, 84, 124, 0.1);
+        box-shadow: 0 10px 30px rgb(var(--brand-ink-rgb) / 0.05);
+        border: 1px solid rgb(var(--brand-ink-rgb) / 0.1);
         backdrop-filter: blur(8px);
       }
       .feature-icon {
@@ -937,10 +977,10 @@
         display: flex;
         gap: 16px;
         background: rgba(255, 255, 255, 0.78);
-        border: 1px solid rgba(40, 84, 124, 0.1);
+        border: 1px solid rgb(var(--brand-ink-rgb) / 0.1);
         border-radius: 16px;
         padding: 22px;
-        box-shadow: 0 8px 24px rgba(40, 84, 124, 0.05);
+        box-shadow: 0 8px 24px rgb(var(--brand-ink-rgb) / 0.05);
         backdrop-filter: blur(8px);
       }
       .benefit-check {
@@ -1125,7 +1165,7 @@
          PRODUCT MOCKUPS  (replaces the three screenshots)
          Rebuilt in HTML so they scale crisply, restyle with the palette,
          and animate a region without an overlay sitting on top of them.
-         Tokens match the real GMS app: --primary #114FA1, --gold #c8a96b,
+         Tokens match the real GMS app: --primary #114FA1, --gold var(--accent),
          --success #5f8d4e. All names and figures are invented.
          ================================================================ */
       .mock {
@@ -1179,7 +1219,7 @@
         white-space: nowrap;
       }
       .mock-btn.gold { background: var(--gold); }
-      .mock-btn.blue { background: #6b9bc2; }
+      .mock-btn.blue { background: var(--brand-muted); }
       .mock-btn.navy { background: var(--primary); }
 
       .mock-card {
@@ -1227,8 +1267,8 @@
         white-space: nowrap;
       }
       .mock-chip.on {
-        background: #6b9bc2;
-        border-color: #6b9bc2;
+        background: var(--brand-muted);
+        border-color: var(--brand-muted);
         color: #fff;
       }
       .mock-guest {
@@ -1376,7 +1416,7 @@
         background: linear-gradient(
           120deg,
           rgba(17, 79, 161, 0.06),
-          rgba(200, 169, 107, 0.08)
+          rgb(var(--accent-rgb) / 0.08)
         );
       }
       .mock [data-part].lit::after {
@@ -2001,7 +2041,7 @@
         <div class="section-head">
           <p
             class="eyebrow"
-            style="background: rgba(255, 255, 255, 0.12); color: #f4c76a"
+            style="background: rgba(255, 255, 255, 0.12); color: var(--accent-tint)"
             data-i18n="problem.eyebrow"
           >
             Kedengaran Familiar?
@@ -3114,7 +3154,7 @@
 
         var cs = getComputedStyle(document.documentElement);
         var ACCENT = (cs.getPropertyValue("--primary") || "#114fa1").trim();
-        var ACCENT2 = (cs.getPropertyValue("--gold") || "#c8a96b").trim();
+        var ACCENT2 = (cs.getPropertyValue("--gold") || "var(--accent)").trim();
 
         /* ---------- gradient layers, nudged by scroll ----------
            One passive scroll listener, rAF-throttled, writing a single CSS

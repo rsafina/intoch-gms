@@ -22,11 +22,51 @@
     />
     <style>
       :root {
-        --primary: #5596ce;
-        --primary-hover: #85c5e9;
+        /* ── Brand tokens (2026-09-05). ONE PLACE. ───────────────────
+           Every brand colour in the app resolves here. Before this, 728
+           values were hardcoded across 20 files, which is why the colours
+           could not be changed. Status colours (green, red, amber) are NOT
+           here on purpose: they mean something and never follow the brand.
+
+           --brand and --accent are the two a restaurant sets. Everything
+           else is derived from them, and derived to PASS contrast rather
+           than to look pleasant. Two of these fix long-standing failures:
+           the old button blue (5596CE) under white text was 3.16:1 and the
+           old gold (C8A96B) on cream was 2.08:1, against a 4.5 bar. */
+        --brand: #5B4CBD;          /* primary fill. white on it: 6.54 */
+        --brand-hover: #4A3DA3;    /* pressed/hover. white on it: 8.44 */
+        --brand-ink: #4F41A8;      /* headings. on cream: 7.33, matched to the old navy */
+        --brand-deep: #453897;     /* dark panels. on cream: 8.59 */
+        --brand-deepest: #3C3084;  /* deepest. on cream: 9.99 */
+        --brand-muted: #7565D6;    /* de-emphasised */
+        --brand-soft: #A99BF0;     /* soft accents on dark */
+        --brand-tint: #E4E0F8;     /* selected row / chip background */
+        --brand-tint2: #F4F2FD;    /* faintest wash */
+        --accent: #E24701;         /* FILLS ONLY. 3.79 on cream, so never small text */
+        --accent-hover: #C63D01;   /* also the text-safe orange: 4.78 on cream */
+        --accent-strong: #B23600;  /* 5.69 on cream */
+        --accent-tint: #F7C9AF;
+        --accent-tint2: #FBEDE4;
+        /* RGB triplets for the few places that need alpha, e.g.
+           rgb(var(--brand-ink-rgb) / 0.12). A settings screen that changes
+           --brand MUST set --brand-rgb in the same write, or a shadow keeps
+           the old hue while everything around it moves. */
+        --brand-rgb: 91 76 189;
+        --brand-ink-rgb: 79 65 168;
+        --brand-hover-rgb: 74 61 163;
+        --brand-deep-rgb: 69 56 151;
+        --brand-deepest-rgb: 60 48 132;
+        --brand-soft-rgb: 169 155 240;
+        --accent-rgb: 226 71 1;
+        --accent-hover-rgb: 198 61 1;
+        --accent-strong-rgb: 178 54 0;
+
+
+        --primary: var(--brand);
+        --primary-hover: var(--brand-soft);
         --bg: #f8f6f2;
         --card: #ffffff;
-        --gold: #c8a96b;
+        --gold: var(--accent);
         --text: #222222;
         --text-sec: #666666;
         --success: #5f8d4e;
@@ -116,7 +156,7 @@
         transition: background 0.2s;
       }
       .btn-gold:hover {
-        background: #b8954f;
+        background: var(--accent-hover);
       }
       .card {
         background: var(--card);
@@ -427,7 +467,7 @@
         background:
           radial-gradient(
             ellipse at 20% 20%,
-            rgba(200, 169, 107, 0.08) 0%,
+            rgb(var(--accent-rgb) / 0.08) 0%,
             transparent 55%
           ),
           var(--bg);
@@ -463,9 +503,9 @@
         cursor: pointer;
       }
       .vch-vtab-on {
-        border-color: #5596ce;
+        border-color: var(--brand);
         background: #f4f9fd;
-        color: #28547c;
+        color: var(--brand-ink);
       }
       .vch-chip {
         display: inline-block;
@@ -477,8 +517,8 @@
         border-radius: 999px;
       }
       .vch-chip-open {
-        background: #e8f3fb;
-        color: #1f5480;
+        background: var(--brand-tint2);
+        color: var(--brand-deep);
       }
       .vch-chip-redeemed {
         background: #e9f4ea;
@@ -503,9 +543,9 @@
         cursor: pointer;
       }
       .vch-ftab-on {
-        border-color: #5596ce;
+        border-color: var(--brand);
         background: #f4f9fd;
-        color: #28547c;
+        color: var(--brand-ink);
       }
 
       .inv-label {
@@ -527,8 +567,8 @@
         flex: none;
       }
       .inv-reset:hover {
-        color: #5596ce;
-        border-color: #5596ce;
+        color: var(--brand);
+        border-color: var(--brand);
       }
       .inv-item-row {
         display: grid;
@@ -558,14 +598,14 @@
         height: 1123px;
         background: #ffffff;
         font-family: "Jost", "DM Sans", sans-serif;
-        color: #28547c;
+        color: #4F41A8;
         position: relative;
-        box-shadow: 0 4px 24px rgba(40, 84, 124, 0.12);
+        box-shadow: 0 4px 24px rgba(79, 65, 168, 0.12); /* literal: html2canvas rasterises #inv-sheet */
       }
       #inv-sheet .inv-frame {
         position: absolute;
         inset: 22px;
-        border: 1px solid #7fb8e0;
+        border: 1px solid #A99BF0;
         padding: 30px 46px 0;
       }
       #inv-sheet .inv-logo {
@@ -575,7 +615,7 @@
       }
       #inv-sheet .inv-rule-top {
         height: 2px;
-        background: #3e8fcb;
+        background: #4A3DA3;
         margin-top: 22px;
       }
       #inv-sheet .inv-billto {
@@ -593,7 +633,7 @@
       #inv-sheet .inv-meta-row {
         display: flex;
         font-size: 12.5px;
-        color: #28547c;
+        color: #4F41A8;
         line-height: 1.05;
         margin-bottom: 12px;
       }
@@ -604,7 +644,7 @@
       #inv-sheet .inv-thead {
         display: flex;
         margin-top: 22px;
-        background: #3e8fcb;
+        background: #4A3DA3;
         color: #fff;
         font-size: 12.5px;
         height: 30px;
@@ -638,11 +678,11 @@
       }
       #inv-sheet .inv-row {
         display: flex;
-        background: #cfe4f5;
+        background: #E4E0F8;
         height: 31px;
         margin-top: 11px;
         font-size: 12.5px;
-        color: #28547c;
+        color: #4F41A8;
       }
       #inv-sheet .inv-row > div {
         height: 31px;
@@ -678,7 +718,7 @@
       #inv-sheet .inv-note {
         font-size: 12px;
         line-height: 1.45;
-        color: #28547c;
+        color: #4F41A8;
         white-space: pre-line;
         max-width: 46%;
       }
@@ -690,18 +730,18 @@
         display: flex;
         justify-content: space-between;
         font-size: 12.5px;
-        color: #4795d0;
+        color: #4A3DA3;
         margin-bottom: 10px;
         padding: 0 16px 0 12px;
       }
       #inv-sheet .inv-trow span:last-child {
-        color: #28547c;
+        color: #4F41A8;
       }
       #inv-sheet .inv-tbar {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: #3e8fcb;
+        background: #4A3DA3;
         color: #fff;
         font-size: 12.5px;
         height: 29px;
@@ -738,8 +778,8 @@
          the invoice, so a guest cannot read the deposit they have
          already paid as another sum being asked for. */
       #inv-sheet .inv-tbar-paid {
-        background: #cfe4f5;
-        color: #28547c;
+        background: #E4E0F8;
+        color: #4F41A8;
       }
       #inv-sheet .inv-footer {
         position: absolute;
@@ -756,24 +796,24 @@
       #inv-sheet .inv-welcome {
         text-align: center;
         font-size: 12px;
-        color: #4795d0;
+        color: #4A3DA3;
         margin-bottom: 14px;
       }
       #inv-sheet .inv-rule-a {
         height: 2px;
-        background: #3e8fcb;
+        background: #4A3DA3;
         margin-bottom: 3px;
       }
       #inv-sheet .inv-rule-b {
         height: 1px;
-        background: #7fb8e0;
+        background: #A99BF0;
         margin-bottom: 3px;
       }
       #inv-sheet .inv-address {
         text-align: center;
         font-size: 10px;
         line-height: 1.5;
-        color: #4795d0;
+        color: #4A3DA3;
         margin-top: 10px;
       }
     
@@ -910,7 +950,7 @@
           width: 40px;
           height: 40px;
           border: 3px solid #e0ddd7;
-          border-top-color: #5596ce;
+          border-top-color: var(--brand);
           border-radius: 50%;
           animation: spin 0.8s linear infinite;
         "
@@ -1312,7 +1352,7 @@
           id="lang-toggle-id"
           onclick="setLanguage('id')"
           title="Bahasa Indonesia"
-          class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#28547C] text-white transition-colors"
+          class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[color:var(--brand-ink)] text-white transition-colors"
         >
           ID
         </button>
@@ -1330,7 +1370,7 @@
       <div class="px-4 py-3 border-t border-[#EDE9E3]">
         <div class="mb-2 text-center">
           <p
-            class="font-display text-lg text-[#28547C] leading-tight"
+            class="font-display text-lg text-[color:var(--brand-ink)] leading-tight"
             id="staff-display-name"
           >
             —
@@ -1351,7 +1391,7 @@
             Logout
           </button>
         </div>
-        <div id="current-time" class="text-center text-[13px] text-[#28547C]">
+        <div id="current-time" class="text-center text-[13px] text-[color:var(--brand-ink)]">
           <span class="font-display font-semibold" id="clock">—</span>
           <span class="text-[#999]"> · </span>
           <span class="text-[11px] text-[#999]" id="clock-date">—</span>
@@ -1377,7 +1417,7 @@
         display: flex;
         align-items: center;
         gap: 12px;
-        background: #28547c;
+        background: var(--brand-ink);
         color: #fff;
         padding: 10px 14px;
         border-radius: 999px;
@@ -1390,7 +1430,7 @@
         onclick="versionCheckReload()"
         style="
           background: #fff;
-          color: #28547c;
+          color: var(--brand-ink);
           font-weight: 600;
           font-size: 12px;
           border: 0;
@@ -1512,7 +1552,7 @@
         "
       >
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm font-semibold text-[#28547C]"
+          <span class="text-sm font-semibold text-[color:var(--brand-ink)]"
             >Reservasi Online Baru</span
           >
         </div>
@@ -1586,7 +1626,7 @@
         "
       >
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm font-semibold text-[#28547C]"
+          <span class="text-sm font-semibold text-[color:var(--brand-ink)]"
             >Birthdays this month</span
           >
         </div>
@@ -1612,7 +1652,7 @@
           <div class="flex items-center justify-between mb-8">
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
+              <h1 class="font-heading text-3xl font-semibold text-[color:var(--brand-ink)]" data-i18n>
                 Welcome!
               </h1>
               <p class="text-[#999] text-sm mt-1" id="dashboard-date-label">
@@ -1654,10 +1694,10 @@
           </div>
 
           <!-- Quick Walk-In (fast as a spreadsheet: name + phone + Enter) -->
-          <div class="card p-5 mb-8" style="border-left: 4px solid #C8A96B">
+          <div class="card p-5 mb-8" style="border-left: 4px solid var(--accent)">
             <div class="flex items-center gap-3 flex-wrap">
               <div class="flex-shrink-0">
-                <p class="text-xs font-semibold text-[#C8A96B] uppercase tracking-widest">Quick Walk-In</p>
+                <p class="text-xs font-semibold text-[color:var(--accent)] uppercase tracking-widest">Quick Walk-In</p>
                 <p class="text-[11px] text-[#999] mt-0.5">Name & hp, sisa detail bisa menyusul</p>
                 <p class="text-[11px] text-[#999] mt-0.5">Pax bisa di skip untuk diisi nanti</p>
 
@@ -1667,7 +1707,7 @@
                   id="qw-name"
                   placeholder="Guest name *"
                   autocomplete="off"
-                  class="w-full border border-[#E0DDD7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#28547C]"
+                  class="w-full border border-[#E0DDD7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[color:var(--brand-ink)]"
                   oninput="onQwNameInput()"
                   onkeydown="if(event.key==='Enter')quickAddWalkIn();if(event.key==='Escape')hideQwResults()"
                 />
@@ -1679,7 +1719,7 @@
               <input
                 id="qw-phone"
                 placeholder="Phone (optional)"
-                class="flex-1 min-w-[140px] border border-[#E0DDD7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#28547C]"
+                class="flex-1 min-w-[140px] border border-[#E0DDD7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[color:var(--brand-ink)]"
                 onkeydown="if(event.key==='Enter')quickAddWalkIn()"
               />
               <input
@@ -1688,7 +1728,7 @@
                 min="1"
                 value="1"
                 title="Pax"
-                class="w-16 border border-[#E0DDD7] rounded-xl px-3 py-2.5 text-sm text-center focus:outline-none focus:border-[#28547C]"
+                class="w-16 border border-[#E0DDD7] rounded-xl px-3 py-2.5 text-sm text-center focus:outline-none focus:border-[color:var(--brand-ink)]"
                 onkeydown="if(event.key==='Enter')quickAddWalkIn()"
               />
               <button
@@ -1706,7 +1746,7 @@
           <div class="card p-6 mb-8">
             <div class="flex items-center justify-between mb-5">
               <div>
-                <h2 class="font-heading text-xl font-semibold text-[#28547C]">
+                <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)]">
                   Upcoming Reservations
                 </h2>
                 <!-- The selected day's date now lives in the totals strip
@@ -1725,13 +1765,13 @@
                      page. See exportDashboardReservations in app.js. -->
                 <button
                   onclick="exportDashboardReservations()"
-                  class="text-xs text-[#5596CE] hover:underline"
+                  class="text-xs text-[color:var(--brand)] hover:underline"
                 >
                   Export Excel
                 </button>
                 <button
                   onclick="navigateTo('reservations')"
-                  class="text-xs text-[#C8A96B] hover:underline"
+                  class="text-xs text-[color:var(--accent)] hover:underline"
                 >
                   View all →
                 </button>
@@ -1744,21 +1784,21 @@
               <button
                 id="dashboard-reservation-tab-0"
                 onclick="setDashboardReservationTab(0)"
-                class="text-xs px-3 py-2 rounded-full border border-[#D8D2C4] bg-[#5596CE] text-white"
+                class="text-xs px-3 py-2 rounded-full border border-[#D8D2C4] bg-[color:var(--brand)] text-white"
               >
                 Today
               </button>
               <button
                 id="dashboard-reservation-tab-1"
                 onclick="setDashboardReservationTab(1)"
-                class="text-xs px-3 py-2 rounded-full border border-[#D8D2C4] bg-[#F8F6F2] text-[#5596CE]"
+                class="text-xs px-3 py-2 rounded-full border border-[#D8D2C4] bg-[#F8F6F2] text-[color:var(--brand)]"
               >
                 Tomorrow
               </button>
               <button
                 id="dashboard-reservation-tab-2"
                 onclick="setDashboardReservationTab(2)"
-                class="text-xs px-3 py-2 rounded-full border border-[#D8D2C4] bg-[#F8F6F2] text-[#5596CE]"
+                class="text-xs px-3 py-2 rounded-full border border-[#D8D2C4] bg-[#F8F6F2] text-[color:var(--brand)]"
               >
                 +2 Days
               </button>
@@ -1777,7 +1817,7 @@
           <div class="card p-6 mb-8">
             <div class="flex items-center justify-between mb-5">
               <div>
-                <h2 class="font-heading text-xl font-semibold text-[#28547C]">
+                <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)]">
                   Today's Walk-Ins
                 </h2>
                 <p
@@ -1794,7 +1834,7 @@
                 ></div>
                 <button
                   onclick="navigateTo('walkins')"
-                  class="text-xs text-[#C8A96B] hover:underline"
+                  class="text-xs text-[color:var(--accent)] hover:underline"
                 >
                   View all →
                 </button>
@@ -1813,7 +1853,7 @@
               <p class="text-xs text-[#999] uppercase tracking-wider mb-2">
                 Walk-Ins Today
               </p>
-              <p class="font-display text-4xl text-[#28547C]" id="stat-walkins">
+              <p class="font-display text-4xl text-[color:var(--brand-ink)]" id="stat-walkins">
                 —
               </p>
             </div>
@@ -1822,7 +1862,7 @@
                 Reservations
               </p>
               <p
-                class="font-display text-4xl text-[#28547C]"
+                class="font-display text-4xl text-[color:var(--brand-ink)]"
                 id="stat-reservations"
               >
                 —
@@ -1833,7 +1873,7 @@
                 Expected Guests
               </p>
               <p
-                class="font-display text-4xl text-[#28547C]"
+                class="font-display text-4xl text-[color:var(--brand-ink)]"
                 id="stat-expected"
               >
                 —
@@ -1843,7 +1883,7 @@
               <p class="text-xs text-[#999] uppercase tracking-wider mb-2">
                 Total Pax Today
               </p>
-              <p class="font-display text-4xl text-[#C8A96B]" id="stat-pax">
+              <p class="font-display text-4xl text-[color:var(--accent)]" id="stat-pax">
                 —
               </p>
             </div>
@@ -1868,7 +1908,7 @@
           <div class="card p-6 mb-8">
             <div class="flex items-start justify-between mb-4 gap-4">
               <div class="min-w-0">
-                <h2 class="font-heading text-xl font-semibold text-[#28547C]">
+                <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)]">
                   Prize Redemptions
                 </h2>
                 <p class="text-xs text-[#999] mt-1" id="dash-prize-label">
@@ -1895,7 +1935,7 @@
                     type="text"
                     placeholder="Search name, prize, code…"
                     oninput="filterDashboardPrizes()"
-                    class="pl-7 pr-3 py-1.5 text-xs rounded border border-[#E0DAD2] bg-[#FAFAF8] text-[#333] placeholder-[#BBB] focus:outline-none focus:border-[#5596CE] w-48"
+                    class="pl-7 pr-3 py-1.5 text-xs rounded border border-[#E0DAD2] bg-[#FAFAF8] text-[#333] placeholder-[#BBB] focus:outline-none focus:border-[color:var(--brand)] w-48"
                   />
                 </div>
                 <svg
@@ -1904,7 +1944,7 @@
                   height="20"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#C8A96B"
+                  stroke="var(--accent)"
                   stroke-width="1.8"
                   class="opacity-70 shrink-0"
                 >
@@ -1981,7 +2021,7 @@
           <div class="card p-6 mb-8">
             <div class="flex items-start justify-between mb-4">
               <div>
-                <h2 class="font-heading text-xl font-semibold text-[#28547C]">
+                <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)]">
                   Birthday Guests
                 </h2>
                 <p class="text-xs text-[#999] mt-1" id="dash-bd-label">—</p>
@@ -1992,7 +2032,7 @@
                 height="20"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#C8A96B"
+                stroke="var(--accent)"
                 stroke-width="1.8"
                 class="mt-1 opacity-70"
               >
@@ -2066,7 +2106,7 @@
           >
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-heading text-3xl font-semibold text-[#28547C]">
+              <h1 class="font-heading text-3xl font-semibold text-[color:var(--brand-ink)]">
                 Welcome!
               </h1>
               <p
@@ -2088,7 +2128,7 @@
                 <button
                   id="admin-range-mtd"
                   onclick="setAdminRange('mtd')"
-                  class="text-xs font-medium rounded-full px-4 py-2 bg-white text-[#28547C]"
+                  class="text-xs font-medium rounded-full px-4 py-2 bg-white text-[color:var(--brand-ink)]"
                 >
                   Month to Date
                 </button>
@@ -2119,7 +2159,7 @@
                 Recorded Spend
               </p>
               <p
-                class="font-display text-2xl lg:text-3xl font-semibold text-[#28547C] leading-tight"
+                class="font-display text-2xl lg:text-3xl font-semibold text-[color:var(--brand-ink)] leading-tight"
                 id="admin-kpi-spend"
               >
                 —
@@ -2131,7 +2171,7 @@
                 Covers
               </p>
               <p
-                class="font-display text-2xl lg:text-3xl font-semibold text-[#28547C] leading-tight"
+                class="font-display text-2xl lg:text-3xl font-semibold text-[color:var(--brand-ink)] leading-tight"
                 id="admin-kpi-covers"
               >
                 —
@@ -2143,7 +2183,7 @@
                 Spend / Guest
               </p>
               <p
-                class="font-display text-2xl lg:text-3xl font-semibold text-[#28547C] leading-tight"
+                class="font-display text-2xl lg:text-3xl font-semibold text-[color:var(--brand-ink)] leading-tight"
                 id="admin-kpi-avg"
               >
                 —
@@ -2212,13 +2252,13 @@
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <div
               class="card p-5 border-t-4"
-              style="border-top-color: #28547c"
+              style="border-top-color: var(--brand-ink)"
             >
               <p class="text-[11px] text-[#999] uppercase tracking-wider mb-1">
                 Reservations
               </p>
               <p
-                class="font-display text-3xl font-semibold text-[#28547C]"
+                class="font-display text-3xl font-semibold text-[color:var(--brand-ink)]"
                 id="admin-today-res-count"
               >
                 —
@@ -2229,13 +2269,13 @@
             </div>
             <div
               class="card p-5 border-t-4"
-              style="border-top-color: #c8a96b"
+              style="border-top-color: var(--accent)"
             >
               <p class="text-[11px] text-[#999] uppercase tracking-wider mb-1">
                 Walk-Ins So Far
               </p>
               <p
-                class="font-display text-3xl font-semibold text-[#C8A96B]"
+                class="font-display text-3xl font-semibold text-[color:var(--accent)]"
                 id="admin-today-walkin-count"
               >
                 —
@@ -2283,7 +2323,7 @@
           <!-- 7-day forecast strip -->
           <div class="card p-5 mb-6">
             <div class="flex items-center justify-between mb-3">
-              <p class="text-xs font-semibold text-[#28547C]">
+              <p class="text-xs font-semibold text-[color:var(--brand-ink)]">
                 Booked, Next 7 Days
               </p>
               <span class="text-[10px] text-[#bbb]"
@@ -2310,7 +2350,7 @@
               class="flex flex-col sm:flex-row sm:items-center justify-between gap-3"
             >
               <div>
-                <p class="text-sm font-semibold text-[#28547C] mb-1">
+                <p class="text-sm font-semibold text-[color:var(--brand-ink)] mb-1">
                   Online reservation form
                 </p>
                 <p class="text-sm text-[#555]" id="admin-online-summary">—</p>
@@ -2342,7 +2382,7 @@
           <div class="card p-5 mb-6">
             <p class="text-xs text-[#999] mb-3">
               Busiest day:
-              <span class="text-[#28547C] font-medium" id="admin-peak-day"
+              <span class="text-[color:var(--brand-ink)] font-medium" id="admin-peak-day"
                 >—</span
               >
             </p>
@@ -2393,7 +2433,7 @@
               class="w-full flex items-center justify-between px-5 py-4 text-left"
             >
               <span>
-                <span class="text-sm font-semibold text-[#28547C]"
+                <span class="text-sm font-semibold text-[color:var(--brand-ink)]"
                   >Spending tier breakdown</span
                 >
                 <span class="block text-[11px] text-[#999] mt-0.5"
@@ -2428,14 +2468,14 @@
                     <button
                       id="admin-tier-tab-medium"
                       onclick="setAdminSpendTier('medium')"
-                      class="text-xs px-3 py-1.5 bg-[#5596CE] text-white"
+                      class="text-xs px-3 py-1.5 bg-[color:var(--brand)] text-white"
                     >
                       Medium Spender
                     </button>
                     <button
                       id="admin-tier-tab-high"
                       onclick="setAdminSpendTier('high')"
-                      class="text-xs px-3 py-1.5 bg-[#F8F6F2] text-[#5596CE]"
+                      class="text-xs px-3 py-1.5 bg-[#F8F6F2] text-[color:var(--brand)]"
                     >
                       High Spender
                     </button>
@@ -2453,7 +2493,7 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="border border-[#EDE9E3] rounded-xl p-4">
                   <p
-                    class="text-sm font-semibold text-[#28547C]"
+                    class="text-sm font-semibold text-[color:var(--brand-ink)]"
                     id="admin-spend-a-title"
                   >
                     Medium average spend per person
@@ -2491,7 +2531,7 @@
                 </div>
                 <div class="border border-[#EDE9E3] rounded-xl p-4">
                   <p
-                    class="text-sm font-semibold text-[#28547C]"
+                    class="text-sm font-semibold text-[color:var(--brand-ink)]"
                     id="admin-spend-b-title"
                   >
                     Medium total spending
@@ -2562,14 +2602,14 @@
           <div class="flex items-center justify-between mb-8">
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n-skip>Membership</h1>
+              <h1 class="font-heading text-3xl font-semibold text-[color:var(--brand-ink)]" data-i18n-skip>Membership</h1>
               <p class="text-sm text-[#999] mt-1" data-i18n>
                 Family &amp; Company cards — stickers and vouchers
               </p>
             </div>
             <button
               onclick="openAddMember()"
-              class="bg-[#28547C] hover:bg-[#1f4060] text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-colors"
+              class="bg-[color:var(--brand-ink)] hover:bg-[color:var(--brand-deepest)] text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-colors"
               data-i18n
             >
               + Add Member
@@ -2579,7 +2619,7 @@
           <div class="grid grid-cols-5 gap-4 mb-6">
             <div class="bg-white rounded-2xl border border-[#EDE9E3] p-4">
               <p class="text-[11px] uppercase tracking-widest text-[#999]">Members</p>
-              <p class="font-display text-2xl text-[#28547C] mt-1" id="mbr-stat-total">—</p>
+              <p class="font-display text-2xl text-[color:var(--brand-ink)] mt-1" id="mbr-stat-total">—</p>
             </div>
             <div class="bg-white rounded-2xl border border-[#EDE9E3] p-4">
               <p class="text-[11px] uppercase tracking-widest text-[#999]">Family</p>
@@ -2587,15 +2627,15 @@
             </div>
             <div class="bg-white rounded-2xl border border-[#EDE9E3] p-4">
               <p class="text-[11px] uppercase tracking-widest text-[#999]">Company</p>
-              <p class="font-display text-2xl text-[#1F4E79] mt-1" id="mbr-stat-company">—</p>
+              <p class="font-display text-2xl text-[color:var(--brand-deep)] mt-1" id="mbr-stat-company">—</p>
             </div>
             <div class="bg-white rounded-2xl border border-[#EDE9E3] p-4">
               <p class="text-[11px] uppercase tracking-widest text-[#999]">Stickers</p>
-              <p class="font-display text-2xl text-[#C8A96B] mt-1" id="mbr-stat-stickers">—</p>
+              <p class="font-display text-2xl text-[color:var(--accent)] mt-1" id="mbr-stat-stickers">—</p>
             </div>
             <div class="bg-white rounded-2xl border border-[#EDE9E3] p-4">
               <p class="text-[11px] uppercase tracking-widest text-[#999]">Open Vouchers</p>
-              <p class="font-display text-2xl text-[#8B6F47] mt-1" id="mbr-stat-vouchers">—</p>
+              <p class="font-display text-2xl text-[color:var(--accent-strong)] mt-1" id="mbr-stat-vouchers">—</p>
             </div>
           </div>
 
@@ -2604,9 +2644,9 @@
               id="mbr-search"
               oninput="onMemberSearch()"
               placeholder="Search name, member number, or phone…"
-              class="flex-1 bg-white border border-[#EDE9E3] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#28547C]"
+              class="flex-1 bg-white border border-[#EDE9E3] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[color:var(--brand-ink)]"
             />
-            <button data-mbr-filter="all" onclick="setMemberTypeFilter('all')" class="px-3 py-1.5 text-xs font-medium rounded-full bg-[#28547C] text-white">All</button>
+            <button data-mbr-filter="all" onclick="setMemberTypeFilter('all')" class="px-3 py-1.5 text-xs font-medium rounded-full bg-[color:var(--brand-ink)] text-white">All</button>
             <button data-mbr-filter="Family" onclick="setMemberTypeFilter('Family')" class="px-3 py-1.5 text-xs font-medium rounded-full bg-[#F1EEE8] text-[#555] hover:bg-[#E7E4DE]">Family</button>
             <button data-mbr-filter="Company" onclick="setMemberTypeFilter('Company')" class="px-3 py-1.5 text-xs font-medium rounded-full bg-[#F1EEE8] text-[#555] hover:bg-[#E7E4DE]">Company</button>
           </div>
@@ -2640,7 +2680,7 @@
                belong next to the thing that produced them. -->
           <div class="mb-6">
             <div class="gold-bar mb-3"></div>
-            <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n-skip>Broadcast</h1>
+            <h1 class="font-heading text-3xl font-semibold text-[color:var(--brand-ink)]" data-i18n-skip>Broadcast</h1>
             <p class="text-sm text-[#999] mt-1" data-i18n-skip>
               Kirim pesan WhatsApp satu per satu ke guest sesuai segmen, lalu
               lihat apakah mereka benar-benar kembali
@@ -2701,7 +2741,7 @@
           <div class="flex items-center justify-between mb-8">
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
+              <h1 class="font-heading text-3xl font-semibold text-[color:var(--brand-ink)]" data-i18n>
                 Guest Database
               </h1>
               <p class="text-[#999] text-sm mt-1" data-i18n>
@@ -2830,7 +2870,7 @@
                   style="background: #fafaf8; border-bottom: 1px solid #ede9e3"
                 >
                   <th
-                    class="text-left px-5 py-3 text-xs text-[#999] uppercase tracking-wider font-medium cursor-pointer select-none hover:text-[#28547C] transition-colors"
+                    class="text-left px-5 py-3 text-xs text-[#999] uppercase tracking-wider font-medium cursor-pointer select-none hover:text-[color:var(--brand-ink)] transition-colors"
                     onclick="toggleGuestSort('name')"
                   >
                     <span class="flex items-center gap-1 whitespace-nowrap"
@@ -2865,7 +2905,7 @@
                     Tier
                   </th>
                   <th
-                    class="text-left px-5 py-3 text-xs text-[#999] uppercase tracking-wider font-medium hidden md:table-cell cursor-pointer select-none hover:text-[#28547C] transition-colors"
+                    class="text-left px-5 py-3 text-xs text-[#999] uppercase tracking-wider font-medium hidden md:table-cell cursor-pointer select-none hover:text-[color:var(--brand-ink)] transition-colors"
                     onclick="toggleGuestSort('visits')"
                   >
                     <span class="flex items-center gap-1 whitespace-nowrap"
@@ -2878,7 +2918,7 @@
                     >
                   </th>
                   <th
-                    class="text-left px-5 py-3 text-xs text-[#999] uppercase tracking-wider font-medium cursor-pointer select-none hover:text-[#28547C] transition-colors"
+                    class="text-left px-5 py-3 text-xs text-[#999] uppercase tracking-wider font-medium cursor-pointer select-none hover:text-[color:var(--brand-ink)] transition-colors"
                     onclick="toggleGuestSort('lastVisit')"
                   >
                     <span class="flex items-center gap-1 whitespace-nowrap"
@@ -2916,10 +2956,10 @@
           <div class="flex items-center justify-between mb-8">
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n-skip>
+              <h1 class="font-heading text-3xl font-semibold text-[color:var(--brand-ink)]" data-i18n-skip>
                 Reservations
               </h1>
-              <p class="font-display text-lg font-semibold text-[#1F5480] mt-1" id="res-date-label">—</p>
+              <p class="font-display text-lg font-semibold text-[color:var(--brand-deep)] mt-1" id="res-date-label">—</p>
             </div>
             <div class="flex gap-3">
               <button
@@ -3032,7 +3072,7 @@
                 type="date"
                 id="res-date-input"
                 onchange="goToResDate(this.value)"
-                class="form-input text-sm font-medium text-[#28547C] text-center py-1.5 px-2 min-w-[150px]"
+                class="form-input text-sm font-medium text-[color:var(--brand-ink)] text-center py-1.5 px-2 min-w-[150px]"
               />
               <button
                 onclick="moveResDay(1)"
@@ -3187,7 +3227,7 @@
           >
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
+              <h1 class="font-heading text-3xl font-semibold text-[color:var(--brand-ink)]" data-i18n>
                 Walk-In Log
               </h1>
               <p class="text-[#999] text-sm mt-1" id="walkins-date-label">
@@ -3248,7 +3288,7 @@
               </button>
               <span
                 id="wi-date-nav-label"
-                class="text-sm font-medium text-[#28547C] min-w-[90px] text-center"
+                class="text-sm font-medium text-[color:var(--brand-ink)] min-w-[90px] text-center"
                 >Today</span
               >
               <button
@@ -3371,7 +3411,7 @@
         <div class="max-w-[1500px] mx-auto">
           <div class="mb-6">
             <div class="gold-bar mb-3"></div>
-            <h1 class="font-heading text-3xl font-semibold text-[#28547C]">
+            <h1 class="font-heading text-3xl font-semibold text-[color:var(--brand-ink)]">
               Invoice Generator
             </h1>
             <p class="text-[#999] text-sm mt-1">
@@ -3396,7 +3436,7 @@
           <div id="inv-pane-design" class="hidden mb-8">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div class="bg-white rounded-2xl border border-[#EDE9E3] p-5">
-                <h3 class="text-sm font-semibold text-[#28547C] mb-1" data-i18n>Colours</h3>
+                <h3 class="text-sm font-semibold text-[color:var(--brand-ink)] mb-1" data-i18n>Colours</h3>
                 <p class="text-[11px] text-[#999] mb-4" data-i18n>
                   The text on the blue bars is not listed here: it picks white or dark by
                   itself depending on how light the bar colour is, so a Total line can never
@@ -3445,17 +3485,17 @@
                   </div>
                 </div>
 
-                <h3 class="text-sm font-semibold text-[#28547C] mt-6 mb-3" data-i18n>Logo sizes</h3>
+                <h3 class="text-sm font-semibold text-[color:var(--brand-ink)] mt-6 mb-3" data-i18n>Logo sizes</h3>
                 <div class="mb-4">
                   <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Main logo width</label>
-                  <input id="inv-logo-width" type="range" min="80" max="320" class="w-full accent-[#28547C]" oninput="invPreviewStyle()" />
+                  <input id="inv-logo-width" type="range" min="80" max="320" class="w-full accent-[color:var(--brand-ink)]" oninput="invPreviewStyle()" />
                   <div class="flex justify-between text-[10px] text-[#999]">
                     <span data-i18n>Small</span><span id="inv-logo-width-value" data-i18n-skip></span><span data-i18n>Large</span>
                   </div>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Footer mark width</label>
-                  <input id="inv-mark-width" type="range" min="24" max="140" class="w-full accent-[#28547C]" oninput="invPreviewStyle()" />
+                  <input id="inv-mark-width" type="range" min="24" max="140" class="w-full accent-[color:var(--brand-ink)]" oninput="invPreviewStyle()" />
                   <div class="flex justify-between text-[10px] text-[#999]">
                     <span data-i18n>Small</span><span id="inv-mark-width-value" data-i18n-skip></span><span data-i18n>Large</span>
                   </div>
@@ -3467,7 +3507,7 @@
               </div>
 
               <div class="bg-white rounded-2xl border border-[#EDE9E3] p-5">
-                <h3 class="text-sm font-semibold text-[#28547C] mb-1" data-i18n>Footer details</h3>
+                <h3 class="text-sm font-semibold text-[color:var(--brand-ink)] mb-1" data-i18n>Footer details</h3>
                 <p class="text-[11px] text-[#999] mb-4" data-i18n>
                   Printed along the bottom of every invoice. Anything left empty is left
                   out entirely, separators and all.
@@ -3506,7 +3546,7 @@
             <!-- ── FORM ─────────────────────────────────────────── -->
             <div class="w-full xl:w-[440px] xl:flex-none space-y-5">
               <div class="bg-white rounded-2xl border border-[#EDE9E3] p-5">
-                <h3 class="text-sm font-semibold text-[#28547C] mb-4">
+                <h3 class="text-sm font-semibold text-[color:var(--brand-ink)] mb-4">
                   Bill to
                 </h3>
                 <div class="grid grid-cols-2 gap-3">
@@ -3542,10 +3582,10 @@
 
               <div class="bg-white rounded-2xl border border-[#EDE9E3] p-5">
                 <div class="flex items-center justify-between mb-3">
-                  <h3 class="text-sm font-semibold text-[#28547C]">Items</h3>
+                  <h3 class="text-sm font-semibold text-[color:var(--brand-ink)]">Items</h3>
                   <button
                     onclick="invAddItem()"
-                    class="text-xs font-medium text-[#5596CE] hover:underline"
+                    class="text-xs font-medium text-[color:var(--brand)] hover:underline"
                    
                   >
                     + Add item
@@ -3560,7 +3600,7 @@
               </div>
 
               <div class="bg-white rounded-2xl border border-[#EDE9E3] p-5">
-                <h3 class="text-sm font-semibold text-[#28547C] mb-4">
+                <h3 class="text-sm font-semibold text-[color:var(--brand-ink)] mb-4">
                   Totals
                 </h3>
                 <div class="space-y-3">
@@ -3574,7 +3614,7 @@
                     </button>
                   </div>
                   <label class="flex items-center gap-2 cursor-pointer">
-                    <input id="inv-svc-on" type="checkbox" checked class="accent-[#5596CE]" />
+                    <input id="inv-svc-on" type="checkbox" checked class="accent-[color:var(--brand)]" />
                     <span class="text-xs font-medium text-[#555]"
                       >Show a service charge line</span
                     >
@@ -3591,7 +3631,7 @@
                     <button class="inv-reset" data-reset="svc" title="Recalculate">auto</button>
                   </div>
                   <label class="flex items-center gap-2 pt-1 cursor-pointer">
-                    <input id="inv-tax-on" type="checkbox" checked class="accent-[#5596CE]" />
+                    <input id="inv-tax-on" type="checkbox" checked class="accent-[color:var(--brand)]" />
                     <span class="text-xs font-medium text-[#555]"
                       >Show a tax line</span
                     >
@@ -3616,7 +3656,7 @@
                     <button class="inv-reset" data-reset="total" title="Recalculate">auto</button>
                   </div>
                   <label class="flex items-center gap-2 pt-1 cursor-pointer">
-                    <input id="inv-dp-on" type="checkbox" checked class="accent-[#5596CE]" />
+                    <input id="inv-dp-on" type="checkbox" checked class="accent-[color:var(--brand)]" />
                     <span class="text-xs font-medium text-[#555]"
                       >Show a down payment line</span
                     >
@@ -3634,7 +3674,7 @@
                       <button class="inv-reset" data-reset="dp" title="Recalculate">auto</button>
                     </div>
                     <label class="flex items-center gap-2 pt-3 cursor-pointer">
-                      <input id="inv-settle-on" type="checkbox" class="accent-[#5596CE]" />
+                      <input id="inv-settle-on" type="checkbox" class="accent-[color:var(--brand)]" />
                       <span class="text-xs font-medium text-[#555]"
                         >Show a settlement line (the rest still to pay)</span
                       >
@@ -3665,7 +3705,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
               <div class="bg-white rounded-2xl border border-[#EDE9E3] p-5">
                 <div class="flex items-center justify-between mb-3">
-                  <h3 class="text-sm font-semibold text-[#28547C]">
+                  <h3 class="text-sm font-semibold text-[color:var(--brand-ink)]">
                     Recent invoices
                   </h3>
                   <span class="text-[11px] text-[#999]">this browser only</span>
@@ -3770,7 +3810,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         <div class="max-w-5xl mx-auto">
           <div class="mb-6">
             <div class="gold-bar mb-3"></div>
-            <h1 class="font-heading text-3xl font-semibold text-[#28547C]">
+            <h1 class="font-heading text-3xl font-semibold text-[color:var(--brand-ink)]">
               Vouchers
             </h1>
             <p class="text-[#999] text-sm mt-1">
@@ -3795,7 +3835,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div id="vch-pane-issue">
           <!-- ── REDEEM: first because it is the most frequent action ── -->
           <div class="bg-white rounded-2xl border border-[#EDE9E3] p-5 mb-6">
-            <h3 class="text-sm font-semibold text-[#28547C] mb-1">Redeem a voucher</h3>
+            <h3 class="text-sm font-semibold text-[color:var(--brand-ink)] mb-1">Redeem a voucher</h3>
             <p class="text-[11px] text-[#999] mb-3">
               Search by the guest's name, or by the code if they can show it.
             </p>
@@ -3815,7 +3855,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <!-- ── ISSUE ── -->
             <div class="w-full xl:w-[430px] xl:flex-none">
               <div class="bg-white rounded-2xl border border-[#EDE9E3] p-5">
-                <h3 class="text-sm font-semibold text-[#28547C] mb-4">Issue a voucher</h3>
+                <h3 class="text-sm font-semibold text-[color:var(--brand-ink)] mb-4">Issue a voucher</h3>
 
                 <div class="space-y-4">
                   <div>
@@ -3926,7 +3966,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <div class="flex-1 min-w-0 space-y-6">
               <div class="bg-white rounded-2xl border border-[#EDE9E3] p-5">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
-                  <h3 class="text-sm font-semibold text-[#28547C] flex-1">Issued vouchers</h3>
+                  <h3 class="text-sm font-semibold text-[color:var(--brand-ink)] flex-1">Issued vouchers</h3>
                   <input
                     id="vch-list-search"
                     class="form-input sm:w-56"
@@ -3939,7 +3979,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               </div>
 
               <div class="bg-white rounded-2xl border border-[#EDE9E3] p-5">
-                <h3 class="text-sm font-semibold text-[#28547C] mb-1">Batches</h3>
+                <h3 class="text-sm font-semibold text-[color:var(--brand-ink)] mb-1">Batches</h3>
                 <p class="text-[11px] text-[#999] mb-4">
                   What was handed out, what came back, and what is still outstanding.
                 </p>
@@ -3953,7 +3993,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div id="vch-pane-design" class="hidden">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div class="bg-white rounded-2xl border border-[#EDE9E3] p-5">
-                <h3 class="text-sm font-semibold text-[#28547C] mb-1" data-i18n>Card colours</h3>
+                <h3 class="text-sm font-semibold text-[color:var(--brand-ink)] mb-1" data-i18n>Card colours</h3>
                 <p class="text-[11px] text-[#999] mb-4" data-i18n>
                   The card is drawn from these, so nothing has to be designed in advance.
                   The logo is the one in Settings > Branding.
@@ -3970,7 +4010,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 <div class="mb-4">
                   <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Text</label>
                   <div class="flex items-center gap-3">
-                    <input id="vch-text-color" type="color" value="#28547C" class="h-10 w-14 rounded-lg border border-[#E6E2DC] bg-white p-1 cursor-pointer" oninput="vchPreviewStyle()" />
+                    <input id="vch-text-color" type="color" value="var(--brand-ink)" class="h-10 w-14 rounded-lg border border-[#E6E2DC] bg-white p-1 cursor-pointer" oninput="vchPreviewStyle()" />
                     <input id="vch-text-color-hex" type="text" maxlength="7" class="form-input" style="max-width:120px" oninput="vchSyncColor('vch-text-color', this)" />
                   </div>
                   <p class="text-[11px] text-[#999] mt-1" data-i18n>
@@ -3982,7 +4022,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 <div class="mb-4">
                   <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Accent</label>
                   <div class="flex items-center gap-3">
-                    <input id="vch-accent-color" type="color" value="#4795D0" class="h-10 w-14 rounded-lg border border-[#E6E2DC] bg-white p-1 cursor-pointer" oninput="vchPreviewStyle()" />
+                    <input id="vch-accent-color" type="color" value="var(--brand-hover)" class="h-10 w-14 rounded-lg border border-[#E6E2DC] bg-white p-1 cursor-pointer" oninput="vchPreviewStyle()" />
                     <input id="vch-accent-color-hex" type="text" maxlength="7" class="form-input" style="max-width:120px" oninput="vchSyncColor('vch-accent-color', this)" />
                   </div>
                   <p class="text-[11px] text-[#999] mt-1" data-i18n>
@@ -3992,7 +4032,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
                 <div class="mb-4">
                   <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Logo size</label>
-                  <input id="vch-logo-scale" type="range" min="40" max="180" value="100" class="w-full accent-[#28547C]" oninput="vchPreviewStyle()" />
+                  <input id="vch-logo-scale" type="range" min="40" max="180" value="100" class="w-full accent-[color:var(--brand-ink)]" oninput="vchPreviewStyle()" />
                   <div class="flex justify-between text-[11px] text-[#999]">
                     <span data-i18n>Small</span>
                     <span id="vch-logo-scale-value" data-i18n-skip>100%</span>
@@ -4000,13 +4040,13 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                   </div>
                 </div>
 
-                <div id="vch-contrast-warning" class="hidden rounded-10 border border-[#EADFC7] bg-[#FBF7EF] p-3 mb-4">
+                <div id="vch-contrast-warning" class="hidden rounded-10 border border-[color:var(--accent-tint2)] bg-[#FBF7EF] p-3 mb-4">
                   <p class="text-[11px] text-[#7A6A4F] leading-relaxed" data-i18n-skip></p>
                 </div>
 
                 <div class="border-t border-[#EDE9E3] pt-4 mt-4">
                   <label class="flex items-start gap-3 cursor-pointer">
-                    <input id="vch-use-artwork" type="checkbox" class="form-checkbox h-4 w-4 mt-0.5 text-[#28547C]" onchange="vchPreviewStyle()" />
+                    <input id="vch-use-artwork" type="checkbox" class="form-checkbox h-4 w-4 mt-0.5 text-[color:var(--brand-ink)]" onchange="vchPreviewStyle()" />
                     <span>
                       <span class="text-xs font-medium text-[#555]" data-i18n>Use my own artwork instead</span>
                       <span class="block text-[11px] text-[#999] mt-0.5" data-i18n>
@@ -4035,7 +4075,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               </div>
 
               <div class="bg-white rounded-2xl border border-[#EDE9E3] p-5">
-                <h3 class="text-sm font-semibold text-[#28547C] mb-1" data-i18n>Preview</h3>
+                <h3 class="text-sm font-semibold text-[color:var(--brand-ink)] mb-1" data-i18n>Preview</h3>
                 <p class="text-[11px] text-[#999] mb-4" data-i18n>
                   A real card with sample details, drawn the same way the one a guest
                   receives is drawn.
@@ -4058,7 +4098,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="settings-tabs mb-6" data-settings-tabs></div>
           <div class="mb-8">
             <div class="gold-bar mb-3"></div>
-            <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
+            <h1 class="font-heading text-3xl font-semibold text-[color:var(--brand-ink)]" data-i18n>
               Area Capacity
             </h1>
             <p class="text-[#999] text-sm mt-1" data-i18n>
@@ -4083,7 +4123,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           >
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
+              <h1 class="font-heading text-3xl font-semibold text-[color:var(--brand-ink)]" data-i18n>
                 Reports
               </h1>
               <p class="text-[#999] text-sm mt-1" id="reports-tab-desc">
@@ -4094,7 +4134,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               <button
                 id="reports-tab-marketing"
                 onclick="setReportsTab('marketing')"
-                class="text-xs font-medium rounded-full px-4 py-2 bg-white text-[#28547C]"
+                class="text-xs font-medium rounded-full px-4 py-2 bg-white text-[color:var(--brand-ink)]"
                 style="position: relative"
               >
                 Marketing
@@ -4155,7 +4195,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 <button
                   id="mkt-range-month"
                   onclick="setMarketingRange('month')"
-                  class="btn-ghost text-xs px-3 py-2 bg-white font-semibold border-[#28547C] text-[#28547C]"
+                  class="btn-ghost text-xs px-3 py-2 bg-white font-semibold border-[color:var(--brand-ink)] text-[color:var(--brand-ink)]"
                 >
                   This Month
                 </button>
@@ -4221,7 +4261,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <!-- Headline metric -->
             <div class="flex items-center gap-3 px-1">
               <span
-                class="font-display text-4xl font-semibold text-[#28547C]"
+                class="font-display text-4xl font-semibold text-[color:var(--brand-ink)]"
                 id="report-total-guests"
                 >—</span
               >
@@ -4236,10 +4276,10 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <!-- Three columns: Acquire / Retain / At-Risk -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
               <!-- ACQUIRE -->
-              <div class="card p-6 border-t-4 border-t-[#28547C] flex flex-col h-full">
+              <div class="card p-6 border-t-4 border-t-[var(--brand-ink)] flex flex-col h-full">
                 <div class="flex items-start justify-between mb-1">
                   <p
-                    class="text-xs font-semibold uppercase tracking-widest text-[#28547C]"
+                    class="text-xs font-semibold uppercase tracking-widest text-[color:var(--brand-ink)]"
                   >
                     Acquire
                   </p>
@@ -4249,7 +4289,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     height="16"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#28547C"
+                    stroke="var(--brand-ink)"
                     stroke-width="2"
                     opacity="0.4"
                   >
@@ -4260,7 +4300,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                   </svg>
                 </div>
                 <p
-                  class="font-display text-5xl font-semibold text-[#28547C] mt-3 mb-1"
+                  class="font-display text-5xl font-semibold text-[color:var(--brand-ink)] mt-3 mb-1"
                   id="report-new-guests"
                 >
                   —
@@ -4303,7 +4343,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 <div class="space-y-2 mt-auto">
                   <button
                     onclick="bcOpenAcquisitionCampaign()"
-                    class="w-full text-xs py-2 flex items-center justify-center gap-1.5 rounded-10 font-medium bg-[#28547C] text-white hover:bg-[#1D3F5E] transition-colors"
+                    class="w-full text-xs py-2 flex items-center justify-center gap-1.5 rounded-10 font-medium bg-[color:var(--brand-ink)] text-white hover:bg-[color:var(--brand-deep)] transition-colors"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -4320,7 +4360,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                   </button>
                   <button
                     onclick="exportGuestSegment('firstTime')"
-                    class="w-full btn-ghost text-xs py-2 flex items-center justify-center gap-1.5 border border-[#28547C] text-[#28547C]"
+                    class="w-full btn-ghost text-xs py-2 flex items-center justify-center gap-1.5 border border-[color:var(--brand-ink)] text-[color:var(--brand-ink)]"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -4341,10 +4381,10 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               </div>
 
               <!-- RETAIN -->
-              <div class="card p-6 border-t-4 border-t-[#C8A96B] flex flex-col h-full">
+              <div class="card p-6 border-t-4 border-t-[var(--accent)] flex flex-col h-full">
                 <div class="flex items-start justify-between mb-1">
                   <p
-                    class="text-xs font-semibold uppercase tracking-widest text-[#C8A96B]"
+                    class="text-xs font-semibold uppercase tracking-widest text-[color:var(--accent)]"
                   >
                     Retain
                   </p>
@@ -4354,7 +4394,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     height="16"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#C8A96B"
+                    stroke="var(--accent)"
                     stroke-width="2"
                     opacity="0.6"
                   >
@@ -4365,7 +4405,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                   </svg>
                 </div>
                 <p
-                  class="font-display text-5xl font-semibold text-[#C8A96B] mt-3 mb-1"
+                  class="font-display text-5xl font-semibold text-[color:var(--accent)] mt-3 mb-1"
                   id="mkt-retain-total"
                 >
                   —
@@ -4420,7 +4460,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 <div class="space-y-2 mt-auto">
                   <button
                     onclick="bcOpenReturningCampaign()"
-                    class="w-full text-xs py-2 flex items-center justify-center gap-1.5 rounded-10 font-medium bg-[#C8A96B] text-white hover:bg-[#B69455] transition-colors"
+                    class="w-full text-xs py-2 flex items-center justify-center gap-1.5 rounded-10 font-medium bg-[color:var(--accent)] text-white hover:bg-[color:var(--accent-strong)] transition-colors"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -4437,7 +4477,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                   </button>
                   <button
                     onclick="exportGuestSegment('returning')"
-                    class="w-full btn-ghost text-xs py-2 flex items-center justify-center gap-1.5 border border-[#C8A96B] text-[#C8A96B]"
+                    class="w-full btn-ghost text-xs py-2 flex items-center justify-center gap-1.5 border border-[color:var(--accent)] text-[color:var(--accent)]"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -4557,7 +4597,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <div class="card p-6">
               <div class="flex items-center justify-between mb-4">
                 <div>
-                  <h3 class="font-heading text-lg font-semibold text-[#28547C]">
+                  <h3 class="font-heading text-lg font-semibold text-[color:var(--brand-ink)]">
                     Top Guests by Visits
                   </h3>
                   <p class="text-[#999] text-sm mt-0.5">
@@ -4610,7 +4650,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               </div>
               <button
                 onclick="exportGuestSegment('allPeriod')"
-                class="mt-4 w-full text-center text-sm text-[#28547C] hover:underline py-2 border-t border-[#F5F3EF]"
+                class="mt-4 w-full text-center text-sm text-[color:var(--brand-ink)] hover:underline py-2 border-t border-[#F5F3EF]"
               >
                 View Full List &amp; Export →
               </button>
@@ -4648,7 +4688,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <div class="card p-6">
               <div class="flex items-start justify-between mb-3">
                 <div>
-                  <h3 class="font-heading text-lg font-semibold text-[#28547C]">
+                  <h3 class="font-heading text-lg font-semibold text-[color:var(--brand-ink)]">
                     Top Spender Leaderboard
                   </h3>
                   <p class="text-[#999] text-sm mt-0.5">
@@ -4729,7 +4769,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 All Time
               </p>
               <h3
-                class="font-heading text-lg font-semibold text-[#28547C] mb-6"
+                class="font-heading text-lg font-semibold text-[color:var(--brand-ink)] mb-6"
               >
                 Google Review Promotion
               </h3>
@@ -4743,7 +4783,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Total Spins
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="mkt-review-total-spins"
                   >
                     —
@@ -4756,7 +4796,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Prizes Won
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="mkt-review-approved"
                   >
                     —
@@ -4769,7 +4809,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Rejected Reviews
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="mkt-review-rejected"
                   >
                     —
@@ -4782,7 +4822,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Redeemed Prizes
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="mkt-review-redeemed"
                   >
                     —
@@ -4795,7 +4835,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Redemption Rate
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="mkt-review-redemption-rate"
                   >
                     —
@@ -4803,7 +4843,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 </div>
               </div>
               <div class="divider my-4"></div>
-              <h4 class="text-sm font-semibold text-[#28547C] mb-3">
+              <h4 class="text-sm font-semibold text-[color:var(--brand-ink)] mb-3">
                 Prize Breakdown
               </h4>
               <div class="overflow-x-auto">
@@ -4852,7 +4892,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <div class="card p-6">
               <div class="flex items-start justify-between mb-4">
                 <div>
-                  <h3 class="font-heading text-lg font-semibold text-[#28547C] flex items-center gap-2">
+                  <h3 class="font-heading text-lg font-semibold text-[color:var(--brand-ink)] flex items-center gap-2">
                     Birthday Guests
                     <span
                       id="bd-report-soon-count"
@@ -4968,7 +5008,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <div class="card p-6">
               <div class="flex items-start justify-between mb-4">
                 <div>
-                  <h3 class="font-heading text-lg font-semibold text-[#28547C]">
+                  <h3 class="font-heading text-lg font-semibold text-[color:var(--brand-ink)]">
                     At-Risk High Spenders
                   </h3>
                   <p class="text-[#999] text-sm mt-0.5">
@@ -5037,7 +5077,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <!-- ── LIVE ───────────────────────────────────────────── -->
             <div class="flex items-center gap-3">
               <span
-                class="text-[10px] font-semibold uppercase tracking-widest text-[#28547C] opacity-40 whitespace-nowrap"
+                class="text-[10px] font-semibold uppercase tracking-widest text-[color:var(--brand-ink)] opacity-40 whitespace-nowrap"
                 >Live</span
               >
               <div class="flex-1 border-t border-dashed border-[#DDD]"></div>
@@ -5048,7 +5088,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div
                 class="card p-6 border-t-4"
-                style="border-top-color: #28547c"
+                style="border-top-color: var(--brand-ink)"
               >
                 <p
                   class="text-[10px] text-[#999] uppercase tracking-wider font-medium mb-1"
@@ -5056,12 +5096,12 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                   Live — Today
                 </p>
                 <h3
-                  class="font-heading text-lg font-semibold text-[#28547C] mb-4"
+                  class="font-heading text-lg font-semibold text-[color:var(--brand-ink)] mb-4"
                 >
                   Today's Reservations
                 </h3>
                 <p
-                  class="font-display text-5xl font-semibold text-[#28547C]"
+                  class="font-display text-5xl font-semibold text-[color:var(--brand-ink)]"
                   id="ops-demand-0-count"
                 >
                   —
@@ -5108,7 +5148,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 Live Forecast
               </p>
               <h3
-                class="font-heading text-lg font-semibold text-[#28547C] mb-4"
+                class="font-heading text-lg font-semibold text-[color:var(--brand-ink)] mb-4"
               >
                 Upcoming Reservations
               </h3>
@@ -5120,7 +5160,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     This Week
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="ops-forecast-this-week"
                   >
                     —
@@ -5139,7 +5179,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Next Week
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="ops-forecast-next-week"
                   >
                     —
@@ -5158,7 +5198,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Next Month
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="ops-forecast-next-month"
                   >
                     —
@@ -5176,7 +5216,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <!-- ── PEAK TRAFFIC ────────────────────────────────────── -->
             <div class="flex items-center gap-3">
               <span
-                class="text-[10px] font-semibold uppercase tracking-widest text-[#28547C] opacity-40 whitespace-nowrap"
+                class="text-[10px] font-semibold uppercase tracking-widest text-[color:var(--brand-ink)] opacity-40 whitespace-nowrap"
                 >Peak Traffic</span
               >
               <div class="flex-1 border-t border-dashed border-[#DDD]"></div>
@@ -5194,7 +5234,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                   >
                     14-Day Window
                   </p>
-                  <h3 class="font-heading text-lg font-semibold text-[#28547C]">
+                  <h3 class="font-heading text-lg font-semibold text-[color:var(--brand-ink)]">
                     Peak Traffic
                   </h3>
                 </div>
@@ -5203,7 +5243,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                   <button
                     id="peak-date-trigger"
                     onclick="togglePeakCalendar()"
-                    class="flex items-center gap-2 text-xs font-medium text-[#28547C] bg-[#F0F6FC] hover:bg-[#ddeaf7] border border-[#c8dcef] rounded-lg px-3 py-2 transition-colors"
+                    class="flex items-center gap-2 text-xs font-medium text-[color:var(--brand-ink)] bg-[color:var(--brand-tint2)] hover:bg-[color:var(--brand-tint)] border border-[color:var(--brand-tint)] rounded-lg px-3 py-2 transition-colors"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -5226,7 +5266,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     <div class="flex items-center justify-between mb-3">
                       <button
                         onclick="movePeakCalMonth(-1)"
-                        class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#F0F6FC] text-[#28547C] transition-colors"
+                        class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[color:var(--brand-tint2)] text-[color:var(--brand-ink)] transition-colors"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -5241,11 +5281,11 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                       </button>
                       <span
                         id="peak-cal-month-label"
-                        class="text-sm font-semibold text-[#28547C]"
+                        class="text-sm font-semibold text-[color:var(--brand-ink)]"
                       ></span>
                       <button
                         onclick="movePeakCalMonth(1)"
-                        class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#F0F6FC] text-[#28547C] transition-colors"
+                        class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[color:var(--brand-tint2)] text-[color:var(--brand-ink)] transition-colors"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -5308,7 +5348,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                       >
                       <button
                         onclick="resetPeakDate()"
-                        class="text-[10px] text-[#5596CE] hover:underline font-medium"
+                        class="text-[10px] text-[color:var(--brand)] hover:underline font-medium"
                       >
                         Reset to today
                       </button>
@@ -5318,7 +5358,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               </div>
               <p class="text-xs text-[#999] mb-4">
                 Busiest day:
-                <span class="font-medium text-[#28547C]" id="ops-peak-day"
+                <span class="font-medium text-[color:var(--brand-ink)]" id="ops-peak-day"
                   >—</span
                 >
               </p>
@@ -5339,7 +5379,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <!-- ── IN PERIOD ───────────────────────────────────────── -->
             <div class="flex items-center gap-3">
               <span
-                class="text-[10px] font-semibold uppercase tracking-widest text-[#28547C] opacity-40 whitespace-nowrap"
+                class="text-[10px] font-semibold uppercase tracking-widest text-[color:var(--brand-ink)] opacity-40 whitespace-nowrap"
                 >In Period</span
               >
               <div class="flex-1 border-t border-dashed border-[#DDD]"></div>
@@ -5376,7 +5416,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 <button
                   id="ops-report-range-week"
                   onclick="setOpsReportRange('week')"
-                  class="btn-ghost text-xs px-3 py-2 bg-white font-semibold border-[#28547C] text-[#28547C]"
+                  class="btn-ghost text-xs px-3 py-2 bg-white font-semibold border-[color:var(--brand-ink)] text-[color:var(--brand-ink)]"
                 >
                   This Week
                 </button>
@@ -5438,7 +5478,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 In Period
               </p>
               <h3
-                class="font-heading text-lg font-semibold text-[#28547C] mb-4"
+                class="font-heading text-lg font-semibold text-[color:var(--brand-ink)] mb-4"
               >
                 Reservation vs Walk-In vs Cancelled
               </h3>
@@ -5450,7 +5490,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Reservation Share
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="ops-reservation-ratio"
                   >
                     —
@@ -5469,7 +5509,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Walk-In Share
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="ops-walkin-ratio"
                   >
                     —
@@ -5506,7 +5546,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                   >
                     In Period
                   </p>
-                  <h3 class="font-heading text-lg font-semibold text-[#28547C]">
+                  <h3 class="font-heading text-lg font-semibold text-[color:var(--brand-ink)]">
                     Reservation Sources
                   </h3>
                   <p class="text-xs text-[#999] mt-1">Top booking channels</p>
@@ -5589,7 +5629,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                       In Period
                     </p>
                     <h3
-                      class="font-heading text-lg font-semibold text-[#28547C]"
+                      class="font-heading text-lg font-semibold text-[color:var(--brand-ink)]"
                     >
                       Online Reservation Form
                     </h3>
@@ -5611,12 +5651,12 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     style="background: #f4f8fb"
                   >
                     <p
-                      class="text-[10px] text-[#5596CE] uppercase tracking-wider mb-1"
+                      class="text-[10px] text-[color:var(--brand)] uppercase tracking-wider mb-1"
                     >
                       Bookings
                     </p>
                     <p
-                      class="font-display text-2xl font-semibold text-[#28547C]"
+                      class="font-display text-2xl font-semibold text-[color:var(--brand-ink)]"
                       id="ops-of-bookings"
                     >
                       —
@@ -5751,7 +5791,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                       All Time
                     </p>
                     <h3
-                      class="font-heading text-lg font-semibold text-[#28547C]"
+                      class="font-heading text-lg font-semibold text-[color:var(--brand-ink)]"
                     >
                       Repeat Guests
                     </h3>
@@ -5777,21 +5817,21 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     <button
                       id="ops-repeat-min-2"
                       onclick="setOpsRepeatMin(2)"
-                      class="text-xs px-3 py-1.5 bg-[#5596CE] text-white"
+                      class="text-xs px-3 py-1.5 bg-[color:var(--brand)] text-white"
                     >
                       2+
                     </button>
                     <button
                       id="ops-repeat-min-3"
                       onclick="setOpsRepeatMin(3)"
-                      class="text-xs px-3 py-1.5 bg-[#F8F6F2] text-[#5596CE]"
+                      class="text-xs px-3 py-1.5 bg-[#F8F6F2] text-[color:var(--brand)]"
                     >
                       3+
                     </button>
                     <button
                       id="ops-repeat-min-5"
                       onclick="setOpsRepeatMin(5)"
-                      class="text-xs px-3 py-1.5 bg-[#F8F6F2] text-[#5596CE]"
+                      class="text-xs px-3 py-1.5 bg-[#F8F6F2] text-[color:var(--brand)]"
                     >
                       5+
                     </button>
@@ -5874,7 +5914,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <div class="card p-6">
               <div class="flex items-center justify-between gap-4 mb-4">
                 <div>
-                  <h3 class="font-heading text-lg font-semibold text-[#28547C]">
+                  <h3 class="font-heading text-lg font-semibold text-[color:var(--brand-ink)]">
                     Spending Summary
                   </h3>
                   <p class="text-sm text-[#999] mt-1">
@@ -5927,7 +5967,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Walk-In Spending
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="today-walkin-spend"
                   >
                     —
@@ -5938,7 +5978,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Reservation Spending
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="today-reservation-spend"
                   >
                     —
@@ -5949,7 +5989,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Total Spending Today
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="today-total-spend"
                   >
                     —
@@ -5962,7 +6002,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <!-- Title row: spending segment + date range -->
             <div class="flex items-center justify-between gap-4 flex-wrap">
               <div>
-                <h2 class="font-heading text-2xl font-semibold text-[#28547C]">
+                <h2 class="font-heading text-2xl font-semibold text-[color:var(--brand-ink)]">
                   Spending Insights
                 </h2>
                 <p class="text-sm text-[#999] mt-1">
@@ -6109,7 +6149,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 <div>
                   <h3
                     id="wi-spend-a-title"
-                    class="font-heading text-lg font-semibold text-[#28547C]"
+                    class="font-heading text-lg font-semibold text-[color:var(--brand-ink)]"
                   >
                     High Average Spend Per Person
                   </h3>
@@ -6134,7 +6174,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Qualified Guests
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="wi-spend-a-total"
                   >
                     —
@@ -6145,7 +6185,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Highest Avg Spend
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="wi-spend-a-highest"
                   >
                     —
@@ -6156,7 +6196,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Average Spend / Person
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="wi-spend-a-average"
                   >
                     —
@@ -6167,7 +6207,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Total Revenue
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="wi-spend-a-revenue"
                   >
                     —
@@ -6285,7 +6325,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 <div>
                   <h3
                     id="wi-spend-b-title"
-                    class="font-heading text-lg font-semibold text-[#28547C]"
+                    class="font-heading text-lg font-semibold text-[color:var(--brand-ink)]"
                   >
                     High Total Spending
                   </h3>
@@ -6310,7 +6350,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Qualified Guests
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="wi-spend-b-total"
                   >
                     —
@@ -6321,7 +6361,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Highest Spend
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="wi-spend-b-highest"
                   >
                     —
@@ -6332,7 +6372,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Average Spend
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="wi-spend-b-average"
                   >
                     —
@@ -6343,7 +6383,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     Total Revenue
                   </p>
                   <p
-                    class="font-display text-3xl text-[#28547C]"
+                    class="font-display text-3xl text-[color:var(--brand-ink)]"
                     id="wi-spend-b-revenue"
                   >
                     —
@@ -6465,7 +6505,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="flex items-center justify-between mb-8">
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
+              <h1 class="font-heading text-3xl font-semibold text-[color:var(--brand-ink)]" data-i18n>
                 Spin Prizes
               </h1>
               <p class="text-[#999] text-sm mt-1" data-i18n>
@@ -6491,7 +6531,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
             <div class="card p-5 lg:col-span-1">
               <h2
-                class="font-heading text-xl font-semibold text-[#28547C] mb-4"
+                class="font-heading text-xl font-semibold text-[color:var(--brand-ink)] mb-4"
               >
                 Prizes
               </h2>
@@ -6609,7 +6649,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="flex items-center justify-between mb-8">
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
+              <h1 class="font-heading text-3xl font-semibold text-[color:var(--brand-ink)]" data-i18n>
                 Reservation Form
               </h1>
               <p class="text-[#999] text-sm mt-1" data-i18n>
@@ -6636,7 +6676,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
           <!-- Appearance of the public booking page (2026-08-23) -->
           <div class="card p-6 mb-8">
-            <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>
+            <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)] mb-1" data-i18n>
               Page Appearance
             </h2>
             <p class="text-xs text-[#999] mb-5" data-i18n>
@@ -6686,7 +6726,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     >Form panel colour</label
                   >
                   <div class="flex items-center gap-3">
-                    <input id="rf-glass-color" type="color" value="#28547C" class="h-10 w-14 rounded-lg border border-[#E6E2DC] bg-white p-1 cursor-pointer" oninput="previewReserveAppearance()" />
+                    <input id="rf-glass-color" type="color" value="var(--brand-ink)" class="h-10 w-14 rounded-lg border border-[#E6E2DC] bg-white p-1 cursor-pointer" oninput="previewReserveAppearance()" />
                     <input id="rf-glass-color-hex" type="text" maxlength="7" class="form-input settings-field" style="max-width:120px" oninput="syncReserveColorInput('rf-glass-color', this)" />
                   </div>
                 </div>
@@ -6695,7 +6735,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                   <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n
                     >How solid the panel is</label
                   >
-                  <input id="rf-glass-opacity" type="range" min="25" max="95" value="60" class="w-full accent-[#28547C]" oninput="previewReserveAppearance()" />
+                  <input id="rf-glass-opacity" type="range" min="25" max="95" value="60" class="w-full accent-[color:var(--brand-ink)]" oninput="previewReserveAppearance()" />
                   <div class="flex justify-between text-[11px] text-[#999]">
                     <span data-i18n>See-through</span>
                     <span id="rf-glass-opacity-value" data-i18n-skip>60%</span>
@@ -6708,7 +6748,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     >Button colour</label
                   >
                   <div class="flex items-center gap-3">
-                    <input id="rf-accent-color" type="color" value="#5596CE" class="h-10 w-14 rounded-lg border border-[#E6E2DC] bg-white p-1 cursor-pointer" oninput="previewReserveAppearance()" />
+                    <input id="rf-accent-color" type="color" value="var(--brand)" class="h-10 w-14 rounded-lg border border-[#E6E2DC] bg-white p-1 cursor-pointer" oninput="previewReserveAppearance()" />
                     <input id="rf-accent-color-hex" type="text" maxlength="7" class="form-input settings-field" style="max-width:120px" oninput="syncReserveColorInput('rf-accent-color', this)" />
                   </div>
                   <p class="text-[11px] text-[#999] mt-1" data-i18n>
@@ -6721,7 +6761,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                   <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n
                     >Logo height on this page</label
                   >
-                  <input id="rf-logo-height" type="range" min="32" max="200" value="72" class="w-full accent-[#28547C]" oninput="previewReserveAppearance()" />
+                  <input id="rf-logo-height" type="range" min="32" max="200" value="72" class="w-full accent-[color:var(--brand-ink)]" oninput="previewReserveAppearance()" />
                   <div class="flex justify-between text-[11px] text-[#999]">
                     <span data-i18n>Small</span>
                     <span id="rf-logo-height-value" data-i18n-skip>72px</span>
@@ -6769,7 +6809,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div class="card p-5">
-              <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>
+              <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)] mb-1" data-i18n>
                 Signature Dishes
               </h2>
               <p class="text-xs text-[#999] mb-4" data-i18n>
@@ -6780,7 +6820,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               </div>
             </div>
             <div class="card p-5">
-              <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>
+              <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)] mb-1" data-i18n>
                 Chef's Special
               </h2>
               <p class="text-xs text-[#999] mb-4" data-i18n>
@@ -6791,7 +6831,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               </div>
             </div>
             <div class="card p-5">
-              <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>
+              <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)] mb-1" data-i18n>
                 Best Seller
               </h2>
               <p class="text-xs text-[#999] mb-4" data-i18n>
@@ -6804,7 +6844,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           </div>
 
           <div class="card p-6">
-            <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>
+            <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)] mb-1" data-i18n>
               Full Menu Link
             </h2>
             <p class="text-xs text-[#999] mb-4" data-i18n>
@@ -6841,7 +6881,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="settings-tabs mb-6" data-settings-tabs></div>
           <div class="mb-8">
             <div class="gold-bar mb-3"></div>
-            <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
+            <h1 class="font-heading text-3xl font-semibold text-[color:var(--brand-ink)]" data-i18n>
               Thresholds
             </h1>
             <p class="text-[#999] text-sm mt-1" data-i18n>
@@ -6850,7 +6890,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           </div>
 
           <div class="card p-6 mb-6">
-            <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>Spending Tier</h2>
+            <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)] mb-1" data-i18n>Spending Tier</h2>
             <p class="text-xs text-[#999] mb-5" data-i18n>
               A guest becomes a High Spender when one visit reaches either threshold. Reports and dashboards use these same numbers.
             </p>
@@ -6871,7 +6911,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           </div>
 
           <div class="card p-6 mb-6">
-            <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>Membership</h2>
+            <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)] mb-1" data-i18n>Membership</h2>
             <p class="text-xs text-[#999] mb-5" data-i18n>
               Sticker and voucher rules per card type. Changes apply to new transactions only — existing stickers and vouchers are not recalculated.
             </p>
@@ -6890,7 +6930,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div class="p-4 rounded-10 border border-[#E7E4DE]">
-                <p class="text-xs font-semibold text-[#8B6F47] uppercase tracking-wider mb-3" data-i18n-skip>Family</p>
+                <p class="text-xs font-semibold text-[color:var(--accent-strong)] uppercase tracking-wider mb-3" data-i18n-skip>Family</p>
                 <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Min spend per sticker (Rp)</label>
                 <input id="set-fam-min" type="number" min="1" class="form-input mb-3" />
                 <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Voucher amount (Rp)</label>
@@ -6899,7 +6939,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 <input id="set-fam-cap" type="number" min="1" class="form-input" />
               </div>
               <div class="p-4 rounded-10 border border-[#E7E4DE]">
-                <p class="text-xs font-semibold text-[#8B6F47] uppercase tracking-wider mb-3" data-i18n-skip>Company</p>
+                <p class="text-xs font-semibold text-[color:var(--accent-strong)] uppercase tracking-wider mb-3" data-i18n-skip>Company</p>
                 <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Min spend per sticker (Rp)</label>
                 <input id="set-com-min" type="number" min="1" class="form-input mb-3" />
                 <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Voucher amount (Rp)</label>
@@ -6916,7 +6956,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                create_public_reservation in the database; the form only mirrors
                them so a guest is not refused after filling everything in. -->
           <div class="card p-6 mb-6">
-            <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>Online Reservation Availability</h2>
+            <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)] mb-1" data-i18n>Online Reservation Availability</h2>
             <p class="text-xs text-[#999] mb-5" data-i18n>
               When the public reservation page will accept a booking. Enforced by the database, not just the form. Staff can always book in this app regardless of what is set here.
             </p>
@@ -7035,11 +7075,11 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="flex items-center gap-3">
             <button onclick="saveThresholdSettings()" class="btn-primary px-6 py-2.5" data-i18n>Save Settings</button>
           </div>
-          <div id="settings-recalc-hint" class="hidden mt-4 p-4 rounded-10 bg-[#FBF8EE] border border-[#E8DDC3]">
-            <p class="text-sm text-[#8B6F47] mb-2" data-i18n>
+          <div id="settings-recalc-hint" class="hidden mt-4 p-4 rounded-10 bg-[#FBF8EE] border border-[color:var(--accent-tint2)]">
+            <p class="text-sm text-[color:var(--accent-strong)] mb-2" data-i18n>
               Saved. Guest tiers update automatically on their next visit — or apply the new thresholds to everyone now:
             </p>
-            <button onclick="recalcAllTiersNow()" class="text-sm font-medium text-[#28547C] underline hover:no-underline" data-i18n>
+            <button onclick="recalcAllTiersNow()" class="text-sm font-medium text-[color:var(--brand-ink)] underline hover:no-underline" data-i18n>
               Recalculate all guest tiers now
             </button>
           </div>
@@ -7052,7 +7092,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="settings-tabs mb-6" data-settings-tabs></div>
           <div class="mb-8">
             <div class="gold-bar mb-3"></div>
-            <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
+            <h1 class="font-heading text-3xl font-semibold text-[color:var(--brand-ink)]" data-i18n>
               Branding
             </h1>
             <p class="text-[#999] text-sm mt-1" data-i18n>
@@ -7062,7 +7102,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             </p>
           </div>
 
-          <div class="card p-4 mb-6 bg-[#FBF7EF] border border-[#EADFC7]">
+          <div class="card p-4 mb-6 bg-[#FBF7EF] border border-[color:var(--accent-tint2)]">
             <p class="text-xs text-[#7A6A4F] leading-relaxed" data-i18n>
               One thing this does not change: the preview picture WhatsApp shows when
               someone forwards the booking link. WhatsApp reads that from the page before
@@ -7074,7 +7114,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="card p-6 mb-5">
             <div class="flex items-start justify-between gap-4 flex-wrap">
               <div>
-                <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>
+                <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)] mb-1" data-i18n>
                   Main logo
                 </h2>
                 <p class="text-xs text-[#999] mb-3" data-i18n>
@@ -7117,7 +7157,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="card p-6 mb-5">
             <div class="flex items-start justify-between gap-4 flex-wrap">
               <div>
-                <h2 class="font-heading text-xl font-semibold text-[#28547C] mb-1" data-i18n>
+                <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)] mb-1" data-i18n>
                   Small mark
                 </h2>
                 <p class="text-xs text-[#999] mb-3" data-i18n>
@@ -7173,7 +7213,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="flex items-center justify-between mb-8 gap-4 flex-wrap">
             <div>
               <div class="gold-bar mb-3"></div>
-              <h1 class="font-heading text-3xl font-semibold text-[#28547C]" data-i18n>
+              <h1 class="font-heading text-3xl font-semibold text-[color:var(--brand-ink)]" data-i18n>
                 Staff
               </h1>
               <p class="text-[#999] text-sm mt-1" data-i18n>
@@ -7196,7 +7236,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           </div>
 
           <div class="card p-5">
-            <h2 class="font-heading text-lg font-semibold text-[#28547C] mb-2" data-i18n>
+            <h2 class="font-heading text-lg font-semibold text-[color:var(--brand-ink)] mb-2" data-i18n>
               What each role can do
             </h2>
             <ul class="text-xs text-[#777] space-y-1.5 leading-relaxed">
@@ -7225,7 +7265,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       onclick="if (event.target === this) hideModal('ce-create-modal');"
     >
       <div class="modal-box">
-        <h2 class="font-heading text-2xl text-[#28547C] mb-1" data-i18n-skip>
+        <h2 class="font-heading text-2xl text-[color:var(--brand-ink)] mb-1" data-i18n-skip>
           Campaign Baru
         </h2>
         <p class="text-sm text-[#999] mb-5" data-i18n-skip>
@@ -7256,14 +7296,14 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           style="display: none" onchange="ceSetCreateTag(this.value)"></select>
 
         <div id="ce-create-preview" class="rounded-xl p-4 mb-5"
-          style="background: #f4f8fb; border: 1px solid #d7e5f2"></div>
+          style="background: #f4f8fb; border: 1px solid var(--brand-tint)"></div>
 
         <div class="flex flex-wrap items-center justify-end gap-3">
           <button onclick="hideModal('ce-create-modal')"
             class="px-5 py-2.5 rounded-xl text-sm font-medium border border-[#E7E4DE] bg-white text-[#555] hover:bg-[#F8F6F2]"
             data-i18n-skip>Batal</button>
           <button onclick="ceCreate()"
-            class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#28547C] hover:bg-[#1D3F5E]"
+            class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[color:var(--brand-ink)] hover:bg-[color:var(--brand-deep)]"
             data-i18n-skip>Buat Campaign</button>
         </div>
       </div>
@@ -7276,7 +7316,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       onclick="if (event.target === this) hideModal('ce-row-modal');"
     >
       <div class="modal-box">
-        <h2 class="font-heading text-2xl text-[#28547C] mb-1" data-i18n-skip>
+        <h2 class="font-heading text-2xl text-[color:var(--brand-ink)] mb-1" data-i18n-skip>
           <span id="ce-row-name"></span>
         </h2>
         <p class="text-sm text-[#999] mb-4" data-i18n-skip>
@@ -7302,7 +7342,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             class="px-4 py-2 rounded-xl text-sm font-medium border border-[#E7E4DE] bg-white text-[#555] hover:bg-[#F8F6F2]"
             data-i18n-skip>Belum dikirim</button>
           <button onclick="ceSetRowStatus('done')"
-            class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#28547C] hover:bg-[#1D3F5E]"
+            class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[color:var(--brand-ink)] hover:bg-[color:var(--brand-deep)]"
             data-i18n-skip>Tandai selesai</button>
           <button onclick="ceSetRowStatus('skipped')"
             class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#B4523F] hover:bg-[#9A4535]"
@@ -7319,7 +7359,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     >
       <div class="modal-box">
         <div class="flex items-center justify-between mb-6">
-          <h2 class="font-heading text-2xl font-semibold text-[#28547C]" id="area-modal-title" data-i18n-skip>
+          <h2 class="font-heading text-2xl font-semibold text-[color:var(--brand-ink)]" id="area-modal-title" data-i18n-skip>
             Add Area
           </h2>
           <button onclick="hideModal('modal-area')" class="modal-close" aria-label="Close">
@@ -7399,7 +7439,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     >
       <div class="modal-box" style="max-width: 680px">
         <div class="flex items-center justify-between mb-2">
-          <h2 class="font-heading text-2xl font-semibold text-[#28547C]" data-i18n>
+          <h2 class="font-heading text-2xl font-semibold text-[color:var(--brand-ink)]" data-i18n>
             Import Areas &amp; Tables
           </h2>
           <button onclick="hideModal('modal-import')" class="modal-close" aria-label="Close">
@@ -7470,7 +7510,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     >
       <div class="modal-box">
         <div class="flex items-center justify-between mb-6">
-          <h2 class="font-heading text-2xl font-semibold text-[#28547C]" id="staff-modal-title" data-i18n-skip>
+          <h2 class="font-heading text-2xl font-semibold text-[color:var(--brand-ink)]" id="staff-modal-title" data-i18n-skip>
             Add Staff
           </h2>
           <button onclick="hideModal('modal-staff')" class="modal-close" aria-label="Close">
@@ -7538,7 +7578,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       <div class="modal-box">
         <div class="flex items-center justify-between mb-6">
           <h2
-            class="font-heading text-2xl font-semibold text-[#28547C]"
+            class="font-heading text-2xl font-semibold text-[color:var(--brand-ink)]"
             id="dish-modal-title"
             data-i18n
           >
@@ -7622,7 +7662,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               id="dish-active"
               type="checkbox"
               checked
-              class="form-checkbox h-4 w-4 text-[#28547C]"
+              class="form-checkbox h-4 w-4 text-[color:var(--brand-ink)]"
             />
             <label for="dish-active" class="text-sm text-[#555]" data-i18n
               >Visible on reservation page</label
@@ -7662,7 +7702,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div>
             <h2
               id="wi-modal-title"
-              class="font-heading text-2xl font-semibold text-[#28547C]"
+              class="font-heading text-2xl font-semibold text-[color:var(--brand-ink)]"
             >
               Register Walk-In
             </h2>
@@ -7802,7 +7842,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       <div class="modal-box">
         <div class="flex items-center justify-between mb-6">
           <h2
-            class="font-heading text-2xl font-semibold text-[#28547C]"
+            class="font-heading text-2xl font-semibold text-[color:var(--brand-ink)]"
             id="res-modal-title"
           >
             New Reservation
@@ -7892,7 +7932,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
         <!-- Everything below is visible from the moment the modal opens, but
              disabled until a guest is chosen. See setResDetailsEnabled(). -->
-        <p id="res-gate-hint" class="text-xs text-[#C8A96B] mb-3">
+        <p id="res-gate-hint" class="text-xs text-[color:var(--accent)] mb-3">
           Pick a guest above, or create a new one, to fill in the rest.
         </p>
         <fieldset id="res-details-fields" class="res-gated" disabled>
@@ -7938,7 +7978,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                VIP table is selected. "from" mirrors the main Time field. -->
           <div id="res-endtime-wrap" class="hidden mb-4 -mt-2">
             <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold text-[#C8A96B] uppercase tracking-wide mr-1">VIP hours</span>
+              <span class="text-xs font-semibold text-[color:var(--accent)] uppercase tracking-wide mr-1">VIP hours</span>
               <span class="text-sm text-[#555]">from</span>
               <input id="res-vip-from" type="time" class="form-input" style="width:auto" oninput="syncVipFromTime()" onchange="syncVipFromTime()" />
               <span class="text-sm text-[#555]">to</span>
@@ -8080,7 +8120,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       <div class="modal-box">
         <div class="flex items-center justify-between mb-6">
           <h2
-            class="font-heading text-2xl font-semibold text-[#28547C]"
+            class="font-heading text-2xl font-semibold text-[color:var(--brand-ink)]"
             id="table-modal-title"
           >
             Create Table
@@ -8163,7 +8203,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <input
               id="table-active"
               type="checkbox"
-              class="form-checkbox h-4 w-4 text-[#28547C]"
+              class="form-checkbox h-4 w-4 text-[color:var(--brand-ink)]"
             />
             <label for="table-active" class="text-sm text-[#555]">Active</label>
           </div>
@@ -8197,7 +8237,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       <div class="modal-box">
         <div class="flex items-center justify-between mb-6">
           <h2
-            class="font-heading text-2xl font-semibold text-[#28547C]"
+            class="font-heading text-2xl font-semibold text-[color:var(--brand-ink)]"
             id="guest-modal-title"
           >
             New Guest
@@ -8397,7 +8437,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             placeholder="Staff notes…"
           ></textarea>
         </div>
-        <div class="mb-5 flex items-start gap-2 bg-[#FDF6EC] border border-[#F0E2C8] rounded-lg p-3">
+        <div class="mb-5 flex items-start gap-2 bg-[#FDF6EC] border border-[color:var(--accent-tint2)] rounded-lg p-3">
           <input
             type="checkbox"
             id="g-do-not-contact"
@@ -8425,7 +8465,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     >
       <div class="modal-box" style="max-width: 600px">
         <div class="flex items-center justify-between mb-6">
-          <h2 class="font-heading text-2xl font-semibold text-[#28547C]">
+          <h2 class="font-heading text-2xl font-semibold text-[color:var(--brand-ink)]">
             Guest Profile
           </h2>
           <button
@@ -8473,7 +8513,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     >
       <div class="modal-box" style="max-width: 400px">
         <div class="flex items-center justify-between mb-5">
-          <h2 class="font-heading text-xl font-semibold text-[#28547C]">
+          <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)]">
             Update Reservation
           </h2>
           <button
@@ -8522,7 +8562,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     >
       <div class="modal-box" style="max-width: 380px">
         <div class="flex items-center justify-between mb-5">
-          <h2 class="font-heading text-xl font-semibold text-[#28547C]" id="void-reason-title">
+          <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)]" id="void-reason-title">
             Remove Entry
           </h2>
           <button
@@ -8572,7 +8612,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     >
       <div class="modal-box" style="max-width: 380px">
         <div class="flex items-center justify-between mb-5">
-          <h2 class="font-heading text-xl font-semibold text-[#28547C]">
+          <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)]">
             Complete Visit
           </h2>
           <button
@@ -8621,7 +8661,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
              This asks, once, only in the case that is genuinely ambiguous. -->
         <div
           id="complete-arrived-ask"
-          class="hidden mb-4 p-3 rounded-10 bg-[#FDF6E9] border border-[#EEDFC0]"
+          class="hidden mb-4 p-3 rounded-10 bg-[#FDF6E9] border border-[color:var(--accent-tint2)]"
         >
           <p class="text-sm font-medium text-[#8A6A2F] mb-1">
             Did this guest arrive?
@@ -8729,7 +8769,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       <div class="modal-box" style="max-width: 420px">
         <div class="flex items-center justify-between mb-5">
           <h2
-            class="font-heading text-xl font-semibold text-[#28547C]"
+            class="font-heading text-xl font-semibold text-[color:var(--brand-ink)]"
             id="prize-modal-title"
           >
             Add Prize
@@ -8784,7 +8824,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             id="prize-active-input"
             type="checkbox"
             checked
-            style="accent-color: #5596ce; width: 16px; height: 16px"
+            style="accent-color: var(--brand); width: 16px; height: 16px"
           />
           Active
         </label>
@@ -8797,15 +8837,15 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     <!-- ===== MODAL: ADD MEMBER ===== -->
     <div id="modal-add-member" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-        <h2 class="font-heading text-xl text-[#28547C] mb-4">Add Member</h2>
+        <h2 class="font-heading text-xl text-[color:var(--brand-ink)] mb-4">Add Member</h2>
         <div class="space-y-3">
           <div>
             <label class="text-xs font-medium text-[#777]">Member Number</label>
-            <input id="am-number" placeholder="e.g. BFC-F29" oninput="this.value = this.value.replace(/\s+/g, '')" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#28547C]" />
+            <input id="am-number" placeholder="e.g. BFC-F29" oninput="this.value = this.value.replace(/\s+/g, '')" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[color:var(--brand-ink)]" />
           </div>
           <div>
             <label class="text-xs font-medium text-[#777]">Card Type</label>
-            <select id="am-type" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#28547C]">
+            <select id="am-type" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:border-[color:var(--brand-ink)]">
               <option value="Family">Family Card (min Rp 300.000/visit)</option>
               <option value="Company">Company Card (min Rp 2.000.000/visit)</option>
             </select>
@@ -8813,21 +8853,21 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div>
             <label class="text-xs font-medium text-[#777]">Full Name</label>
             <div class="relative">
-              <input id="am-name" placeholder="Type to search existing guests…" autocomplete="off" oninput="onAmNameInput()" onkeydown="if(event.key==='Escape')hideAmResults()" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#28547C]" />
+              <input id="am-name" placeholder="Type to search existing guests…" autocomplete="off" oninput="onAmNameInput()" onkeydown="if(event.key==='Escape')hideAmResults()" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[color:var(--brand-ink)]" />
               <div id="am-results" class="hidden absolute left-0 right-0 top-full mt-1 z-50"></div>
             </div>
             <p id="am-guest-selected" class="hidden text-xs text-[#3F6C3F] mt-1"></p>
           </div>
           <div>
             <label class="text-xs font-medium text-[#777]">Phone Number</label>
-            <input id="am-phone" oninput="onAddMemberPhoneInput()" placeholder="08…" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#28547C]" />
+            <input id="am-phone" oninput="onAddMemberPhoneInput()" placeholder="08…" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[color:var(--brand-ink)]" />
             <p id="am-guest-hint" class="text-xs text-[#999] mt-1"></p>
           </div>
           <p id="am-error" class="text-xs text-red-500"></p>
         </div>
         <div class="flex gap-3 mt-5">
           <button onclick="hideModal('modal-add-member')" class="flex-1 border border-[#EDE9E3] text-[#555] text-sm font-medium py-2.5 rounded-xl hover:bg-[#F8F6F2]">Cancel</button>
-          <button onclick="saveNewMember()" class="flex-1 bg-[#28547C] hover:bg-[#1f4060] text-white text-sm font-medium py-2.5 rounded-xl">Save Member</button>
+          <button onclick="saveNewMember()" class="flex-1 bg-[color:var(--brand-ink)] hover:bg-[color:var(--brand-deepest)] text-white text-sm font-medium py-2.5 rounded-xl">Save Member</button>
         </div>
       </div>
     </div>
@@ -8837,7 +8877,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[85vh] overflow-y-auto">
         <div class="flex items-start justify-between mb-1">
           <div>
-            <h2 class="font-heading text-xl text-[#28547C]" id="md-name">—</h2>
+            <h2 class="font-heading text-xl text-[color:var(--brand-ink)]" id="md-name">—</h2>
             <p class="text-xs font-mono text-[#999]" id="md-number">—</p>
           </div>
           <span id="md-type"></span>
@@ -8850,7 +8890,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <p class="text-[11px] uppercase tracking-widest text-[#999] mb-2">Sticker progress</p>
           <div id="md-progress"></div>
           <p class="text-[11px] text-[#999] mt-2" id="md-rule"></p>
-          <p id="md-cap-warning" class="hidden text-[11px] font-medium text-[#8B6F47] mt-1">⚠️ Card is full — no more stickers can be earned.</p>
+          <p id="md-cap-warning" class="hidden text-[11px] font-medium text-[color:var(--accent-strong)] mt-1">⚠️ Card is full — no more stickers can be earned.</p>
         </div>
         <div class="mt-4">
           <div class="flex items-center justify-between">
@@ -8862,7 +8902,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <p class="text-[11px] uppercase tracking-widest text-[#999]">Transactions</p>
           <div id="md-txns"></div>
         </div>
-        <button onclick="cvOpen(currentMemberId)" class="manager-only-ui w-full mt-4 border border-[#C8A96B] text-[#8B6F47] text-sm font-medium py-2.5 rounded-xl hover:bg-[#FDF9F0]">
+        <button onclick="cvOpen(currentMemberId)" class="manager-only-ui w-full mt-4 border border-[color:var(--accent)] text-[color:var(--accent-strong)] text-sm font-medium py-2.5 rounded-xl hover:bg-[#FDF9F0]">
           🕘 Konversi kunjungan lama jadi stiker
         </button>
         <button onclick="openEditMemberProfile(currentMemberId)" class="w-full mt-3 border border-[#EDE9E3] text-[#555] text-sm font-medium py-2.5 rounded-xl hover:bg-[#F8F6F2]">
@@ -8870,7 +8910,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         </button>
         <div class="flex gap-3 mt-3">
           <button onclick="hideModal('modal-member-detail')" class="flex-1 border border-[#EDE9E3] text-[#555] text-sm font-medium py-2.5 rounded-xl hover:bg-[#F8F6F2]">Close</button>
-          <button onclick="openMemberTxn(currentMemberId)" class="flex-1 bg-[#28547C] hover:bg-[#1f4060] text-white text-sm font-medium py-2.5 rounded-xl">+ Record Spend</button>
+          <button onclick="openMemberTxn(currentMemberId)" class="flex-1 bg-[color:var(--brand-ink)] hover:bg-[color:var(--brand-deepest)] text-white text-sm font-medium py-2.5 rounded-xl">+ Record Spend</button>
         </div>
       </div>
     </div>
@@ -8882,7 +8922,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
          itself. -->
     <div id="modal-edit-member" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-        <h2 class="font-display text-xl text-[#28547C] mb-4">Edit Membership Profile</h2>
+        <h2 class="font-display text-xl text-[color:var(--brand-ink)] mb-4">Edit Membership Profile</h2>
         <div class="space-y-3">
           <div>
             <label class="text-xs font-medium text-[#777]">Guest Name</label>
@@ -8894,17 +8934,17 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           </div>
           <div>
             <label class="text-xs font-medium text-[#777]">Member Number</label>
-            <input id="em-number" oninput="this.value = this.value.replace(/\s+/g, '')" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#28547C]" />
+            <input id="em-number" oninput="this.value = this.value.replace(/\s+/g, '')" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[color:var(--brand-ink)]" />
           </div>
           <div>
             <label class="text-xs font-medium text-[#777]">Nickname</label>
-            <input id="em-nickname" placeholder="optional - shown instead of the guest name" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#28547C]" />
+            <input id="em-nickname" placeholder="optional - shown instead of the guest name" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[color:var(--brand-ink)]" />
           </div>
           <p id="em-error" class="text-xs text-red-500"></p>
         </div>
         <div class="flex gap-3 mt-5">
           <button onclick="hideModal('modal-edit-member'); viewMemberDetail(currentMemberId)" class="flex-1 border border-[#EDE9E3] text-[#555] text-sm font-medium py-2.5 rounded-xl hover:bg-[#F8F6F2]">Cancel</button>
-          <button onclick="saveMemberProfile()" class="flex-1 bg-[#28547C] hover:bg-[#1f4060] text-white text-sm font-medium py-2.5 rounded-xl">Save</button>
+          <button onclick="saveMemberProfile()" class="flex-1 bg-[color:var(--brand-ink)] hover:bg-[color:var(--brand-deepest)] text-white text-sm font-medium py-2.5 rounded-xl">Save</button>
         </div>
       </div>
     </div>
@@ -8912,26 +8952,26 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     <!-- ===== MODAL: RECORD MEMBER SPEND ===== -->
     <div id="modal-member-txn" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-        <h2 class="font-heading text-xl text-[#28547C] mb-1">Record Spend</h2>
+        <h2 class="font-heading text-xl text-[color:var(--brand-ink)] mb-1">Record Spend</h2>
         <p class="text-xs text-[#999] mb-4" id="mt-member-label">—</p>
         <div class="space-y-3">
           <div>
             <label class="text-xs font-medium text-[#777]">Amount (Rp)</label>
-            <input id="mt-amount" type="text" inputmode="numeric" placeholder="e.g. 450.000" oninput="formatAmountInput(this)" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#28547C]" />
+            <input id="mt-amount" type="text" inputmode="numeric" placeholder="e.g. 450.000" oninput="formatAmountInput(this)" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[color:var(--brand-ink)]" />
             <p class="text-[11px] text-[#999] mt-1" id="mt-min-hint"></p>
           </div>
           <div>
-            <input id="mt-date" type="date" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#28547C]" />
+            <input id="mt-date" type="date" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[color:var(--brand-ink)]" />
           </div>
           <div>
             <label class="text-xs font-medium text-[#777]">Notes (table, etc.)</label>
-            <input id="mt-notes" placeholder="optional" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#28547C]" />
+            <input id="mt-notes" placeholder="optional" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[color:var(--brand-ink)]" />
           </div>
           <p id="mt-error" class="text-xs text-red-500"></p>
         </div>
         <div class="flex gap-3 mt-5">
           <button onclick="hideModal('modal-member-txn')" class="flex-1 border border-[#EDE9E3] text-[#555] text-sm font-medium py-2.5 rounded-xl hover:bg-[#F8F6F2]">Cancel</button>
-          <button onclick="saveMemberTxn()" class="flex-1 bg-[#28547C] hover:bg-[#1f4060] text-white text-sm font-medium py-2.5 rounded-xl">Save</button>
+          <button onclick="saveMemberTxn()" class="flex-1 bg-[color:var(--brand-ink)] hover:bg-[color:var(--brand-deepest)] text-white text-sm font-medium py-2.5 rounded-xl">Save</button>
         </div>
       </div>
     </div>
@@ -8945,14 +8985,14 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
          bug the rename flow hit in July. -->
     <div id="modal-convert-visits" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[88vh] flex flex-col">
-        <h2 class="font-heading text-xl text-[#28547C] mb-1">Konversi Kunjungan Lama</h2>
+        <h2 class="font-heading text-xl text-[color:var(--brand-ink)] mb-1">Konversi Kunjungan Lama</h2>
         <p class="text-xs text-[#999]" id="cv-member-label">—</p>
         <p class="text-[11px] text-[#999] mt-2" id="cv-rule"></p>
 
         <div class="flex items-center justify-between mt-3 mb-1">
           <p class="text-[11px] uppercase tracking-widest text-[#999]">Kunjungan yang memenuhi syarat</p>
           <div class="flex gap-2">
-            <button onclick="cvSelectAll(true)" class="text-[11px] font-medium text-[#28547C] hover:underline">Pilih semua</button>
+            <button onclick="cvSelectAll(true)" class="text-[11px] font-medium text-[color:var(--brand-ink)] hover:underline">Pilih semua</button>
             <span class="text-[#DDD]">·</span>
             <button onclick="cvSelectAll(false)" class="text-[11px] font-medium text-[#777] hover:underline">Kosongkan</button>
           </div>
@@ -8963,12 +9003,12 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
         <div class="mt-3 p-3 bg-[#FBFAF7] rounded-xl">
           <p class="text-sm" id="cv-summary"></p>
-          <p id="cv-cap-warning" class="hidden text-[11px] font-medium text-[#8B6F47] mt-1.5"></p>
+          <p id="cv-cap-warning" class="hidden text-[11px] font-medium text-[color:var(--accent-strong)] mt-1.5"></p>
         </div>
 
         <div class="flex gap-3 mt-4">
           <button onclick="hideModal('modal-convert-visits')" class="flex-1 border border-[#EDE9E3] text-[#555] text-sm font-medium py-2.5 rounded-xl hover:bg-[#F8F6F2]">Batal</button>
-          <button id="cv-save" onclick="cvSave()" disabled class="flex-1 bg-[#28547C] hover:bg-[#1f4060] disabled:bg-[#C9D3DC] disabled:cursor-not-allowed text-white text-sm font-medium py-2.5 rounded-xl">Konversi</button>
+          <button id="cv-save" onclick="cvSave()" disabled class="flex-1 bg-[color:var(--brand-ink)] hover:bg-[color:var(--brand-deepest)] disabled:bg-[#C9D3DC] disabled:cursor-not-allowed text-white text-sm font-medium py-2.5 rounded-xl">Konversi</button>
         </div>
       </div>
     </div>
@@ -8985,7 +9025,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
         <div class="flex items-start justify-between mb-1">
           <div>
-            <h2 class="font-heading text-xl text-[#28547C]">Voucher card</h2>
+            <h2 class="font-heading text-xl text-[color:var(--brand-ink)]">Voucher card</h2>
             <p class="text-xs text-[#999]" id="vch-card-meta">—</p>
           </div>
           <button onclick="hideModal('modal-standalone-voucher')" class="text-[#999] hover:text-[#555] text-xl leading-none px-2">&times;</button>
@@ -9020,7 +9060,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             </div>
 
             <div class="flex flex-col gap-2">
-              <button id="vch-card-download" onclick="vchDownloadCard()" class="w-full bg-[#C8A96B] hover:bg-[#b9985a] text-white text-sm font-semibold py-2.5 rounded-xl">
+              <button id="vch-card-download" onclick="vchDownloadCard()" class="w-full bg-[color:var(--accent)] hover:bg-[color:var(--accent-hover)] text-white text-sm font-semibold py-2.5 rounded-xl">
                 Download card
               </button>
               <button id="vch-card-wa" onclick="vchSendCardWA()" class="w-full border border-[#1FAF5E] text-[#1FAF5E] hover:bg-[#F2FBF6] text-sm font-semibold py-2.5 rounded-xl">
@@ -9039,7 +9079,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
         <div class="flex items-start justify-between mb-1">
           <div>
-            <h2 class="font-heading text-xl text-[#28547C]">Voucher</h2>
+            <h2 class="font-heading text-xl text-[color:var(--brand-ink)]">Voucher</h2>
             <p class="text-xs text-[#999]" id="vc-meta">—</p>
           </div>
           <button onclick="hideModal('modal-voucher-card')" class="text-[#999] hover:text-[#555] text-xl leading-none px-2">&times;</button>
@@ -9055,13 +9095,13 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="space-y-4">
             <div>
               <label class="text-xs font-medium text-[#777]">Nama di voucher</label>
-              <input id="vc-name" oninput="vcRefreshPreview()" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#28547C]" />
+              <input id="vc-name" oninput="vcRefreshPreview()" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[color:var(--brand-ink)]" />
               <p class="text-[11px] text-[#999] mt-1">Diambil dari nama membership. Diubah di sini hanya untuk gambar voucher — data member tidak ikut berubah.</p>
             </div>
 
             <div>
               <label class="text-xs font-medium text-[#777]">Kode voucher</label>
-              <input id="vc-code" oninput="vcOnCodeInput()" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#28547C]" />
+              <input id="vc-code" oninput="vcOnCodeInput()" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-[color:var(--brand-ink)]" />
               <p id="vc-code-warning" class="hidden text-[11px] text-[#B45309] mt-1">
                 Kode diubah dari kode sistem. Kalau tamu mengirim balik kode ini, staf tidak bisa melacaknya.
                 <button onclick="vcResetCode()" class="underline font-medium">Kembalikan kode asli</button>
@@ -9070,7 +9110,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
             <div>
               <label class="text-xs font-medium text-[#777]">Valid until</label>
-              <input id="vc-expires" type="date" onchange="vcOnDateChange()" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#28547C]" />
+              <input id="vc-expires" type="date" onchange="vcOnDateChange()" class="w-full mt-1 border border-[#EDE9E3] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[color:var(--brand-ink)]" />
               <p id="vc-date-status" class="text-[11px] mt-1"></p>
               <p class="text-[11px] text-[#999] mt-1">Terisi otomatis dari aturan di Pengaturan. Kalau diubah, tanggal baru langsung disimpan ke sistem, bukan cuma di gambar.</p>
             </div>
@@ -9085,7 +9125,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             </div>
 
             <div class="flex flex-col gap-2">
-              <button id="vc-download-btn" onclick="vcDownload()" class="w-full bg-[#C8A96B] hover:bg-[#b9985a] text-white text-sm font-semibold py-2.5 rounded-xl">
+              <button id="vc-download-btn" onclick="vcDownload()" class="w-full bg-[color:var(--accent)] hover:bg-[color:var(--accent-hover)] text-white text-sm font-semibold py-2.5 rounded-xl">
                 Download Voucher
               </button>
               <button id="vc-wa-btn" onclick="vcSendWA()" class="w-full border border-[#1FAF5E] text-[#1FAF5E] hover:bg-[#F2FBF6] text-sm font-semibold py-2.5 rounded-xl">
@@ -9100,33 +9140,33 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
 
-    <script src="js/config.js?v=16"></script>
+    <script src="js/config.js?v=17"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=29"></script>
-    <script src="js/membership.js?v=5"></script>
+    <script src="js/app.js?v=30"></script>
+    <script src="js/membership.js?v=6"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->
     <script src="js/wa.js?v=11"></script>
-    <script src="js/broadcast.js?v=15"></script>
+    <script src="js/broadcast.js?v=16"></script>
     <!-- campaign.js  = attribution maths + the Hasil tab
          campaign-editor.js = the campaign workspace (list, message, image,
          recipient list). Function declarations hoist, so load order only
          matters for the top-level consts, which nothing reads at parse time. -->
-    <script src="js/campaign.js?v=4"></script>
-    <script src="js/campaign-editor.js?v=9"></script>
+    <script src="js/campaign.js?v=5"></script>
+    <script src="js/campaign-editor.js?v=10"></script>
     <!-- voucher.js uses waTemplateBody/waOpenChat, so it must load after wa.js -->
-    <script src="js/voucher.js?v=4"></script>
+    <script src="js/voucher.js?v=5"></script>
     <script src="js/notify.js?v=8"></script>
     <script src="js/version-check.js?v=1"></script>
     <!-- Invoice generator: rasterises the preview node and wraps it in a PDF.
          Both libraries are only needed on the Invoice page. -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="js/invoice.js?v=9"></script>
+    <script src="js/invoice.js?v=10"></script>
     <script src="js/runsheet.js?v=1"></script>
     <!-- vouchers.js uses the voucher-card canvas helpers in voucher.js
          (membership card) for its own card, so it must load after it. -->
-    <script src="js/vouchers.js?v=3"></script>
+    <script src="js/vouchers.js?v=4"></script>
     <script>
       // Make entire date input clickable (not just the calendar icon)
       document.addEventListener("DOMContentLoaded", function () {

@@ -444,7 +444,7 @@ function bcShowTab(tab) {
     document.getElementById(id)?.classList.toggle("hidden", k !== tab);
   });
   const activeCls =
-    "px-4 py-2 rounded-full text-sm font-medium bg-[#28547C] text-white transition";
+    "px-4 py-2 rounded-full text-sm font-medium bg-[color:var(--brand-ink)] text-white transition";
   const idleCls =
     "px-4 py-2 rounded-full text-sm font-medium bg-white text-[#555] border border-[#E6E2DC] hover:bg-[#F8F6F2] transition";
   const tabs = [
@@ -689,7 +689,7 @@ function campRenderCard(r) {
   return `<div class="bg-white rounded-2xl border border-[#E7E4DE] p-5 mb-4">
     <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
       <div>
-        <h3 class="text-lg font-semibold text-[#28547C]" data-i18n-skip>${escapeHtml(c.name)}</h3>
+        <h3 class="text-lg font-semibold text-[color:var(--brand-ink)]" data-i18n-skip>${escapeHtml(c.name)}</h3>
         <p class="text-xs text-[#999] mt-1" data-i18n-skip>
           ${escapeHtml(campSegmentLabel(c.segment, c.segment_tag))}
           &middot; ${campFmtDate(c.started_at)}${c.ended_at ? " – " + campFmtDate(c.ended_at) : ""}
@@ -731,7 +731,7 @@ function campRenderCard(r) {
 
     ${
       r.versions.length > 1
-        ? `<div class="rounded-xl p-4 mb-4" style="background:#FFF8EC;border:1px solid #F0DFBC">
+        ? `<div class="rounded-xl p-4 mb-4" style="background:#FFF8EC;border:1px solid var(--accent-tint2)">
              <p class="text-sm font-semibold text-[#333] mb-1" data-i18n-skip>
                Pesannya sempat diubah di tengah campaign
              </p>
@@ -761,13 +761,13 @@ function campRenderCard(r) {
     }
 
     <details class="mb-3">
-      <summary class="text-xs text-[#28547C] cursor-pointer hover:underline" data-i18n-skip>Isi pesan versi terakhir</summary>
+      <summary class="text-xs text-[color:var(--brand-ink)] cursor-pointer hover:underline" data-i18n-skip>Isi pesan versi terakhir</summary>
       <div class="text-sm text-[#555] bg-[#F8F6F2] rounded-lg p-3 mt-2 whitespace-pre-wrap">${escapeHtml(campApplyLink(c.message_body || "", c.promo_url))}</div>
       ${
         c.promo_url
           ? `<p class="text-[11px] text-[#999] mt-2" data-i18n-skip>
                Gambar promo dikirim sebagai preview dari
-               <a href="${escapeHtml(c.promo_url)}" target="_blank" rel="noopener" class="text-[#28547C] hover:underline">${escapeHtml(c.promo_url)}</a>
+               <a href="${escapeHtml(c.promo_url)}" target="_blank" rel="noopener" class="text-[color:var(--brand-ink)] hover:underline">${escapeHtml(c.promo_url)}</a>
              </p>`
           : ""
       }
@@ -775,7 +775,7 @@ function campRenderCard(r) {
 
     ${
       r.returners.length
-        ? `<button onclick="campToggleDetail('${c.id}')" class="text-xs text-[#28547C] font-medium hover:underline" data-i18n-skip>
+        ? `<button onclick="campToggleDetail('${c.id}')" class="text-xs text-[color:var(--brand-ink)] font-medium hover:underline" data-i18n-skip>
              ${open ? "Sembunyikan" : "Lihat"} ${r.returners.length} guest yang kembali
            </button>
            ${

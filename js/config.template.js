@@ -1349,7 +1349,7 @@ function updateLangToggleUI() {
   const enBtn = document.getElementById("lang-toggle-en");
   if (!idBtn || !enBtn) return;
   const activeClass =
-    "px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#28547C] text-white transition-colors";
+    "px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[color:var(--brand-ink)] text-white transition-colors";
   const inactiveClass =
     "px-2 py-0.5 rounded-full text-[11px] font-semibold text-[#999] hover:text-[#555] transition-colors";
   idBtn.className = CURRENT_LANG === "id" ? activeClass : inactiveClass;
@@ -1419,7 +1419,7 @@ function toast(msg, type = "success") {
   const el = document.getElementById("toast");
   if (!el) return;
   const colors =
-    type === "success" ? "bg-[#5596CE] text-white" : "bg-red-600 text-white";
+    type === "success" ? "bg-[color:var(--brand)] text-white" : "bg-red-600 text-white";
   el.className = `fixed bottom-6 right-6 px-5 py-3 rounded-xl shadow-xl text-sm font-medium transition-all duration-300 ${colors}`;
   // Must sit ABOVE modal overlays (z-index 100) and the page loader (200),
   // otherwise error toasts fired while a modal is open are invisible.
@@ -1563,7 +1563,7 @@ function applyRoleToNav() {
       role === "admin"
         ? "inline-block text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#8B5E3C] text-white"
         : role === "manager"
-          ? "inline-block text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#28547C] text-white"
+          ? "inline-block text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[color:var(--brand-ink)] text-white"
           : "inline-block text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#E7E4DE] text-[#555]";
   }
 
@@ -1601,9 +1601,9 @@ function applyManagerOnlyUI() {
 
 const RESERVE_APPEARANCE_DEFAULTS = {
   bg_url: null,
-  glass_color: "#28547C",
+  glass_color: "var(--brand-ink)",
   glass_opacity: 0.6,
-  accent_color: "#5596CE",
+  accent_color: "var(--brand)",
   logo_max_height: 72,
 };
 

@@ -32,8 +32,48 @@
     />
     <style>
       :root {
-        --primary: #5596ce;
-        --gold: #c8a96b;
+        /* ── Brand tokens (2026-09-05). ONE PLACE. ───────────────────
+           Every brand colour in the app resolves here. Before this, 728
+           values were hardcoded across 20 files, which is why the colours
+           could not be changed. Status colours (green, red, amber) are NOT
+           here on purpose: they mean something and never follow the brand.
+
+           --brand and --accent are the two a restaurant sets. Everything
+           else is derived from them, and derived to PASS contrast rather
+           than to look pleasant. Two of these fix long-standing failures:
+           the old button blue (5596CE) under white text was 3.16:1 and the
+           old gold (C8A96B) on cream was 2.08:1, against a 4.5 bar. */
+        --brand: #5B4CBD;          /* primary fill. white on it: 6.54 */
+        --brand-hover: #4A3DA3;    /* pressed/hover. white on it: 8.44 */
+        --brand-ink: #4F41A8;      /* headings. on cream: 7.33, matched to the old navy */
+        --brand-deep: #453897;     /* dark panels. on cream: 8.59 */
+        --brand-deepest: #3C3084;  /* deepest. on cream: 9.99 */
+        --brand-muted: #7565D6;    /* de-emphasised */
+        --brand-soft: #A99BF0;     /* soft accents on dark */
+        --brand-tint: #E4E0F8;     /* selected row / chip background */
+        --brand-tint2: #F4F2FD;    /* faintest wash */
+        --accent: #E24701;         /* FILLS ONLY. 3.79 on cream, so never small text */
+        --accent-hover: #C63D01;   /* also the text-safe orange: 4.78 on cream */
+        --accent-strong: #B23600;  /* 5.69 on cream */
+        --accent-tint: #F7C9AF;
+        --accent-tint2: #FBEDE4;
+        /* RGB triplets for the few places that need alpha, e.g.
+           rgb(var(--brand-ink-rgb) / 0.12). A settings screen that changes
+           --brand MUST set --brand-rgb in the same write, or a shadow keeps
+           the old hue while everything around it moves. */
+        --brand-rgb: 91 76 189;
+        --brand-ink-rgb: 79 65 168;
+        --brand-hover-rgb: 74 61 163;
+        --brand-deep-rgb: 69 56 151;
+        --brand-deepest-rgb: 60 48 132;
+        --brand-soft-rgb: 169 155 240;
+        --accent-rgb: 226 71 1;
+        --accent-hover-rgb: 198 61 1;
+        --accent-strong-rgb: 178 54 0;
+
+
+        --primary: var(--brand);
+        --gold: var(--accent);
         --bg: #f8f6f2;
       }
       * {
@@ -61,10 +101,10 @@
         transition: border 0.2s;
       }
       .form-input:focus {
-        border-color: #28547c;
+        border-color: var(--brand-ink);
       }
       .btn-primary {
-        background: #5596ce;
+        background: var(--brand);
         color: white;
         border: none;
         border-radius: 10px;
@@ -77,14 +117,14 @@
         transition: background 0.2s;
       }
       .btn-primary:hover {
-        background: #85c5e9;
+        background: var(--brand-soft);
       }
       .btn-primary:disabled {
         background: #a8b5c0;
         cursor: not-allowed;
       }
       .btn-gold {
-        background: #c8a96b;
+        background: var(--accent);
         color: white;
         border: none;
         border-radius: 10px;
@@ -100,7 +140,7 @@
         text-align: center;
       }
       .btn-gold:hover {
-        background: #b8954f;
+        background: var(--accent-hover);
       }
 
       /* ── Wheel ── */
@@ -124,7 +164,7 @@
         height: 0;
         border-left: 12px solid transparent;
         border-right: 12px solid transparent;
-        border-top: 24px solid #c8a96b;
+        border-top: 24px solid var(--accent);
         filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
       }
       #wheel-center {
@@ -145,7 +185,7 @@
       }
       #spin-btn {
         margin-top: 28px;
-        background: #c8a96b;
+        background: var(--accent);
         color: white;
         border: none;
         border-radius: 50px;
@@ -155,13 +195,13 @@
         font-family: "DM Sans", sans-serif;
         cursor: pointer;
         transition: all 0.2s;
-        box-shadow: 0 4px 16px rgba(200, 169, 107, 0.35);
+        box-shadow: 0 4px 16px rgb(var(--accent-rgb) / 0.35);
         display: block;
         margin-left: auto;
         margin-right: auto;
       }
       #spin-btn:hover {
-        background: #b8954f;
+        background: var(--accent-hover);
         transform: translateY(-1px);
       }
       #spin-btn:disabled {
@@ -177,10 +217,10 @@
         font-size: 26px;
         font-weight: 600;
         letter-spacing: 0.04em;
-        color: #28547c;
+        color: var(--brand-ink);
         text-align: center;
         background: #f8f6f2;
-        border: 1.5px dashed #c8a96b;
+        border: 1.5px dashed var(--accent);
         border-radius: 12px;
         padding: 18px 24px;
       }
@@ -279,7 +319,7 @@
         background:
           radial-gradient(
             ellipse at 20% 20%,
-            rgba(200, 169, 107, 0.06) 0%,
+            rgb(var(--accent-rgb) / 0.06) 0%,
             transparent 60%
           ),
           radial-gradient(
@@ -309,7 +349,7 @@
           style="
             font-size: 38px;
             font-weight: 500;
-            color: #28547c;
+            color: var(--brand-ink);
             line-height: 1.1;
           "
         >
@@ -380,7 +420,7 @@
         <div style="text-align: center" class="fade-up">
           <p
             class="font-display"
-            style="font-size: 22px; color: #28547c; margin-bottom: 8px"
+            style="font-size: 22px; color: var(--brand-ink); margin-bottom: 8px"
           >
             You're in!
           </p>
@@ -417,7 +457,7 @@
             style="
               font-size: 12px;
               letter-spacing: 0.16em;
-              color: #c8a96b;
+              color: var(--accent);
               text-transform: uppercase;
               font-weight: 500;
               margin-bottom: 8px;
@@ -431,7 +471,7 @@
             style="
               font-size: 36px;
               font-weight: 500;
-              color: #28547c;
+              color: var(--brand-ink);
               margin-bottom: 8px;
             "
           ></h2>
@@ -470,7 +510,7 @@
             <p
               style="
                 font-size: 13px;
-                color: #28547c;
+                color: var(--brand-ink);
                 font-weight: 500;
                 margin-bottom: 4px;
               "
@@ -597,7 +637,7 @@
         // Add a soft "already played" notice above the card
         const notice = document.createElement("p");
         notice.style.cssText =
-          "text-align:center;font-size:13px;color:#C8A96B;margin-bottom:16px;";
+          "text-align:center;font-size:13px;color:var(--accent);margin-bottom:16px;";
         notice.textContent =
           "You've already played today — here's your voucher!";
         const card = document.getElementById("prize-reveal");
@@ -662,9 +702,9 @@
 
       // ── Prize Wheel ───────────────────────────────────────────
       const WHEEL_PALETTE = [
-        "#28547C",
-        "#5596CE",
-        "#B8954F",
+        "var(--brand-ink)",
+        "var(--brand)",
+        "var(--accent-hover)",
         "#5F8D4E",
         "#6E8499",
       ];
@@ -717,7 +757,7 @@
 
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(40,84,124,0.15)";
+        ctx.strokeStyle = "rgb(var(--brand-ink-rgb) / 0.15)";
         ctx.lineWidth = 4;
         ctx.stroke();
       }
@@ -819,15 +859,15 @@
         ctx.fillStyle = "#FFFFFF";
         roundRect(ctx, 90, 100, 900, 1150, 36);
         ctx.fill();
-        ctx.strokeStyle = "#C8A96B";
+        ctx.strokeStyle = "var(--accent)";
         ctx.lineWidth = 4;
         ctx.stroke();
 
-        ctx.fillStyle = "#5596CE";
+        ctx.fillStyle = "var(--brand)";
         ctx.font = "600 72px serif";
         ctx.textAlign = "center";
         ctx.fillText(RESTAURANT_LABEL, 540, 230);
-        ctx.fillStyle = "#C8A96B";
+        ctx.fillStyle = "var(--accent)";
         ctx.font = '500 28px "DM Sans", sans-serif';
         ctx.fillText("SPIN & WIN VOUCHER", 540, 290);
 
@@ -841,14 +881,14 @@
         ctx.fillStyle = "#666666";
         ctx.font = '400 30px "DM Sans", sans-serif';
         ctx.fillText("Prize Won", 540, 610);
-        ctx.fillStyle = "#5596CE";
+        ctx.fillStyle = "var(--brand)";
         ctx.font = "600 60px serif";
         ctx.fillText(selectedPrize.name, 540, 680);
 
         ctx.fillStyle = "#666666";
         ctx.font = '400 30px "DM Sans", sans-serif';
         ctx.fillText("Reference Code", 540, 820);
-        ctx.fillStyle = "#5596CE";
+        ctx.fillStyle = "var(--brand)";
         ctx.font = '600 52px "DM Sans", sans-serif';
         ctx.fillText(referenceCode, 540, 890);
 
@@ -886,9 +926,9 @@
       // ── Confetti ──────────────────────────────────────────────
       function launchConfetti() {
         const colors = [
-          "#C8A96B",
-          "#5596CE",
-          "#8B6F47",
+          "var(--accent)",
+          "var(--brand)",
+          "var(--accent-strong)",
           "#5F8D4E",
           "#F8F6F2",
           "#D4A017",

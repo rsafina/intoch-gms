@@ -443,7 +443,7 @@ function bcRenderEditor() {
           </div>
         </div>
         <textarea id="bc-body-${safeId}" data-key="${escapeHtml(key)}" rows="4"
-          class="w-full text-sm border border-[#E7E4DE] rounded-lg p-3 focus:outline-none focus:border-[#28547C]"
+          class="w-full text-sm border border-[#E7E4DE] rounded-lg p-3 focus:outline-none focus:border-[color:var(--brand-ink)]"
           oninput="bcUpdatePreview('${escapeHtml(key)}')">${escapeHtml(body)}</textarea>
         <div class="text-[11px] text-[#999] mt-1">Placeholder yang bisa dipakai: <span class="font-mono">${allowed}</span> — tanpa emoji.</div>
         ${
@@ -460,7 +460,7 @@ function bcRenderEditor() {
         <div class="mt-2 text-[11px] uppercase tracking-wider text-[#999]">Preview</div>
         <div id="bc-preview-${safeId}" class="text-sm text-[#555] bg-[#F8F6F2] rounded-lg p-3 mt-1 whitespace-pre-wrap"></div>
         <div class="mt-2 text-right">
-          <button onclick="bcSaveTemplate('${escapeHtml(key)}')" class="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#28547C] hover:bg-[#1D3F5E]">Simpan</button>
+          <button onclick="bcSaveTemplate('${escapeHtml(key)}')" class="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-[color:var(--brand-ink)] hover:bg-[color:var(--brand-deep)]">Simpan</button>
         </div>
       </div>`;
     })

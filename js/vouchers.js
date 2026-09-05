@@ -213,8 +213,8 @@ function vchSearchGuests(term) {
       .map(
         (g, i) => `
       <button onclick="vchPickGuest(${i})"
-        class="w-full text-left px-3 py-2 text-[13px] border border-[#EDE9E3] rounded-xl mb-1 hover:border-[#5596CE] hover:bg-[#F8FBFE]">
-        <span class="text-[#28547C] font-medium">${vchEscape(g.name)}</span>
+        class="w-full text-left px-3 py-2 text-[13px] border border-[#EDE9E3] rounded-xl mb-1 hover:border-[color:var(--brand)] hover:bg-[#F8FBFE]">
+        <span class="text-[color:var(--brand-ink)] font-medium">${vchEscape(g.name)}</span>
         <span class="text-[#999] text-[11px] ml-2">${vchEscape(g.phone || "")}</span>
       </button>`,
       )
@@ -234,9 +234,9 @@ function vchPickGuest(index) {
   const picked = vchEl("vch-guest-picked");
   picked.classList.remove("hidden");
   picked.innerHTML = `
-    <div class="flex items-center gap-2 text-[12px] bg-[#F4F9FD] border border-[#D7E5F2] rounded-xl px-3 py-2">
-      <span class="text-[#1F5480] font-medium flex-1">Linked to ${vchEscape(name)}</span>
-      <button onclick="vchClearGuest()" class="text-[#5596CE] hover:underline">Unlink</button>
+    <div class="flex items-center gap-2 text-[12px] bg-[#F4F9FD] border border-[color:var(--brand-tint)] rounded-xl px-3 py-2">
+      <span class="text-[color:var(--brand-deep)] font-medium flex-1">Linked to ${vchEscape(name)}</span>
+      <button onclick="vchClearGuest()" class="text-[color:var(--brand)] hover:underline">Unlink</button>
     </div>`;
 }
 
@@ -492,10 +492,10 @@ function vchRenderMatches() {
       .map(
         (r, i) => `
       <button onclick="vchPickMatch(${i})"
-        class="w-full text-left border border-[#EDE9E3] rounded-xl px-3 py-2 mb-2 hover:border-[#5596CE] hover:bg-[#F8FBFE]">
+        class="w-full text-left border border-[#EDE9E3] rounded-xl px-3 py-2 mb-2 hover:border-[color:var(--brand)] hover:bg-[#F8FBFE]">
         <div class="flex items-center gap-2 flex-wrap">
-          <span class="text-[13px] font-medium text-[#28547C] flex-1">${vchEscape(vchRecipientText(r))}</span>
-          <span class="text-[13px] text-[#28547C]">${vchEscape(vchValueText(r))}</span>
+          <span class="text-[13px] font-medium text-[color:var(--brand-ink)] flex-1">${vchEscape(vchRecipientText(r))}</span>
+          <span class="text-[13px] text-[color:var(--brand-ink)]">${vchEscape(vchValueText(r))}</span>
           ${vchStatusChip(r)}
         </div>
         <div class="text-[11px] text-[#999] mt-0.5">
@@ -517,7 +517,7 @@ function vchNotice(text, kind) {
   const colors =
     kind === "error"
       ? "background:#FDECEC;border-color:#F5C6C6;color:#8E2C2C"
-      : "background:#F4F9FD;border-color:#D7E5F2;color:#1F5480";
+      : "background:#F4F9FD;border-color:var(--brand-tint);color:var(--brand-deep)";
   return `<div class="rounded-xl border px-4 py-3 text-[13px]" style="${colors}">${text}</div>`;
 }
 
@@ -532,13 +532,13 @@ function vchRenderLookup() {
   const detail = `
     ${
       vchMatches.length > 1
-        ? `<button onclick="vchRenderMatches()" class="text-[12px] text-[#5596CE] hover:underline mb-2">← Back to the ${vchMatches.length} results</button>`
+        ? `<button onclick="vchRenderMatches()" class="text-[12px] text-[color:var(--brand)] hover:underline mb-2">← Back to the ${vchMatches.length} results</button>`
         : ""
     }
     <div class="rounded-xl border border-[#EDE9E3] p-4">
       <div class="flex items-start gap-3 flex-wrap">
         <div class="flex-1 min-w-[180px]">
-          <p class="font-mono text-[13px] text-[#28547C] font-semibold">${vchEscape(row.voucher_code)}</p>
+          <p class="font-mono text-[13px] text-[color:var(--brand-ink)] font-semibold">${vchEscape(row.voucher_code)}</p>
           <p class="text-[13px] text-[#555] mt-0.5">${vchEscape(vchRecipientText(row))}</p>
           <p class="text-[12px] text-[#999] mt-0.5">
             ${vchEscape(VCH_OCCASIONS[row.occasion] || row.occasion)}
@@ -546,7 +546,7 @@ function vchRenderLookup() {
           </p>
         </div>
         <div class="text-right">
-          <p class="text-[15px] font-semibold text-[#28547C]">${vchEscape(vchValueText(row))}</p>
+          <p class="text-[15px] font-semibold text-[color:var(--brand-ink)]">${vchEscape(vchValueText(row))}</p>
           <p class="text-[11px] text-[#999] mt-0.5">Valid until ${vchDateId(row.expires_at)}</p>
           <div class="mt-1">${vchStatusChip(row)}</div>
         </div>
@@ -779,7 +779,7 @@ function vchRenderList() {
       (r) => `
     <div class="flex items-center gap-3 flex-wrap border-b border-[#F2EFE9] py-3">
       <div class="min-w-[140px]">
-        <p class="font-mono text-[12px] text-[#28547C] font-semibold">${vchEscape(r.voucher_code)}</p>
+        <p class="font-mono text-[12px] text-[color:var(--brand-ink)] font-semibold">${vchEscape(r.voucher_code)}</p>
         <p class="text-[11px] text-[#999]">${vchDateId(r.issued_at)}</p>
       </div>
       <div class="flex-1 min-w-[150px]">
@@ -789,12 +789,12 @@ function vchRenderList() {
         </p>
       </div>
       <div class="text-right min-w-[110px]">
-        <p class="text-[13px] text-[#28547C] font-medium">${vchEscape(vchValueText(r))}</p>
+        <p class="text-[13px] text-[color:var(--brand-ink)] font-medium">${vchEscape(vchValueText(r))}</p>
         <p class="text-[11px] text-[#999]">${vchDateId(r.expires_at)}</p>
       </div>
       <div class="min-w-[80px] text-right">${vchStatusChip(r)}</div>
       <button onclick="vchOpenCardByCode('${vchEscape(r.voucher_code)}')"
-        class="text-[12px] text-[#5596CE] hover:underline">Card</button>
+        class="text-[12px] text-[color:var(--brand)] hover:underline">Card</button>
     </div>`,
     )
     .join("");
@@ -815,13 +815,13 @@ function vchRenderBatches() {
       return `
       <div class="border-b border-[#F2EFE9] py-3">
         <div class="flex items-baseline gap-2 flex-wrap">
-          <p class="text-[13px] font-medium text-[#28547C] flex-1">${vchEscape(label)}</p>
+          <p class="text-[13px] font-medium text-[color:var(--brand-ink)] flex-1">${vchEscape(label)}</p>
           <p class="text-[11px] text-[#999]">${vchDateId(b.issued_at)}</p>
         </div>
         <div class="flex flex-wrap gap-x-5 gap-y-1 mt-1 text-[12px]">
-          <span class="text-[#777]">Issued <span class="text-[#28547C] font-medium">${b.issued_count}</span> · ${vchRupiah(b.issued_idr)}</span>
+          <span class="text-[#777]">Issued <span class="text-[color:var(--brand-ink)] font-medium">${b.issued_count}</span> · ${vchRupiah(b.issued_idr)}</span>
           <span class="text-[#777]">Redeemed <span class="text-[#2F6B3A] font-medium">${b.redeemed_count}</span> · ${vchRupiah(b.redeemed_idr)}</span>
-          <span class="text-[#777]">Outstanding <span class="text-[#1F5480] font-medium">${b.open_count}</span> · ${vchRupiah(b.open_idr)}</span>
+          <span class="text-[#777]">Outstanding <span class="text-[color:var(--brand-deep)] font-medium">${b.open_count}</span> · ${vchRupiah(b.open_idr)}</span>
           ${b.expired_count ? `<span class="text-[#A35B12]">Expired ${b.expired_count}</span>` : ""}
           ${b.voided_count ? `<span class="text-[#999]">Cancelled ${b.voided_count}</span>` : ""}
         </div>
@@ -1069,7 +1069,7 @@ function vchShowTab(tab) {
     tab = "issue";
   }
   const activeCls =
-    "px-4 py-2 rounded-full text-sm font-medium bg-[#28547C] text-white transition";
+    "px-4 py-2 rounded-full text-sm font-medium bg-[color:var(--brand-ink)] text-white transition";
   const idleCls =
     "px-4 py-2 rounded-full text-sm font-medium bg-white text-[#555] border border-[#E6E2DC] hover:bg-[#F8F6F2] transition";
   const design = tab === "design";
@@ -1125,7 +1125,7 @@ function vchRenderStyleForm() {
   if (state) {
     state.textContent = custom ? t("Custom artwork uploaded") : t("No artwork uploaded yet");
     state.className = custom
-      ? "text-[11px] font-semibold text-[#28547C]"
+      ? "text-[11px] font-semibold text-[color:var(--brand-ink)]"
       : "text-[11px] text-[#999]";
   }
   document.getElementById("vch-artwork-reset")?.classList.toggle("hidden", !custom);

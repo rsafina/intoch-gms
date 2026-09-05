@@ -48,7 +48,7 @@ function ceStatusPill(status, count) {
     pending: ["Belum dikirim", "#F0EDE7", "#777"],
     sent: [count > 1 ? `Terkirim ${count}x` : "Terkirim", "#E4F5EC", "#1B7A4B"],
     skipped: ["Dilewati", "#FBEEEC", "#B4523F"],
-    done: ["Selesai", "#EAF0F7", "#28547C"],
+    done: ["Selesai", "var(--brand-tint2)", "var(--brand-ink)"],
   };
   const [label, bg, fg] = map[status] || map.pending;
   return `<span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium"
@@ -59,7 +59,7 @@ function ceCampaignStatusPill(status) {
   const map = {
     draft: ["Draft", "#F0EDE7", "#777"],
     active: ["Berjalan", "#1FAF5E", "#fff"],
-    done: ["Selesai", "#EAF0F7", "#28547C"],
+    done: ["Selesai", "var(--brand-tint2)", "var(--brand-ink)"],
   };
   const [label, bg, fg] = map[status] || map.draft;
   return `<span class="inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-widest"
@@ -227,10 +227,10 @@ function ceRenderList(counts) {
     const handled = k.sent + k.skipped + k.done;
     const pct = k.total ? Math.round((handled / k.total) * 100) : 0;
     return `<button onclick="ceOpen('${c.id}')"
-      class="w-full text-left bg-white rounded-2xl border border-[#E7E4DE] p-4 mb-3 hover:border-[#28547C] transition-colors">
+      class="w-full text-left bg-white rounded-2xl border border-[#E7E4DE] p-4 mb-3 hover:border-[color:var(--brand-ink)] transition-colors">
       <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
         <div class="min-w-0">
-          <p class="font-semibold text-[#28547C] truncate">${escapeHtml(c.name)}</p>
+          <p class="font-semibold text-[color:var(--brand-ink)] truncate">${escapeHtml(c.name)}</p>
           <p class="text-xs text-[#999] mt-0.5">
             ${escapeHtml(campSegmentLabel(c.segment, c.segment_tag))}
             &middot; ${campFmtDate(c.started_at)}
@@ -270,7 +270,7 @@ function ceRenderList(counts) {
         Tiap campaign punya pesan, gambar, dan daftar penerimanya sendiri.
       </p>
       <button onclick="ceOpenCreate()"
-        class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#28547C] hover:bg-[#1D3F5E] whitespace-nowrap">
+        class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[color:var(--brand-ink)] hover:bg-[color:var(--brand-deep)] whitespace-nowrap">
         + Campaign Baru
       </button>
     </div>` +
@@ -580,16 +580,16 @@ function ceRenderWorkspace() {
     ["penerima", `Penerima (${p.total})`],
   ];
   const activeCls =
-    "px-4 py-2 rounded-full text-sm font-medium bg-[#28547C] text-white transition";
+    "px-4 py-2 rounded-full text-sm font-medium bg-[color:var(--brand-ink)] text-white transition";
   const idleCls =
     "px-4 py-2 rounded-full text-sm font-medium bg-white text-[#555] border border-[#E6E2DC] hover:bg-[#F8F6F2] transition";
 
   el.innerHTML = `
     <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
       <div class="min-w-0">
-        <button onclick="ceBackToList()" class="text-xs text-[#28547C] hover:underline mb-2">&larr; Semua campaign</button>
+        <button onclick="ceBackToList()" class="text-xs text-[color:var(--brand-ink)] hover:underline mb-2">&larr; Semua campaign</button>
         <div class="flex flex-wrap items-center gap-2">
-          <h2 class="font-display text-2xl text-[#28547C]">${escapeHtml(c.name)}</h2>
+          <h2 class="font-display text-2xl text-[color:var(--brand-ink)]">${escapeHtml(c.name)}</h2>
           ${ceCampaignStatusPill(c.status)}
         </div>
         <p class="text-xs text-[#999] mt-1">
@@ -662,7 +662,7 @@ function ceRenderRingkasan(c, p) {
       </div>
       <div class="h-3 rounded-full bg-[#F0EDE7] overflow-hidden flex">
         <div style="width:${p.total ? (p.sent / p.total) * 100 : 0}%;background:#1FAF5E"></div>
-        <div style="width:${p.total ? (p.done / p.total) * 100 : 0}%;background:#28547C"></div>
+        <div style="width:${p.total ? (p.done / p.total) * 100 : 0}%;background:var(--brand-ink)"></div>
         <div style="width:${p.total ? (p.skipped / p.total) * 100 : 0}%;background:#D9A79B"></div>
       </div>
       <p class="text-xs text-[#999] mt-2">${pct}% selesai</p>
@@ -726,7 +726,7 @@ function ceRenderPesan(c) {
           <span class="text-[11px] text-[#999]">Versi ${c.message_version}</span>
         </div>
         <textarea id="ce-message" rows="10"
-          class="w-full text-sm border border-[#E7E4DE] rounded-lg p-3 focus:outline-none focus:border-[#28547C]"
+          class="w-full text-sm border border-[#E7E4DE] rounded-lg p-3 focus:outline-none focus:border-[color:var(--brand-ink)]"
           oninput="ceDirty.message = true; ceUpdateMessagePreview()">${escapeHtml(c.message_body || "")}</textarea>
         <p class="text-[11px] text-[#999] mt-1">
           Placeholder: <span class="font-mono">${allowed}</span> — tanpa emoji.
@@ -734,7 +734,7 @@ function ceRenderPesan(c) {
         </p>
         <div class="flex flex-wrap items-center gap-2 mt-3">
           <button onclick="ceSaveMessage()"
-            class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#28547C] hover:bg-[#1D3F5E]">
+            class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[color:var(--brand-ink)] hover:bg-[color:var(--brand-deep)]">
             Simpan Pesan
           </button>
           <button onclick="ceResetMessageToTemplate()"
@@ -946,7 +946,7 @@ function ceRenderGambar(c) {
         </select>
 
         <button onclick="ceSavePromo()"
-          class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#28547C] hover:bg-[#1D3F5E]">
+          class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[color:var(--brand-ink)] hover:bg-[color:var(--brand-deep)]">
           Simpan
         </button>
       </div>
@@ -965,8 +965,8 @@ function ceRenderGambar(c) {
           </p>
         </div>
 
-        <div class="rounded-2xl p-4" style="background:#F4F8FB;border:1px solid #D7E5F2">
-          <p class="text-xs text-[#28547C] font-semibold mb-1">Link campaign ini</p>
+        <div class="rounded-2xl p-4" style="background:#F4F8FB;border:1px solid var(--brand-tint)">
+          <p class="text-xs text-[color:var(--brand-ink)] font-semibold mb-1">Link campaign ini</p>
           <p class="text-xs text-[#555] break-all mb-2">${escapeHtml(url)}</p>
           <p class="text-[11px] text-[#555] leading-relaxed">
             Link ini milik campaign ini sendiri dan tidak dipakai ulang. Itu penting:
@@ -1381,7 +1381,7 @@ function ceRenderRowChips(p) {
     return `<button onclick="ceSetRowFilter('${key}')"
       class="px-3 py-1.5 rounded-full text-xs font-medium border transition ${
         on
-          ? "bg-[#28547C] text-white border-[#28547C]"
+          ? "bg-[color:var(--brand-ink)] text-white border-[color:var(--brand-ink)]"
           : "bg-white text-[#555] border-[#E6E2DC] hover:bg-[#F8F6F2]"
       }">${label} ${count}</button>`;
   };
@@ -1473,7 +1473,7 @@ function ceRenderRowsBody(c) {
                 : `<span class="text-xs text-[#B4523F]">Tidak bisa dikirim</span>`
           }
           <button onclick="ceRowMenu('${r.guest_id}')"
-            class="ml-2 text-xs text-[#28547C] hover:underline">Ubah</button>
+            class="ml-2 text-xs text-[color:var(--brand-ink)] hover:underline">Ubah</button>
         </td>
       </tr>`;
     })
@@ -1496,7 +1496,7 @@ function ceRenderRowsBody(c) {
                  <th class="px-4 py-2.5 hidden sm:table-cell">
                    <button onclick="ceToggleSpendSort()"
                      title="${ceSpendSort === "desc" ? "High Spender di atas" : ceSpendSort === "asc" ? "Tanpa belanja di atas" : "Urutkan berdasarkan belanja"}"
-                     class="inline-flex items-center gap-1 uppercase tracking-wider hover:text-[#28547C] ${ceSpendSort ? "text-[#28547C]" : ""}">
+                     class="inline-flex items-center gap-1 uppercase tracking-wider hover:text-[color:var(--brand-ink)] ${ceSpendSort ? "text-[color:var(--brand-ink)]" : ""}">
                      Spending
                      <span aria-hidden="true">${ceSpendSort === "desc" ? "&darr;" : ceSpendSort === "asc" ? "&uarr;" : "&#8597;"}</span>
                    </button>
@@ -1504,7 +1504,7 @@ function ceRenderRowsBody(c) {
                  <th class="px-4 py-2.5 hidden md:table-cell">
                    <button onclick="ceToggleVisitSort()"
                      title="${ceVisitSort === "asc" ? "Paling lama tidak berkunjung di atas" : ceVisitSort === "desc" ? "Kunjungan terbaru di atas" : "Urutkan berdasarkan kunjungan terakhir"}"
-                     class="inline-flex items-center gap-1 uppercase tracking-wider hover:text-[#28547C] ${ceVisitSort ? "text-[#28547C]" : ""}">
+                     class="inline-flex items-center gap-1 uppercase tracking-wider hover:text-[color:var(--brand-ink)] ${ceVisitSort ? "text-[color:var(--brand-ink)]" : ""}">
                      Last Visit
                      <span aria-hidden="true">${ceVisitSort === "asc" ? "&uarr;" : ceVisitSort === "desc" ? "&darr;" : "&#8597;"}</span>
                    </button>
@@ -1547,13 +1547,13 @@ function ceRenderPenerima(c, p) {
         oninput="ceSetRowSearch(this.value)"
         placeholder="Cari nama / nomor..."
         autocomplete="off"
-        class="text-sm border border-[#E7E4DE] rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:border-[#28547C] ml-auto min-w-[180px]"/>
+        class="text-sm border border-[#E7E4DE] rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:border-[color:var(--brand-ink)] ml-auto min-w-[180px]"/>
     </div>
 
     ${
       draft
         ? `<div class="rounded-xl p-3 mb-3 text-xs leading-relaxed"
-                style="background:#FFF8EC;border:1px solid #F0DFBC">
+                style="background:#FFF8EC;border:1px solid var(--accent-tint2)">
              Campaign ini masih draft. Cek dulu pesan dan gambarnya, lalu tekan
              <strong>Mulai Kirim</strong> di atas untuk mengaktifkan tombol kirim.
            </div>`

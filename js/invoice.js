@@ -633,9 +633,9 @@ function invRenderHistory() {
           });
       return `
       <button onclick="invLoadFromHistory(${i})"
-        class="w-full text-left border border-[#EDE9E3] rounded-xl px-3 py-2 mb-2 hover:border-[#5596CE] hover:bg-[#F8FBFE] transition-colors">
+        class="w-full text-left border border-[#EDE9E3] rounded-xl px-3 py-2 mb-2 hover:border-[color:var(--brand)] hover:bg-[#F8FBFE] transition-colors">
         <div class="flex items-center justify-between gap-2">
-          <span class="text-[13px] font-medium text-[#28547C] truncate">${invEscape(h.name || "(no name)")}</span>
+          <span class="text-[13px] font-medium text-[color:var(--brand-ink)] truncate">${invEscape(h.name || "(no name)")}</span>
           <span class="text-[11px] text-[#999] flex-none">${invEscape(stamp)}</span>
         </div>
         <div class="text-[11px] text-[#999]">
@@ -880,11 +880,11 @@ function initInvoice() {
 // page. Nothing in the invoice sheet depends on var() resolution at capture
 // time, which sidesteps the question entirely.
 const INVOICE_STYLE_DEFAULTS = {
-  ink: "#28547C",
-  accent: "#3E8FCB",
-  frame: "#7FB8E0",
-  row_fill: "#CFE4F5",
-  muted: "#4795D0",
+  ink: "#4F41A8",
+  accent: "#4A3DA3",
+  frame: "#A99BF0",
+  row_fill: "#E4E0F8",
+  muted: "#4A3DA3",
   logo_width: 172,
   mark_width: 62,
   address: "",
@@ -1035,7 +1035,7 @@ function invShowTab(tab) {
     tab = "build";
   }
   const activeCls =
-    "px-4 py-2 rounded-full text-sm font-medium bg-[#28547C] text-white transition";
+    "px-4 py-2 rounded-full text-sm font-medium bg-[color:var(--brand-ink)] text-white transition";
   const idleCls =
     "px-4 py-2 rounded-full text-sm font-medium bg-white text-[#555] border border-[#E6E2DC] hover:bg-[#F8F6F2] transition";
   const design = tab === "design";

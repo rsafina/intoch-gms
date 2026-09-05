@@ -70,7 +70,7 @@ function memberBadge(guestId) {
   const m = guestId ? memberBadgeMap[guestId] : null;
   if (!m) return "";
   const family = m.member_type === "Family";
-  return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold" style="background:${family ? "#FDF3E0" : "#EEF4FD"};color:${family ? "#8B6F47" : "#1F4E79"};border:1px solid ${family ? "#EBD9B4" : "#CBDDF2"}">⭐ ${m.member_number}</span>`;
+  return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold" style="background:${family ? "#FDF3E0" : "var(--brand-tint2)"};color:${family ? "var(--accent-strong)" : "var(--brand-deep)"};border:1px solid ${family ? "var(--accent-tint2)" : "var(--brand-tint)"}">⭐ ${m.member_number}</span>`;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -143,7 +143,7 @@ function setMemberTypeFilter(type) {
   document.querySelectorAll("[data-mbr-filter]").forEach((b) => {
     const active = b.dataset.mbrFilter === type;
     b.className = active
-      ? "px-3 py-1.5 text-xs font-medium rounded-full bg-[#28547C] text-white"
+      ? "px-3 py-1.5 text-xs font-medium rounded-full bg-[color:var(--brand-ink)] text-white"
       : "px-3 py-1.5 text-xs font-medium rounded-full bg-[#F1EEE8] text-[#555] hover:bg-[#E7E4DE]";
   });
   renderMemberList();
@@ -156,7 +156,7 @@ function stickerDots(m) {
   const inRound = total % spv === 0 && total > 0 ? spv : total % spv;
   let dots = "";
   for (let i = 1; i <= 5; i++) {
-    dots += `<span class="inline-block w-2.5 h-2.5 rounded-full mr-0.5 ${i <= inRound ? "bg-[#C8A96B]" : "bg-[#E7E4DE]"}"></span>`;
+    dots += `<span class="inline-block w-2.5 h-2.5 rounded-full mr-0.5 ${i <= inRound ? "bg-[color:var(--accent)]" : "bg-[#E7E4DE]"}"></span>`;
   }
   const capNote = rule.cap ? ` / ${rule.cap}` : "";
   return `${dots}<span class="ml-1.5 text-xs text-[#777]">${total}${capNote}</span>`;
@@ -165,7 +165,7 @@ function stickerDots(m) {
 function memberTypeBadge(type) {
   return type === "Family"
     ? '<span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#EFF7EC] text-[#3F6C3F]">Family</span>'
-    : '<span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#EEF4FD] text-[#1F4E79]">Company</span>';
+    : '<span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium bg-[color:var(--brand-tint2)] text-[color:var(--brand-deep)]">Company</span>';
 }
 
 // Same rule the guest list uses: drop the leading title, keep
@@ -208,7 +208,7 @@ function updateMemberSortArrows() {
     if (!el) return;
     const active = memberSort.key === key;
     el.textContent = active ? (memberSort.dir === 1 ? "▲" : "▼") : "⇅";
-    el.className = active ? "text-[#28547C]" : "text-[#9DB8CE]";
+    el.className = active ? "text-[color:var(--brand-ink)]" : "text-[#9DB8CE]";
   });
 }
 
@@ -271,11 +271,11 @@ function renderMemberList() {
       <td class="py-3 px-4 text-sm text-[#555]">${fmt.phone(m.phone_number)}</td>
       <td class="py-3 px-4 whitespace-nowrap">${stickerDots(m)}</td>
       <td class="py-3 px-4 text-center">
-        ${m.available_vouchers > 0 ? `<span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#FDF3E0] text-[#8B6F47]">${m.available_vouchers} voucher${m.available_vouchers > 1 ? "s" : ""}</span>` : '<span class="text-xs text-[#CCC]">—</span>'}
+        ${m.available_vouchers > 0 ? `<span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#FDF3E0] text-[color:var(--accent-strong)]">${m.available_vouchers} voucher${m.available_vouchers > 1 ? "s" : ""}</span>` : '<span class="text-xs text-[#CCC]">—</span>'}
       </td>
       <td class="py-3 px-4 text-sm text-[#555]">${fmt.date(memberLastVisit(m))}</td>
       <td class="py-3 px-4 text-right">
-        <button onclick="event.stopPropagation(); openMemberTxn(${m.id})" class="text-xs font-medium text-white bg-[#28547C] hover:bg-[#1f4060] px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">+ Spend</button>
+        <button onclick="event.stopPropagation(); openMemberTxn(${m.id})" class="text-xs font-medium text-white bg-[color:var(--brand-ink)] hover:bg-[color:var(--brand-deepest)] px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">+ Spend</button>
       </td>
     </tr>`,
     )
@@ -573,7 +573,7 @@ async function viewMemberDetail(memberId) {
   document.getElementById("md-type").innerHTML = memberTypeBadge(m.member_type);
   setText("md-phone", fmt.phone(m.phone_number));
   document.getElementById("md-guest").innerHTML = m.guests
-    ? `<button onclick="hideModal('modal-member-detail'); viewGuestProfile('${m.guests.id}')" class="text-[#28547C] underline">${formatGuestName(m.guests)}</button>`
+    ? `<button onclick="hideModal('modal-member-detail'); viewGuestProfile('${m.guests.id}')" class="text-[color:var(--brand-ink)] underline">${formatGuestName(m.guests)}</button>`
     : '<span class="text-red-400">not linked</span>';
   document.getElementById("md-progress").innerHTML = stickerDots(m);
   setText("md-rule", `1 sticker per visit ≥ ${fmt.currency(rule.minSpend)} · ${fmt.currency(rule.voucherAmount)} voucher per ${STICKERS_PER_VOUCHER} stickers${rule.cap ? ` · max ${rule.cap} stickers` : ""}`);
@@ -592,7 +592,7 @@ async function viewMemberDetail(memberId) {
         </div>
         <div class="flex items-center gap-2">
           <span class="font-medium">${fmt.currency(t.transaction_amount)}</span>
-          ${t.qualified_sticker ? '<span class="text-[11px] px-1.5 py-0.5 rounded bg-[#FDF3E0] text-[#8B6F47]">🏵 sticker</span>' : '<span class="text-[11px] text-[#CCC]">no sticker</span>'}
+          ${t.qualified_sticker ? '<span class="text-[11px] px-1.5 py-0.5 rounded bg-[#FDF3E0] text-[color:var(--accent-strong)]">🏵 sticker</span>' : '<span class="text-[11px] text-[#CCC]">no sticker</span>'}
         </div>
       </div>`,
         )
@@ -716,7 +716,7 @@ function renderVoucherRow(v) {
   const actions =
     !v.redeemed && !voucherIsExpired(v)
       ? `<div class="flex flex-wrap gap-2 mt-2">
-          <button onclick="vcOpenCard(${v.id})" class="text-xs font-medium text-white bg-[#C8A96B] hover:bg-[#b9985a] px-3 py-1.5 rounded-lg">Download Voucher</button>
+          <button onclick="vcOpenCard(${v.id})" class="text-xs font-medium text-white bg-[color:var(--accent)] hover:bg-[color:var(--accent-hover)] px-3 py-1.5 rounded-lg">Download Voucher</button>
           <button onclick="vcOpenCard(${v.id}, 'wa')" class="text-xs font-medium text-[#1FAF5E] border border-[#1FAF5E] hover:bg-[#F2FBF6] px-3 py-1.5 rounded-lg">Kirim WA Follow Up</button>
         </div>`
       : "";
@@ -986,7 +986,7 @@ function cvRender() {
       const checked = cvSelected.has(v.visit_id);
       return `
       <label class="flex items-center gap-3 py-2.5 px-3 border-b border-[#F1EEE8] last:border-0 cursor-pointer hover:bg-[#FBFAF7]">
-        <input type="checkbox" ${checked ? "checked" : ""} onchange="cvToggle('${v.visit_id}', this.checked)" class="w-4 h-4 accent-[#28547C]" />
+        <input type="checkbox" ${checked ? "checked" : ""} onchange="cvToggle('${v.visit_id}', this.checked)" class="w-4 h-4 accent-[color:var(--brand-ink)]" />
         <span class="flex-1 min-w-0">
           <span class="block text-sm text-[#333]">${fmt.date(v.visit_date)}${v.visit_time ? ` <span class="text-[#999]">${String(v.visit_time).slice(0, 5)}</span>` : ""}</span>
           <span class="block text-[11px] text-[#999] truncate">${v.pax ? `${v.pax} pax` : ""}${v.notes ? ` · ${escapeHtml(v.notes)}` : ""}</span>
@@ -1026,7 +1026,7 @@ function cvUpdateSummary() {
 
   if (sum) {
     sum.innerHTML = p.picked
-      ? `<span class="font-medium text-[#333]">${p.picked} kunjungan dipilih</span> → <span class="font-medium text-[#8B6F47]">+${p.stickers} stiker</span> (total ${p.after})${p.vouchers > 0 ? ` · <span class="font-semibold text-[#3F6C3F]">${p.vouchers} voucher ${fmt.currency(rule.voucherAmount)} terbit</span>` : ""}`
+      ? `<span class="font-medium text-[#333]">${p.picked} kunjungan dipilih</span> → <span class="font-medium text-[color:var(--accent-strong)]">+${p.stickers} stiker</span> (total ${p.after})${p.vouchers > 0 ? ` · <span class="font-semibold text-[#3F6C3F]">${p.vouchers} voucher ${fmt.currency(rule.voucherAmount)} terbit</span>` : ""}`
       : '<span class="text-[#999]">Belum ada kunjungan dipilih.</span>';
   }
   if (warn) {

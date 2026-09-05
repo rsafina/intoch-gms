@@ -56,7 +56,7 @@ function formatSpendingTierBadge(tier) {
   const label = formatSpendingTierLabel(tier);
   let style = "background:#F5F3F0;color:#777;";
   if (tier === "high_spender") style = "background:#EFF7EC;color:#3F6C3F;";
-  if (tier === "medium_spender") style = "background:#EEF4FD;color:#1F4E79;";
+  if (tier === "medium_spender") style = "background:var(--brand-tint2);color:var(--brand-deep);";
   return `<span class="guest-badge whitespace-nowrap" style="${style}">${label}</span>`;
 }
 
@@ -903,20 +903,20 @@ function renderStaffViewBanner() {
   const el = document.createElement("div");
   el.id = "staff-view-banner";
   el.className = "rounded-2xl px-5 py-4 mb-6 flex items-start gap-3";
-  el.style.cssText = "background:#F4F8FB;border:1px solid #D7E5F2";
+  el.style.cssText = "background:#F4F8FB;border:1px solid var(--brand-tint)";
   el.innerHTML = `
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-         fill="none" stroke="#2C6FA8" stroke-width="2" stroke-linecap="round"
+         fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round"
          style="flex:none;margin-top:1px">
       <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>
     </svg>
     <div class="flex-1">
-      <p class="text-sm font-semibold mb-0.5" style="color:#1F5480">${t("You are viewing the front desk dashboard")}</p>
+      <p class="text-sm font-semibold mb-0.5" style="color:var(--brand-deep)">${t("You are viewing the front desk dashboard")}</p>
       <p class="text-xs leading-relaxed" style="color:#3C6E96">${t("This is exactly what your staff see. Anything you save here — including Quick Walk-In — is recorded for real.")}</p>
     </div>
     <button onclick="navigateTo('dashboard')"
             class="text-xs font-semibold whitespace-nowrap px-3 py-2 rounded-lg"
-            style="background:#fff;color:#1F5480;border:1px solid #C3DAEE">
+            style="background:#fff;color:var(--brand-deep);border:1px solid var(--brand-tint)">
       ${t("Back to my dashboard")} →
     </button>`;
   section.firstElementChild?.prepend(el);
@@ -1013,7 +1013,7 @@ function setAdminRange(key) {
     if (!btn) return;
     const on = k === key;
     btn.classList.toggle("bg-white", on);
-    btn.classList.toggle("text-[#28547C]", on);
+    btn.classList.toggle("text-[color:var(--brand-ink)]", on);
     btn.classList.toggle("text-[#555]", !on);
   });
   loadAdminDashboard();
@@ -1120,15 +1120,15 @@ function renderAdminRangePill(fromStr, toStr, prevFromStr, prevToStr) {
           style="background:#F4F1EA;border:1px solid #E1DACB"
           title="${t("All changes on this page compare these two periods")}">
        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
-            fill="none" stroke="#28547C" stroke-width="2" stroke-linecap="round"
+            fill="none" stroke="var(--brand-ink)" stroke-width="2" stroke-linecap="round"
             style="flex:none">
          <rect x="3" y="4" width="18" height="18" rx="2"/>
          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
          <line x1="3" y1="10" x2="21" y2="10"/>
        </svg>
-       <span class="text-[12px] font-semibold" style="color:#28547C">${escapeHtml(cur)}</span>
+       <span class="text-[12px] font-semibold" style="color:var(--brand-ink)">${escapeHtml(cur)}</span>
        <span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded"
-             style="background:#28547C;color:#fff;letter-spacing:.06em">${t("vs")}</span>
+             style="background:var(--brand-ink);color:#fff;letter-spacing:.06em">${t("vs")}</span>
        <span class="text-[12px] font-medium" style="color:#8A8578">${escapeHtml(prev)}</span>
      </div>`,
   );
@@ -1497,9 +1497,9 @@ async function loadAdminDashboard() {
   setAdminHTML(
     "admin-online-summary",
     onlineBookings
-      ? `<span class="font-semibold text-[#28547C]">${onlineBookings}</span> ${t("bookings")}
-         · <span class="font-semibold text-[#28547C]">${onlineArrived}</span> ${t("showed up")} (${onlineConv}%)
-         · <span class="font-semibold text-[#28547C]">${fmt.currency(onlineSpend)}</span> ${t("spend")}`
+      ? `<span class="font-semibold text-[color:var(--brand-ink)]">${onlineBookings}</span> ${t("bookings")}
+         · <span class="font-semibold text-[color:var(--brand-ink)]">${onlineArrived}</span> ${t("showed up")} (${onlineConv}%)
+         · <span class="font-semibold text-[color:var(--brand-ink)]">${fmt.currency(onlineSpend)}</span> ${t("spend")}`
       : `<span class="text-[#999]">${t("No online form bookings in this period")}</span>`,
   );
 
@@ -1545,7 +1545,7 @@ function renderAdminAttention(items) {
   const TONES = {
     bad: { key: "#C0392B", bg: "#FDF3F2", head: "#FBE3E1", text: "#8E2A20" },
     warn: { key: "#BA7517", bg: "#FCF8F0", head: "#F9EFD9", text: "#7A4B0C" },
-    info: { key: "#2C6FA8", bg: "#F4F8FB", head: "#E4EEF7", text: "#1F5480" },
+    info: { key: "var(--brand)", bg: "#F4F8FB", head: "var(--brand-tint)", text: "var(--brand-deep)" },
     good: { key: "#2F7D5B", bg: "#F3F9F5", head: "#E3F1E9", text: "#1F5C41" },
   };
   const ICONS = {
@@ -1753,7 +1753,7 @@ function setAdminSpendTier(tier) {
   adminSpendTier = tier;
   document
     .getElementById("admin-tier-tab-medium")
-    ?.classList.toggle("bg-[#5596CE]", tier === "medium");
+    ?.classList.toggle("bg-[color:var(--brand)]", tier === "medium");
   document
     .getElementById("admin-tier-tab-medium")
     ?.classList.toggle("bg-[#F8F6F2]", tier !== "medium");
@@ -1762,10 +1762,10 @@ function setAdminSpendTier(tier) {
     ?.classList.toggle("text-white", tier === "medium");
   document
     .getElementById("admin-tier-tab-medium")
-    ?.classList.toggle("text-[#5596CE]", tier !== "medium");
+    ?.classList.toggle("text-[color:var(--brand)]", tier !== "medium");
   document
     .getElementById("admin-tier-tab-high")
-    ?.classList.toggle("bg-[#5596CE]", tier === "high");
+    ?.classList.toggle("bg-[color:var(--brand)]", tier === "high");
   document
     .getElementById("admin-tier-tab-high")
     ?.classList.toggle("bg-[#F8F6F2]", tier !== "high");
@@ -1774,7 +1774,7 @@ function setAdminSpendTier(tier) {
     ?.classList.toggle("text-white", tier === "high");
   document
     .getElementById("admin-tier-tab-high")
-    ?.classList.toggle("text-[#5596CE]", tier !== "high");
+    ?.classList.toggle("text-[color:var(--brand)]", tier !== "high");
   renderAdminSpendSegments();
 }
 
@@ -2051,7 +2051,7 @@ async function loadAdminTraffic() {
       html += `
         <div class="text-center border border-[#EDE9E3] rounded-lg py-2 px-1">
           <p class="text-[10px] text-[#999]">${label}</p>
-          <p class="font-display text-lg font-semibold text-[#28547C]">${count}</p>
+          <p class="font-display text-lg font-semibold text-[color:var(--brand-ink)]">${count}</p>
           <p class="text-[10px] text-[#999]">${pax} pax</p>
         </div>`;
     }
@@ -2240,7 +2240,7 @@ function renderTableSelection(prefix, selectedId = "") {
               const isOccupied =
                 !skipOccupancy && !isSelected && occupiedIds.has(table.id);
               const btnClass = isSelected
-                ? "bg-[#28547C] text-white border border-[#28547C]"
+                ? "bg-[color:var(--brand-ink)] text-white border border-[color:var(--brand-ink)]"
                 : inactive
                   ? "bg-[#F5F3F0] text-[#999] border border-[#E2DFDA] cursor-not-allowed"
                   : isOccupied
@@ -2267,7 +2267,7 @@ function renderTableSelection(prefix, selectedId = "") {
   container.innerHTML = `
     <div class="mb-3 flex items-center justify-between gap-3">
       <label class="block text-xs font-medium text-[#555]">Table</label>
-      ${selectedId ? '<button type="button" onclick="clearTableSelection(\'' + prefix + '\')" class="text-xs text-[#C8A96B] hover:underline">Clear selection</button>' : ""}
+      ${selectedId ? '<button type="button" onclick="clearTableSelection(\'' + prefix + '\')" class="text-xs text-[color:var(--accent)] hover:underline">Clear selection</button>' : ""}
     </div>
     ${rows || '<p class="text-xs text-[#999]">No active tables configured for the selected areas.</p>'}
   `;
@@ -2428,7 +2428,7 @@ function renderTableManagement() {
   section.innerHTML = `
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-3">
       <div>
-        <h2 class="font-heading text-2xl font-semibold text-[#28547C]">${t("Areas & Tables")}</h2>
+        <h2 class="font-heading text-2xl font-semibold text-[color:var(--brand-ink)]">${t("Areas & Tables")}</h2>
         <p class="text-sm text-[#999] mt-1">${t("Create the rooms and sections first, then add the tables inside each one.")}</p>
       </div>
       <div class="flex items-center gap-2 flex-wrap">
@@ -2453,14 +2453,14 @@ function renderTableManagement() {
           <div class="card p-5">
             <div class="flex items-center justify-between gap-3 mb-4">
               <div>
-                <h3 class="font-semibold text-[#28547C]">${escapeHtml(area.name)}</h3>
+                <h3 class="font-semibold text-[color:var(--brand-ink)]">${escapeHtml(area.name)}</h3>
                 <p class="text-xs text-[#777]">${areaTables.length} table${areaTables.length === 1 ? "" : "s"} &middot; ${t("seats")} ${area.capacity || 0}
-                  <button onclick="openAreaModal('${area.id}')" class="text-[#28547C] hover:underline ml-2 manager-only-ui">${t("Edit")}</button>
+                  <button onclick="openAreaModal('${area.id}')" class="text-[color:var(--brand-ink)] hover:underline ml-2 manager-only-ui">${t("Edit")}</button>
                   <button onclick="deleteArea('${area.id}')" class="text-[#B23B3B] hover:underline ml-1 manager-only-ui">${t("Remove")}</button>
                 </p>
                 ${areaConditionsLine(area)}
               </div>
-              <button type="button" onclick="openTableModal(null, '${area.id}')" class="text-xs text-[#5596CE] hover:underline">Add to area</button>
+              <button type="button" onclick="openTableModal(null, '${area.id}')" class="text-xs text-[color:var(--brand)] hover:underline">Add to area</button>
             </div>
             ${
               areaTables.length
@@ -2473,7 +2473,7 @@ function renderTableManagement() {
                   <p class="text-xs text-[#777]">Capacity: ${table.capacity || "—"}${table.description ? ` · ${escapeHtml(table.description)}` : ""}</p>
                 </div>
                 <div class="flex items-center gap-2">
-                  <button type="button" onclick="openTableModal('${table.id}')" class="text-xs text-[#C8A96B] hover:underline">Edit</button>
+                  <button type="button" onclick="openTableModal('${table.id}')" class="text-xs text-[color:var(--accent)] hover:underline">Edit</button>
                   <button type="button" onclick="toggleTableActive('${table.id}', ${table.is_active ? "false" : "true"})" class="text-xs ${table.is_active ? "text-[#E05252] hover:text-[#B43B3B]" : "text-[#5F8D4E] hover:text-[#3E6D3F]"}">
                     ${table.is_active ? "Archive" : "Restore"}
                   </button>
@@ -2646,8 +2646,8 @@ async function renderAreas() {
 
   const colorMap = {
     "Indoor Dining": { bg: "#EFF7EC", bar: "#5F8D4E", icon: "🍽️" },
-    "Outdoor Dining": { bg: "#EEF7FF", bar: "#3B82F6", icon: "🌿" },
-    "VIP Room A": { bg: "#FBF8EE", bar: "#C8A96B", icon: "⭐" },
+    "Outdoor Dining": { bg: "var(--brand-tint2)", bar: "#3B82F6", icon: "🌿" },
+    "VIP Room A": { bg: "#FBF8EE", bar: "var(--accent)", icon: "⭐" },
     "VIP Room B": { bg: "#FBF3EE", bar: "#E8835A", icon: "✨" },
   };
 
@@ -2658,7 +2658,7 @@ async function renderAreas() {
       const pct = Math.min(100, Math.round((reserved / area.capacity) * 100));
       const c = colorMap[area.name] || {
         bg: "#F8F6F2",
-        bar: "#5596CE",
+        bar: "var(--brand)",
         icon: "📍",
       };
       const statusColor =
@@ -2708,7 +2708,7 @@ async function renderAreas() {
         <div class="flex items-start justify-between mb-2">
           <div>
             <span class="text-2xl mb-2 block">${c.icon}</span>
-            <h3 class="font-heading text-xl font-semibold text-[#28547C]">${area.name}</h3>
+            <h3 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)]">${area.name}</h3>
           </div>
           <span class="text-2xl font-display font-semibold" style="color:${statusColor}">${remaining}</span>
         </div>
@@ -2905,7 +2905,7 @@ function renderDashboardReservationTotals() {
 
   const unplacedHtml = totals.unplacedCount
     ? `<span class="text-[11px] text-[#8a8a8a]">
-         <span class="inline-block w-1.5 h-1.5 rounded-full align-middle mr-1" style="background:#C8A96B"></span>
+         <span class="inline-block w-1.5 h-1.5 rounded-full align-middle mr-1" style="background:var(--accent)"></span>
          ${totals.unplacedCount} ${t("reservations")} · ${totals.unplacedPax} ${t("pax")} ${t("not yet placed")}
        </span>`
     : "";
@@ -2922,11 +2922,11 @@ function renderDashboardReservationTotals() {
       <div class="flex items-end justify-between gap-4 flex-wrap">
         <div class="leading-tight">
           <p class="text-[11px] text-[#999] uppercase tracking-wider font-medium">${escapeHtml(weekday)}</p>
-          <p class="font-display text-2xl font-semibold text-[#28547C]">${escapeHtml(dayMonth)}</p>
+          <p class="font-display text-2xl font-semibold text-[color:var(--brand-ink)]">${escapeHtml(dayMonth)}</p>
         </div>
         <div class="flex items-stretch gap-2 ml-auto">
-          ${miniCard(t("Total Reservations"), totals.activeCount, "#28547C")}
-          ${miniCard(t("Expected Pax"), totals.pax, "#C8A96B")}
+          ${miniCard(t("Total Reservations"), totals.activeCount, "var(--brand-ink)")}
+          ${miniCard(t("Expected Pax"), totals.pax, "var(--accent)")}
         </div>
       </div>
       ${notesHtml}
@@ -2967,10 +2967,10 @@ function updateDashboardReservationTabs() {
     const btn = document.getElementById(`dashboard-reservation-tab-${i}`);
     if (!btn) continue;
     const active = i === dashboardReservationOffset;
-    btn.classList.toggle("bg-[#5596CE]", active);
+    btn.classList.toggle("bg-[color:var(--brand)]", active);
     btn.classList.toggle("text-white", active);
     btn.classList.toggle("bg-[#F8F6F2]", !active);
-    btn.classList.toggle("text-[#5596CE]", !active);
+    btn.classList.toggle("text-[color:var(--brand)]", !active);
     btn.classList.toggle("border-[#D8D2C4]", true);
     btn.textContent = formatDashboardTabLabel(
       i,
@@ -3058,12 +3058,12 @@ function renderDashboardAreaOccupancy(reservations, walkins) {
         ? Math.min(100, Math.round((reservedPax / capacity) * 100))
         : 0;
       const statusColor =
-        pct >= 81 ? "#D4573A" : pct >= 61 ? "#C8A96B" : "#5596CE";
+        pct >= 81 ? "#D4573A" : pct >= 61 ? "var(--accent)" : "var(--brand)";
 
       return `
       <div class="stat-card py-4 px-5">
         <div class="flex items-start justify-between gap-3 mb-3">
-          <p class="font-display text-lg font-semibold text-[#28547C] leading-tight">${group.name}</p>
+          <p class="font-display text-lg font-semibold text-[color:var(--brand-ink)] leading-tight">${group.name}</p>
           <span class="text-xs font-semibold" style="color:${statusColor}">${pct}%</span>
         </div>
         <p class="text-sm font-medium text-[#222] mb-1">${reservedPax} / ${capacity} pax</p>
@@ -3172,7 +3172,7 @@ function renderGuestExtras(guest, visitCount) {
   if (!guest) return "";
   const count = visitCount || 0;
   const parts = [
-    `<span class="inline-flex items-center gap-1 text-[11px] text-[#28547C]">🔁 ${count} visit${count === 1 ? "" : "s"}</span>`,
+    `<span class="inline-flex items-center gap-1 text-[11px] text-[color:var(--brand-ink)]">🔁 ${count} visit${count === 1 ? "" : "s"}</span>`,
   ];
   if (guest.food_allergy) {
     parts.push(
@@ -3191,7 +3191,7 @@ function renderGuestExtras(guest, visitCount) {
   // already counts as "revisiting" and should see their saved order.
   if (guest.favorite_menu && count >= 1) {
     parts.push(
-      `<span class="text-[11px] text-[#8A6D3B]">🍽️ ${escapeHtml(guest.favorite_menu)}</span>`,
+      `<span class="text-[11px] text-[color:var(--accent-strong)]">🍽️ ${escapeHtml(guest.favorite_menu)}</span>`,
     );
   }
   return `<div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">${parts.join("")}</div>`;
@@ -3220,7 +3220,7 @@ function renderPaginationControls(
   const end = Math.min((currentPage + 1) * DASH_PAGE_SIZE, totalItems);
   const btnBase =
     "inline-flex items-center gap-1 px-2.5 py-1.5 rounded text-xs font-medium border transition-colors";
-  const btnActive = `${btnBase} bg-[#28547C] border-[#28547C] text-white hover:bg-[#1e3f5e]`;
+  const btnActive = `${btnBase} bg-[color:var(--brand-ink)] border-[color:var(--brand-ink)] text-white hover:bg-[color:var(--brand-deep)]`;
   const btnDisabled = `${btnBase} bg-[#F0EDE8] border-[#E0DAD2] text-[#C0BAB0] cursor-not-allowed`;
   el.innerHTML = `
     <span class="text-[11px] text-[#999] mr-1">${start}–${end} of ${totalItems}</span>
@@ -3391,7 +3391,7 @@ function renderDashboardReservations(data) {
         <div class="flex items-center justify-between mb-1">
           <div class="flex items-center gap-4">
             <div class="text-center min-w-[52px]">
-              <p class="font-display text-lg text-[#28547C] leading-none">${fmt.time(r.reservation_time)}</p>
+              <p class="font-display text-lg text-[color:var(--brand-ink)] leading-none">${fmt.time(r.reservation_time)}</p>
             </div>
             <div>
               <p class="font-medium text-sm text-[#222] flex flex-wrap items-center gap-1.5">
@@ -3415,11 +3415,11 @@ function renderDashboardReservations(data) {
           </div>
           <div class="flex items-center gap-3">
             ${statusBadge(r.status)}
-            <a href="reservation-confirmation.html?id=${r.id}" target="_blank" title="View confirmation page" class="text-xs text-[#5596CE] hover:underline flex items-center gap-1">
+            <a href="reservation-confirmation.html?id=${r.id}" target="_blank" title="View confirmation page" class="text-xs text-[color:var(--brand)] hover:underline flex items-center gap-1">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               Link
             </a>
-            <button onclick="openResActions('${r.id}')" class="text-xs text-[#C8A96B] hover:underline">Update</button>
+            <button onclick="openResActions('${r.id}')" class="text-xs text-[color:var(--accent)] hover:underline">Update</button>
             ${waReservationBtns(r)}
           </div>
         </div>
@@ -3497,7 +3497,7 @@ function renderDashboardWalkIns(data) {
         <div class="flex items-center justify-between mb-1">
           <div class="flex items-center gap-4">
             <div class="text-center min-w-[52px]">
-              <p class="font-display text-lg text-[#28547C] leading-none">${fmt.time(v.visit_time)}</p>
+              <p class="font-display text-lg text-[color:var(--brand-ink)] leading-none">${fmt.time(v.visit_time)}</p>
             </div>
             <div>
               <p class="font-medium text-sm text-[#222] flex flex-wrap items-center gap-1.5">
@@ -3525,8 +3525,8 @@ function renderDashboardWalkIns(data) {
                 ? '<span class="text-xs text-[#5F8D4E]">✓ Done</span>'
                 : '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>Active</span>'
             }
-            <button onclick="openEditWalkIn('${v.id}')" class="text-xs text-[#C8A96B] hover:underline">Edit</button>
-            ${!isCompleted ? `<button onclick="openCompleteVisit('${v.id}','visit')" class="text-xs text-[#C8A96B] hover:underline">Complete</button>` : ""}
+            <button onclick="openEditWalkIn('${v.id}')" class="text-xs text-[color:var(--accent)] hover:underline">Edit</button>
+            ${!isCompleted ? `<button onclick="openCompleteVisit('${v.id}','visit')" class="text-xs text-[color:var(--accent)] hover:underline">Complete</button>` : ""}
             ${waThankYouVisitBtn(v)}
           </div>
         </div>
@@ -3610,7 +3610,7 @@ function updateGuestSortIcons() {
     if (!el) return;
     if (k === guestSortKey) {
       el.textContent = guestSortDir === "asc" ? up : down;
-      el.className = "text-[#C8A96B]"; // gold — active
+      el.className = "text-[color:var(--accent)]"; // gold — active
     } else {
       el.textContent = el.textContent ? "⬦" : ""; // subtle inactive hint
       el.textContent = "⬦";
@@ -3750,12 +3750,12 @@ async function renderGuestsTable(guests) {
       <tr class="table-row border-b border-[#F5F3EF]">
         <td class="px-5 py-3.5">
           <div class="flex items-center gap-3">
-            <div style="width:32px;height:32px;background:#EEF3F7;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#28547C;">
+            <div style="width:32px;height:32px;background:#EEF3F7;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--brand-ink);">
               ${g.name.charAt(0).toUpperCase()}
             </div>
             <div>
               <p class="font-medium text-sm text-[#222]">${formatGuestName(g)} ${memberBadge(g.id)}</p>
-              ${visits > 1 ? '<span class="text-[10px] text-[#C8A96B] font-medium uppercase tracking-wide">Returning</span>' : ""}
+              ${visits > 1 ? '<span class="text-[10px] text-[color:var(--accent)] font-medium uppercase tracking-wide">Returning</span>' : ""}
             </div>
           </div>
         </td>
@@ -3774,15 +3774,15 @@ async function renderGuestsTable(guests) {
         }</td>
         <td class="px-5 py-3.5 text-sm text-[#555] hidden md:table-cell">${formatSpendingTierBadge(g.spending_tier)}</td>
         <td class="px-5 py-3.5 hidden md:table-cell">
-          <span class="font-display text-lg text-[#28547C]">${visits}</span>
+          <span class="font-display text-lg text-[color:var(--brand-ink)]">${visits}</span>
         </td>
         <td class="px-5 py-3.5 text-sm text-[#999]">${fmt.date(lastVisit)}</td>
         <td class="px-5 py-3.5 text-right">
           <div class="flex items-center justify-end gap-1">
-            <button onclick="event.stopPropagation(); viewGuestProfile('${g.id}')" title="View guest profile" class="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-[#EEF3F7] text-[#999] hover:text-[#5596CE] transition-colors">
+            <button onclick="event.stopPropagation(); viewGuestProfile('${g.id}')" title="View guest profile" class="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-[#EEF3F7] text-[#999] hover:text-[color:var(--brand)] transition-colors">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
-            <button onclick="event.stopPropagation(); editGuest('${g.id}')" title="Edit guest" class="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-[#FBF8EE] text-[#999] hover:text-[#C8A96B] transition-colors">
+            <button onclick="event.stopPropagation(); editGuest('${g.id}')" title="Edit guest" class="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-[#FBF8EE] text-[#999] hover:text-[color:var(--accent)] transition-colors">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
           </div>
@@ -3818,13 +3818,13 @@ function renderGuestPagination(totalFiltered) {
       <span>${start}–${end} of ${totalFiltered} guests</span>
       <div class="flex items-center gap-1.5">
         <button onclick="goGuestPage(${guestPage - 1})"
-          class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#EDE9E3] transition-colors ${guestPage <= 1 ? "opacity-30 cursor-not-allowed" : "hover:border-[#5596CE] hover:text-[#5596CE]"}"
+          class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#EDE9E3] transition-colors ${guestPage <= 1 ? "opacity-30 cursor-not-allowed" : "hover:border-[color:var(--brand)] hover:text-[color:var(--brand)]"}"
           ${guestPage <= 1 ? "disabled" : ""} title="Previous">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
-        <span class="px-2 text-[#28547C] font-medium">${guestPage} / ${totalPages}</span>
+        <span class="px-2 text-[color:var(--brand-ink)] font-medium">${guestPage} / ${totalPages}</span>
         <button onclick="goGuestPage(${guestPage + 1})"
-          class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#EDE9E3] transition-colors ${guestPage >= totalPages ? "opacity-30 cursor-not-allowed" : "hover:border-[#5596CE] hover:text-[#5596CE]"}"
+          class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#EDE9E3] transition-colors ${guestPage >= totalPages ? "opacity-30 cursor-not-allowed" : "hover:border-[color:var(--brand)] hover:text-[color:var(--brand)]"}"
           ${guestPage >= totalPages ? "disabled" : ""} title="Next">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
         </button>
@@ -4487,17 +4487,17 @@ async function viewGuestProfile(guestId) {
 
   content.innerHTML = `
     <div class="flex items-start gap-4 mb-6">
-      <div style="width:52px;height:52px;background:#EEF3F7;border-radius:50%;display:flex;align-items:center;justify-content:center;font-display;font-size:22px;font-weight:600;color:#28547C;flex-shrink:0;">
+      <div style="width:52px;height:52px;background:#EEF3F7;border-radius:50%;display:flex;align-items:center;justify-content:center;font-display;font-size:22px;font-weight:600;color:var(--brand-ink);flex-shrink:0;">
         ${guest.name.charAt(0).toUpperCase()}
       </div>
       <div>
-        <h3 class="font-display text-2xl font-semibold text-[#28547C]">${guest.name}</h3>
+        <h3 class="font-display text-2xl font-semibold text-[color:var(--brand-ink)]">${guest.name}</h3>
         <p class="text-sm text-[#666]">${guest.phone}${guest.company ? " · " + guest.company : ""}</p>
         ${
           memberBadgeMap[guest.id]
             ? `<div class="mt-2 flex flex-wrap items-center gap-2">${memberBadge(guest.id)}
                  <span class="text-xs text-[#777]">${memberBadgeMap[guest.id].total_stickers} sticker${memberBadgeMap[guest.id].total_stickers === 1 ? "" : "s"}${memberBadgeMap[guest.id].available_vouchers > 0 ? ` · ${memberBadgeMap[guest.id].available_vouchers} voucher${memberBadgeMap[guest.id].available_vouchers > 1 ? "s" : ""} available` : ""}</span>
-                 <button onclick="hideModal('modal-profile');viewMemberDetail(${memberBadgeMap[guest.id].id})" class="text-xs text-[#28547C] underline">Open member card</button>
+                 <button onclick="hideModal('modal-profile');viewMemberDetail(${memberBadgeMap[guest.id].id})" class="text-xs text-[color:var(--brand-ink)] underline">Open member card</button>
                </div>`
             : ""
         }
@@ -4522,15 +4522,15 @@ async function viewGuestProfile(guestId) {
     </div>
 
     <div class="grid grid-cols-2 gap-3 mb-4">
-      <div class="p-3 bg-[#EEF3F7] rounded-10 border border-[#D6E3EE]">
-        <p class="text-[10px] text-[#5596CE] uppercase tracking-wider mb-1">Average Spend</p>
-        <p class="font-display text-lg text-[#28547C]">${avgSpend !== null ? fmt.currency(avgSpend) : "—"}</p>
+      <div class="p-3 bg-[#EEF3F7] rounded-10 border border-[color:var(--brand-tint)]">
+        <p class="text-[10px] text-[color:var(--brand)] uppercase tracking-wider mb-1">Average Spend</p>
+        <p class="font-display text-lg text-[color:var(--brand-ink)]">${avgSpend !== null ? fmt.currency(avgSpend) : "—"}</p>
         <p class="text-[10px] text-[#999] mt-0.5">${validSpends.length ? `across ${validSpends.length} visit${validSpends.length === 1 ? "" : "s"} with spend recorded` : "no spend recorded yet"}</p>
       </div>
       <div class="p-3 bg-[#FBF8EE] rounded-10 border border-[#E8E0D0]" id="fav-menu-card-${guest.id}">
         <div class="flex items-center justify-between mb-1">
-          <p class="text-[10px] text-[#C8A96B] uppercase tracking-wider">Favorite</p>
-          <button onclick="startEditFavoriteMenu('${guest.id}')" class="text-[#999] hover:text-[#28547C] transition-colors" title="Edit favorite menu">
+          <p class="text-[10px] text-[color:var(--accent)] uppercase tracking-wider">Favorite</p>
+          <button onclick="startEditFavoriteMenu('${guest.id}')" class="text-[#999] hover:text-[color:var(--brand-ink)] transition-colors" title="Edit favorite menu">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
         </div>
@@ -4550,7 +4550,7 @@ async function viewGuestProfile(guestId) {
 
     <div class="grid grid-cols-2 gap-3 mb-5 text-sm">
       ${guest.food_allergy ? `<div class="p-3 bg-red-50 rounded-10 border border-red-100"><p class="text-[10px] text-red-400 uppercase tracking-wider mb-1">Allergy</p><p class="text-[#333]">${guest.food_allergy}</p></div>` : ""}
-      ${guest.preference ? `<div class="p-3 bg-[#FBF8EE] rounded-10 border border-[#E8E0D0]"><p class="text-[10px] text-[#C8A96B] uppercase tracking-wider mb-1">Preference</p><p class="text-[#333]">${guest.preference}</p></div>` : ""}
+      ${guest.preference ? `<div class="p-3 bg-[#FBF8EE] rounded-10 border border-[#E8E0D0]"><p class="text-[10px] text-[color:var(--accent)] uppercase tracking-wider mb-1">Preference</p><p class="text-[#333]">${guest.preference}</p></div>` : ""}
       ${guest.notes ? `<div class="p-3 bg-[#F8F6F2] rounded-10 border border-[#EDE9E3] col-span-2"><p class="text-[10px] text-[#999] uppercase tracking-wider mb-1">Notes</p><p class="text-[#333]">${guest.notes}</p></div>` : ""}
     </div>
 
@@ -4568,10 +4568,10 @@ async function viewGuestProfile(guestId) {
             <p class="text-xs text-[#999]">${v.visit_type} · ${fmt.pax(v.pax)} · ${v.areas?.name || "—"}</p>
           </div>
           <div class="flex items-center gap-2">
-            <p class="text-sm text-[#28547C] font-medium" id="visit-spend-display-${v.id}">${fmt.currency(v.spend_amount)}</p>
+            <p class="text-sm text-[color:var(--brand-ink)] font-medium" id="visit-spend-display-${v.id}">${fmt.currency(v.spend_amount)}</p>
             ${
               isCompleted
-                ? `<button onclick="startEditVisitSpend('${v.id}', ${v.spend_amount || 0}, '${guestId}')" class="text-[#999] hover:text-[#28547C] transition-colors" title="Edit spending amount">
+                ? `<button onclick="startEditVisitSpend('${v.id}', ${v.spend_amount || 0}, '${guestId}')" class="text-[#999] hover:text-[color:var(--brand-ink)] transition-colors" title="Edit spending amount">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>`
                 : ""
@@ -4611,12 +4611,12 @@ function startEditFavoriteMenu(guestId) {
         type="text"
         value="${escapeHtml(currentValue)}"
         placeholder="e.g. Nasi Goreng, Es Teh Manis"
-        class="w-full text-sm border border-[#D0DCE8] rounded-8 px-2.5 py-1.5 focus:outline-none focus:border-[#28547C] text-[#222]"
+        class="w-full text-sm border border-[#D0DCE8] rounded-8 px-2.5 py-1.5 focus:outline-none focus:border-[color:var(--brand-ink)] text-[#222]"
         onkeydown="if(event.key==='Enter')saveFavoriteMenu('${guestId}');if(event.key==='Escape')cancelEditFavoriteMenu('${guestId}','${escapeHtml(currentValue).replace(/'/g, "\\'")}');"
       />
       <div class="flex items-center justify-end gap-2">
         <button onclick="cancelEditFavoriteMenu('${guestId}','${escapeHtml(currentValue).replace(/'/g, "\\'")}')" class="text-xs font-medium text-[#999] hover:text-[#555] px-2 py-1.5 transition-colors">${t("Cancel")}</button>
-        <button onclick="saveFavoriteMenu('${guestId}')" class="text-xs font-medium text-white bg-[#28547C] hover:bg-[#1f4060] px-3 py-1.5 rounded-6 transition-colors">${t("Save")}</button>
+        <button onclick="saveFavoriteMenu('${guestId}')" class="text-xs font-medium text-white bg-[color:var(--brand-ink)] hover:bg-[color:var(--brand-deepest)] px-3 py-1.5 rounded-6 transition-colors">${t("Save")}</button>
       </div>
     </div>
   `;
@@ -4703,10 +4703,10 @@ function startEditVisitSpend(visitId, currentAmount, guestId) {
       min="0"
       step="1000"
       value="${currentAmount || ""}"
-      class="w-28 text-right text-sm border border-[#D0DCE8] rounded-8 px-2 py-1 focus:outline-none focus:border-[#28547C] text-[#222]"
+      class="w-28 text-right text-sm border border-[#D0DCE8] rounded-8 px-2 py-1 focus:outline-none focus:border-[color:var(--brand-ink)] text-[#222]"
       onkeydown="if(event.key==='Enter')saveVisitSpend('${visitId}','${guestId}');if(event.key==='Escape')cancelEditVisitSpend('${visitId}',${currentAmount || 0});"
     />
-    <button onclick="saveVisitSpend('${visitId}','${guestId}')" class="text-xs font-medium text-white bg-[#28547C] hover:bg-[#1f4060] px-2 py-1 rounded-6 transition-colors">Save</button>
+    <button onclick="saveVisitSpend('${visitId}','${guestId}')" class="text-xs font-medium text-white bg-[color:var(--brand-ink)] hover:bg-[color:var(--brand-deepest)] px-2 py-1 rounded-6 transition-colors">Save</button>
     <button onclick="cancelEditVisitSpend('${visitId}',${currentAmount || 0})" class="text-xs font-medium text-[#999] hover:text-[#555] px-1 py-1 transition-colors">✕</button>
   `;
 
@@ -4871,7 +4871,7 @@ function renderGuestSearchResults(prefix, guests, searchTerm) {
         <div class="text-xs text-[#999] p-3 border-b border-[#F0EDE8]">
           No guests found
         </div>
-        <button type="button" onclick="createNewGuestFromSearch('${prefix}')" class="w-full text-left px-3 py-2.5 bg-[#FAFAF8] text-xs text-[#C8A96B] font-medium hover:bg-[#F8F6F2]">
+        <button type="button" onclick="createNewGuestFromSearch('${prefix}')" class="w-full text-left px-3 py-2.5 bg-[#FAFAF8] text-xs text-[color:var(--accent)] font-medium hover:bg-[#F8F6F2]">
           + Create new guest
         </button>
       </div>
@@ -4898,7 +4898,7 @@ function renderGuestSearchResults(prefix, guests, searchTerm) {
       `,
         )
         .join("")}
-      <button type="button" onclick="createNewGuestFromSearch('${prefix}')" class="w-full text-left px-3 py-2.5 bg-[#FAFAF8] text-xs text-[#C8A96B] font-medium hover:bg-[#F8F6F2] border-t border-[#F0EDE8]">
+      <button type="button" onclick="createNewGuestFromSearch('${prefix}')" class="w-full text-left px-3 py-2.5 bg-[#FAFAF8] text-xs text-[color:var(--accent)] font-medium hover:bg-[#F8F6F2] border-t border-[#F0EDE8]">
         + Create new guest
       </button>
     </div>
@@ -4987,12 +4987,12 @@ async function selectGuestFromSearch(guestId, prefix) {
     guestInfoEl.innerHTML = `
       <div class="returning-badge">
         <div class="flex items-center gap-2 mb-2">
-          <span class="text-xs font-semibold text-[#C8A96B] uppercase tracking-widest">Existing Guest</span>
+          <span class="text-xs font-semibold text-[color:var(--accent)] uppercase tracking-widest">Existing Guest</span>
           ${memberBadge(guest.id)}
         </div>
-        <p class="font-display text-lg font-semibold text-[#28547C] mb-1">${formatGuestName(guest)}</p>
+        <p class="font-display text-lg font-semibold text-[color:var(--brand-ink)] mb-1">${formatGuestName(guest)}</p>
         ${guest.phone ? `<p class="text-xs text-[#999]">${escapeHtml(guest.phone)}</p>` : ""}
-        ${guest.preference ? `<p class="text-xs text-[#C8A96B] mt-1.5">⭐ ${escapeHtml(guest.preference)}</p>` : ""}
+        ${guest.preference ? `<p class="text-xs text-[color:var(--accent)] mt-1.5">⭐ ${escapeHtml(guest.preference)}</p>` : ""}
         ${guest.food_allergy ? `<p class="text-xs text-red-500 mt-1">⚠️ Allergy: ${escapeHtml(guest.food_allergy)}</p>` : ""}
       </div>
     `;
@@ -5109,13 +5109,13 @@ async function lookupGuestManual(prefix) {
     guestInfoEl.innerHTML = `
       <div class="returning-badge">
         <div class="flex items-center gap-2 mb-2">
-          <span class="text-xs font-semibold text-[#C8A96B] uppercase tracking-widest">Welcome Back</span>
-          ${totalVisits > 0 ? `<span class="bg-[#C8A96B] text-white text-[10px] px-2 py-0.5 rounded-full">${totalVisits} visits</span>` : ""}
+          <span class="text-xs font-semibold text-[color:var(--accent)] uppercase tracking-widest">Welcome Back</span>
+          ${totalVisits > 0 ? `<span class="bg-[color:var(--accent)] text-white text-[10px] px-2 py-0.5 rounded-full">${totalVisits} visits</span>` : ""}
           ${memberBadge(guest.id)}
         </div>
-        <p class="font-display text-xl font-semibold text-[#28547C] mb-1">${guest.name}</p>
+        <p class="font-display text-xl font-semibold text-[color:var(--brand-ink)] mb-1">${guest.name}</p>
         ${lastVisit ? `<p class="text-xs text-[#999]">Last visit: ${fmt.date(lastVisit)}</p>` : ""}
-        ${guest.preference ? `<p class="text-xs text-[#C8A96B] mt-1.5">⭐ ${guest.preference}</p>` : ""}
+        ${guest.preference ? `<p class="text-xs text-[color:var(--accent)] mt-1.5">⭐ ${guest.preference}</p>` : ""}
         ${guest.food_allergy ? `<p class="text-xs text-red-500 mt-1">⚠️ Allergy: ${guest.food_allergy}</p>` : ""}
         ${guest.notes ? `<p class="text-xs text-[#888] mt-1">📝 ${guest.notes}</p>` : ""}
       </div>
@@ -5224,7 +5224,7 @@ async function openWalkInModal(visit = null) {
     guestInfoEl.classList.remove("hidden");
     guestInfoEl.innerHTML = `
       <div class="returning-badge">
-        <p class="font-display text-lg text-[#28547C]">${visit.guests ? formatGuestName(visit.guests) : "—"} ${memberBadge(visit.guest_id)}</p>
+        <p class="font-display text-lg text-[color:var(--brand-ink)]">${visit.guests ? formatGuestName(visit.guests) : "—"} ${memberBadge(visit.guest_id)}</p>
         <p class="text-xs text-[#999]">${escapeHtml(visit.guests?.phone || "")}</p>
       </div>
     `;
@@ -5519,7 +5519,7 @@ async function loadWalkIns() {
       const visitCount = v._visitCount || 0;
       return `
       <tr class="table-row border-b border-[#F5F3EF] ${isVoided ? "opacity-50" : ""}">
-        <td class="px-5 py-3.5 font-display text-[#28547C]">${fmt.time(v.visit_time)}</td>
+        <td class="px-5 py-3.5 font-display text-[color:var(--brand-ink)]">${fmt.time(v.visit_time)}</td>
         <td class="px-5 py-3.5">
           <p class="font-medium text-sm text-[#222]">${v.guests ? formatGuestName(v.guests) : "—"}</p>
           ${v.guests?.phone ? `<p class="text-xs text-[#999] mt-0.5">${v.guests.phone}</p>` : ""}
@@ -5537,11 +5537,11 @@ async function loadWalkIns() {
               isVoided
                 ? '<span class="text-xs text-[#999]">—</span>'
                 : `
-              <button onclick="openEditWalkIn('${v.id}')" class="text-xs text-[#28547C] hover:underline">Edit</button>
+              <button onclick="openEditWalkIn('${v.id}')" class="text-xs text-[color:var(--brand-ink)] hover:underline">Edit</button>
               ${
                 isCompleted
                   ? '<span class="text-xs text-[#5F8D4E]">✓ Done</span>'
-                  : `<button onclick="openCompleteVisit('${v.id}','visit')" class="text-xs text-[#C8A96B] hover:underline">Complete</button>`
+                  : `<button onclick="openCompleteVisit('${v.id}','visit')" class="text-xs text-[color:var(--accent)] hover:underline">Complete</button>`
               }
               ${waThankYouVisitBtn(v)}
               <button onclick="openVoidWalkIn('${v.id}')" class="manager-only-ui text-xs text-red-400 hover:text-red-600">Void</button>
@@ -5617,7 +5617,7 @@ function toggleWiShowVoided() {
   if (btn) {
     // Active state reads as a "filter applied" hint (gold, matching the
     // rest of the manager/audit accents) instead of just static grey text.
-    btn.classList.toggle("text-[#C8A96B]", wiShowVoided);
+    btn.classList.toggle("text-[color:var(--accent)]", wiShowVoided);
     btn.classList.toggle("font-medium", wiShowVoided);
     btn.classList.toggle("text-[#999]", !wiShowVoided);
   }
@@ -5730,9 +5730,9 @@ function openReservationModal(res = null) {
     document.getElementById("res-guest-info").classList.remove("hidden");
     document.getElementById("res-guest-info").innerHTML = `
       <div class="returning-badge">
-        <p class="font-display text-lg text-[#28547C]" id="res-guest-info-name">${res.guests ? formatGuestName(res.guests) : "—"} ${memberBadge(res.guest_id)}</p>
+        <p class="font-display text-lg text-[color:var(--brand-ink)]" id="res-guest-info-name">${res.guests ? formatGuestName(res.guests) : "—"} ${memberBadge(res.guest_id)}</p>
         <p class="text-xs text-[#999]">${escapeHtml(res.guests?.phone || "")}</p>
-        <button type="button" onclick="renameReservationGuest()" class="text-xs text-[#5596CE] underline mt-1">✏️ Perbaiki nama guest</button>
+        <button type="button" onclick="renameReservationGuest()" class="text-xs text-[color:var(--brand)] underline mt-1">✏️ Perbaiki nama guest</button>
       </div>
     `;
     setResDetailsEnabled(true);
@@ -6268,14 +6268,14 @@ function renderResSearchChip(count, loading) {
   chip.classList.remove("hidden");
   chip.innerHTML = `
     <div class="flex flex-wrap items-center gap-2 rounded-10 border border-[#E3D9C4] bg-[#FBF7EF] px-3 py-2">
-      <span class="text-xs text-[#8A7645]">Search results for</span>
-      <span class="text-xs font-medium text-[#28547C]">"${label}"</span>
-      <span class="text-xs text-[#8A7645]">·</span>
-      <span class="text-xs text-[#8A7645]">${summary}</span>
-      <span class="text-xs text-[#8A7645]">·</span>
-      <span class="text-xs text-[#8A7645]">all dates</span>
+      <span class="text-xs text-[color:var(--accent-strong)]">Search results for</span>
+      <span class="text-xs font-medium text-[color:var(--brand-ink)]">"${label}"</span>
+      <span class="text-xs text-[color:var(--accent-strong)]">·</span>
+      <span class="text-xs text-[color:var(--accent-strong)]">${summary}</span>
+      <span class="text-xs text-[color:var(--accent-strong)]">·</span>
+      <span class="text-xs text-[color:var(--accent-strong)]">all dates</span>
       <button type="button" onclick="clearResSearch()"
-        class="ml-auto text-xs text-[#C8A96B] hover:underline font-medium">
+        class="ml-auto text-xs text-[color:var(--accent)] hover:underline font-medium">
         Back to day view
       </button>
     </div>`;
@@ -6353,7 +6353,7 @@ function computeDiningAreaCapacity(areaName, rows) {
     .reduce((sum, r) => sum + (Number(r.pax) || 0), 0);
   const remaining = Math.max(0, capacity - reservedPax);
   const pct = capacity ? Math.min(100, Math.round((reservedPax / capacity) * 100)) : 0;
-  const statusColor = pct >= 81 ? "#D4573A" : pct >= 61 ? "#C8A96B" : "#5596CE";
+  const statusColor = pct >= 81 ? "#D4573A" : pct >= 61 ? "var(--accent)" : "var(--brand)";
   return { capacity, reservedPax, remaining, pct, statusColor };
 }
 
@@ -6381,7 +6381,7 @@ function renderDiningAreaCard(label, stats) {
         <p class="text-[10px] text-[#999] uppercase tracking-wider font-medium">${label}</p>
         <span class="text-xs font-semibold" style="color:${stats.statusColor}">${stats.pct}%</span>
       </div>
-      <p class="font-display text-2xl font-semibold text-[#28547C] mt-0.5">${stats.reservedPax}<span class="text-sm text-[#bbb] font-normal"> / ${stats.capacity} pax</span></p>
+      <p class="font-display text-2xl font-semibold text-[color:var(--brand-ink)] mt-0.5">${stats.reservedPax}<span class="text-sm text-[#bbb] font-normal"> / ${stats.capacity} pax</span></p>
       <p class="text-[11px] text-[#999] mt-1">${stats.remaining} ${t("seats remaining")}</p>
       <div style="height:5px;background:#EDE9E3;border-radius:3px;overflow:hidden;margin-top:6px;">
         <div style="width:${stats.pct}%;height:100%;background:${stats.statusColor};border-radius:3px;transition:width .4s;"></div>
@@ -6440,9 +6440,9 @@ async function renderResOccupancySummary(date) {
 
   const unplacedHtml = unplaced.count
     ? `<div class="mt-4 pt-3 border-t border-[#EDE9E3] flex items-center gap-2">
-        <span class="inline-block w-2 h-2 rounded-full" style="background:#C8A96B"></span>
+        <span class="inline-block w-2 h-2 rounded-full" style="background:var(--accent)"></span>
         <p class="text-[11px] text-[#8a8a8a]">
-          <span class="font-semibold text-[#28547C]">${t("Not yet placed")}:</span>
+          <span class="font-semibold text-[color:var(--brand-ink)]">${t("Not yet placed")}:</span>
           ${unplaced.count} ${t("reservations")} · ${unplaced.pax} ${t("pax")}
           <span class="text-[#bbb]">— ${t("not counted in the area figures above")}</span>
         </p>
@@ -6453,11 +6453,11 @@ async function renderResOccupancySummary(date) {
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
       <div>
         <p class="text-[10px] text-[#999] uppercase tracking-wider font-medium">${t("Reservations Today")}</p>
-        <p class="font-display text-2xl font-semibold text-[#28547C] mt-0.5">${totalReservations}</p>
+        <p class="font-display text-2xl font-semibold text-[color:var(--brand-ink)] mt-0.5">${totalReservations}</p>
       </div>
       <div>
         <p class="text-[10px] text-[#999] uppercase tracking-wider font-medium">${t("Total Pax")}</p>
-        <p class="font-display text-2xl font-semibold text-[#C8A96B] mt-0.5">${totalPax}</p>
+        <p class="font-display text-2xl font-semibold text-[color:var(--accent)] mt-0.5">${totalPax}</p>
         <p class="text-[11px] text-[#999] mt-1">${t("all reservations, placed or not")}</p>
       </div>
       ${renderDiningAreaCard(t("Indoor Dining"), indoorStats)}
@@ -6522,7 +6522,7 @@ function renderVipTableTimeline(table, rows) {
       const pct = (100 * (seg.end - seg.start)) / totalMin;
       const label = `${minutesToHHMM(seg.start)}–${minutesToHHMM(seg.end)}`;
       if (seg.type === "booked") {
-        return `<div class="h-full flex items-center justify-center text-[10px] font-medium text-white truncate px-1" style="width:${pct}%;background:#C8A96B" title="${escapeHtml(t("Booked"))} ${label} — ${escapeHtml(seg.guest)}">${label}</div>`;
+        return `<div class="h-full flex items-center justify-center text-[10px] font-medium text-white truncate px-1" style="width:${pct}%;background:var(--accent)" title="${escapeHtml(t("Booked"))} ${label} — ${escapeHtml(seg.guest)}">${label}</div>`;
       }
       return `<div class="h-full flex items-center justify-center text-[10px] text-[#bbb] truncate px-1" style="width:${pct}%;background:#FAFAF8" title="${escapeHtml(t("Free"))} ${label}">${pct > 8 ? t("Free") : ""}</div>`;
     })
@@ -6532,14 +6532,14 @@ function renderVipTableTimeline(table, rows) {
     .map((seg) => {
       const label = `${minutesToHHMM(seg.start)}–${minutesToHHMM(seg.end)}`;
       return seg.type === "booked"
-        ? `<span class="text-[11px]"><span class="inline-block w-2 h-2 rounded-full align-middle mr-1" style="background:#C8A96B"></span>${label} — ${escapeHtml(seg.guest)}</span>`
+        ? `<span class="text-[11px]"><span class="inline-block w-2 h-2 rounded-full align-middle mr-1" style="background:var(--accent)"></span>${label} — ${escapeHtml(seg.guest)}</span>`
         : `<span class="text-[11px] text-[#bbb]"><span class="inline-block w-2 h-2 rounded-full align-middle mr-1" style="background:#FAFAF8;border:1px solid #E0DDD7"></span>${label} ${t("free")}</span>`;
     })
     .join('<span class="text-[#e0ddd7]">·</span>');
 
   return `
     <div class="mb-4 last:mb-0">
-      <p class="text-xs font-semibold text-[#28547C] mb-1.5">⭐ ${escapeHtml(table.name)}${areaName ? ` <span class="font-normal text-[#999]">(${escapeHtml(areaName)})</span>` : ""}</p>
+      <p class="text-xs font-semibold text-[color:var(--brand-ink)] mb-1.5">⭐ ${escapeHtml(table.name)}${areaName ? ` <span class="font-normal text-[#999]">(${escapeHtml(areaName)})</span>` : ""}</p>
       <div class="flex h-6 rounded-lg overflow-hidden border border-[#EDE9E3]">${barHtml}</div>
       <div class="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">${detailHtml}</div>
       ${outsideWindow ? `<p class="text-[10px] text-[#bbb] mt-1">${outsideWindow} ${t("booking(s) fall outside the displayed window")}</p>` : ""}
@@ -6610,7 +6610,7 @@ async function renderReservationsTable(data) {
         '<td class="px-5 py-3.5 text-sm text-[#555]">' +
         dateLabel +
         "</td>" +
-        '<td class="px-5 py-3.5 font-display text-[#28547C]">' +
+        '<td class="px-5 py-3.5 font-display text-[color:var(--brand-ink)]">' +
         fmt.time(r.reservation_time) +
         "</td>" +
         '<td class="px-5 py-3.5">' +
@@ -6655,7 +6655,7 @@ async function renderReservationsTable(data) {
             "</td>"
           );
         })() +
-        '<td class="px-5 py-3.5 hidden md:table-cell"><span class="font-display text-lg text-[#28547C]">' +
+        '<td class="px-5 py-3.5 hidden md:table-cell"><span class="font-display text-lg text-[color:var(--brand-ink)]">' +
         (visits || "—") +
         "</span></td>" +
         '<td class="px-5 py-3.5">' +
@@ -6663,9 +6663,9 @@ async function renderReservationsTable(data) {
         "</td>" +
         '<td class="px-5 py-3.5"><div class="flex items-center gap-3"><a href="reservation-confirmation.html?id=' +
         r.id +
-        '" target="_blank" class="text-xs text-[#5596CE] hover:underline flex items-center gap-1"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\"/><polyline points=\"15 3 21 3 21 9\"/><line x1=\"10\" y1=\"14\" x2=\"21\" y2=\"3\"/></svg>Link</a><button onclick="openResActions(\'' +
+        '" target="_blank" class="text-xs text-[color:var(--brand)] hover:underline flex items-center gap-1"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\"/><polyline points=\"15 3 21 3 21 9\"/><line x1=\"10\" y1=\"14\" x2=\"21\" y2=\"3\"/></svg>Link</a><button onclick="openResActions(\'' +
         r.id +
-        '\')" class="text-xs text-[#C8A96B] hover:underline">Update</button>' +
+        '\')" class="text-xs text-[color:var(--accent)] hover:underline">Update</button>' +
         waReservationBtns(r) +
         "</div></td>" +
         "</tr>"
@@ -6706,7 +6706,7 @@ async function openResActions(resId) {
       ${STATUSES.map(
         (s) => `
         <button onclick="${s === "Completed" ? `openCompleteReservation('${res.id}')` : `updateResStatus('${res.id}','${s}')`}" 
-          class="text-sm py-2.5 px-3 rounded-10 border transition-all text-left font-medium ${res.status === s ? "border-[#5596CE] bg-[#EEF3F7] text-[#5596CE]" : "border-[#E0DDD7] text-[#555] hover:border-[#5596CE]"}">
+          class="text-sm py-2.5 px-3 rounded-10 border transition-all text-left font-medium ${res.status === s ? "border-[color:var(--brand)] bg-[#EEF3F7] text-[color:var(--brand)]" : "border-[#E0DDD7] text-[#555] hover:border-[color:var(--brand)]"}">
           ${s}
         </button>
       `,
@@ -6822,7 +6822,7 @@ function renderResActionTableGrid(areaId, currentTableId) {
       return `<button onclick="selectResActionTable('${t.id}')"
       id="res-action-tbl-${t.id}"
       class="text-xs py-2 px-2 rounded-lg border transition-all font-medium text-center
-        ${isSelected ? "border-[#5596CE] bg-[#EEF3F7] text-[#5596CE]" : "border-[#E0DDD7] text-[#555] hover:border-[#5596CE]"}">
+        ${isSelected ? "border-[color:var(--brand)] bg-[#EEF3F7] text-[color:var(--brand)]" : "border-[#E0DDD7] text-[#555] hover:border-[color:var(--brand)]"}">
       ${escapeHtml(t.name)}
     </button>`;
     })
@@ -6838,7 +6838,7 @@ function selectResActionTable(tableId) {
   wrap.querySelectorAll("button").forEach((btn) => {
     const tid = btn.id.replace("res-action-tbl-", "");
     const active = tid === _resActionSelectedTable;
-    btn.className = `text-xs py-2 px-2 rounded-lg border transition-all font-medium text-center ${active ? "border-[#5596CE] bg-[#EEF3F7] text-[#5596CE]" : "border-[#E0DDD7] text-[#555] hover:border-[#5596CE]"}`;
+    btn.className = `text-xs py-2 px-2 rounded-lg border transition-all font-medium text-center ${active ? "border-[color:var(--brand)] bg-[#EEF3F7] text-[color:var(--brand)]" : "border-[#E0DDD7] text-[#555] hover:border-[color:var(--brand)]"}`;
   });
 }
 
@@ -7676,7 +7676,7 @@ function setReportsTab(tab) {
 
   [marketingBtn, operationsBtn, walkinsBtn].forEach((btn) => {
     if (!btn) return;
-    btn.classList.remove("bg-white", "text-[#28547C]");
+    btn.classList.remove("bg-white", "text-[color:var(--brand-ink)]");
     btn.classList.add("text-[#555]");
   });
 
@@ -7686,7 +7686,7 @@ function setReportsTab(tab) {
       ? operationsBtn
       : walkinsBtn;
   if (activeBtn) {
-    activeBtn.classList.add("bg-white", "text-[#28547C]");
+    activeBtn.classList.add("bg-white", "text-[color:var(--brand-ink)]");
     activeBtn.classList.remove("text-[#555]");
   }
 
@@ -7732,8 +7732,8 @@ async function setOpsReportRange(range) {
     if (btn) {
       btn.classList.toggle("bg-white", currentOpsReportRange === key);
       btn.classList.toggle("font-semibold", currentOpsReportRange === key);
-      btn.classList.toggle("border-[#28547C]", currentOpsReportRange === key);
-      btn.classList.toggle("text-[#28547C]", currentOpsReportRange === key);
+      btn.classList.toggle("border-[color:var(--brand-ink)]", currentOpsReportRange === key);
+      btn.classList.toggle("text-[color:var(--brand-ink)]", currentOpsReportRange === key);
     }
   });
 
@@ -7966,8 +7966,8 @@ function renderOpsSpendRow(row, isAverageReport) {
       <td class="px-4 py-3 text-[#555]">${formatSpendingTierBadge(guest.spending_tier)}</td>
       <td class="px-4 py-3 text-[#555]">${fmt.date(row.visit_date)}</td>
       <td class="px-4 py-3 text-right text-[#555]">${fmt.pax(row.pax)}</td>
-      <td class="px-4 py-3 text-right text-[#28547C] font-medium">${fmt.currency(row.spend_amount)}</td>
-      ${isAverageReport ? `<td class="px-4 py-3 text-right text-[#28547C] font-medium">${fmt.currency(avgSpend)}</td>` : ""}
+      <td class="px-4 py-3 text-right text-[color:var(--brand-ink)] font-medium">${fmt.currency(row.spend_amount)}</td>
+      ${isAverageReport ? `<td class="px-4 py-3 text-right text-[color:var(--brand-ink)] font-medium">${fmt.currency(avgSpend)}</td>` : ""}
     </tr>
   `;
 }
@@ -8144,7 +8144,7 @@ function renderWiGuestRow(guest, reportType, rank) {
   const isTop3 = rank >= 1 && rank <= 3;
   const rankSymbol = ["★", "★", "★"][rank - 1] || "";
   const rowClass = isTop3
-    ? "bg-[#FBF8F3] border-l-4 border-l-[#C8A96B]"
+    ? "bg-[#FBF8F3] border-l-4 border-l-[var(--accent)]"
     : "border-b border-[#F5F3EF]";
 
   const latestTag =
@@ -8154,7 +8154,7 @@ function renderWiGuestRow(guest, reportType, rank) {
   const allTagsText =
     guest.tagList && guest.tagList.length > 0 ? guest.tagList.join(", ") : "";
 
-  const rankCell = `<td class="px-3 py-3 text-[#555] text-sm">${rankSymbol ? `<span class="text-[#C8A96B] font-semibold">${rankSymbol}</span>` : rank}</td>`;
+  const rankCell = `<td class="px-3 py-3 text-[#555] text-sm">${rankSymbol ? `<span class="text-[color:var(--accent)] font-semibold">${rankSymbol}</span>` : rank}</td>`;
   const nameCell = `<td class="px-3 py-3 text-[#555] text-sm">${formatGuestName(guest)} ${memberBadge(guest.guestId)}</td>`;
   const latestTagCell = `<td class="px-3 py-3 text-sm"><span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-[#EDEDED] text-[#555]">${latestTag ? escapeHtml(latestTag) : "—"}</span></td>`;
   const allTagsCell = `<td class="px-3 py-3 text-[#666] text-xs">${allTagsText ? escapeHtml(allTagsText) : "—"}</td>`;
@@ -8166,9 +8166,9 @@ function renderWiGuestRow(guest, reportType, rank) {
         ${nameCell}
         ${latestTagCell}
         ${allTagsCell}
-        <td class="px-3 py-3 text-right text-[#28547C] font-medium text-sm">${fmt.currency(guest.avgSpendPerPerson)}</td>
+        <td class="px-3 py-3 text-right text-[color:var(--brand-ink)] font-medium text-sm">${fmt.currency(guest.avgSpendPerPerson)}</td>
         <td class="px-3 py-3 text-right text-[#555] text-sm">${guest.visitCount}</td>
-        <td class="px-3 py-3 text-right text-[#28547C] font-medium text-sm">${fmt.currency(guest.totalSpend)}</td>
+        <td class="px-3 py-3 text-right text-[color:var(--brand-ink)] font-medium text-sm">${fmt.currency(guest.totalSpend)}</td>
         <td class="px-3 py-3 text-left text-[#555] text-sm">${guest.lastVisit ? fmt.date(guest.lastVisit) : "—"}</td>
       </tr>
     `;
@@ -8180,9 +8180,9 @@ function renderWiGuestRow(guest, reportType, rank) {
         ${nameCell}
         ${latestTagCell}
         ${allTagsCell}
-        <td class="px-3 py-3 text-right text-[#28547C] font-medium text-sm">${fmt.currency(guest.totalSpend)}</td>
+        <td class="px-3 py-3 text-right text-[color:var(--brand-ink)] font-medium text-sm">${fmt.currency(guest.totalSpend)}</td>
         <td class="px-3 py-3 text-right text-[#555] text-sm">${guest.visitCount}</td>
-                <td class="px-3 py-3 text-right text-[#28547C] font-medium text-sm">${fmt.currency(guest.avgSpendPerPerson)}</td>
+                <td class="px-3 py-3 text-right text-[color:var(--brand-ink)] font-medium text-sm">${fmt.currency(guest.avgSpendPerPerson)}</td>
         <td class="px-3 py-3 text-left text-[#555] text-sm">${guest.lastVisit ? fmt.date(guest.lastVisit) : "—"}</td>
       </tr>
     `;
@@ -8399,8 +8399,8 @@ async function loadWalkInSpendingInsights() {
     const tagCountsA = new Map();
     const tagCountsB = new Map();
     const dotColors = [
-      "#5596CE",
-      "#C8A96B",
+      "var(--brand)",
+      "var(--accent)",
       "#7BAE7F",
       "#E07B6A",
       "#A07BC8",
@@ -8630,7 +8630,7 @@ function renderSpendPage(type, data, page) {
         <span>${showing}</span>
         <div class="flex items-center gap-1">
           <button onclick="goSpendPage('${type}', ${page - 1})"
-            class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#EDE9E3] transition-colors ${page <= 1 ? "opacity-30 cursor-not-allowed" : "hover:border-[#5596CE] hover:text-[#5596CE]"}"
+            class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#EDE9E3] transition-colors ${page <= 1 ? "opacity-30 cursor-not-allowed" : "hover:border-[color:var(--brand)] hover:text-[color:var(--brand)]"}"
             ${page <= 1 ? "disabled" : ""}>
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
@@ -8639,14 +8639,14 @@ function renderSpendPage(type, data, page) {
               (p) => `
             <button onclick="goSpendPage('${type}', ${p})"
               class="w-7 h-7 flex items-center justify-center rounded-lg border transition-colors text-xs font-medium
-                ${p === page ? "border-[#5596CE] bg-[#EEF3F7] text-[#5596CE]" : "border-[#EDE9E3] hover:border-[#5596CE] hover:text-[#5596CE]"}">
+                ${p === page ? "border-[color:var(--brand)] bg-[#EEF3F7] text-[color:var(--brand)]" : "border-[#EDE9E3] hover:border-[color:var(--brand)] hover:text-[color:var(--brand)]"}">
               ${p}
             </button>
           `,
             )
             .join("")}
           <button onclick="goSpendPage('${type}', ${page + 1})"
-            class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#EDE9E3] transition-colors ${page >= totalPages ? "opacity-30 cursor-not-allowed" : "hover:border-[#5596CE] hover:text-[#5596CE]"}"
+            class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#EDE9E3] transition-colors ${page >= totalPages ? "opacity-30 cursor-not-allowed" : "hover:border-[color:var(--brand)] hover:text-[color:var(--brand)]"}"
             ${page >= totalPages ? "disabled" : ""}>
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
           </button>
@@ -8726,7 +8726,7 @@ function renderOpsReservationSources(sources, totalBookings = 0) {
       (source) => `
     <tr class="border-b border-[#F5F3EF]">
       <td class="px-3 py-2 text-[#555]">${escapeHtml(source.label)}</td>
-      <td class="px-3 py-2 text-right text-[#28547C] font-medium">${source.count}</td>
+      <td class="px-3 py-2 text-right text-[color:var(--brand-ink)] font-medium">${source.count}</td>
       <td class="px-3 py-2 text-right text-[#999]">${recorded ? Math.round((source.count / recorded) * 100) : 0}%</td>
     </tr>
   `,
@@ -8883,7 +8883,7 @@ async function loadOpsOnlineFormReport() {
 
   const OUTCOME = {
     arrived: { label: t("Arrived"), colour: "#2F7D5B" },
-    upcoming: { label: t("Upcoming"), colour: "#5596CE" },
+    upcoming: { label: t("Upcoming"), colour: "var(--brand)" },
     cancelled: { label: t("Cancelled"), colour: "#C0392B" },
     noshow: { label: t("No show"), colour: "#C0392B" },
     unknown: { label: t("Did not arrive"), colour: "#999" },
@@ -8914,7 +8914,7 @@ async function loadOpsOnlineFormReport() {
         <td class="px-3 py-2 text-[#555] text-xs">${fmt.date(r.reservation_date)}${r.reservation_time ? ` · ${fmt.time(r.reservation_time)}` : ""}</td>
         <td class="px-3 py-2 text-right text-[#555]">${r.actual_pax || r.booked_pax || 0}</td>
         <td class="px-3 py-2 text-xs font-medium" style="color:${o.colour}">${o.label}</td>
-        <td class="px-3 py-2 text-right text-[#28547C] font-medium">${Number(r.spend_amount) > 0 ? fmt.currency(r.spend_amount) : "—"}</td>
+        <td class="px-3 py-2 text-right text-[color:var(--brand-ink)] font-medium">${Number(r.spend_amount) > 0 ? fmt.currency(r.spend_amount) : "—"}</td>
       </tr>`;
     })
     .join("");
@@ -8983,10 +8983,10 @@ function setOpsRepeatMin(min) {
     const btn = document.getElementById(`ops-repeat-min-${m}`);
     if (!btn) return;
     const on = m === min;
-    btn.classList.toggle("bg-[#5596CE]", on);
+    btn.classList.toggle("bg-[color:var(--brand)]", on);
     btn.classList.toggle("text-white", on);
     btn.classList.toggle("bg-[#F8F6F2]", !on);
-    btn.classList.toggle("text-[#5596CE]", !on);
+    btn.classList.toggle("text-[color:var(--brand)]", !on);
   });
   opsRepeatPage = 1;
   renderOpsRepeatGuests();
@@ -9086,8 +9086,8 @@ function renderOpsRepeatGuests() {
     <tr class="border-b border-[#F5F3EF]">
       <td class="px-3 py-2 text-[#555]">${formatGuestName(r)} ${formatSpendingTierBadge(r.spending_tier)}</td>
       <td class="px-3 py-2 text-[#999] text-xs">${escapeHtml(r.phone || "—")}</td>
-      <td class="px-3 py-2 text-right text-[#28547C] font-semibold">${r.visit_count}</td>
-      <td class="px-3 py-2 text-right text-[#28547C] font-medium">${Number(r.total_spend) > 0 ? fmt.currency(r.total_spend) : "—"}</td>
+      <td class="px-3 py-2 text-right text-[color:var(--brand-ink)] font-semibold">${r.visit_count}</td>
+      <td class="px-3 py-2 text-right text-[color:var(--brand-ink)] font-medium">${Number(r.total_spend) > 0 ? fmt.currency(r.total_spend) : "—"}</td>
       <td class="px-3 py-2 text-right text-[#555]">${r.avgPerVisit ? fmt.currency(r.avgPerVisit) : "—"}</td>
       <td class="px-3 py-2 text-[#999] text-xs">${fmt.date(r.first_visit_date)}</td>
       <td class="px-3 py-2 text-[#999] text-xs">${fmt.date(r.last_visit_date)}</td>
@@ -9103,11 +9103,11 @@ function renderOpsRepeatGuests() {
            <span>${start + 1}–${Math.min(start + OPS_REPEAT_PAGE_SIZE, rows.length)} of ${rows.length}</span>
            <div class="flex items-center gap-1">
              <button onclick="goOpsRepeatPage(${opsRepeatPage - 1})"
-               class="px-2 py-1 rounded-lg border border-[#EDE9E3] ${opsRepeatPage <= 1 ? "opacity-30 cursor-not-allowed" : "hover:border-[#5596CE]"}"
+               class="px-2 py-1 rounded-lg border border-[#EDE9E3] ${opsRepeatPage <= 1 ? "opacity-30 cursor-not-allowed" : "hover:border-[color:var(--brand)]"}"
                ${opsRepeatPage <= 1 ? "disabled" : ""}>${t("Prev")}</button>
              <span class="px-2">${opsRepeatPage} / ${totalPages}</span>
              <button onclick="goOpsRepeatPage(${opsRepeatPage + 1})"
-               class="px-2 py-1 rounded-lg border border-[#EDE9E3] ${opsRepeatPage >= totalPages ? "opacity-30 cursor-not-allowed" : "hover:border-[#5596CE]"}"
+               class="px-2 py-1 rounded-lg border border-[#EDE9E3] ${opsRepeatPage >= totalPages ? "opacity-30 cursor-not-allowed" : "hover:border-[color:var(--brand)]"}"
                ${opsRepeatPage >= totalPages ? "disabled" : ""}>${t("Next")}</button>
            </div>
          </div>`,
@@ -9362,23 +9362,23 @@ function renderPeakCalendar() {
 
     if (isStart) {
       cls += "font-bold text-white rounded-l-full ";
-      style = "background:#28547C;";
+      style = "background:var(--brand-ink);";
       title = "Start of range";
     } else if (isEnd && peakStartDate) {
       cls += "font-bold text-white rounded-r-full ";
-      style = "background:#5596CE;";
+      style = "background:var(--brand);";
       title = "End of range";
     } else if (inRange) {
-      cls += "text-[#28547C] font-medium ";
-      style = "background:#ddeaf7;";
+      cls += "text-[color:var(--brand-ink)] font-medium ";
+      style = "background:var(--brand-tint);";
     } else if (isFuture) {
       cls += "text-[#ccc] cursor-not-allowed ";
     } else {
-      cls += "text-[#555] hover:bg-[#F0F6FC] rounded-full ";
+      cls += "text-[#555] hover:bg-[color:var(--brand-tint2)] rounded-full ";
     }
 
     if (isToday && !isStart && !isEnd) {
-      cls += "ring-1 ring-[#5596CE] ring-inset rounded-full ";
+      cls += "ring-1 ring-[color:var(--brand)] ring-inset rounded-full ";
     }
 
     cells += `<div class="${cls}" style="${style}" title="${title}" onclick="${isFuture ? "" : `selectPeakDate('${dateStr}')`}">${day}</div>`;
@@ -9540,9 +9540,9 @@ function renderOpsPeakTraffic(
         walk > 0 ? 4 : 0,
       );
 
-      const resColor = isToday ? "#9a6a1e" : "#5596CE";
-      const walkColor = isToday ? "#e8a830" : "#C8A96B";
-      const labelColor = isToday ? "#9a6a1e" : "#28547C";
+      const resColor = isToday ? "#9a6a1e" : "var(--brand)";
+      const walkColor = isToday ? "#e8a830" : "var(--accent)";
+      const labelColor = isToday ? "#9a6a1e" : "var(--brand-ink)";
 
       return `
       <div class="flex flex-col items-center gap-1 flex-1 min-w-0">
@@ -9565,10 +9565,10 @@ function renderOpsPeakTraffic(
 
   legendContainer.innerHTML = `
     <div class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-[#999]">
-      <span class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:#5596CE;"></span>Reservations</span>
-      <span class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:#C8A96B;"></span>Walk-ins</span>
-      <span class="flex items-center gap-1.5 ml-1 pl-3 border-l border-[#EDE9E3]">Peak res: <strong class="text-[#5596CE] ml-1">${peakResCount}</strong></span>
-      <span class="flex items-center gap-1.5">Peak walk-in: <strong class="text-[#C8A96B] ml-1">${peakWalkCount}</strong></span>
+      <span class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:var(--brand);"></span>Reservations</span>
+      <span class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:var(--accent);"></span>Walk-ins</span>
+      <span class="flex items-center gap-1.5 ml-1 pl-3 border-l border-[#EDE9E3]">Peak res: <strong class="text-[color:var(--brand)] ml-1">${peakResCount}</strong></span>
+      <span class="flex items-center gap-1.5">Peak walk-in: <strong class="text-[color:var(--accent)] ml-1">${peakWalkCount}</strong></span>
     </div>
   `;
 }
@@ -9639,9 +9639,9 @@ function renderMktReviewPerformance(submissions) {
       return `
         <tr class="border-b border-[#F5F3EF]">
           <td class="px-3 py-2 text-[#555]">${escapeHtml(prizeName)}</td>
-          <td class="px-3 py-2 text-right text-[#28547C] font-medium">${stats.won}</td>
-          <td class="px-3 py-2 text-right text-[#28547C] font-medium">${stats.redeemed}</td>
-          <td class="px-3 py-2 text-right text-[#28547C] font-medium">${rate}%</td>
+          <td class="px-3 py-2 text-right text-[color:var(--brand-ink)] font-medium">${stats.won}</td>
+          <td class="px-3 py-2 text-right text-[color:var(--brand-ink)] font-medium">${stats.redeemed}</td>
+          <td class="px-3 py-2 text-right text-[color:var(--brand-ink)] font-medium">${rate}%</td>
         </tr>
       `;
     });
@@ -10075,8 +10075,8 @@ function setMarketingRange(range) {
     if (!btn) return;
     btn.classList.toggle("bg-white", k === range);
     btn.classList.toggle("font-semibold", k === range);
-    btn.classList.toggle("border-[#28547C]", k === range);
-    btn.classList.toggle("text-[#28547C]", k === range);
+    btn.classList.toggle("border-[color:var(--brand-ink)]", k === range);
+    btn.classList.toggle("text-[color:var(--brand-ink)]", k === range);
   });
   const customDates = document.getElementById("mkt-custom-dates");
   if (customDates) customDates.classList.toggle("hidden", range !== "custom");
@@ -10378,7 +10378,7 @@ async function loadTopSpenderLeaderboard() {
         <td class="px-4 py-3 text-sm text-[#555] font-medium">${i + 1}</td>
         <td class="px-4 py-3 text-sm text-[#222] font-medium">${formatGuestName(g)}</td>
         <td class="px-4 py-3 text-sm text-[#999]">${escapeHtml(g.phone || "-")}</td>
-        <td class="px-4 py-3 text-sm text-[#28547C] font-semibold text-right">${formatCurrency(g.totalSpend)}</td>
+        <td class="px-4 py-3 text-sm text-[color:var(--brand-ink)] font-semibold text-right">${formatCurrency(g.totalSpend)}</td>
         <td class="px-4 py-3 text-sm text-[#555] text-right">${g.totalVisits}</td>
       </tr>
     `,
@@ -10662,7 +10662,7 @@ function birthdayDayLabel(guest, today) {
   if (birthdayHasPassed(guest, now)) return { text: t("passed"), color: "#999" };
   if (guest.daysUntil === 0) return { text: t("Today"), color: "#C0392B" };
   if (guest.daysUntil === 1) return { text: t("Tomorrow"), color: "#C0392B" };
-  return { text: `in ${guest.daysUntil} days`, color: "#28547C" };
+  return { text: `in ${guest.daysUntil} days`, color: "var(--brand-ink)" };
 }
 
 function renderBirthdayAlertPanel() {
@@ -10717,7 +10717,7 @@ function birthdayFollowUpControls(guest, year, context) {
   return `
     ${waBtn}
     <button onclick="markBirthdayGreeted('${guest.id}', ${year}, 'manual')"
-            class="text-xs text-[#28547C] hover:underline whitespace-nowrap">${t("Mark as sent")}</button>`;
+            class="text-xs text-[color:var(--brand-ink)] hover:underline whitespace-nowrap">${t("Mark as sent")}</button>`;
 }
 
 // Opens WhatsApp. Does NOT tick the guest off — see the note at the top of
@@ -11014,7 +11014,7 @@ function renderDashboardPrizeTable() {
       return `
       <tr class="border-b border-[#F5F3EF]">
         <td class="px-4 py-3 text-sm text-[#222] font-medium">${escapeHtml(row.name || "—")}</td>
-        <td class="px-4 py-3 text-sm text-[#28547C] font-medium">${escapeHtml(row.prize_name || "—")}</td>
+        <td class="px-4 py-3 text-sm text-[color:var(--brand-ink)] font-medium">${escapeHtml(row.prize_name || "—")}</td>
         <td class="px-4 py-3 text-sm font-mono text-[#555]">${escapeHtml(row.reference_code || "—")}</td>
         <td class="px-4 py-3 text-sm">${reviewBadge}</td>
         <td class="px-4 py-3 text-sm">${statusBadgeHtml}</td>
@@ -11639,7 +11639,7 @@ function renderPrizesList() {
         <p class="text-sm font-medium text-[#222]">${escapeHtml(prize.name)}</p>
         <p class="text-xs ${prize.is_active ? "text-[#5F8D4E]" : "text-[#999]"}">${prize.is_active ? "Active" : "Disabled"}</p>
       </div>
-      <button onclick="openPrizeModal('${prize.id}')" class="text-xs text-[#5596CE] hover:underline">Edit</button>
+      <button onclick="openPrizeModal('${prize.id}')" class="text-xs text-[color:var(--brand)] hover:underline">Edit</button>
     </div>
   `,
     )
@@ -11686,7 +11686,7 @@ async function savePrize() {
       .replace(/(^-|-$)/g, ""),
     is_active: isActive,
     weight: 1,
-    color: "#5596CE",
+    color: "var(--brand)",
   };
 
   loader(true);
@@ -11780,7 +11780,7 @@ async function loadSpinResults() {
       (row) => `
     <tr class="table-row border-b border-[#F5F3EF]">
       <td class="px-4 py-3 text-sm font-medium text-[#222]">${escapeHtml(row.name || "—")}</td>
-      <td class="px-4 py-3 text-sm text-[#28547C] font-medium">${escapeHtml(row.prize_name || "—")}</td>
+      <td class="px-4 py-3 text-sm text-[color:var(--brand-ink)] font-medium">${escapeHtml(row.prize_name || "—")}</td>
       <td class="px-4 py-3 text-sm text-[#555]">${escapeHtml(row.reference_code || row.claim_code || "—")}</td>
       <td class="px-4 py-3 text-sm">${getStatusBadge(row.status || "pending")}</td>
       <td class="px-4 py-3 text-sm text-[#999]">${fmt.date(row.created_at)}</td>
@@ -12095,7 +12095,7 @@ function renderSettingsTabs(activePage) {
     { page: "settings-staff", label: t("Staff"), adminOnly: true },
   ].filter((tab) => !tab.adminOnly || currentStaffRole() === "admin");
   const activeCls =
-    "px-4 py-2 rounded-full text-sm font-medium bg-[#28547C] text-white transition";
+    "px-4 py-2 rounded-full text-sm font-medium bg-[color:var(--brand-ink)] text-white transition";
   const idleCls =
     "px-4 py-2 rounded-full text-sm font-medium bg-white text-[#555] border border-[#E6E2DC] hover:bg-[#F8F6F2] transition";
   const html = tabs
@@ -12248,7 +12248,7 @@ function renderReservationExceptions() {
       <span class="text-xs px-2 py-0.5 rounded-full ${
         e.closed_all_day
           ? "bg-[#FDEDEC] text-[#C0392B]"
-          : "bg-[#EEF4FD] text-[#1F4E79]"
+          : "bg-[color:var(--brand-tint2)] text-[color:var(--brand-deep)]"
       }">${
         e.closed_all_day
           ? t("Closed all day")
@@ -12666,8 +12666,8 @@ function renderDishList(category, containerId) {
           </div>
           <p class="text-xs text-[#777] mt-0.5 line-clamp-2">${d.description ? escapeHtml(d.description) : `<span class="text-[#bbb]">${t("No description")}</span>`}</p>
           <div class="flex items-center gap-3 mt-1.5 manager-only-ui">
-            <button onclick="openDishModal('${d.id}')" class="text-xs text-[#5596CE] hover:underline">${t("Edit")}</button>
-            <button onclick="toggleDishActive('${d.id}')" class="text-xs text-[#8B6F47] hover:underline">${d.is_active ? t("Hide") : t("Show")}</button>
+            <button onclick="openDishModal('${d.id}')" class="text-xs text-[color:var(--brand)] hover:underline">${t("Edit")}</button>
+            <button onclick="toggleDishActive('${d.id}')" class="text-xs text-[color:var(--accent-strong)] hover:underline">${d.is_active ? t("Hide") : t("Show")}</button>
             <button onclick="deleteDish('${d.id}')" class="text-xs text-red-400 hover:text-red-600">${t("Delete")}</button>
           </div>
         </div>
@@ -12970,7 +12970,7 @@ function renderBrandingSettings() {
       const custom = brandUrlOk(BRANDING && BRANDING[BRAND_SLOTS[slot].key]);
       state.textContent = custom ? t("Custom image") : t("Default image");
       state.className = custom
-        ? "text-[11px] font-semibold text-[#28547C]"
+        ? "text-[11px] font-semibold text-[color:var(--brand-ink)]"
         : "text-[11px] text-[#999]";
     }
     const reset = document.getElementById(`brand-reset-${slot}`);
@@ -13218,7 +13218,7 @@ function renderStaffUsers() {
         u.role === "admin"
           ? "bg-[#8B5E3C] text-white"
           : u.role === "manager"
-            ? "bg-[#28547C] text-white"
+            ? "bg-[color:var(--brand-ink)] text-white"
             : "bg-[#E7E4DE] text-[#555]";
       return `
         <div class="flex items-center justify-between gap-3 py-3 border-b border-[#EDE9E3] last:border-0 ${u.is_active ? "" : "opacity-60"}">
@@ -13522,7 +13522,7 @@ function renderReserveAppearanceSettings() {
   if (state) {
     state.textContent = bgCustom ? t("Custom image") : t("Default image");
     state.className = bgCustom
-      ? "text-[11px] font-semibold text-[#28547C]"
+      ? "text-[11px] font-semibold text-[color:var(--brand-ink)]"
       : "text-[11px] text-[#999]";
   }
   document.getElementById("rf-bg-reset")?.classList.toggle("hidden", !bgCustom);
@@ -13533,7 +13533,7 @@ function renderReserveAppearanceSettings() {
 }
 
 // Keeps the hex box and the colour swatch in step. Typing is allowed to be
-// half-finished ("#28" on the way to "#28547C") without the swatch jumping
+// half-finished ("#28" on the way to "var(--brand-ink)") without the swatch jumping
 // somewhere random, so only a complete value is pushed across.
 function syncReserveColorInput(pickerId, textEl) {
   let v = String(textEl.value || "").trim();
