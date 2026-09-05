@@ -4717,3 +4717,363 @@ where table_schema = 'public' and table_name = 'guests' and column_name = 'last_
 
 -- Rollback (only if nothing has been written yet):
 --   alter table public.guests drop column if exists last_order;
+
+
+-- ## 20260904_area_conditions_and_deposit.sql
+-- ============================================================
+-- AREA CONDITIONS, BOOKING LIMITS IN SETTINGS, DEPOSIT SNAPSHOT
+--
+-- Phase 1 of the reservation-with-deposit work. See
+-- RESERVATION_DEPOSIT_PHASE1.md. Adds no tables. Nothing here
+-- changes behaviour on its own: every new column is nullable or
+-- defaults to today's behaviour, and both new settings default to
+-- the numbers that were hardcoded before.
+--
+-- WHY the conditions live on `areas` and not on a new table:
+-- Rere confirmed 2026-09-04 that areas ARE the categories a guest
+-- picks between (Indoor, Outdoor, Outdoor Smoking...). There is no
+-- level above them, so there is nothing for a second table to hold.
+--
+-- Safe to run during service. Safe to run twice.
+-- ============================================================
+
+alter table public.areas
+  add column if not exists min_pax            integer,
+  add column if not exists min_spend          numeric,
+  add column if not exists deposit_pct        numeric,
+  add column if not exists is_bookable_online boolean not null default false;
+
+comment on column public.areas.min_pax is
+  'Smallest party this area accepts online. NULL means no minimum.';
+comment on column public.areas.min_spend is
+  'Minimum spend in rupiah. NULL means none. Also the base the suggested deposit is a percentage OF, so an area with a deposit_pct and no min_spend produces no suggested figure.';
+comment on column public.areas.deposit_pct is
+  'Suggested deposit as a percentage of min_spend. NULL means this area asks for no deposit by default. Staff may still add one by hand.';
+comment on column public.areas.is_bookable_online is
+  'Off by default ON PURPOSE. An existing database may hold private rooms or staff-only zones, and defaulting to true would publish every one of them the moment this file runs. With no area bookable, the public form hides the picker and behaves exactly as it did before.';
+
+-- Snapshot of what this booking was told it owes, NOT a live lookup.
+-- Deriving it on read would mean that editing a minimum spend in Settings
+-- silently rewrites what every past guest was quoted.
+alter table public.reservations
+  add column if not exists deposit_required  boolean not null default false,
+  add column if not exists deposit_expected  numeric,
+  add column if not exists deposit_rule_note text;
+
+comment on column public.reservations.deposit_required is
+  'Whether a deposit applies to THIS booking. Seeded from the area rule at booking time and overridable by staff in both directions.';
+comment on column public.reservations.deposit_expected is
+  'Rupiah figure quoted at booking time. Frozen. NULL when no deposit applies or when staff must type the amount themselves.';
+comment on column public.reservations.deposit_rule_note is
+  'Why: which area rule fired, or that a staff member waived or added it. This is what tells a waived deposit apart from one that was never required.';
+
+-- ---------- Booking limits move out of the function and into settings ----------
+-- Merged key by key rather than assigned, so re-running this file can never
+-- reset a ceiling the restaurant has since changed. `value ? 'key'` is the
+-- jsonb key-exists test.
+--
+-- This is the same trap `saveThresholdSettings` fell into: it rebuilt this
+-- row from scratch and wiped every field it did not know about.
+update public.app_settings
+   set value = value
+       || case when value ? 'max_pax'        then '{}'::jsonb
+               else jsonb_build_object('max_pax', 20) end
+       || case when value ? 'max_days_ahead' then '{}'::jsonb
+               else jsonb_build_object('max_days_ahead', 90) end
+ where key = 'reservation_hours';
+
+-- ---------- The booking gate ----------
+-- DROPPED FIRST, and this matters more than it looks. The argument list is
+-- changing, and `create or replace` with a different signature does not
+-- replace anything: it creates a SECOND overload beside the old one. PostgREST
+-- then cannot tell which one an RPC call means and starts refusing every
+-- booking with an ambiguity error.
+drop function if exists public.create_public_reservation(
+  text, text, integer, date, time without time zone, text);
+
+create or replace function public.create_public_reservation(
+  p_name text, p_phone text, p_pax integer, p_date date,
+  p_time time without time zone, p_notes text default null,
+  p_area_id uuid default null, p_company text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+  declare
+    v_name     text := trim(coalesce(p_name, ''));
+    v_phone    text;
+    v_notes    text := nullif(left(trim(coalesce(p_notes, '')), 500), '');
+    v_company  text := nullif(left(trim(coalesce(p_company, '')), 120), '');
+    v_cfg      jsonb := coalesce(get_setting('reservation_hours'), '{}'::jsonb);
+    v_lead     integer := greatest(coalesce((v_cfg->>'min_lead_days')::integer, 0), 0);
+    -- Both ceilings used to be hardcoded here (20 and 90). They default to
+    -- exactly those numbers so this migration changes no behaviour on its
+    -- own; the restaurant raises them in Settings when it wants to.
+    v_max_pax  integer := greatest(coalesce((v_cfg->>'max_pax')::integer, 20), 1);
+    v_max_days integer := greatest(coalesce((v_cfg->>'max_days_ahead')::integer, 90), 0);
+    v_area     record;
+    v_dep_req  boolean := false;
+    v_dep_amt  numeric;
+    v_dep_note text;
+    v_hours    jsonb;
+    v_open     time;
+    v_close    time;
+    v_now_jkt  timestamp := (now() at time zone 'Asia/Jakarta');
+    v_guest_id uuid;
+    v_res_id   uuid;
+    v_dup      integer;
+    v_existing_name text;
+    v_alias    text;
+  begin
+    -- phone normalization (mirrors normalizePhone in app.js)
+    v_phone := regexp_replace(coalesce(p_phone, ''), '[\s\-\(\)\.]', '', 'g');
+    if v_phone like '+62%' then
+      v_phone := '0' || substr(v_phone, 4);
+    elsif v_phone like '62%' and length(v_phone) >= 10 then
+      v_phone := '0' || substr(v_phone, 3);
+    end if;
+
+    -- ===== Availability, before anything else =====
+    -- Checked first so a paused restaurant does not create a guest record for
+    -- a booking it is about to refuse.
+    if coalesce((v_cfg->>'online_paused')::boolean, false) then
+      return jsonb_build_object('ok', false, 'code', 'paused',
+        'message', coalesce(nullif(v_cfg->>'pause_message', ''),
+                            'Kami sedang tidak menerima reservasi online.'));
+    end if;
+
+    if length(v_name) < 2 or length(v_name) > 80 then
+      return jsonb_build_object('ok', false, 'code', 'invalid_name',
+        'message', 'Name must be 2-80 characters');
+    end if;
+    if v_phone !~ '^\+?[0-9]{9,15}$' then
+      return jsonb_build_object('ok', false, 'code', 'invalid_phone',
+        'message', 'Phone must be 9-15 digits');
+    end if;
+    if p_pax is null or p_pax < 1 or p_pax > v_max_pax then
+      return jsonb_build_object('ok', false, 'code', 'invalid_pax',
+        'message', format('Pax must be 1-%s (larger groups: contact us on WhatsApp)', v_max_pax),
+        'max_pax', v_max_pax);
+    end if;
+    if p_date is null or p_time is null then
+      return jsonb_build_object('ok', false, 'code', 'missing_datetime',
+        'message', 'Date and time are required');
+    end if;
+    if p_date < v_now_jkt::date then
+      return jsonb_build_object('ok', false, 'code', 'past_date',
+        'message', 'Date is in the past');
+    end if;
+
+    -- Minimum lead time. 0 is the default and means same-day is fine, which
+    -- is the behaviour every existing client has. Reported as its own code so
+    -- the form can say how many days rather than "in the past".
+    if v_lead > 0 and p_date < (v_now_jkt::date + v_lead) then
+      return jsonb_build_object('ok', false, 'code', 'lead_time',
+        'message', format('Bookings must be made at least %s day(s) ahead', v_lead),
+        'min_lead_days', v_lead,
+        'earliest_date', (v_now_jkt::date + v_lead));
+    end if;
+
+    if p_date > v_now_jkt::date + v_max_days then
+      return jsonb_build_object('ok', false, 'code', 'too_far',
+        'message', format('Bookings open up to %s days ahead', v_max_days),
+        'max_days_ahead', v_max_days);
+    end if;
+
+    -- One resolver, not a second copy of the rule.
+    v_hours := reservation_hours_for(p_date);
+
+    -- A closed day deliberately returns code `outside_hours`, NOT a new code.
+    -- The guest page maps an unrecognised code to "connection problem, try
+    -- again", which would have a guest retrying forever against a day that
+    -- will never open. The detail rides in closed_all_day and reason, which
+    -- an older page simply ignores.
+    if coalesce((v_hours->>'closed')::boolean, false) then
+      return jsonb_build_object('ok', false, 'code', 'outside_hours',
+        'message', coalesce(nullif(v_hours->>'reason', ''), 'Closed on this date'),
+        'closed_all_day', true,
+        'reason', v_hours->>'reason',
+        'source', v_hours->>'source');
+    end if;
+
+    v_open  := (v_hours->>'open')::time;
+    v_close := (v_hours->>'close')::time;
+    if p_time < v_open or p_time > v_close then
+      return jsonb_build_object('ok', false, 'code', 'outside_hours',
+        'message', 'Outside opening hours',
+        'closed_all_day', false,
+        'open', to_char(v_open, 'HH24:MI'), 'close', to_char(v_close, 'HH24:MI'));
+    end if;
+
+    if p_date = v_now_jkt::date
+      and p_time < (v_now_jkt + interval '30 minutes')::time then
+      return jsonb_build_object('ok', false, 'code', 'too_soon',
+        'message', 'Same-day bookings need 30 minutes notice');
+    end if;
+
+    -- ===== Area, and the deposit it implies =====
+    -- Placed after the availability and time checks and before the guest
+    -- record, for the same reason `paused` is checked first: a booking this
+    -- function is about to refuse must not leave a guest row behind.
+    --
+    -- A null p_area_id is always allowed. That is not laxity: it is what an
+    -- older deployed reserve.html sends, and what every booking sends when
+    -- the restaurant has no area marked bookable online. Refusing it would
+    -- take the form offline the moment this file is applied.
+    if p_area_id is not null then
+      select a.id, a.name, a.capacity, a.min_pax, a.min_spend,
+             a.deposit_pct, a.is_bookable_online
+        into v_area
+        from areas a
+       where a.id = p_area_id;
+
+      if v_area.id is null
+         or coalesce(v_area.is_bookable_online, false) = false then
+        return jsonb_build_object('ok', false, 'code', 'area_unavailable',
+          'message', 'That area cannot be booked online');
+      end if;
+
+      if v_area.min_pax is not null and p_pax < v_area.min_pax then
+        return jsonb_build_object('ok', false, 'code', 'below_min_pax',
+          'message', format('%s takes bookings from %s people', v_area.name, v_area.min_pax),
+          'min_pax', v_area.min_pax, 'area_name', v_area.name);
+      end if;
+
+      -- capacity 0 means "not recorded", not "seats nobody".
+      if coalesce(v_area.capacity, 0) > 0 and p_pax > v_area.capacity then
+        return jsonb_build_object('ok', false, 'code', 'over_capacity',
+          'message', format('%s seats up to %s people', v_area.name, v_area.capacity),
+          'capacity', v_area.capacity, 'area_name', v_area.name);
+      end if;
+
+      -- SNAPSHOT, not a live rule. Editing the minimum spend in Settings
+      -- next month must not silently rewrite what this guest was told they
+      -- owed. Same reasoning as copying guest details onto an invoice.
+      if v_area.deposit_pct is not null and v_area.min_spend is not null then
+        v_dep_req  := true;
+        v_dep_amt  := round(v_area.min_spend * v_area.deposit_pct / 100.0);
+        v_dep_note := format('Area rule: %s%% of %s minimum spend',
+                             v_area.deposit_pct, v_area.name);
+      end if;
+    end if;
+
+    -- guest match: EXACT phone match reuses guest, never renames
+    select id, name into v_guest_id, v_existing_name
+      from guests where phone = v_phone limit 1;
+    if v_guest_id is null then
+      -- phone is UNIQUE: on_conflict guards against two simultaneous submits
+      insert into guests (name, phone)
+      values (v_name, v_phone)
+      on conflict (phone) do nothing
+      returning id into v_guest_id;
+      if v_guest_id is null then
+        select id, name into v_guest_id, v_existing_name
+          from guests where phone = v_phone limit 1;
+      else
+        v_existing_name := v_name;  -- brand new guest: canonical == typed
+      end if;
+    end if;
+
+    -- Company is filled only when the guest has none. A returning guest who
+    -- leaves the field blank, or types their personal booking, must not wipe
+    -- the company already on their record. Same principle as the name rule
+    -- directly above: a public form may add, never overwrite.
+    if v_company is not null then
+      update guests
+         set company    = v_company,
+             updated_at = now()
+       where id = v_guest_id
+         and (company is null or btrim(company) = '');
+    end if;
+
+    -- duplicate guard: one open booking per phone per day
+    select count(*) into v_dup
+    from reservations
+    where guest_id = v_guest_id
+      and reservation_date = p_date
+      and status in ('Reserved', 'Confirmed');
+    if v_dup > 0 then
+      return jsonb_build_object('ok', false, 'code', 'duplicate',
+        'message', 'A reservation for this phone already exists on that date');
+    end if;
+
+    -- ===== ALIAS 1/2: derive alias from the typed name =====
+    -- Case- and whitespace-insensitive compare, so "  rere " booking
+    -- against guest "Rere" produces NO alias (not a real difference).
+    if lower(regexp_replace(v_name, '\s+', ' ', 'g'))
+      = lower(regexp_replace(coalesce(v_existing_name, ''), '\s+', ' ', 'g'))
+    then
+      v_alias := null;
+    else
+      v_alias := v_name;
+    end if;
+
+    insert into reservations
+      (guest_id, reservation_date, reservation_time, pax, status,
+      reservation_source, notes, booking_name, assigned_area,
+      deposit_required, deposit_expected, deposit_rule_note)
+    values
+      (v_guest_id, p_date, p_time, p_pax, 'Reserved',
+      'Online Form', v_notes, v_name, p_area_id,
+      v_dep_req, v_dep_amt, v_dep_note)
+    returning id into v_res_id;
+
+    -- ===== ALIAS 2/2: refresh the denormalised latest alias =====
+    -- Unconditional assignment (including back to NULL) is intentional:
+    -- the alias must follow the most recent booking, not accumulate.
+    update guests
+      set booking_alias = v_alias,
+          updated_at    = now()
+    where id = v_guest_id
+      and booking_alias is distinct from v_alias;
+
+    return jsonb_build_object('ok', true, 'reservation_id', v_res_id,
+      'deposit_required', v_dep_req, 'deposit_expected', v_dep_amt);
+  end;
+  $function$;
+
+-- ---------- Confirm ----------
+select 'areas.is_bookable_online' as checked, count(*) as found
+from information_schema.columns
+where table_schema = 'public' and table_name = 'areas'
+  and column_name = 'is_bookable_online'
+union all
+select 'areas condition columns (3)', count(*)
+from information_schema.columns
+where table_schema = 'public' and table_name = 'areas'
+  and column_name in ('min_pax', 'min_spend', 'deposit_pct')
+union all
+select 'reservations deposit columns (3)', count(*)
+from information_schema.columns
+where table_schema = 'public' and table_name = 'reservations'
+  and column_name in ('deposit_required', 'deposit_expected', 'deposit_rule_note')
+union all
+select 'max_pax defaults to 20',
+       case when value->>'max_pax' = '20' then 1 else 0 end
+from app_settings where key = 'reservation_hours'
+union all
+select 'max_days_ahead defaults to 90',
+       case when value->>'max_days_ahead' = '90' then 1 else 0 end
+from app_settings where key = 'reservation_hours'
+union all
+-- Exactly ONE. Two means the drop above did not match the old signature and
+-- PostgREST is now looking at two overloads.
+select 'create_public_reservation overloads', count(*)
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname = 'create_public_reservation'
+union all
+select 'no area is bookable online yet',
+       case when count(*) = 0 then 1 else 0 end
+from areas where is_bookable_online = true;
+-- expect: 1, 3, 3, 1, 1, 1, 1
+--
+-- The last line is deliberate. Applying this file must leave the public form
+-- behaving exactly as it did. Rere turns areas on one at a time, afterwards.
+
+-- Rollback (only if nothing has been written yet):
+--   alter table public.areas drop column if exists min_pax, drop column if exists min_spend,
+--     drop column if exists deposit_pct, drop column if exists is_bookable_online;
+--   alter table public.reservations drop column if exists deposit_required,
+--     drop column if exists deposit_expected, drop column if exists deposit_rule_note;
+--   -- and re-run the previous definition of create_public_reservation.

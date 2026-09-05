@@ -6948,6 +6948,31 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               <p id="set-res-lead-hint" class="text-xs text-[#999] mt-1.5"></p>
             </div>
 
+            <!-- 2b. Booking size and horizon. Both were hardcoded in the
+                 database function until 2026-09-04 (20 people, 90 days), so
+                 changing them meant editing code. They default to exactly
+                 those numbers. -->
+            <div class="mb-5">
+              <p class="text-xs font-medium text-[#555] mb-2" data-i18n>Booking limits</p>
+              <div class="flex flex-wrap gap-4">
+                <div>
+                  <label class="block text-[11px] text-[#777] mb-1" data-i18n>Largest party</label>
+                  <div class="w-32">
+                    <input id="set-res-max-pax" type="number" min="1" max="500" step="1" class="form-input" />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-[11px] text-[#777] mb-1" data-i18n>Book up to (days ahead)</label>
+                  <div class="w-32">
+                    <input id="set-res-max-days" type="number" min="1" max="730" step="1" class="form-input" />
+                  </div>
+                </div>
+              </div>
+              <p class="text-xs text-[#999] mt-2" data-i18n>
+                A party larger than this is told to contact you on WhatsApp instead. Raise it if you want big groups to book online themselves.
+              </p>
+            </div>
+
             <!-- 3. Weekly hours. Rows are rendered by renderReservationWeek()
                  rather than written out seven times here, so the day keys and
                  the input ids can only be wrong in one place. -->
@@ -7321,6 +7346,36 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               holds, not the sum of the tables you happen to have set up today.
             </p>
           </div>
+        </div>
+
+        <!-- Online booking conditions. These are what the admin currently
+             types into WhatsApp by hand for every enquiry. -->
+        <div class="pt-4 mb-5 border-t border-[#EDE9E3]">
+          <label class="flex items-start gap-3 cursor-pointer">
+            <input id="area-bookable" type="checkbox" class="mt-0.5" onchange="onAreaBookableToggle()" />
+            <span class="text-sm text-[#333]" data-i18n>Guests can book this area online
+              <span class="block text-xs text-[#999] mt-0.5" data-i18n>Off by default. While no area is switched on, the booking form does not ask guests to choose one and works exactly as it does today.</span>
+            </span>
+          </label>
+
+          <div id="area-conditions-wrap" class="hidden mt-4 pl-7 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-[11px] text-[#777] mb-1" data-i18n>Minimum guests</label>
+              <input id="area-min-pax" type="number" min="1" max="500" step="1" placeholder="e.g. 4" class="form-input" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-[#777] mb-1" data-i18n>Minimum spend (Rp)</label>
+              <input id="area-min-spend" type="text" inputmode="numeric" placeholder="e.g. 1.500.000" class="form-input" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-[#777] mb-1" data-i18n>Deposit (% of minimum spend)</label>
+              <input id="area-deposit-pct" type="number" min="0" max="100" step="1" placeholder="e.g. 50" class="form-input" />
+            </div>
+          </div>
+          <p id="area-deposit-hint" class="hidden text-[11px] mt-2 pl-7"></p>
+          <p id="area-conditions-note" class="hidden text-[11px] text-[#999] mt-2 pl-7" data-i18n>
+            Leave any of these blank for no rule. Guests see them on the booking form before they choose.
+          </p>
         </div>
         <div class="flex items-center justify-end gap-3">
           <button onclick="hideModal('modal-area')" class="btn-ghost px-5 py-2.5" data-i18n>Cancel</button>
@@ -9040,9 +9095,9 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
 
-    <script src="js/config.js?v=13"></script>
+    <script src="js/config.js?v=14"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=24"></script>
+    <script src="js/app.js?v=25"></script>
     <script src="js/membership.js?v=5"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->

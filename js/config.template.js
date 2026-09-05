@@ -112,6 +112,28 @@ const I18N_EXCEPTION_TERMS = new Set([
 
 // Indonesian translations, keyed by the English source string.
 const ID_DICT = {
+  // ── Area conditions + booking limits (added 2026-09-04) ───
+  // Identity mappings are omitted on purpose; see the note above.
+  "Booking limits": "Batas reservasi",
+  "Bookable online": "Bisa dipesan online",
+  "Largest party": "Jumlah tamu terbanyak",
+  "Book up to (days ahead)": "Bisa pesan sampai (hari ke depan)",
+  "A party larger than this is told to contact you on WhatsApp instead. Raise it if you want big groups to book online themselves.":
+    "Rombongan yang lebih besar dari ini akan diminta menghubungi Anda via WhatsApp. Naikkan angkanya jika Anda ingin rombongan besar memesan sendiri secara online.",
+  "Guests can book this area online": "Tamu bisa memesan area ini secara online",
+  "Off by default. While no area is switched on, the booking form does not ask guests to choose one and works exactly as it does today.":
+    "Mati secara default. Selama belum ada area yang diaktifkan, form reservasi tidak meminta tamu memilih area dan tetap berjalan seperti sekarang.",
+  "Minimum guests": "Minimum tamu",
+  "Minimum spend (Rp)": "Minimum belanja (Rp)",
+  "Deposit (% of minimum spend)": "Deposit (% dari minimum belanja)",
+  "Leave any of these blank for no rule. Guests see them on the booking form before they choose.":
+    "Kosongkan jika tidak ada aturan. Tamu melihat ketentuan ini di form reservasi sebelum memilih.",
+  "Minimum guests must be 1 or more": "Minimum tamu harus 1 atau lebih",
+  "Deposit must be between 0 and 100 percent": "Deposit harus antara 0 dan 100 persen",
+  "A deposit percentage needs a minimum spend to calculate from":
+    "Persentase deposit butuh minimum belanja sebagai dasar hitungannya",
+  "Minimum guests cannot be higher than the seats in this area":
+    "Minimum tamu tidak boleh lebih besar dari jumlah kursi di area ini",
   // ── Day run sheet (added 2026-09-04) ──────────────────────
   // Only words that actually CHANGE are listed. "Pax", "Area", "Deposit"
   // and "DP" are the same in both languages and are deliberately absent:

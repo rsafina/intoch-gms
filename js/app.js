@@ -2389,6 +2389,20 @@ async function findVipTimeConflict(tableId, date, startTime, endTime, excludeRes
   return null;
 }
 
+// One line under an area name saying what a guest would be told. Without it
+// the only way to know whether an area is live is to open each one in turn,
+// which is how a restaurant ends up with a rule it forgot it set.
+function areaConditionsLine(area) {
+  if (!area || !area.is_bookable_online) return "";
+  const bits = [];
+  if (area.min_pax != null) bits.push(`${t("min")} ${area.min_pax} ${t("pax")}`);
+  if (area.min_spend != null)
+    bits.push(`${t("min")} Rp ${Number(area.min_spend).toLocaleString("id-ID")}`);
+  if (area.deposit_pct != null) bits.push(`${t("DP")} ${area.deposit_pct}%`);
+  const detail = bits.length ? ` &middot; ${bits.join(" &middot; ")}` : "";
+  return `<p class="text-[11px] text-[#5F8D4E] mt-0.5">${t("Bookable online")}${detail}</p>`;
+}
+
 function renderTableManagement() {
   const section = document.getElementById("area-tables-section");
   if (!section) return;
@@ -2426,6 +2440,7 @@ function renderTableManagement() {
                   <button onclick="openAreaModal('${area.id}')" class="text-[#28547C] hover:underline ml-2 manager-only-ui">${t("Edit")}</button>
                   <button onclick="deleteArea('${area.id}')" class="text-[#B23B3B] hover:underline ml-1 manager-only-ui">${t("Remove")}</button>
                 </p>
+                ${areaConditionsLine(area)}
               </div>
               <button type="button" onclick="openTableModal(null, '${area.id}')" class="text-xs text-[#5596CE] hover:underline">Add to area</button>
             </div>
@@ -12098,6 +12113,15 @@ function renderReservationAvailability(rh) {
   if (leadEl) leadEl.value = Number.isFinite(+cfg.min_lead_days) ? +cfg.min_lead_days : 0;
   onResLeadDaysInput();
 
+  // Defaults match the numbers that were hardcoded in
+  // create_public_reservation before 2026-09-04, so a database that has not
+  // been migrated yet still shows the truth rather than a blank box.
+  const maxPaxEl = document.getElementById("set-res-max-pax");
+  if (maxPaxEl) maxPaxEl.value = Number.isFinite(+cfg.max_pax) ? +cfg.max_pax : 20;
+  const maxDaysEl = document.getElementById("set-res-max-days");
+  if (maxDaysEl)
+    maxDaysEl.value = Number.isFinite(+cfg.max_days_ahead) ? +cfg.max_days_ahead : 90;
+
   const wrap = document.getElementById("set-res-week");
   if (wrap) {
     wrap.innerHTML = RES_WEEKDAYS.map((d) => {
@@ -12376,6 +12400,17 @@ async function saveThresholdSettings() {
   const resWeek = readReservationWeek();
   if (!resWeek) return;
   const resLead = Math.max(0, Math.min(90, parseInt(document.getElementById("set-res-lead-days")?.value, 10) || 0));
+  // Clamped, and falling back to the old hardcoded values rather than to 0.
+  // A cleared box meaning "no party may be larger than nobody" would take
+  // online booking offline with nothing on screen explaining it.
+  const resMaxPax = Math.max(
+    1,
+    Math.min(500, parseInt(document.getElementById("set-res-max-pax")?.value, 10) || 20),
+  );
+  const resMaxDays = Math.max(
+    1,
+    Math.min(730, parseInt(document.getElementById("set-res-max-days")?.value, 10) || 90),
+  );
   const resPaused = !!document.getElementById("set-res-paused")?.checked;
   const resPauseMsg = (document.getElementById("set-res-pause-msg")?.value || "").trim() || null;
 
@@ -12457,6 +12492,8 @@ async function saveThresholdSettings() {
         close: resWeek.close,
         weekly: resWeek.weekly,
         min_lead_days: resLead,
+        max_pax: resMaxPax,
+        max_days_ahead: resMaxDays,
         online_paused: resPaused,
         pause_message: resPauseMsg,
       },
@@ -13633,6 +13670,31 @@ async function resetReserveBackground() {
 // onboarding a client impossible without opening the SQL editor, since no two
 // restaurants have the same rooms.
 
+// Rupiah in, rupiah out. Staff type "1500000", "1.500.000", "Rp 1.500.000"
+// and "1,500,000" and all four mean the same thing, so strip everything that
+// is not a digit. Same rule the invoice generator already uses; a second,
+// stricter parser here would reject what the invoice screen accepts.
+function areaParseRupiah(value) {
+  const digits = String(value ?? "").replace(/[^\d]/g, "");
+  return digits === "" ? null : parseInt(digits, 10);
+}
+
+function areaFormatRupiah(n) {
+  if (n === null || n === undefined || n === "") return "";
+  const num = Number(n);
+  return Number.isFinite(num) ? Math.round(num).toLocaleString("id-ID") : "";
+}
+
+// The conditions only mean anything for an area guests can actually book, so
+// they stay hidden until the switch is on. Hidden, not disabled: a disabled
+// field that still holds a number looks like a rule that is in force.
+function onAreaBookableToggle() {
+  const on = !!document.getElementById("area-bookable")?.checked;
+  document.getElementById("area-conditions-wrap")?.classList.toggle("hidden", !on);
+  document.getElementById("area-conditions-note")?.classList.toggle("hidden", !on);
+  if (!on) document.getElementById("area-deposit-hint")?.classList.add("hidden");
+}
+
 function openAreaModal(areaId) {
   if (!isManagerOrAdmin()) {
     toast(t("Only a manager can change areas"), "error");
@@ -13646,6 +13708,12 @@ function openAreaModal(areaId) {
   set("area-edit-id", area ? area.id : "");
   set("area-name", area ? area.name : "");
   set("area-capacity", area ? area.capacity : "");
+  set("area-min-pax", area && area.min_pax != null ? area.min_pax : "");
+  set("area-min-spend", area && area.min_spend != null ? areaFormatRupiah(area.min_spend) : "");
+  set("area-deposit-pct", area && area.deposit_pct != null ? area.deposit_pct : "");
+  const bookableEl = document.getElementById("area-bookable");
+  if (bookableEl) bookableEl.checked = !!(area && area.is_bookable_online);
+  onAreaBookableToggle();
   const title = document.getElementById("area-modal-title");
   if (title) title.textContent = area ? t("Edit Area") : t("Add Area");
   const btn = document.getElementById("area-save-button");
@@ -13682,14 +13750,68 @@ async function saveArea() {
     return;
   }
 
+  // ---- Online booking conditions ----
+  const bookable = !!document.getElementById("area-bookable")?.checked;
+  const minPaxRaw = document.getElementById("area-min-pax")?.value;
+  const minPax = minPaxRaw === "" || minPaxRaw == null ? null : parseInt(minPaxRaw, 10);
+  const minSpend = areaParseRupiah(document.getElementById("area-min-spend")?.value);
+  const depPctRaw = document.getElementById("area-deposit-pct")?.value;
+  const depPct = depPctRaw === "" || depPctRaw == null ? null : Number(depPctRaw);
+
+  if (minPax !== null && (!isFinite(minPax) || minPax < 1)) {
+    toast(t("Minimum guests must be 1 or more"), "error");
+    return;
+  }
+  if (depPct !== null && (!isFinite(depPct) || depPct < 0 || depPct > 100)) {
+    toast(t("Deposit must be between 0 and 100 percent"), "error");
+    return;
+  }
+  // A deposit percentage is a percentage OF the minimum spend. Without one
+  // there is nothing to take a percentage of, so the invoice would be raised
+  // with a blank figure and somebody would have to guess. Refuse it here,
+  // where the person can still see what they typed.
+  if (depPct !== null && minSpend === null) {
+    toast(
+      t("A deposit percentage needs a minimum spend to calculate from"),
+      "error",
+    );
+    return;
+  }
+  // min_pax above capacity is a rule no booking can ever satisfy. The area
+  // would simply never accept anyone, with nothing on screen saying why.
+  if (minPax !== null && capacity > 0 && minPax > capacity) {
+    toast(
+      t("Minimum guests cannot be higher than the seats in this area"),
+      "error",
+    );
+    return;
+  }
+
   const btn = document.getElementById("area-save-button");
   if (btn) btn.disabled = true;
   loader(true);
   const { error } = await supabaseQuery(
     () =>
       id
-        ? db.from("areas").update({ name, capacity }).eq("id", id)
-        : db.from("areas").insert({ name, capacity }),
+        ? db
+            .from("areas")
+            .update({
+              name,
+              capacity,
+              is_bookable_online: bookable,
+              min_pax: minPax,
+              min_spend: minSpend,
+              deposit_pct: depPct,
+            })
+            .eq("id", id)
+        : db.from("areas").insert({
+            name,
+            capacity,
+            is_bookable_online: bookable,
+            min_pax: minPax,
+            min_spend: minSpend,
+            deposit_pct: depPct,
+          }),
     "Failed to save area",
   );
   loader(false);
