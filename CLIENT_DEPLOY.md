@@ -59,13 +59,50 @@ This is a feature, not a problem, but it will look like a broken site the one ti
 
 ---
 
-## Part 2: what lives at the root
+## Part 2: what lives at the root — DONE 2026-09-05
 
-`intoch.app` and `www.intoch.app` are **not** a client. Decide before pointing them
-anywhere. The options are a marketing landing page (there is a `landing.html` in this repo
-and a `gms-proto-landing-page` folder), a redirect to a sales page, or nothing at all.
+Resolved. Intoch's own three addresses are live, all served by the SINGLE existing
+`intoch-gms` Cloudflare project. No second project, no second repo, no second build.
 
-Leave it unpointed rather than accidentally serving a client's dashboard at the root.
+| Address | Serves |
+|---|---|
+| `intoch.app` | the landing page (`/landing`) |
+| `dashboard.intoch.app` | the staff app (`/`) |
+| `reserve.intoch.app` | the booking form (`/reserve.html`) |
+
+All three are attached under the project's **Custom domains**. Two **Redirect Rules**
+do the rest:
+
+| Rule | Match | Action |
+|---|---|---|
+| root to landing | `Hostname eq "intoch.app" and http.request.uri.path eq "/"` | 302 to `https://intoch.app/landing` |
+| reserve to form | `Hostname eq "reserve.intoch.app" and http.request.uri.path eq "/"` | 302 to `https://reserve.intoch.app/reserve.html` |
+
+302 rather than 301 on purpose: a wrong 301 is cached hard by browsers and is
+miserable to undo. Switch to 301 later if ever needed; there is no real benefit.
+
+### Three traps hit doing this, in order
+
+1. **"Hostname already has externally managed DNS records."** Cloudflare imported
+   Hostinger's records when the zone moved, including an `A` record for the root
+   pointing at Hostinger's parking page (`2.57.91.91`). A custom domain cannot be
+   attached over it. Delete **only** that A record. Leave every `MX` and `TXT` alone,
+   and leave the `hostingermail` / `autoconfig` / `autodiscover` CNAMEs alone: those
+   are email and deleting them breaks mail for the domain.
+2. **`URI Full` is not `URI Path`.** They sit next to each other in the same dropdown.
+   `URI Full` is the whole address, so `URI Full equals "/"` can never be true and the
+   rule sits there marked Active doing nothing. Changing the Field also RESETS the
+   operator and value, so re-check both after changing it.
+3. **The dashboard looks blank for a moment on first load.** Not a deployment fault.
+   The app fetches Tailwind from `cdn.tailwindcss.com` before it draws anything, so
+   there is a genuine white gap before the login card appears. The console also warns
+   that this CDN should not be used in production. Worth tidying before there are many
+   clients; harmless now.
+
+### Still open at the root
+
+`www.intoch.app` is not attached. There is a `www` CNAME left over from Hostinger
+pointing at the root; deal with it the same way if and when www is wanted.
 
 ---
 
