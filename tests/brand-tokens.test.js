@@ -110,6 +110,19 @@ console.log("\nThe rasterised invoice sheet stays literal");
      "INV_DEFAULTS feeds the CSS html2canvas rasterises.");
 }
 
+console.log("\nColour values that get validated as hex stay hex");
+// A var() is not a hex string. isHexColor() rejects it and an <input
+// type="color"> cannot display it, so a default written as var() means a
+// client with nothing saved silently gets no colour at all. The 2026-09-05
+// sweep did exactly this to RESERVE_APPEARANCE_DEFAULTS and nothing caught it
+// until the settings screen was opened.
+for (const f of ["js/config.template.js", "js/config.js"]) {
+  const src = read(path.join(ROOT, f));
+  const blocks = [...src.matchAll(/const\s+\w*(?:DEFAULTS|_STYLE|_COLORS)\w*\s*=\s*\{([^}]*)\}/g)];
+  const bad = blocks.filter((b) => /var\(--/.test(b[1])).map((b) => b[0].slice(0, 60));
+  ok(`${f} has no var() in a colour defaults object`, bad.length === 0, bad.join("\n        "));
+}
+
 console.log("\nThe canvas-drawn voucher stays literal");
 {
   const v = read(path.join(ROOT, "js", "voucher.js"));

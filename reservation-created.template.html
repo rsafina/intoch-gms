@@ -279,8 +279,13 @@
             <path d="M20 6L9 17l-5-5" />
           </svg>
         </div>
-        <h1>Reservation Created</h1>
-        <p class="note">
+        <h1 id="created-title">Reservation Created</h1>
+        <!-- Rewritten in place for a waitlisted booking. The default wording
+             below is a confirmation, and a guest whose booking is still waiting
+             on a human must not read it. -->
+        <div id="waitlist-note" class="summary" style="display: none"></div>
+        <div id="deposit-note" class="summary" style="display: none"></div>
+        <p class="note" id="created-note">
           Staff kami akan segera menghubungi Anda, atau Anda bisa menambahkan
           sentuhan lebih personal dengan mengklik tombol di bawah untuk
           terhubung dengan kami.
@@ -329,6 +334,39 @@
             month: "long",
             year: "numeric",
           });
+          // ===== Waitlist =====
+          // `ok: true` from the booking function does NOT mean confirmed. A
+          // party outside the area's rules is stored as a request, and telling
+          // that guest they have a table is the worst outcome this flow has.
+          if (r.waitlisted) {
+            const why = {
+              over_capacity:
+                "Rombongan Anda lebih besar dari kapasitas area yang dipilih",
+              below_min_pax:
+                "Rombongan Anda di bawah minimum area yang dipilih",
+              over_max_pax: "Rombongan Anda cukup besar",
+            }[r.waitlist_reason] || "Permintaan Anda perlu kami tinjau";
+            document.getElementById("created-title").textContent =
+              "Permintaan Terkirim";
+            document.getElementById("created-note").innerHTML =
+              "<strong>Ini belum menjadi reservasi yang terkonfirmasi.</strong> " +
+              why +
+              ", jadi staff kami akan meninjau dan mengabari Anda lewat WhatsApp. " +
+              "Mohon jangan datang sebelum kami konfirmasi.";
+            const wl = document.getElementById("waitlist-note");
+            wl.textContent = "Status: menunggu konfirmasi staff";
+            wl.style.display = "block";
+          } else if (r.deposit_required && r.deposit_expected) {
+            // Only a booking that was actually accepted is asked for money.
+            const dep = document.getElementById("deposit-note");
+            dep.innerHTML =
+              "Deposit (DP) <strong>Rp " +
+              Number(r.deposit_expected).toLocaleString("id-ID") +
+              "</strong><br>Kami akan mengirimkan detail pembayaran lewat WhatsApp. " +
+              "Reservasi Anda kami tahan sampai DP diterima.";
+            dep.style.display = "block";
+          }
+
           const box = document.getElementById("res-summary");
           box.innerHTML =
             "<strong>" +
@@ -339,7 +377,8 @@
             r.time +
             " &middot; " +
             r.pax +
-            " pax";
+            " pax" +
+            (r.area ? " &middot; " + String(r.area).replace(/[<>&]/g, "") : "");
           box.style.display = "block";
 
           const wa = document.getElementById("btn-wa");

@@ -122,6 +122,73 @@
         );
         z-index: -1;
       }
+      /* Area pills. Three per row, dropping to two when a name is long: an
+         area called "Indoor Dining - No Smoking" is unreadable at a third of a
+         360px screen, and truncating it makes two areas look identical. */
+      .pills {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+      .pills.wide {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .pill {
+        font: inherit;
+        font-size: 12.5px;
+        line-height: 1.25;
+        min-height: 52px;
+        padding: 10px 8px;
+        border-radius: 12px;
+        cursor: pointer;
+        text-align: center;
+        color: #f2efe9;
+        background: rgba(255, 255, 255, 0.09);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      .pill[aria-pressed="true"] {
+        background: var(--rf-accent, #5b4cbd);
+        border-color: var(--rf-accent, #5b4cbd);
+        color: #fff;
+        font-weight: 700;
+      }
+      /* The conditions of the chosen area, including the deposit. This sits
+         ABOVE the submit button on purpose: it is the moment a guest is told
+         they will be asked for money, and phase 1 settled that a charge must
+         never first appear later. */
+      .cond {
+        margin-top: 11px;
+        padding: 12px 13px;
+        border-radius: 12px;
+        font-size: 12.5px;
+        line-height: 1.6;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+      }
+      .cond-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .cond-row + .cond-row {
+        margin-top: 4px;
+      }
+      .cond .dp {
+        font-weight: 700;
+        color: #ffb98f;
+      }
+      .cond .avail {
+        margin-top: 9px;
+        padding-top: 9px;
+        border-top: 1px solid rgba(255, 255, 255, 0.18);
+        opacity: 0.8;
+      }
+      .soft-note {
+        margin: 7px 0 0;
+        font-size: 12px;
+        line-height: 1.5;
+        opacity: 0.85;
+      }
       .wrap {
         max-width: 430px;
         margin: 0 auto;
@@ -296,6 +363,19 @@
         color: #ffd9d9;
         font-size: 13px;
         line-height: 1.45;
+      }
+      .submit-dock {
+        position: sticky;
+        bottom: 0;
+        z-index: 3;
+        padding: 10px 0 calc(6px + env(safe-area-inset-bottom));
+        margin-top: 4px;
+        background: linear-gradient(
+          180deg,
+          rgba(16, 24, 32, 0) 0%,
+          rgba(16, 24, 32, 0.55) 38%,
+          rgba(16, 24, 32, 0.78) 100%
+        );
       }
       .btn-submit {
         width: 100%;
@@ -510,7 +590,7 @@
 
       <div class="card">
         <h1>Book a Table</h1>
-        <p class="sub">
+        <p class="sub" id="welcome-line">
           Hanya butuh 1 menit, reservasi dengan cepat, sampai jumpa!
         </p>
 
@@ -548,15 +628,27 @@
                 type="number"
                 inputmode="numeric"
                 min="1"
-                max="20"
+                max="999"
                 value="2"
                 aria-label="Jumlah tamu"
+                oninput="renderPaxNote()"
                 onblur="clampPax()"
               />
               <button type="button" onclick="paxStep(1)" aria-label="Tambah">
                 +
               </button>
             </div>
+            <p id="pax-note" class="soft-note" style="display: none"></p>
+          </div>
+
+          <!-- Area picker. Hidden entirely when no area is bookable online,
+               which is the inherited fallback: with nothing to choose, the form
+               behaves exactly as it did before areas existed and submits a null
+               area. Do not make this mandatory in that state. -->
+          <div class="field" id="area-field" style="display: none">
+            <label>Pilih Area</label>
+            <div id="area-pills" class="pills"></div>
+            <div id="area-cond" class="cond" style="display: none"></div>
           </div>
           <div class="row2 field">
             <div>
@@ -570,7 +662,18 @@
               </select>
             </div>
           </div>
-          <div class="field">
+          <!-- Optional, and off unless the restaurant switches it on. Fills
+               guests.company only when that guest has none: a returning guest
+               who leaves it blank must not wipe what is already recorded. -->
+          <div class="field" id="company-field" style="display: none">
+            <label for="f-company"
+              >Perusahaan
+              <span style="color: #7f8a94; font-weight: 400">(opsional)</span></label
+            >
+            <input id="f-company" type="text" maxlength="120" placeholder="Nama perusahaan" />
+          </div>
+
+          <div class="field" id="notes-field">
             <label for="f-notes"
               >Catatan
               <span style="color: #7f8a94; font-weight: 400"
@@ -584,11 +687,17 @@
             ></textarea>
           </div>
 
-          <div id="form-error" class="err"></div>
-
-          <button id="btn-submit" type="submit" class="btn-submit">
-            Reserve Now
-          </button>
+          <!-- Sticky, so the action is reachable without scrolling past the
+               area conditions. `position: sticky` inside the normal flow rather
+               than a fixed bar: a fixed footer plus the iOS keyboard covers the
+               field being typed into, which here is the notes box directly
+               above it. -->
+          <div class="submit-dock">
+            <div id="form-error" class="err"></div>
+            <button id="btn-submit" type="submit" class="btn-submit">
+              Reserve Now
+            </button>
+          </div>
         </form>
       </div>
 
@@ -736,6 +845,14 @@
       const SLOT_MINUTES = 30; // time dropdown step
       const SAME_DAY_LEAD_MIN = 30; // must match the DB function
       const MAX_DAYS_AHEAD = 90; // must match the DB function
+      // The size above which a booking becomes a request a human reviews.
+      // Overwritten from app_settings below; 20 matches the DB default.
+      let MAX_PAX = 20;
+      let AREAS = [];          // bookable areas, in display order
+      let AREA_ID = null;      // the chosen one, null while none is
+      let AVAIL = {};          // area_id -> availability for the chosen date
+      let SHOW_CAPACITY = false;
+      const rupiah = (n) => "Rp " + Number(n).toLocaleString("id-ID");
       let HOURS = { open: "10:00", close: "21:30" }; // fallback; real value from app_settings
       let MIN_LEAD_DAYS = 0; // 0 = same-day booking allowed; from app_settings
       // date string -> { closed_all_day, open_time, close_time, reason }
@@ -745,8 +862,19 @@
       const ERR_ID = {
         invalid_name: "Mohon isi nama Anda (2-80 karakter).",
         invalid_phone: "Nomor telepon tidak valid. Contoh: 0812xxxxxxxx.",
-        invalid_pax:
-          "Jumlah tamu 1-20. Untuk rombongan besar, silakan hubungi kami via WhatsApp.",
+        // A large party is no longer refused, it is reviewed, so this message
+        // is only for genuinely bad input now.
+        invalid_pax: "Mohon isi jumlah tamu (minimal 1 orang).",
+        // Added 2026-09-05 WITH the migration that introduced them. A code with
+        // no entry here falls through to `network` ("connection problem, try
+        // again"), so a guest would retry forever against a refusal that will
+        // never change.
+        pax_impossible:
+          "Maaf, rombongan sebesar itu melebihi kapasitas seluruh restoran kami. Silakan hubungi kami via WhatsApp untuk acara besar.",
+        area_unavailable:
+          "Area tersebut sedang tidak bisa dipesan online. Silakan pilih area lain.",
+        date_full:
+          "Area tersebut sudah penuh di tanggal itu. Silakan pilih tanggal atau area lain, atau hubungi kami via WhatsApp untuk masuk daftar tunggu.",
         missing_datetime: "Mohon pilih tanggal dan jam.",
         past_date: "Tanggal sudah lewat. Mohon pilih tanggal lain.",
         too_far: "Reservasi maksimal " + MAX_DAYS_AHEAD + " hari ke depan.",
@@ -850,18 +978,42 @@
         const n = readPaxRaw();
         return n !== null && n >= 1 && n <= 20 ? n : null;
       }
+      // The hard cap of 20 is GONE (2026-09-05). `max_pax` is now the size
+      // above which the restaurant wants to decide by hand, not a wall: the
+      // booking is accepted as a request. Clamping here would silently prevent
+      // the very bookings the waitlist exists to catch. 999 is only a guard
+      // against a typo; the server refuses anything above the whole
+      // restaurant's seats with `pax_impossible`.
       function clampPax() {
         const n = readPaxRaw();
         if (n === null) {
           $("pax-value").value = 2; // emptied the field → back to default
+          renderPaxNote();
           return;
         }
-        if (n > 20) showError(ERR_ID.invalid_pax); // explains the WA route
-        $("pax-value").value = Math.min(20, Math.max(1, n));
+        $("pax-value").value = Math.min(999, Math.max(1, n));
+        renderPaxNote();
       }
       function paxStep(delta) {
         const current = readPaxRaw() ?? 2;
-        $("pax-value").value = Math.min(20, Math.max(1, current + delta));
+        $("pax-value").value = Math.min(999, Math.max(1, current + delta));
+        renderPaxNote();
+      }
+
+      // Says, before submitting, that a large party is a request rather than a
+      // booking. Told afterwards it reads as a downgrade; told here it is just
+      // how it works.
+      function renderPaxNote() {
+        const el = $("pax-note");
+        if (!el) return;
+        const n = readPaxRaw();
+        const big = n !== null && MAX_PAX > 0 && n > MAX_PAX;
+        el.textContent = big
+          ? "Rombongan lebih dari " +
+            MAX_PAX +
+            " orang kami tinjau dulu. Reservasi Anda masuk sebagai permintaan."
+          : "";
+        el.style.display = big ? "" : "none";
       }
 
       // Build the time dropdown from opening hours; on today's date,
@@ -933,6 +1085,8 @@
           if (data?.value?.open && data?.value?.close) HOURS = data.value;
           if (Number.isFinite(+data?.value?.min_lead_days))
             MIN_LEAD_DAYS = Math.max(0, +data.value.min_lead_days);
+          if (Number.isFinite(+data?.value?.max_pax))
+            MAX_PAX = Math.max(1, +data.value.max_pax);
           if (data?.value?.online_paused) {
             // Say so before anything is typed, rather than after Book.
             showError(
@@ -962,13 +1116,45 @@
         dateEl.min = earliestDate();
         dateEl.max = addDays(todayLocal(), MAX_DAYS_AHEAD);
         dateEl.value = nextOpenDate(earliestDate());
-        dateEl.addEventListener("change", buildTimeSlots);
+        dateEl.addEventListener("change", () => {
+          buildTimeSlots();
+          loadAvailability(); // how full an area is depends on the date
+        });
 
         buildTimeSlots();
+        renderPaxNote();
+        await loadFormFields(); // which optional fields show, before areas render
+        await loadAreas();
+        loadAvailability(); // not awaited — the conditions render without it
         loadFeaturedDishes(); // not awaited — the sheet is below the fold
         loadFullMenuLink(); // not awaited — hardcoded href works until this resolves
         loadBrandLogo(); // not awaited — the bundled logo is already on screen
       })();
+
+      // ---- Which optional fields this restaurant shows ----
+      // Name, phone, date, time and pax are not configurable: the first two
+      // create and match the guest record and pax is what every capacity rule
+      // is checked against. Offering switches for them would be a settings
+      // screen that lies.
+      async function loadFormFields() {
+        try {
+          const { data } = await db
+            .from("app_settings")
+            .select("value")
+            .eq("key", "reservation_form")
+            .maybeSingle();
+          const v = data?.value || {};
+          // Default ON for notes, OFF for company: fail towards the form that
+          // already exists, so an unset key changes nothing.
+          if (v.show_notes === false) $("notes-field").style.display = "none";
+          if (v.show_company === true) $("company-field").style.display = "";
+          SHOW_CAPACITY = v.show_capacity === true;
+          const w = (v.welcome_text || "").trim();
+          if (w) $("welcome-line").textContent = w;
+        } catch (_) {
+          /* the bundled defaults are already on screen */
+        }
+      }
 
       // ---- Logo (managed in staff app Settings > Branding) ----
       // The bundled assets/full-logo.png renders first and is REPLACED only
@@ -1125,6 +1311,106 @@
         }
       }
 
+      // ---- Area picker ----
+      function renderAreaPills() {
+        const field = $("area-field");
+        const box = $("area-pills");
+        if (!field || !box) return;
+        // Inherited fallback: nothing bookable means no picker at all, and the
+        // form submits a null area exactly as it did before areas existed.
+        if (!AREAS.length) {
+          field.style.display = "none";
+          return;
+        }
+        field.style.display = "";
+        const longest = AREAS.reduce((m, a) => Math.max(m, (a.name || "").length), 0);
+        box.className = "pills" + (longest > 14 ? " wide" : "");
+        box.innerHTML = "";
+        for (const a of AREAS) {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "pill";
+          b.setAttribute("aria-pressed", String(a.id === AREA_ID));
+          b.textContent = a.name;
+          b.onclick = () => {
+            AREA_ID = AREA_ID === a.id ? null : a.id;
+            renderAreaPills();
+            renderAreaCond();
+          };
+          box.appendChild(b);
+        }
+      }
+
+      function renderAreaCond() {
+        const el = $("area-cond");
+        if (!el) return;
+        const a = AREAS.find((x) => x.id === AREA_ID);
+        if (!a) {
+          el.style.display = "none";
+          return;
+        }
+        const rows = [];
+        if (a.min_pax != null)
+          rows.push(row("Minimum tamu", a.min_pax + " orang"));
+        if (a.min_spend != null)
+          rows.push(row("Minimum belanja", rupiah(a.min_spend)));
+        if (a.deposit_amount != null && Number(a.deposit_amount) > 0)
+          rows.push(row("Deposit (DP)", rupiah(a.deposit_amount), "dp"));
+        if (!rows.length) rows.push(row("Tidak ada ketentuan khusus", ""));
+
+        // Availability is an ESTIMATE and says so. Online bookings never get a
+        // table assigned, so a literal free-table count would keep reporting
+        // the same number while the area filled up.
+        const av = AVAIL[a.id];
+        let extra = "";
+        if (SHOW_CAPACITY && av) {
+          const bits = ["Sudah " + av.pct_full + "% terisi"];
+          if (av.est_tables != null) bits.push("kira-kira " + av.est_tables + " meja");
+          extra = '<div class="avail">' + bits.join(" &middot; ") + "</div>";
+        }
+        el.innerHTML = rows.join("") + extra;
+        el.style.display = "";
+
+        function row(k, v, cls) {
+          return (
+            '<div class="cond-row ' + (cls || "") + '"><span>' + k +
+            "</span><span>" + v + "</span></div>"
+          );
+        }
+      }
+
+      async function loadAreas() {
+        try {
+          const { data } = await db
+            .from("areas")
+            .select("id, name, capacity, min_pax, min_spend, deposit_amount")
+            .eq("is_bookable_online", true)
+            .order("name");
+          AREAS = data || [];
+        } catch (_) {
+          AREAS = []; // no picker beats a half-rendered one
+        }
+        renderAreaPills();
+        renderAreaCond();
+      }
+
+      // Availability comes from a SECURITY DEFINER function that returns
+      // aggregates only. The form must never select from `reservations` for
+      // this: that would have a public page read every guest's booking to
+      // render a percentage.
+      async function loadAvailability() {
+        AVAIL = {};
+        const date = $("f-date")?.value;
+        if (!SHOW_CAPACITY || !date) return renderAreaCond();
+        try {
+          const { data } = await db.rpc("area_availability", { p_date: date });
+          for (const r of data || []) AVAIL[r.area_id] = r;
+        } catch (_) {
+          /* the conditions still render, just without the availability line */
+        }
+        renderAreaCond();
+      }
+
       // ---- Signature menu bottom sheet ----
       function openMenuSheet(e) {
         if (e) e.preventDefault();
@@ -1153,6 +1439,7 @@
         const date = $("f-date").value;
         const time = $("f-time").value;
         const notes = $("f-notes").value.trim();
+        const company = ($("f-company")?.value || "").trim();
         const pax = readPax();
 
         // Light client checks for instant feedback (server re-validates everything)
@@ -1164,6 +1451,10 @@
           return showError(ERR_ID.invalid_pax);
         }
         if (!date || !time) return showError(ERR_ID.missing_datetime);
+        // Mandatory only once there is something to choose. With no bookable
+        // area the picker is not rendered at all and a null area is correct.
+        if (AREAS.length && !AREA_ID)
+          return showError("Mohon pilih area terlebih dahulu.");
 
         submitting = true;
         const btn = $("btn-submit");
@@ -1178,6 +1469,8 @@
             p_date: date,
             p_time: time,
             p_notes: notes || null,
+            p_area_id: AREA_ID,
+            p_company: company || null,
           });
           if (error) throw error;
           if (!data?.ok) {
@@ -1196,11 +1489,26 @@
             );
             return;
           }
-          // Pass a small summary to the confirmation page (no URL params — no PII in links)
+          // A waitlisted booking is `ok: true` but it is NOT a confirmation.
+          // Reading `ok` alone and saying "booked" would tell a guest they have
+          // a table nobody has agreed to give them, which is the single worst
+          // outcome this flow can produce.
+          const areaName =
+            AREAS.find((a) => a.id === AREA_ID)?.name || null;
           try {
             sessionStorage.setItem(
               "bhPublicRes",
-              JSON.stringify({ name, date, time, pax }),
+              JSON.stringify({
+                name,
+                date,
+                time,
+                pax,
+                area: areaName,
+                waitlisted: data.waitlisted === true,
+                waitlist_reason: data.waitlist_reason || null,
+                deposit_required: data.deposit_required === true,
+                deposit_expected: data.deposit_expected || null,
+              }),
             );
           } catch (_) {}
           window.location.href = "reservation-created.html";

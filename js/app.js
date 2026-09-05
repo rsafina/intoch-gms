@@ -3409,6 +3409,16 @@ function renderDashboardReservations(data) {
                 })()}
               </p>
               <p class="text-xs text-[#999] mt-1.5">${fmt.pax(r.pax)} · ${areaName}${tableName ? " · " + tableName : ""}${r.occasion ? " · " + r.occasion : ""}${r.reservation_source ? " · " + escapeHtml(r.reservation_source) : ""}</p>
+              ${
+                // Why this booking is waiting on a human, in words. The column
+                // stores a code and staff should never have to read one. Shown
+                // on the row itself rather than behind Update, because the
+                // whole point of a waitlist entry is that someone has to
+                // notice it.
+                r.status === "Waitlist"
+                  ? `<p class="text-xs text-[#B45309] mt-1.5 font-medium">⏳ ${t("Menunggu keputusan")}${r.waitlist_reason ? " · " + t(r.waitlist_reason) : ""}</p>`
+                  : ""
+              }
               ${renderGuestExtras(r.guests, r._visitCount)}
               ${notesDisplay ? `<p class="text-xs text-[#999] mt-1 flex items-start gap-1"><span>📝</span><span>${escapeHtml(notesDisplay)}</span></p>` : ""}
             </div>

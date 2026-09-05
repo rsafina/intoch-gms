@@ -664,6 +664,13 @@ const ID_DICT = {
   // Status labels — used by statusBadge() and inline status pills, so
   // translating these here covers every reservation/walk-in table & card.
   Reserved: "Dipesan",
+  Waitlist: "Daftar Tunggu",
+  // Waitlist reasons, shown as words in the reservations list. The stored value
+  // is a code; staff should never have to read one.
+  over_capacity: "Terlalu besar untuk area",
+  below_min_pax: "Di bawah minimum area",
+  over_max_pax: "Rombongan besar",
+  Confirmed: "Terkonfirmasi",
   Arrived: "Tiba",
   Cancelled: "Dibatalkan",
   "Cancelled (No Show)": "Dibatalkan (Tidak Hadir)",
@@ -1389,6 +1396,13 @@ const fmt = {
 
 const STATUS_COLORS = {
   Reserved: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-400" },
+  // A booking nobody has agreed to yet. It MUST NOT look like Reserved: the
+  // fallback in statusBadge() is Reserved, so without this entry a waitlisted
+  // booking is visually a confirmed one and staff have no idea it needs a
+  // decision. Orange is the "this wants a human" colour here, and Confirmed is
+  // listed for the same reason.
+  Waitlist: { bg: "bg-orange-50", text: "text-orange-700", dot: "bg-orange-500" },
+  Confirmed: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500" },
   Arrived: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-400" },
   Cancelled: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-400" },
   "Cancelled (No Show)": {
@@ -1601,9 +1615,14 @@ function applyManagerOnlyUI() {
 
 const RESERVE_APPEARANCE_DEFAULTS = {
   bg_url: null,
-  glass_color: "var(--brand-ink)",
+  // LITERAL HEX, not var(). These are validated by isHexColor() and fed to an
+  // <input type="color">, neither of which understands a custom property. The
+  // 2026-09-05 brand sweep turned them into var() and a client with no saved
+  // appearance would have got no panel colour at all, silently. Keep them in
+  // step with --brand-ink / --brand by hand.
+  glass_color: "#4F41A8",
   glass_opacity: 0.6,
-  accent_color: "var(--brand)",
+  accent_color: "#5B4CBD",
   logo_max_height: 72,
 };
 

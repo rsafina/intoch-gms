@@ -3010,6 +3010,18 @@
               >
                 Reserved
               </button>
+              <!-- Bookings waiting on a staff decision. Sits next to Reserved
+                   because it is a queue somebody has to work, not an archive
+                   like Cancelled or Deleted. Included in "All" as well, since
+                   "All" only excludes manager-deleted rows. -->
+              <button
+                onclick="filterResByStatus('Waitlist')"
+                class="status-filter-btn btn-ghost text-xs px-3 py-1.5"
+                data-status="Waitlist"
+                title="Bookings the rules could not accept outright"
+              >
+                Waitlist
+              </button>
               <button
                 onclick="filterResByStatus('Arrived')"
                 class="status-filter-btn btn-ghost text-xs px-3 py-1.5"
@@ -9140,9 +9152,9 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
 
-    <script src="js/config.js?v=17"></script>
+    <script src="js/config.js?v=19"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=30"></script>
+    <script src="js/app.js?v=31"></script>
     <script src="js/membership.js?v=6"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->

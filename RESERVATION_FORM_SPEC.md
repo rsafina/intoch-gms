@@ -40,7 +40,7 @@ booking worth having, not an error. It becomes a waitlist entry an admin decides
 | D8 | What capacity guests see | **Percentage, plus an estimated table count clearly labelled as an estimate** |
 | D9 | Telling the waitlist reasons apart | **Store the reason on the booking** |
 | D10 | Party above the global "largest party" | **Waitlist too.** No automatic refusal on size |
-| D11 | Visual direction | **Theme presets the client picks**, not one fixed look |
+| D11 | Visual direction | **REVISED 2026-09-05: no presets.** Keep the colour controls that already exist |
 | D12 | Page structure | **One page, sticky submit.** Not a multi-step flow |
 | D13 | Where an area's rules appear | **A panel below the pills**, opened by picking an area |
 
@@ -121,20 +121,22 @@ has already lost data once by being rebuilt from scratch.
 
 ## 3b. Look and feel
 
-### D11: presets, not one design
+### D11 REVISED, 2026-09-05: no presets. The controls already exist.
 
-Rere's concern was that Intoch's form should not look like Blue Heron's. Drawing one
-different design solves that once; a **theme the client picks in Settings** solves it
-permanently, and it is the honest shape for a product sold to many restaurants. Blue
-Heron keeps the look it has, and the next client picks their own.
+The original plan was three theme presets a client picks between. Then Rere opened
+Settings > Formulir Reservasi and it turned out the page is **already themeable**, per
+client, and has been since 2026-08-23: background photo, panel colour, panel opacity,
+button colour, logo height, and a live preview of the result.
 
-Three presets to start: **dark glass** (what exists today), **light**, and **solid
-colour**. A preset sets the background treatment, panel style and text colour together,
-so a client cannot assemble an unreadable combination out of individual switches.
+Presets would have replaced working controls with fewer ones, and thrown away the green
+(`#17442F` panel, `#55CE5D` button) already configured for this deployment. So the
+existing `reserve_appearance` keys stay exactly as they are and no theme key is added.
 
-Stored as one key, `reserve_appearance.theme`, beside the existing `logo_url`,
-`bg_image`, `glass` and `logo_max_h`. An unknown or missing value falls back to dark
-glass, which is what every existing deployment already renders.
+That also settles the original worry on its own: this page never looked like Blue Heron's
+because each deployment already sets its own colours.
+
+**What is still missing is layout, not colour**: the area pills, the conditions panel,
+the sticky submit button, and the editable welcome line. That is the whole visual scope.
 
 ### The contrast rule, which is not negotiable
 

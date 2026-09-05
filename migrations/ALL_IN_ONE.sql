@@ -1056,10 +1056,16 @@ ALTER TABLE reservations
   ADD COLUMN IF NOT EXISTS deleted_by UUID REFERENCES staff_users(id),
   ADD COLUMN IF NOT EXISTS delete_reason TEXT;
 
+-- 'Waitlist' is in this list even though it is introduced 3700 lines below, and
+-- that is not tidiness: this file is re-runnable, so on a database that already
+-- holds waitlisted bookings THIS statement is reached first and a constraint
+-- without 'Waitlist' is violated by existing rows, aborting the whole migration.
+-- Found 2026-09-05 by re-running against a seeded database; an empty-database
+-- run passes happily. The two definitions must stay identical.
 ALTER TABLE reservations DROP CONSTRAINT IF EXISTS reservations_status_check;
 ALTER TABLE reservations
   ADD CONSTRAINT reservations_status_check
-  CHECK (status IN ('Reserved','Confirmed','Arrived','Cancelled','Cancelled (No Show)','No Show','Completed','Deleted'));
+  CHECK (status IN ('Reserved','Confirmed','Waitlist','Arrived','Cancelled','Cancelled (No Show)','No Show','Completed','Deleted'));
 
 CREATE INDEX IF NOT EXISTS idx_reservations_deleted_at ON reservations(deleted_at) WHERE deleted_at IS NOT NULL;
 
@@ -4791,6 +4797,88 @@ comment on column public.reservations.deposit_expected is
 comment on column public.reservations.deposit_rule_note is
   'Why: which area rule fired, or that a staff member waived or added it. This is what tells a waived deposit apart from one that was never required.';
 
+-- ---------- Waitlist (2026-09-05) ----------
+-- A booking the rules cannot accept outright but a human might. Three ways in:
+-- the party is bigger than the area's seats, smaller than its minimum, or over
+-- the restaurant's global ceiling. None of those refuse any more.
+--
+-- A STATUS, not a flag, so a booking can never be both waitlisted and confirmed.
+alter table public.reservations
+  add column if not exists waitlist_reason text;
+
+comment on column public.reservations.waitlist_reason is
+  'Why this booking is waiting for a human: over_capacity, below_min_pax or over_max_pax. Set by create_public_reservation, never by hand. NULL on every booking accepted outright, and KEPT after a staff member accepts it, as the record of why it was ever held.';
+
+alter table public.reservations drop constraint if exists reservations_status_check;
+alter table public.reservations
+  add constraint reservations_status_check
+  check (status in ('Reserved','Confirmed','Waitlist','Arrived','Cancelled',
+                    'Cancelled (No Show)','No Show','Completed','Deleted'));
+
+-- WAITLIST HOLDS NOTHING. It is not accepted, so it must not consume a seat:
+-- otherwise a run of requests silently blocks the real bookings behind them and
+-- the area reports itself full when it is not. The app's
+-- RES_HOLDS_SEAT_STATUSES is ["Reserved","Confirmed","Arrived"] and Waitlist
+-- deliberately does not join it. It must still be VISIBLE in the reservations
+-- list, or it is a booking nobody ever sees.
+
+-- ---------- Availability for the public form (2026-09-05) ----------
+-- The form needs to know how full each area is. It must NOT get that by
+-- selecting from `reservations`: that would have a public page read every
+-- guest's booking to render a percentage. This returns aggregates and nothing
+-- else, and only for areas that are actually bookable online.
+drop function if exists public.area_availability(date);
+
+create or replace function public.area_availability(p_date date)
+returns table (
+  area_id      uuid,
+  area_name    text,
+  capacity     integer,
+  reserved_pax integer,
+  pct_full     integer,
+  est_tables   integer
+)
+language sql
+security definer
+set search_path = public
+as $function$
+  with held as (
+    select r.assigned_area as aid, sum(r.pax)::integer as pax
+      from reservations r
+     where r.reservation_date = p_date
+       and r.status in ('Reserved','Confirmed','Arrived')
+       and r.deleted_at is null
+     group by r.assigned_area
+  ),
+  tbl as (
+    select t.area_id as aid, count(*)::integer as n,
+           avg(nullif(t.capacity, 0))::numeric as avg_seats
+      from tables t
+     where coalesce(t.is_active, true)
+     group by t.area_id
+  )
+  select a.id, a.name, coalesce(a.capacity, 0),
+         coalesce(h.pax, 0),
+         case when coalesce(a.capacity, 0) > 0
+              then least(100, round(coalesce(h.pax, 0) * 100.0 / a.capacity))::integer
+              else 0 end,
+         -- An ESTIMATE, and the guest-facing copy must say so. Online bookings
+         -- never get a table assigned, so a literal count of free tables would
+         -- keep reporting the same number while the area filled up.
+         case when tbl.avg_seats is null or tbl.avg_seats <= 0 then null
+              else greatest(0, floor((coalesce(a.capacity,0) - coalesce(h.pax,0)) / tbl.avg_seats))::integer
+         end
+    from areas a
+    left join held h on h.aid = a.id
+    left join tbl on tbl.aid = a.id
+   -- NOTE: `areas` has no is_active column. `tables` does; `areas` does not.
+   -- Bookability is the only gate here.
+   where coalesce(a.is_bookable_online, false) = true
+   order by a.name;
+$function$;
+
+grant execute on function public.area_availability(date) to anon, authenticated;
+
 -- ---------- Booking limits move out of the function and into settings ----------
 -- Merged key by key rather than assigned, so re-running this file can never
 -- reset a ceiling the restaurant has since changed. `value ? 'key'` is the
@@ -4837,6 +4925,10 @@ as $function$
     v_max_pax  integer := greatest(coalesce((v_cfg->>'max_pax')::integer, 20), 1);
     v_max_days integer := greatest(coalesce((v_cfg->>'max_days_ahead')::integer, 90), 0);
     v_area     record;
+    v_status   text := 'Reserved';
+    v_wl_why   text;
+    v_seats    integer;
+    v_taken    integer;
     v_dep_req  boolean := false;
     v_dep_amt  numeric;
     v_dep_note text;
@@ -4875,10 +4967,24 @@ as $function$
       return jsonb_build_object('ok', false, 'code', 'invalid_phone',
         'message', 'Phone must be 9-15 digits');
     end if;
-    if p_pax is null or p_pax < 1 or p_pax > v_max_pax then
+    -- Bad input still refuses. A large party does NOT: since 2026-09-05
+    -- `max_pax` is the size above which a human decides, not a wall. That
+    -- decision happens further down, after the area is known.
+    if p_pax is null or p_pax < 1 then
       return jsonb_build_object('ok', false, 'code', 'invalid_pax',
-        'message', format('Pax must be 1-%s (larger groups: contact us on WhatsApp)', v_max_pax),
-        'max_pax', v_max_pax);
+        'message', 'Pax must be 1 or more');
+    end if;
+
+    -- The ONE hard size refusal, and it is arithmetic rather than judgement: a
+    -- party larger than every area combined cannot be seated by any decision a
+    -- human could make, so a waitlist entry would promise a review that can only
+    -- end one way. It also stops the public form creating a booking for 99,999
+    -- people. Skipped entirely when no capacity is recorded anywhere.
+    select coalesce(sum(capacity), 0) into v_seats from areas;
+    if v_seats > 0 and p_pax > v_seats then
+      return jsonb_build_object('ok', false, 'code', 'pax_impossible',
+        'message', format('We can seat at most %s people in total', v_seats),
+        'total_seats', v_seats);
     end if;
     if p_date is null or p_time is null then
       return jsonb_build_object('ok', false, 'code', 'missing_datetime',
@@ -4958,17 +5064,35 @@ as $function$
           'message', 'That area cannot be booked online');
       end if;
 
-      if v_area.min_pax is not null and p_pax < v_area.min_pax then
-        return jsonb_build_object('ok', false, 'code', 'below_min_pax',
-          'message', format('%s takes bookings from %s people', v_area.name, v_area.min_pax),
-          'min_pax', v_area.min_pax, 'area_name', v_area.name);
+      -- ===== Is the DATE already full for this area? =====
+      -- This one still REFUSES. A full night is a no whatever the party size,
+      -- and telling a guest they are on a waitlist for a night that cannot take
+      -- them is worse than a clean refusal. Checked BEFORE the party rules for
+      -- exactly that reason.
+      --
+      -- Waitlist rows are excluded on purpose: they hold no seat.
+      if coalesce(v_area.capacity, 0) > 0 then
+        select coalesce(sum(r.pax), 0) into v_taken
+          from reservations r
+         where r.assigned_area = v_area.id
+           and r.reservation_date = p_date
+           and r.status in ('Reserved','Confirmed','Arrived')
+           and r.deleted_at is null;
+        if v_taken >= v_area.capacity then
+          return jsonb_build_object('ok', false, 'code', 'date_full',
+            'message', format('%s is fully booked on that date', v_area.name),
+            'area_name', v_area.name);
+        end if;
       end if;
 
-      -- capacity 0 means "not recorded", not "seats nobody".
-      if coalesce(v_area.capacity, 0) > 0 and p_pax > v_area.capacity then
-        return jsonb_build_object('ok', false, 'code', 'over_capacity',
-          'message', format('%s seats up to %s people', v_area.name, v_area.capacity),
-          'capacity', v_area.capacity, 'area_name', v_area.name);
+      -- ===== Party rules: these WAITLIST, they do not refuse =====
+      -- Decided 2026-09-05. A party of 25 asking for a 20-seat room is a
+      -- booking worth having, not an error.
+      if v_area.min_pax is not null and p_pax < v_area.min_pax then
+        v_status := 'Waitlist'; v_wl_why := 'below_min_pax';
+      elsif coalesce(v_area.capacity, 0) > 0 and p_pax > v_area.capacity then
+        -- capacity 0 means "not recorded", not "seats nobody".
+        v_status := 'Waitlist'; v_wl_why := 'over_capacity';
       end if;
 
       -- SNAPSHOT, not a live rule. Editing the minimum spend in Settings
@@ -5039,14 +5163,29 @@ as $function$
       v_alias := v_name;
     end if;
 
+    -- The global ceiling, applied whether or not an area was chosen, and only if
+    -- an area rule has not already claimed the booking. Checked last so the more
+    -- specific reason wins: "too big for the VIP room" tells staff more than
+    -- "over the house limit".
+    if v_status = 'Reserved' and p_pax > v_max_pax then
+      v_status := 'Waitlist'; v_wl_why := 'over_max_pax';
+    end if;
+
+    -- A waitlisted booking KEEPS the deposit figure so staff can see what would
+    -- be owed if they accept it, but `deposit_required` stays FALSE until it is
+    -- accepted. The guest was told no payment is due; a row saying otherwise
+    -- would put them on a chase-for-money worklist for a booking nobody has
+    -- agreed to yet, which is the exact surprise this design exists to avoid.
+    -- Accepting the booking is what makes the deposit real.
+
     insert into reservations
       (guest_id, reservation_date, reservation_time, pax, status,
       reservation_source, notes, booking_name, assigned_area,
-      deposit_required, deposit_expected, deposit_rule_note)
+      deposit_required, deposit_expected, deposit_rule_note, waitlist_reason)
     values
-      (v_guest_id, p_date, p_time, p_pax, 'Reserved',
+      (v_guest_id, p_date, p_time, p_pax, v_status,
       'Online Form', v_notes, v_name, p_area_id,
-      v_dep_req, v_dep_amt, v_dep_note)
+      (v_dep_req and v_status <> 'Waitlist'), v_dep_amt, v_dep_note, v_wl_why)
     returning id into v_res_id;
 
     -- ===== ALIAS 2/2: refresh the denormalised latest alias =====
@@ -5058,8 +5197,15 @@ as $function$
     where id = v_guest_id
       and booking_alias is distinct from v_alias;
 
+    -- `waitlisted` is a boolean beside the status so the guest page can branch
+    -- without knowing the status vocabulary. A waitlisted booking must NOT be
+    -- told it is confirmed, and must not be shown a deposit to pay.
     return jsonb_build_object('ok', true, 'reservation_id', v_res_id,
-      'deposit_required', v_dep_req, 'deposit_expected', v_dep_amt);
+      'status', v_status,
+      'waitlisted', (v_status = 'Waitlist'),
+      'waitlist_reason', v_wl_why,
+      'deposit_required', (v_dep_req and v_status <> 'Waitlist'),
+      'deposit_expected', v_dep_amt);
   end;
   $function$;
 
@@ -5107,8 +5253,37 @@ select 'the live function uses the flat deposit amount',
              and pg_get_functiondef(p.oid) not like '%v_area.deposit_pct%'
             then 1 else 0 end
 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname = 'create_public_reservation'
+union all
+select 'reservations.waitlist_reason', count(*)
+from information_schema.columns
+where table_schema = 'public' and table_name = 'reservations'
+  and column_name = 'waitlist_reason'
+union all
+-- The status vocabulary has to accept the new value or every waitlisted
+-- booking aborts the insert at the constraint.
+select 'the status check allows Waitlist',
+       case when pg_get_constraintdef(c.oid) like '%Waitlist%' then 1 else 0 end
+from pg_constraint c
+where c.conname = 'reservations_status_check'
+union all
+select 'area_availability() exists', count(*)
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname = 'area_availability'
+union all
+-- Waitlist must NOT be treated as holding a seat. If this function ever starts
+-- counting it, a run of requests silently blocks the real bookings behind them.
+select 'the live function does not count Waitlist as held',
+       case when pg_get_functiondef(p.oid) like '%''Reserved'',''Confirmed'',''Arrived''%'
+            then 1 else 0 end
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
 where n.nspname = 'public' and p.proname = 'create_public_reservation';
--- expect: 1, 4, 3, 1, 1, 1, 1, 1
+-- expect: 1, 4, 3, 1, 1, 1, [see below], 1, 1, 1, 1, 1
+--
+-- "no area is bookable online yet" returns 1 only BEFORE any area is switched
+-- on. Indoor Dining was switched on 2026-09-05, so it now returns 0 and that is
+-- correct, not a failure. The row exists so that APPLYING this file never
+-- publishes an area by itself; it says nothing about areas a human turned on.
 --
 -- The last line is deliberate. Applying this file must leave the public form
 -- behaving exactly as it did. Rere turns areas on one at a time, afterwards.

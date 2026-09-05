@@ -93,12 +93,38 @@ list and applies the same SQL to each.
 
 ## Must be fixed before the first sale
 
-**RLS is disabled on every table** in the Blue Heron schema this is cloned from. With the
-anon key public in the frontend and RLS off, anyone who views source on a client's app can
-read and write that client's entire guest database.
+**CORRECTED 2026-09-05.** The old text here said "RLS is disabled on every table". That is
+wrong, and the truth is worse in an interesting way.
 
-For Blue Heron alone that is a risk Rere has chosen to accept. Handed to a paying customer
-it is a liability. Fix before selling, not after.
+RLS is **enabled** on ten tables: `areas`, `guests`, `reservations`, `visits`, `prizes`,
+`spin_submissions`, `saved_segments`, `birthday_greetings`, `featured_dishes`,
+`reservation_exceptions`. `tables` and `app_settings` have none.
+
+Nine of those ten also carry a `Public full access` policy with `USING (true) WITH CHECK
+(true)`, so in practice they are wide open and the liability below is unchanged. The tenth,
+`areas`, was given only `Public read` plus an `Authenticated full access` policy testing
+`auth.role() = 'authenticated'`.
+
+**The staff app has no Supabase Auth at all.** `loginStaff()` looks a username and PIN up in
+`staff_users`, in JavaScript. The database is never told anyone signed in, so every request
+is the `anon` role and any policy testing `auth.role()` can never match. Postgres does not
+error on a write no policy permits: it updates zero rows and PostgREST answers `204`, which
+is byte-identical to success. So **every edit to an area silently did nothing for days**
+while the app said "Area updated". Fixed 2026-09-05 by giving `areas` the same permissive
+policy the other nine have.
+
+Two consequences that outlive that fix:
+
+- **Do not write a policy that tests `auth.role()`** until real staff auth exists. There is
+  no caller that can satisfy it. `tests/rls-policies.test.js` pins this.
+- **A write that does not ask for its row back cannot tell success from silence.** Use
+  `.select()` on every `update`/`insert` and treat an empty result as a failure, the way
+  `saveArea()` now does. `saveTable` and the settings saves have NOT been audited yet.
+
+With the anon key public in the frontend, anyone who views source on a client's app can read
+and write that client's entire guest database. For Blue Heron alone that is a risk Rere has
+chosen to accept. Handed to a paying customer it is a liability. Fix before selling, not
+after. Real staff auth is the prerequisite, not more policies.
 
 Staff PINs are also stored in plain text.
 
@@ -453,6 +479,31 @@ everything else. Land RLS before or with this, not after.
 
 ---
 
+## Brand colour: tokens only (2026-09-05)
+
+Every brand colour resolves to a token in the `:root` block. There were 728 hardcoded
+values before this; do not add a 729th. Tailwind needs the explicit type:
+`text-[color:var(--brand-ink)]`, not `text-[var(--brand-ink)]`.
+
+`--brand` and `--accent` are the two a client sets. Everything else derives from them, and
+derives to **pass contrast** rather than to look nice. `--accent` (`#E24701`) is 3.79:1 on
+cream, so it is **fills only, never small text**; `--accent-hover` (`#C63D01`) is the
+text-safe orange.
+
+**Two exemptions, both real, both previously broken by a sweep that ignored them:**
+
+1. `#inv-sheet` rules in `index.html` and `INV_DEFAULTS` in `js/invoice.js`. html2canvas
+   rasterises that node and does not resolve custom properties, so a `var()` there loses
+   the colour in the PDF while the screen looks perfect.
+2. `js/voucher.js` draws to a `<canvas>`; `fillStyle` takes a colour string.
+
+Status colours are **not** brand and never follow it: green `#1FAF5E` / `#5F8D4E`, red
+`#C0392B`, amber `#D4A017`. The amber warning family sits close enough to the orange accent
+that a hue-based find-and-replace would merge them. `tests/brand-tokens.test.js` guards all
+of the above.
+
+---
+
 ## Inherited rules that must not be re-broken
 
 These were each found the hard way in Blue Heron. Porting the code without porting the rules
@@ -690,6 +741,65 @@ Never full-clean the guest list; the notes are how the host tells apart four gue
 Sinta.
 
 ---
+
+
+---
+
+## Where the work is, 2026-09-05
+
+Three threads are open. They are ordered; do not start the third before the second.
+
+### 1. DONE and pushed: the deposit settings + the recolour
+
+- Area booking conditions are configurable in Settings: a "bookable online" switch,
+  minimum party, minimum spend, and a **flat rupiah deposit** (`areas.deposit_amount`).
+  `deposit_pct` is dead but kept, and commented as superseded. `ALL_IN_ONE.sql` is applied.
+- The whole app moved from navy/gold to purple/orange, and every brand colour is a token.
+  See the brand colour section above.
+
+### 2. NEXT: the Settings screen for brand colours
+
+The plumbing exists, so this should be small. Two pickers, `--brand` and `--accent`,
+stored in `app_settings`, applied at runtime the way `loadReserveAppearance()` already
+applies the reservation page's look.
+
+Derive everything else and derive it to pass: darken the heading shade until it clears
+4.5:1 on cream, fixed step for hovers, and choose white-vs-ink on a fill by whichever wins
+on contrast. Refuse a colour that cannot be made readable rather than saving it.
+
+**It must write `--brand-rgb` alongside `--brand`.** A few places need the triplet for
+alpha (`rgb(var(--brand-ink-rgb) / 0.12)`), and a picker that sets only the hex leaves
+shadows on the old hue.
+
+### 3. THEN: the public booking form
+
+Spec: `RESERVATION_FORM_SPEC.md`. It supersedes sections 4, 5 and 9 of
+`RESERVATION_DEPOSIT_PHASE1.md`, which carries a pointer at its top. Every decision is
+settled; four small open items are listed in its section 8.
+
+Shape: one page, sticky submit, areas as pills with a conditions panel underneath, a
+single QRIS for the deposit, proof by WhatsApp. A party that is too big, too small, or
+over the global `max_pax` becomes a **Waitlist** booking rather than a refusal.
+
+Two guardrails from the spec worth repeating, because both fail silently:
+
+- **`Waitlist` must NOT join `RES_HOLDS_SEAT_STATUSES`.** It is not accepted yet, so it
+  must not consume capacity, or a run of requests blocks the real bookings behind them.
+  It must still appear in the reservations list, or it is a booking nobody ever sees.
+- **The form must not read `reservations` to show availability.** Add a `SECURITY DEFINER`
+  `area_availability(p_date)` returning aggregates only, or a public page ends up selecting
+  every guest's booking to render a percentage.
+
+### Known-failing test, on purpose
+
+`tests/reservation-availability.test.js` fails one assertion: `area_unavailable` has no
+`ERR_ID` entry, so a guest would see "connection problem" and retry forever. It closes when
+the booking form lands and adds the copy in the same change. Do not "fix" it early.
+
+### Two tests cannot run over the Cowork device bridge
+
+`tests/settings-screens.test.js` and `tests/reservation-gate.test.js` use jsdom and hang.
+Run them locally before pushing.
 
 ## Testing approach that earned its keep
 
