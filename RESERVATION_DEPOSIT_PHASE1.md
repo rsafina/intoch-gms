@@ -1,6 +1,14 @@
 # Phase 1 build spec: area conditions on the booking form
 
-**Status:** spec, not built. Waiting on P1-O1 before coding.
+**Status:** partly built. The schema (section 2) and the Settings screen (section 3)
+are DONE and live. The public form is not.
+
+> **SUPERSEDED IN PART, 2026-09-05.** Sections 4, 5 and 9 of this document are replaced
+> by `RESERVATION_FORM_SPEC.md`, after Rere's feedback changed three things: the deposit
+> is collected by QR rather than an auto-issued invoice, an over-capacity party is
+> waitlisted rather than refused, and the deposit is a flat rupiah amount rather than a
+> percentage of the minimum spend. Section 8 (deposit flexibility) and the schema in
+> section 2 still stand. Read the new document first.
 **Repo:** `intoch-gms` only.
 **Parent:** `RESERVATION_DEPOSIT_SCOPE.md` (scope closed 2026-09-04).
 

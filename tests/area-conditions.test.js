@@ -61,6 +61,18 @@ for (const col of ["is_bookable_online", "min_pax", "min_spend", "deposit_amount
   eq(`${col} appears in both the update and the insert`, (save.match(new RegExp(col, "g")) || []).length >= 2, true);
 }
 ok("the save reads the bookable switch", save.includes('getElementById("area-bookable")'));
+
+// PostgREST answers 204 for an update that matched NOTHING, so a green
+// response is not evidence the row changed. This is not hypothetical: it is
+// exactly how a save reported success and left the area untouched on
+// 2026-09-05. The write has to hand back the row it claims to have written.
+ok("the write asks for the row back", /\.select\(\s*"id, is_bookable_online/.test(save));
+ok("no row back is treated as a failure", /if \(!row\)/.test(save) && save.includes("Nothing was saved"));
+ok(
+  "a discarded switch is not reported as success",
+  /!!row\.is_bookable_online !== bookable/.test(save),
+);
+ok("both branches ask for the row", (save.match(/\.select\(/g) || []).length >= 2);
 ok("rupiah goes through the shared parser", save.includes("areaParseRupiah("));
 
 console.log("\nRules that cannot be satisfied are refused before they are saved");
@@ -87,13 +99,105 @@ ok("the comparison is deposit against minimum spend", /deposit > minSpend/.test(
 ok("it toggles a hint rather than returning early", hint.includes("classList.toggle"));
 ok("saveArea does not refuse on it", !/deposit > minSpend/.test(save));
 
-console.log("\nMoney boxes reformat on blur, never mid-keystroke");
-ok("min spend reformats on blur", /id="area-min-spend"[^>]*onblur="onAreaMoneyBlur/.test(html));
-ok("deposit reformats on blur", /id="area-deposit-amount"[^>]*onblur="onAreaMoneyBlur/.test(html));
-ok("neither is wired to oninput", !/id="area-(min-spend|deposit-amount)"[^>]*oninput=/.test(html));
+console.log("\nMoney boxes reformat as you type, with the caret kept in place");
+// CHANGED 2026-09-05 at Rere's request. This deliberately reverses the
+// earlier "blur only" decision, which existed to dodge the caret jumping to
+// the end on every keystroke. The caret is now handled explicitly instead, so
+// the tests below are behavioural rather than a promise not to use oninput.
+for (const id of ["area-min-spend", "area-deposit-amount"]) {
+  ok(`#${id} formats on input`, new RegExp(`id="${id}"[^>]*oninput="onAreaMoneyInput`).test(html));
+  ok(`#${id} handles backspace`, new RegExp(`id="${id}"[^>]*onkeydown="onAreaMoneyKeydown`).test(html));
+  ok(`#${id} keeps blur as the backstop`, new RegExp(`id="${id}"[^>]*onblur="onAreaMoneyBlur`).test(html));
+}
+
+const money = {};
+new Function("sandbox", `
+  ${lift("areaParseRupiah")}
+  ${lift("areaFormatRupiah")}
+  function refreshAreaDepositHint() {}
+  ${lift("onAreaMoneyInput")}
+  ${lift("onAreaMoneyKeydown")}
+  sandbox.onAreaMoneyInput = onAreaMoneyInput;
+  sandbox.onAreaMoneyKeydown = onAreaMoneyKeydown;
+`)(money);
+
+// The smallest thing that behaves like a text input for this purpose.
+function fakeInput(value, caret) {
+  return {
+    value,
+    selectionStart: caret === undefined ? value.length : caret,
+    selectionEnd: caret === undefined ? value.length : caret,
+    setSelectionRange(a, b) { this.selectionStart = a; this.selectionEnd = b; },
+  };
+}
+
+let el = fakeInput("1500000");
+money.onAreaMoneyInput(el);
+eq("typing 1500000 shows 1.500.000", el.value, "1.500.000");
+eq("the caret ends up at the end", el.selectionStart, 9);
+
+// The actual reason this was risky: correcting the middle of a number.
+el = fakeInput("1500000", 3);
+money.onAreaMoneyInput(el);
+eq("editing mid-number keeps the same 3 digits behind the caret", el.value, "1.500.000");
+eq("and the caret does not jump to the end", el.selectionStart, 4);
+
+el = fakeInput("", 0);
+money.onAreaMoneyInput(el);
+eq("clearing the box leaves it empty, not 0", el.value, "");
+
+el = fakeInput("Rp 1.500.000");
+money.onAreaMoneyInput(el);
+eq("a pasted rupiah string is normalised", el.value, "1.500.000");
+
+// Backspace onto a separator must delete the digit in front of it. Without
+// this the dot is removed, reformatting puts it straight back, and the key
+// looks broken.
+el = fakeInput("1.500.000", 6);
+let prevented = false;
+money.onAreaMoneyKeydown(el, { key: "Backspace", preventDefault() { prevented = true; } });
+eq("backspace on a dot is intercepted", prevented, true);
+eq("backspace on a dot deletes the digit before it", el.value, "150.000");
+
+// A normal backspace, not on a separator, is left entirely alone.
+el = fakeInput("1.500.000", 9);
+prevented = false;
+money.onAreaMoneyKeydown(el, { key: "Backspace", preventDefault() { prevented = true; } });
+eq("backspace on a digit is not intercepted", prevented, false);
+eq("and the value is untouched by the keydown handler", el.value, "1.500.000");
+
 const blur = body("onAreaMoneyBlur");
 ok("blur round-trips through the shared parser and formatter",
    blur.includes("areaParseRupiah(") && blur.includes("areaFormatRupiah("));
+
+console.log("\nA Confirmed booking still holds its seat and its table");
+// The deposit flow promotes a paid booking to "Confirmed". Two status filters
+// used to be spelled out by hand as Reserved + Arrived, so the moment anything
+// set Confirmed, every paid booking would have dropped out of the capacity
+// cards and stopped blocking its own table against a double booking. Same
+// shape as the run sheet bug that hid every paid booking.
+ok(
+  "the holding statuses are named once, not spelled out per query",
+  /const RES_HOLDS_SEAT_STATUSES = \["Reserved", "Confirmed", "Arrived"\]/.test(appSrc),
+);
+ok(
+  "no query spells out Reserved + Arrived by hand any more",
+  !/\.in\("status", \["Reserved", "Arrived"\]\)/.test(appSrc),
+);
+ok(
+  "the area capacity query uses it",
+  /\.eq\("reservation_date", TODAY\)[\s\S]{0,80}RES_HOLDS_SEAT_STATUSES/.test(appSrc),
+);
+ok(
+  "the VIP table conflict check uses it",
+  body("findVipTimeConflict").includes("RES_HOLDS_SEAT_STATUSES"),
+);
+// Completed must NOT be in it: a guest who has left still belongs on the run
+// sheet, but their seat is free and their table can be re-let.
+ok(
+  "a departed guest does not keep holding a seat",
+  !/RES_HOLDS_SEAT_STATUSES = \[[^\]]*Completed/.test(appSrc),
+);
 
 console.log("\nThe modal fills in what is already stored");
 const open = body("openAreaModal");
@@ -202,6 +306,8 @@ for (const phrase of [
   "Bookable online", "Minimum guests must be 1 or more",
   "This deposit is larger than the minimum spend.",
   "Staff only", "Needs deposit",
+  "Nothing was saved. The area may have been deleted, or the database refused the change.",
+  "Saved, but the database did not keep the online booking settings.",
 ]) {
   ok(`"${phrase}" has an Indonesian entry`, dict.includes(`"${phrase}":`));
 }

@@ -456,6 +456,27 @@ DROP POLICY IF EXISTS "Public read - areas" ON areas;
 CREATE POLICY "Public read - areas" ON areas FOR SELECT
   USING (true);
 
+-- ADDED 2026-09-05, and it fixes a silent production failure.
+--
+-- areas was the ONLY table given a read-only public rule while guests,
+-- reservations, visits, prizes, spin_submissions and saved_segments all got
+-- "Public full access" below. The staff app has no Supabase Auth: every
+-- request it makes is the `anon` role, so the "Authenticated full access"
+-- rule above can never match it. That left areas readable and silently
+-- unwritable -- an area rename, a seat count or an online-booking rule would
+-- report success and change nothing, because Postgres updates zero rows and
+-- PostgREST answers 204, which is identical to a successful write.
+--
+-- This is NOT a widening of the security model. It puts areas in line with
+-- the six tables that already work this way. The anon key is currently the
+-- only thing protecting any of them, and it is readable in the page source of
+-- reserve.html. Replacing that with real staff auth is tracked separately;
+-- when it lands, this policy and the six like it come out together.
+DROP POLICY IF EXISTS "Public full access - areas" ON areas;
+CREATE POLICY "Public full access - areas" ON areas FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
 -- Public browser access for the guest book MVP.
 DROP POLICY IF EXISTS "Public full access - guests" ON guests;
 CREATE POLICY "Public full access - guests" ON guests FOR ALL

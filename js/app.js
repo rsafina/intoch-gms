@@ -2365,6 +2365,17 @@ function syncVipFromTime() {
   if (fromVal && timeEl) timeEl.value = fromVal;
 }
 
+// A booking in one of these statuses is HOLDING something right now: a seat in
+// its area, or the table it was given. Deliberately NOT RES_OCCUPANCY_STATUSES,
+// which also contains "Completed" — a guest who has already left still belongs
+// on the run sheet, but their seat is free and their table can be re-let.
+//
+// "Confirmed" was missing from both places that used to spell this list out by
+// hand. Nothing sets that status today, so it cost nothing; the deposit flow
+// promotes a paid booking to Confirmed, at which point every paid booking would
+// have vanished from the capacity cards and stopped blocking its own table.
+const RES_HOLDS_SEAT_STATUSES = ["Reserved", "Confirmed", "Arrived"];
+
 // Returns conflicting booking description, or null if the slot is free.
 async function findVipTimeConflict(tableId, date, startTime, endTime, excludeResId) {
   let q = db
@@ -2372,7 +2383,7 @@ async function findVipTimeConflict(tableId, date, startTime, endTime, excludeRes
     .select("id, reservation_time, end_time, guests(name)")
     .eq("table_id", tableId)
     .eq("reservation_date", date)
-    .in("status", ["Reserved", "Arrived"]);
+    .in("status", RES_HOLDS_SEAT_STATUSES);
   if (excludeResId) q = q.neq("id", excludeResId);
   const { data: existing, error } = await supabaseQuery(() => q, "Failed to check VIP availability");
   if (error) return "could-not-check";
@@ -2600,7 +2611,7 @@ async function renderAreas() {
         .from("reservations")
         .select("assigned_area, pax, status")
         .eq("reservation_date", TODAY)
-        .in("status", ["Reserved", "Arrived"]),
+        .in("status", RES_HOLDS_SEAT_STATUSES),
     "Failed to load area reservations",
   );
 
@@ -13732,9 +13743,57 @@ function areaFormatRupiah(n) {
   return Number.isFinite(num) ? Math.round(num).toLocaleString("id-ID") : "";
 }
 
-// Reformats a money box the moment the person leaves it, and never while they
-// are still typing: rewriting the value mid-keystroke moves the caret to the
-// end and people lose their place halfway through a number.
+// Money boxes reformat ON EVERY KEYSTROKE, which is what Rere asked for and
+// what people expect of a currency field. The reason to avoid it is that
+// rewriting the value moves the caret to the end, so somebody correcting the
+// middle of a number gets thrown to the end after each key. That is fixed
+// here rather than avoided: count the DIGITS before the caret, reformat, then
+// put the caret back after that same number of digits. Digits are the only
+// stable landmark, because the dots move as the number grows.
+function onAreaMoneyInput(el) {
+  if (!el) return;
+  const caret = el.selectionStart ?? el.value.length;
+  const digitsBefore = el.value.slice(0, caret).replace(/\D/g, "").length;
+
+  const n = areaParseRupiah(el.value);
+  const formatted = n === null ? "" : areaFormatRupiah(n);
+  if (el.value !== formatted) el.value = formatted;
+
+  let pos = 0;
+  let seen = 0;
+  while (pos < formatted.length && seen < digitsBefore) {
+    if (formatted[pos] >= "0" && formatted[pos] <= "9") seen++;
+    pos++;
+  }
+  try {
+    el.setSelectionRange(pos, pos);
+  } catch (e) {
+    /* a detached or hidden input cannot take a selection — never break typing */
+  }
+  refreshAreaDepositHint();
+}
+
+// Backspace onto a separator would otherwise look broken: deleting the dot in
+// "1.500.000" leaves the digits unchanged, so reformatting puts the dot
+// straight back and the key appears to do nothing. Delete the digit in front
+// of it instead, which is what the person meant.
+function onAreaMoneyKeydown(el, ev) {
+  if (!el || !ev || ev.key !== "Backspace") return;
+  const start = el.selectionStart;
+  if (start !== el.selectionEnd || start < 2) return;
+  if (el.value[start - 1] !== ".") return;
+  ev.preventDefault();
+  el.value = el.value.slice(0, start - 2) + el.value.slice(start);
+  try {
+    el.setSelectionRange(start - 2, start - 2);
+  } catch (e) {
+    /* see above */
+  }
+  onAreaMoneyInput(el);
+}
+
+// Blur stays as the backstop for values that never went through a keystroke:
+// autofill, a paste handled by the browser, or a programmatic change.
 function onAreaMoneyBlur(el) {
   if (!el) return;
   const n = areaParseRupiah(el.value);
@@ -13862,7 +13921,12 @@ async function saveArea() {
   const btn = document.getElementById("area-save-button");
   if (btn) btn.disabled = true;
   loader(true);
-  const { error } = await supabaseQuery(
+  // .select() is NOT decoration. Without it PostgREST answers 204 No Content
+  // and supabaseQuery reports success, which is ALSO what it reports for an
+  // update that matched zero rows — a row-level policy refusing the write, or
+  // an id that no longer exists. The app then says "Area updated" over a write
+  // that changed nothing. Asking for the row back makes the difference visible.
+  const { data: saved, error } = await supabaseQuery(
     () =>
       id
         ? db
@@ -13876,20 +13940,42 @@ async function saveArea() {
               deposit_amount: depAmount,
             })
             .eq("id", id)
-        : db.from("areas").insert({
-            name,
-            capacity,
-            is_bookable_online: bookable,
-            min_pax: minPax,
-            min_spend: minSpend,
-            deposit_amount: depAmount,
-          }),
+            .select("id, is_bookable_online, min_pax, min_spend, deposit_amount")
+        : db
+            .from("areas")
+            .insert({
+              name,
+              capacity,
+              is_bookable_online: bookable,
+              min_pax: minPax,
+              min_spend: minSpend,
+              deposit_amount: depAmount,
+            })
+            .select("id, is_bookable_online, min_pax, min_spend, deposit_amount"),
     "Failed to save area",
   );
   loader(false);
   if (btn) btn.disabled = false;
   if (error) {
     toast(error.message || t("Failed to save area"), "error");
+    return;
+  }
+  const row = Array.isArray(saved) ? saved[0] : saved;
+  if (!row) {
+    console.error("saveArea: the write returned no row", { id, bookable });
+    toast(
+      t("Nothing was saved. The area may have been deleted, or the database refused the change."),
+      "error",
+    );
+    return;
+  }
+  // The row came back, so the write landed. If the switch still disagrees with
+  // what was sent, the column was accepted and discarded, which is a different
+  // fault from a refused write and must not read as success either.
+  if (!!row.is_bookable_online !== bookable) {
+    console.error("saveArea: the database did not keep is_bookable_online", { sent: bookable, stored: row.is_bookable_online, row });
+    toast(t("Saved, but the database did not keep the online booking settings."), "error");
+    await refreshAreasAndTables();
     return;
   }
   hideModal("modal-area");

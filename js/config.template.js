@@ -133,6 +133,10 @@ const ID_DICT = {
   "This deposit is larger than the minimum spend.":
     "Deposit ini lebih besar dari minimum belanja.",
   "Staff only": "Khusus staf",
+  "Nothing was saved. The area may have been deleted, or the database refused the change.":
+    "Tidak ada yang tersimpan. Area mungkin sudah dihapus, atau database menolak perubahan.",
+  "Saved, but the database did not keep the online booking settings.":
+    "Tersimpan, tapi database tidak menyimpan pengaturan pemesanan online.",
   "Needs deposit": "Perlu deposit",
   "Minimum guests cannot be higher than the seats in this area":
     "Minimum tamu tidak boleh lebih besar dari jumlah kursi di area ini",

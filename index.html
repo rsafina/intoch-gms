@@ -7370,11 +7370,11 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             </div>
             <div>
               <label class="block text-[11px] text-[#777] mb-1" data-i18n>Minimum spend (Rp)</label>
-              <input id="area-min-spend" type="text" inputmode="numeric" placeholder="e.g. 1.500.000" class="form-input" onblur="onAreaMoneyBlur(this)" />
+              <input id="area-min-spend" type="text" inputmode="numeric" placeholder="e.g. 1.500.000" class="form-input" onkeydown="onAreaMoneyKeydown(this, event)" oninput="onAreaMoneyInput(this)" onblur="onAreaMoneyBlur(this)" />
             </div>
             <div>
               <label class="block text-[11px] text-[#777] mb-1" data-i18n>Deposit (Rp)</label>
-              <input id="area-deposit-amount" type="text" inputmode="numeric" placeholder="e.g. 500.000" class="form-input" onblur="onAreaMoneyBlur(this)" />
+              <input id="area-deposit-amount" type="text" inputmode="numeric" placeholder="e.g. 500.000" class="form-input" onkeydown="onAreaMoneyKeydown(this, event)" oninput="onAreaMoneyInput(this)" onblur="onAreaMoneyBlur(this)" />
             </div>
           </div>
           <p id="area-deposit-hint" class="hidden text-[11px] mt-2 pl-7"></p>
@@ -9100,9 +9100,9 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
 
-    <script src="js/config.js?v=15"></script>
+    <script src="js/config.js?v=16"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=26"></script>
+    <script src="js/app.js?v=29"></script>
     <script src="js/membership.js?v=5"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->
