@@ -139,10 +139,14 @@
       .pill {
         font: inherit;
         font-size: 12.5px;
-        line-height: 1.25;
-        min-height: 52px;
-        padding: 10px 8px;
-        border-radius: 12px;
+        line-height: 1.3;
+        /* Stadium, not a rounded box, so the area picker and the hour picker
+           read as one control. Long names still wrap to two lines inside it;
+           the min-height keeps a one-line and a two-line pill the same size in
+           the same row. */
+        min-height: 46px;
+        padding: 10px 14px;
+        border-radius: 999px;
         cursor: pointer;
         text-align: center;
         color: #f2efe9;
@@ -401,44 +405,86 @@
         grid-template-columns: 1fr 1fr;
         gap: 12px;
       }
-      /* Pax stepper */
+      /* Pax stepper: three separate controls, not one segmented box. The
+         round buttons are targets a thumb finds without looking, and the
+         number sits in its own field between them. */
       .pax-box {
         display: flex;
         align-items: center;
-        gap: 0;
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        background: rgba(255, 255, 255, 0.08);
-        border-radius: 12px;
-        overflow: hidden;
+        gap: 10px;
       }
       .pax-box button {
-        width: 52px;
-        height: 48px;
-        border: none;
-        background: transparent;
+        flex: 0 0 auto;
+        width: 46px;
+        height: 46px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.1);
         color: #fff;
         font-size: 22px;
         font-weight: 300;
+        line-height: 1;
         cursor: pointer;
       }
       .pax-box button:active {
-        background: rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.18);
       }
       #pax-value {
         flex: 1;
         width: 100%;
         min-width: 0;
+        height: 46px;
         text-align: center;
-        font-size: 16px;
-        font-weight: 500;
+        font-size: 17px;
+        font-weight: 600;
         font-family: inherit;
         color: #fff;
-        background: transparent;
-        border: none;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 999px;
         outline: none;
         padding: 0;
         -moz-appearance: textfield;
         appearance: textfield;
+      }
+      #pax-value:focus {
+        border-color: var(--primary);
+        background: rgba(255, 255, 255, 0.12);
+      }
+      /* A native checkbox, tinted. A hand-drawn one would have to reimplement
+         the focus ring and the keyboard behaviour, and this is the only
+         checkbox on the page. */
+      .pax-check {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 12px;
+        font-size: 13px;
+        line-height: 1.4;
+        color: rgba(242, 239, 233, 0.9);
+        cursor: pointer;
+      }
+      /* Every one of these resets undoes the page-wide `input` rule above,
+         which is written for text fields: full width, 12px of padding and a
+         rounded translucent background. Applied to a checkbox it renders a
+         blob the size of a button with no tick in it. */
+      .pax-check input {
+        flex: 0 0 auto;
+        width: 18px;
+        height: 18px;
+        min-width: 0;
+        padding: 0;
+        margin: 0;
+        border: none;
+        border-radius: 0;
+        background: none;
+        appearance: auto;
+        -webkit-appearance: checkbox;
+        accent-color: var(--primary);
+        cursor: pointer;
       }
       /* hide the native number spinners — the +/- buttons do that job */
       #pax-value::-webkit-outer-spin-button,
@@ -457,17 +503,27 @@
         font-size: 13px;
         line-height: 1.45;
       }
+      /* The band behind the sticky button. It used to fade to a hardcoded
+         navy from the old theme, which on the purple card painted a grey
+         rectangle with square corners across the card's rounded bottom — the
+         "weird shadow". It now fades to the card's OWN colour and carries the
+         card's corner radius, so it disappears into the card instead of
+         sitting on top of it.
+
+         Negative side margins pull it out to the card's edges, past the 18px
+         padding, or the band stops short and draws two vertical seams. */
       .submit-dock {
         position: sticky;
         bottom: 0;
         z-index: 3;
-        padding: 10px 0 calc(6px + env(safe-area-inset-bottom));
-        margin-top: 4px;
+        margin: 4px -18px -22px;
+        padding: 12px 18px calc(14px + env(safe-area-inset-bottom));
+        border-radius: 0 0 18px 18px;
         background: linear-gradient(
           180deg,
-          rgba(16, 24, 32, 0) 0%,
-          rgba(16, 24, 32, 0.55) 38%,
-          rgba(16, 24, 32, 0.78) 100%
+          rgb(var(--brand-deepest-rgb) / 0) 0%,
+          var(--rf-glass) 46%,
+          var(--rf-glass) 100%
         );
       }
       .btn-submit {
@@ -482,7 +538,9 @@
         color: #fff;
         background: linear-gradient(135deg, var(--primary), var(--dark));
         cursor: pointer;
-        box-shadow: 0 6px 20px rgb(var(--brand-rgb) / 0.35);
+        /* A soft lift, not a coloured glow. The old brand-purple shadow was
+           invisible on a navy page and muddy on a purple one. */
+        box-shadow: 0 6px 18px rgb(0 0 0 / 0.28);
         transition:
           opacity 0.15s,
           transform 0.1s;
@@ -748,6 +806,17 @@
                 +
               </button>
             </div>
+            <!-- Off unless the restaurant switches it on, like the company
+                 box: a restaurant with no private room must not advertise
+                 one. What it does is written into the reservation notes on
+                 submit, so it reaches staff through something they already
+                 read. -->
+            <label class="pax-check" id="pax-request-row" style="display: none">
+              <input type="checkbox" id="f-pax-request" />
+              <span id="pax-request-label" data-i18n
+                >Book a private room if available</span
+              >
+            </label>
             <p id="pax-note" class="soft-note" style="display: none"></p>
           </div>
 
@@ -991,7 +1060,9 @@
       let AREA_ID = null;      // the chosen one, null while none is
       let AVAIL = {};          // area_id -> availability for the chosen date
       let SHOW_CAPACITY = false;
+      let SHOW_PAX_REQUEST = false; // the optional tick box under the stepper
       const WELCOME_MAX = 160; // mirrors RESERVATION_WELCOME_MAX in js/app.js
+      const PAX_REQUEST_MAX = 80; // mirrors RESERVATION_PAX_REQUEST_MAX
       const rupiah = (n) => "Rp " + Number(n).toLocaleString("id-ID");
       let HOURS = { open: "10:00", close: "21:30" }; // fallback; real value from app_settings
       let MIN_LEAD_DAYS = 0; // 0 = same-day booking allowed; from app_settings
@@ -1395,6 +1466,21 @@
           if (v.show_notes === false) $("notes-field").style.display = "none";
           if (v.show_company === true) $("company-field").style.display = "";
           SHOW_CAPACITY = v.show_capacity === true;
+          SHOW_PAX_REQUEST = v.pax_request === true;
+          if (SHOW_PAX_REQUEST) {
+            $("pax-request-row").style.display = "";
+            // The restaurant's own wording, when they have written some. Same
+            // rule as the welcome line: their words are printed as typed and
+            // the data-i18n comes off with them, or the next language switch
+            // would put our sentence back over theirs.
+            const label = (v.pax_request_label || "").trim().slice(0, PAX_REQUEST_MAX);
+            if (label) {
+              const el = $("pax-request-label");
+              el.removeAttribute("data-i18n");
+              delete el.dataset.i18nEn;
+              el.textContent = label;
+            }
+          }
           // Trimmed AND capped. Settings caps it too, but this row can be
           // edited straight in the Supabase table editor, and a 900-character
           // welcome line pushes the whole form below the fold. Same number as
@@ -1717,7 +1803,22 @@
         const phone = $("f-phone").value.trim();
         const date = $("f-date").value;
         const time = $("f-time").value;
-        const notes = $("f-notes").value.trim();
+        // The tick box is a line of notes, and it goes FIRST. The database
+        // function stores left(notes, 500), so a guest who fills the notes box
+        // to the brim would otherwise push the request off the end of the
+        // string it was truncated into — silently, and only for the guests who
+        // wrote the most.
+        //
+        // It is recorded in the language the guest read it in. That is what
+        // they actually agreed to, and an English line on an Indonesian
+        // booking is still legible to the host.
+        const paxRequest =
+          SHOW_PAX_REQUEST && $("f-pax-request").checked
+            ? ($("pax-request-label").textContent || "").trim()
+            : "";
+        const notes = [paxRequest, $("f-notes").value.trim()]
+          .filter(Boolean)
+          .join("\n");
         const company = ($("f-company")?.value || "").trim();
         const pax = readPax();
 

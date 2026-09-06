@@ -42,6 +42,30 @@ is what a guest spent after eating, which is a different fact.
 | 2 | Editing an issued invoice | **Manager may edit, every change logged** |
 | 3 | Where the pre-order is captured | **Staff type it in**, from WhatsApp or a call |
 | 4 | Visibility | Badge on the reservation row, task in the bell, report of money outstanding |
+| 5 | A payment with no invoice | **Allowed, 2026-09-05.** A payment attaches to an invoice OR a reservation, exactly one of the two |
+| 6 | Building this before RLS | **Accepted, 2026-09-05.** See Risks question 1, rewritten below |
+
+### Decision 5: payments do not require an invoice
+
+The deposit flow deliberately issues no invoice. Auto-issuing one was dropped in
+September in favour of a QR, precisely because minting numbered financial documents
+from a public form dragged in numbering, rate limiting and an audit trail nobody
+needed yet.
+
+But `invoice_payments.invoice_id` was written as required, so as first drafted **a
+deposit could not be recorded without inventing an invoice for it**. That is paperwork
+created to satisfy a foreign key.
+
+Decision 1 already said "a reservation carries payment state"; the data model simply did
+not follow through. So:
+
+- `invoice_id` becomes nullable, and `reservation_id` is added
+- a CHECK requires **exactly one** of them to be set
+- everything else is unchanged: rows not columns, free-text `method`, negative amounts
+  for refunds, and no stored status
+
+One table, one set of rules. A deposit records against the booking today; when invoices
+arrive they use the same table rather than a parallel one.
 
 Decision 2 answers the question Rere left in July when she chose not to give
 invoices a database at all:
@@ -230,20 +254,30 @@ Naming these now prevents the scope creeping in later under the word "obvious".
 
 ## Risks and open questions
 
-### 1. RLS is still off, and this raises the stakes
+### 1. RLS, REWRITTEN 2026-09-05, and the risk is now accepted
 
-This is the important one. Today the anon key is public in the browser and Row
-Level Security is disabled, so anyone who views source on a client's app can
-read and write every table. That is already listed as the thing that blocks the
-first sale.
+The August text said RLS was disabled. It is not: it is enabled on ten tables and
+nine of them carry a `USING (true)` policy, so the door is open anyway. Worse, the
+staff app has **no database identity at all** — it authenticates a PIN in JavaScript,
+so every request is the `anon` role. See `CLAUDE.md`, "Must be fixed before the first
+sale".
 
-Adding invoices and payments puts **financial records** behind that same open
-door. A guest could read every invoice the restaurant has issued, or write a
-payment row claiming they paid.
+So "a guest could write a payment row claiming they paid" is **literally true**, not a
+hypothetical.
 
-**RLS should land before this feature, or at the same time as it.** Building it
-first does not create the hole, but it makes the hole considerably more
-expensive.
+**Rere accepted this on 2026-09-05 and chose to build payments now.** The reasoning,
+recorded so it is not silently re-litigated:
+
+- Blue Heron is her own venue, and this exact risk was already accepted for guest data.
+- These rows record money that **already arrived**, keyed in by staff. This is a
+  bookkeeping ledger, not a payment gateway: a forged row is an error someone can spot
+  against the bank, not stolen money.
+- Real staff auth remains the thing that blocks the first paying client, and it does not
+  get easier by delaying the deposit flow.
+
+**What this means for whoever builds the rest of the invoice feature:** the acceptance
+covers deposit payments on Rere's own venue. It does NOT extend to shipping invoices to
+a paying client. Before that, staff auth lands.
 
 ### 2. Invoice numbering
 

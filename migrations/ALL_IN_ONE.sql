@@ -5209,6 +5209,89 @@ as $function$
   end;
   $function$;
 
+-- ============================================================
+-- 20260905_payments.sql — recording money against a booking
+-- ============================================================
+-- Scoped in RESERVATION_INVOICE_SPEC.md 2026-08-23, built ahead of the rest of
+-- that feature because the deposit flow needs somewhere to put money.
+--
+-- THE RULE THAT SHAPES THIS TABLE, quoting Rere: "the payment itself vary
+-- between each restaurant anyway, so we cant put exact writing format for
+-- this". So: PAYMENTS ARE ROWS. Not `dp_amount` and `balance` columns, which
+-- encode one restaurant's habit as a schema and break on the next client who
+-- takes a flat fee, or full prepayment, or three instalments.
+
+create table if not exists public.invoice_payments (
+  id            uuid primary key default uuid_generate_v4(),
+  -- EXACTLY ONE of these. The deposit flow issues no invoice on purpose, so a
+  -- required invoice_id would mean inventing paperwork to satisfy a foreign
+  -- key. Decision 5, 2026-09-05.
+  invoice_id     uuid,
+  reservation_id uuid references public.reservations(id) on delete cascade,
+  -- NEGATIVE IS LEGAL. That is how a refund is recorded; a separate refunds
+  -- table would need its own everything and then need reconciling.
+  amount        numeric not null,
+  paid_on       date not null default current_date,
+  -- Free text, deliberately. No enum: constraining this is the same mistake as
+  -- constraining the deposit shape, and this schema has already taken an
+  -- outage from a CHECK narrower than reality.
+  method        text,
+  reference     text,
+  note          text,
+  recorded_at   timestamptz not null default now(),
+  recorded_by   uuid references public.staff_users(id),
+  constraint invoice_payments_one_parent check (
+    (invoice_id is not null and reservation_id is null)
+    or (invoice_id is null and reservation_id is not null)
+  ),
+  constraint invoice_payments_amount_not_zero check (amount <> 0)
+);
+
+create index if not exists idx_invoice_payments_reservation
+  on public.invoice_payments(reservation_id) where reservation_id is not null;
+create index if not exists idx_invoice_payments_invoice
+  on public.invoice_payments(invoice_id) where invoice_id is not null;
+
+comment on table public.invoice_payments is
+  'Money in, one row per payment. Attaches to an invoice OR a reservation, never both. Negative amounts are refunds. `method` is free text on purpose. There is deliberately NO status column here or on reservations: see reservation_deposit_balances.';
+
+-- ---------- Derived, never stored ----------
+-- A `deposit_paid` boolean would be a second truth that drifts the moment
+-- somebody edits or deletes a payment, and this codebase has already been bitten
+-- by exactly that. Every screen reads this view so they agree by construction.
+drop view if exists public.reservation_deposit_balances;
+create view public.reservation_deposit_balances as
+select r.id                                        as reservation_id,
+       r.deposit_required,
+       coalesce(r.deposit_expected, 0)             as expected,
+       coalesce(sum(p.amount), 0)                  as paid,
+       coalesce(r.deposit_expected, 0) - coalesce(sum(p.amount), 0) as outstanding,
+       case
+         when not r.deposit_required                       then 'none'
+         when coalesce(sum(p.amount), 0) <= 0              then 'unpaid'
+         when coalesce(sum(p.amount), 0)
+              >= coalesce(r.deposit_expected, 0)           then 'paid'
+         else 'partial'
+       end                                         as state
+  from reservations r
+  left join invoice_payments p on p.reservation_id = r.id
+ where r.deleted_at is null
+ group by r.id, r.deposit_required, r.deposit_expected;
+
+comment on view public.reservation_deposit_balances is
+  'Deposit state per booking, DERIVED. state: none / unpaid / partial / paid. Never store this; a stored copy drifts the moment a payment row is edited.';
+
+grant select on public.reservation_deposit_balances to anon, authenticated;
+
+-- RLS matching every other table here. NOT a security boundary: the staff app
+-- has no database identity, so this is consistent rather than protective. The
+-- risk was accepted 2026-09-05 for Rere's own venue and does NOT extend to a
+-- paying client. See RESERVATION_INVOICE_SPEC.md, Risks question 1.
+alter table public.invoice_payments enable row level security;
+drop policy if exists "Public full access - invoice_payments" on public.invoice_payments;
+create policy "Public full access - invoice_payments" on public.invoice_payments for all
+  using (true) with check (true);
+
 -- ---------- Confirm ----------
 select 'areas.is_bookable_online' as checked, count(*) as found
 from information_schema.columns
@@ -5277,8 +5360,34 @@ select 'the live function does not count Waitlist as held',
        case when pg_get_functiondef(p.oid) like '%''Reserved'',''Confirmed'',''Arrived''%'
             then 1 else 0 end
 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-where n.nspname = 'public' and p.proname = 'create_public_reservation';
--- expect: 1, 4, 3, 1, 1, 1, [see below], 1, 1, 1, 1, 1
+where n.nspname = 'public' and p.proname = 'create_public_reservation'
+union all
+select 'invoice_payments exists', count(*)
+from information_schema.tables
+where table_schema = 'public' and table_name = 'invoice_payments'
+union all
+-- Exactly one parent. Without this a payment can attach to an invoice AND a
+-- booking, or to neither, and the balances view double-counts or loses it.
+select 'a payment has exactly one parent',
+       -- Postgres rewrites and parenthesises a CHECK, so match on the shape
+       -- that survives that rather than on the text as written above.
+       case when pg_get_constraintdef(c.oid) ilike '%invoice_id IS NOT NULL%'
+             and pg_get_constraintdef(c.oid) ilike '%reservation_id IS NULL%'
+             and pg_get_constraintdef(c.oid) ilike '%OR%'
+            then 1 else 0 end
+from pg_constraint c where c.conname = 'invoice_payments_one_parent'
+union all
+select 'the deposit balances view exists', count(*)
+from information_schema.views
+where table_schema = 'public' and table_name = 'reservation_deposit_balances'
+union all
+-- A stored deposit status would drift the moment a payment row is edited.
+select 'no deposit status column was added',
+       case when count(*) = 0 then 1 else 0 end
+from information_schema.columns
+where table_schema = 'public' and table_name = 'reservations'
+  and column_name in ('deposit_paid', 'deposit_status', 'payment_status');
+-- expect: 1, 4, 3, 1, 1, 1, [see below], 1, 1, 1, 1, 1, 1, 1, 1, 1
 --
 -- "no area is bookable online yet" returns 1 only BEFORE any area is switched
 -- on. Indoor Dining was switched on 2026-09-05, so it now returns 0 and that is

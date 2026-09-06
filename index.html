@@ -6878,6 +6878,24 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               </label>
             </div>
 
+            <div class="rounded-10 border border-[#EDE9E3] p-4 mb-3">
+              <label class="flex items-start gap-3 cursor-pointer">
+                <input id="rff-pax-request" type="checkbox" class="mt-0.5" onchange="renderPaxRequestLabelState()" />
+                <span>
+                  <span class="block text-sm font-medium text-[#333]" data-i18n>Tick box under the party size</span>
+                  <span class="block text-xs text-[#999] mt-0.5" data-i18n>A single request a guest can tick, written into the top of the reservation notes when they do. Off unless you turn it on: a restaurant with no private room should not offer one.</span>
+                  <input
+                    id="rff-pax-request-label"
+                    type="text"
+                    maxlength="80"
+                    class="form-input mt-2"
+                    placeholder="Book a private room if available"
+                  />
+                  <span class="block text-[11px] text-[#999] mt-1" data-i18n>Leave it empty for the built-in wording, which is translated for the guest. Your own words are shown exactly as typed, in one language only.</span>
+                </span>
+              </label>
+            </div>
+
             <div class="rounded-10 border border-[#EDE9E3] p-4 mb-5">
               <label class="flex items-start gap-3 cursor-pointer">
                 <input id="rff-show-capacity" type="checkbox" class="mt-0.5" />

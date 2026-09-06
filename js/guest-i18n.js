@@ -69,6 +69,7 @@ const GUEST_DICT = {
   "Romantic decoration, pre-ordered dishes, a baby chair, and so on.":
     "Bisa dekorasi romantis, pre-order menu, baby chair, dsb.",
   "Reserve Now": "Pesan Sekarang",
+  "Book a private room if available": "Pesan ruang privat jika tersedia",
   "Sending...": "Mengirim...",
 
   // ── Booking form: the hour picker ──

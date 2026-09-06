@@ -54,6 +54,9 @@ function grab(src, decl, where) {
 }
 
 const WELCOME_MAX = Number(appSrc.match(/const RESERVATION_WELCOME_MAX = (\d+);/)[1]);
+const PAX_REQUEST_MAX = Number(
+  appSrc.match(/const RESERVATION_PAX_REQUEST_MAX = (\d+);/)[1],
+);
 
 // -- Markup ------------------------------------------------------------
 console.log("\nThe card exists and offers exactly the four movable fields");
@@ -74,9 +77,10 @@ console.log("\nNothing that cannot actually be switched off is offered");
 for (const forbidden of ["show_name", "show_phone", "show_date", "show_time", "show_pax"])
   ok("no " + forbidden + " control", !new RegExp(forbidden).test(card));
 const boxes = (card.match(/type="checkbox"/g) || []).length;
-// Four since 2026-09-06: the three field switches plus the guest-page
-// ID/EN switch. The count is pinned so a fifth cannot appear unnoticed.
-ok("exactly four checkboxes", boxes === 4, String(boxes));
+// Five since 2026-09-06: three field switches, the guest-page ID/EN
+// switch, and the optional tick box under the party size. Pinned so a
+// sixth cannot appear unnoticed.
+ok("exactly five checkboxes", boxes === 5, String(boxes));
 
 console.log("\nThe screen is wired into the settings page load");
 ok(
@@ -162,6 +166,10 @@ function harness(opts) {
       "rff-show-capacity": { checked: false },
       "rff-welcome": { value: "" },
       "rff-welcome-count": { textContent: "" },
+      "rff-language": { value: "id" },
+      "rff-lang-switch": { checked: true },
+      "rff-pax-request": { checked: false },
+      "rff-pax-request-label": { value: "", disabled: false, style: {} },
     },
   };
   c.document = { getElementById: (id) => c.values[id] || null };
@@ -170,10 +178,14 @@ function harness(opts) {
     grab(appSrc, "RESERVATION_FORM_DEFAULTS", "app.js") +
       "\nconst RESERVATION_WELCOME_MAX = " +
       WELCOME_MAX +
+      ";\nconst RESERVATION_PAX_REQUEST_MAX = " +
+      PAX_REQUEST_MAX +
       ";\n" +
       lift(appSrc, "reservationFormSettings", "app.js") +
       "\n" +
       lift(appSrc, "renderReservationFormFields", "app.js") +
+      "\n" +
+      lift(appSrc, "renderPaxRequestLabelState", "app.js") +
       "\n" +
       lift(appSrc, "onReservationWelcomeInput", "app.js") +
       "\n" +
@@ -291,6 +303,55 @@ function harness(opts) {
   ok(
     "the welcome value never goes through t()",
     !/(?:^|[^A-Za-z0-9_.])t\(\s*(?:raw|welcome_text|cfg\.welcome_text)/m.test(appSrc),
+  );
+
+  console.log("\nThe tick box under the party size");
+  // A request a guest ticks and nobody reads is worse than no tick box: the
+  // guest believes they have asked. It reaches staff as a line of notes, and
+  // where that line sits in the string is the whole trick — see below.
+  ok(
+    "off by default, and with no wording of its own",
+    /pax_request: false/.test(appSrc) && /pax_request_label: null/.test(appSrc),
+  );
+  ok(
+    "the row is hidden in the markup, not just unchecked",
+    /id="pax-request-row"[\s\S]{0,60}display: none/.test(reserveTpl),
+  );
+  ok(
+    "the booking page only shows it on an explicit true",
+    /SHOW_PAX_REQUEST = v\.pax_request === true/.test(reserveTpl),
+  );
+  // The database function stores left(notes, 500). A guest who fills the notes
+  // box to the brim would push a request appended at the END off the string it
+  // was truncated into — silently, and only for the guests who wrote the most.
+  ok(
+    "the request goes FIRST in the notes, ahead of the guest's own",
+    /\[paxRequest, \$\("f-notes"\)\.value\.trim\(\)\]/.test(reserveTpl),
+  );
+  ok(
+    "the server still truncates from the left",
+    /left\(trim\(coalesce\(p_notes/.test(
+      fs.readFileSync(path.join(ROOT, "migrations", "ALL_IN_ONE.sql"), "utf8"),
+    ),
+  );
+  ok(
+    "the restaurant's own wording loses its data-i18n",
+    /pax-request-label[\s\S]{0,200}removeAttribute\("data-i18n"\)/.test(reserveTpl),
+  );
+  ok(
+    "both caps on the wording are the same number",
+    PAX_REQUEST_MAX ===
+      Number(reserveTpl.match(/const PAX_REQUEST_MAX = (\d+);/)[1]),
+  );
+  ok(
+    "blank wording is stored as null, not an empty label",
+    /\.slice\(0, RESERVATION_PAX_REQUEST_MAX\) \|\| null/.test(appSrc),
+  );
+  ok(
+    "the built-in wording is translated for the guest",
+    fs
+      .readFileSync(path.join(ROOT, "js", "guest-i18n.js"), "utf8")
+      .includes('"Book a private room if available":'),
   );
 
   console.log("\n" + pass + " passed, " + fail + " failed");

@@ -296,6 +296,11 @@ const ID_DICT = {
     "Tidak ada yang tersimpan. Hubungi administrator Anda.",
   "How the booking page looks to a guest. The same backdrop and colours carry over to the thank-you page they land on after booking.":
     "Tampilan halaman reservasi untuk tamu. Latar dan warna yang sama juga dipakai di halaman terima kasih setelah mereka memesan.",
+  "Tick box under the party size": "Kotak centang di bawah jumlah tamu",
+  "A single request a guest can tick, written into the top of the reservation notes when they do. Off unless you turn it on: a restaurant with no private room should not offer one.":
+    "Satu permintaan yang bisa dicentang tamu, dan ditulis di bagian atas catatan reservasi kalau dicentang. Nonaktif kecuali Anda aktifkan: restoran tanpa ruang privat sebaiknya tidak menawarkannya.",
+  "Leave it empty for the built-in wording, which is translated for the guest. Your own words are shown exactly as typed, in one language only.":
+    "Kosongkan untuk memakai kalimat bawaan, yang otomatis diterjemahkan untuk tamu. Kalimat Anda sendiri ditampilkan persis seperti yang diketik, hanya dalam satu bahasa.",
   "Language guests see": "Bahasa yang dilihat tamu",
   Indonesian: "Bahasa Indonesia",
   English: "Bahasa Inggris",

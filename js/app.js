@@ -13507,7 +13507,16 @@ const RESERVATION_FORM_DEFAULTS = {
   // absent key changes nothing; "auto" follows the guest's phone.
   guest_language: "id",
   show_lang_switch: true,
+  // The optional tick box under the party size. Off, and empty means the
+  // built-in sentence, which is the only one the guest dictionary can
+  // translate.
+  pax_request: false,
+  pax_request_label: null,
 };
+
+// The booking page truncates to the same number on read. Change one, change
+// the other: reserve.template.html, PAX_REQUEST_MAX.
+const RESERVATION_PAX_REQUEST_MAX = 80;
 
 // The booking page truncates to the same number on read, because this row can
 // also be edited straight in the Supabase table editor. Change one, change the
@@ -13538,7 +13547,22 @@ function renderReservationFormFields() {
       ? cfg.guest_language
       : "id";
   check("rff-lang-switch", cfg.show_lang_switch !== false);
+  check("rff-pax-request", cfg.pax_request === true);
+  const pl = document.getElementById("rff-pax-request-label");
+  if (pl)
+    pl.value = String(cfg.pax_request_label || "").slice(0, RESERVATION_PAX_REQUEST_MAX);
+  renderPaxRequestLabelState();
   onReservationWelcomeInput();
+}
+
+// The wording box is meaningless while the tick box is off, and a field that
+// accepts typing nobody will ever see is a settings screen that lies.
+function renderPaxRequestLabelState() {
+  const on = !!document.getElementById("rff-pax-request")?.checked;
+  const el = document.getElementById("rff-pax-request-label");
+  if (!el) return;
+  el.disabled = !on;
+  el.style.opacity = on ? "" : "0.5";
 }
 
 function onReservationWelcomeInput() {
@@ -13577,6 +13601,14 @@ async function saveReservationFormFields() {
       ? document.getElementById("rff-language").value
       : "id",
     show_lang_switch: on("rff-lang-switch"),
+    pax_request: on("rff-pax-request"),
+    // Blank is stored as null, not "", so the booking page falls back to the
+    // built-in sentence rather than rendering an empty label with a tick box
+    // beside it.
+    pax_request_label:
+      String(document.getElementById("rff-pax-request-label")?.value || "")
+        .trim()
+        .slice(0, RESERVATION_PAX_REQUEST_MAX) || null,
     // Blank is stored as null, not "", so the booking page falls back to its
     // bundled sentence rather than rendering an empty line. The text is the
     // client's own words: it is never run through the translation dictionary,
