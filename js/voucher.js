@@ -253,20 +253,10 @@ function vcBrowserEnv() {
 async function vcPreloadFonts() {
   if (typeof FontFace === "undefined" || !document.fonts) return;
   try {
-    const base =
-      "https://fonts.gstatic.com/s/dmsans/v15/rP2Hp2ywxg089UriCZa4ET-DNl0.woff2";
-    const bold =
-      "https://fonts.gstatic.com/s/dmsans/v15/rP2Cp2ywxg089UriAaIwXb-_lh2.woff2";
-    const serif =
-      "https://fonts.gstatic.com/s/cormorantgaramond/v22/co3WmX5slCNuHLi8bLeY9MK7whWMhyjQAllvuQ.woff2";
     await Promise.all([
-      new FontFace("DMSans", `url(${base})`).load().then((f) => document.fonts.add(f)),
-      new FontFace("DMSans", `url(${bold})`, { weight: "600" })
-        .load()
-        .then((f) => document.fonts.add(f)),
-      new FontFace("Cormorant", `url(${serif})`, { weight: "500" })
-        .load()
-        .then((f) => document.fonts.add(f)),
+      document.fonts.load('400 28px "Plus Jakarta Sans"'),
+      document.fonts.load('500 86px "Plus Jakarta Sans"'),
+      document.fonts.load('600 22px "Plus Jakarta Sans"'),
     ]);
   } catch (e) {
     // System fonts are an acceptable degradation — never block the card.
@@ -281,9 +271,9 @@ async function vcPreloadFonts() {
 async function vcRenderVoucher(data, env) {
   env = env || vcBrowserEnv();
   const sans = (px, weight) =>
-    `${weight || 400} ${px}px DMSans, "DM Sans", Helvetica, Arial, sans-serif`;
+    `${weight || 400} ${px}px "Plus Jakarta Sans", Helvetica, Arial, sans-serif`;
   const serif = (px) =>
-    `500 ${px}px Cormorant, "Cormorant Garamond", Georgia, serif`;
+    `500 ${px}px "Plus Jakarta Sans", Helvetica, Arial, sans-serif`;
 
   const canvas = env.createCanvas(VC_W, VC_H);
   const ctx = canvas.getContext("2d");

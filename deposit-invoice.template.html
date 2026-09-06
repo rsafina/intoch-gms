@@ -31,7 +31,7 @@
         --brand-tint2: #f6faff;
         --accent: #ffde70;
         --accent-hover: #e9c653;
-        --accent-strong: #6b4a00;
+        --accent-strong: #9a6a00;
         --accent-tint: #ffe9a3;
         --accent-tint2: #fff7de;
         --brand-rgb: 23 59 100;
@@ -42,7 +42,7 @@
         --brand-soft-rgb: 163 196 235;
         --accent-rgb: 255 222 112;
         --accent-hover-rgb: 233 198 83;
-        --accent-strong-rgb: 107 74 0;
+        --accent-strong-rgb: 154 106 0;
 
         /* Overwritten at runtime from app_settings.reserve_appearance so this
            page matches the booking form the guest just came from. */
@@ -116,6 +116,15 @@
         max-width: 240px; width: 100%; border-radius: 12px;
         background: #fff; padding: 10px; display: inline-block;
       }
+      .qr-download {
+        display: inline-flex; align-items: center; justify-content: center;
+        margin-top: 10px; padding: 10px 14px; border-radius: 12px;
+        border: 1px solid rgb(var(--brand-rgb) / .28);
+        background: rgba(255,255,255,.12); color: inherit;
+        font: inherit; font-size: 13px; font-weight: 700;
+        text-decoration: none; cursor: pointer;
+      }
+      .qr-download:hover { background: rgba(255,255,255,.18); }
       .note {
         margin-top: 14px; font-size: 13px; line-height: 1.6;
         border-left: 2px solid rgb(var(--accent-rgb) / .5); padding-left: 11px; opacity: .9;
@@ -167,6 +176,14 @@
         background: #f6faff;
         border-color: rgba(23,59,100,.14);
         color: #252035;
+      }
+      :root[data-rf-bg="solid"] .qr-download {
+        background: #fff;
+        border-color: rgba(23,59,100,.18);
+        color: var(--primary);
+      }
+      :root[data-rf-bg="solid"] .qr-download:hover {
+        background: var(--brand-tint);
       }
       :root[data-rf-bg="solid"] .sep {
         background: rgba(23,59,100,.12);
@@ -234,7 +251,10 @@
         <div id="pay-block">
           <div class="pay-title">Pembayaran</div>
           <div class="bank hidden" id="bank"></div>
-          <div class="qris hidden" id="qris-wrap"><img id="qris" alt="QRIS" /></div>
+          <div class="qris hidden" id="qris-wrap">
+            <img id="qris" alt="QRIS" />
+            <button class="qr-download" id="qris-download" type="button">Download QRIS</button>
+          </div>
           <p class="note hidden" id="note"></p>
         </div>
 
@@ -261,6 +281,24 @@
         const digits = String(number || "").replace(/\D/g, "");
         if (digits.length < 8) return null; // unset or nonsense: no button
         return "https://wa.me/" + digits + "?text=" + encodeURIComponent(text);
+      }
+
+      async function downloadQris(url) {
+        try {
+          const res = await fetch(url, { mode: "cors" });
+          if (!res.ok) throw new Error("QRIS download failed");
+          const blob = await res.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = blobUrl;
+          a.download = "deposit-qris.png";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        } catch (_) {
+          window.open(url, "_blank", "noopener");
+        }
       }
 
       function isHexColor(value) {
@@ -388,6 +426,7 @@
           if (pay.bank) { $("bank").textContent = pay.bank; $("bank").classList.remove("hidden"); }
           if (/^https?:\/\//i.test(pay.qris)) {
             $("qris").src = pay.qris;
+            $("qris-download").onclick = () => downloadQris(pay.qris);
             $("qris-wrap").classList.remove("hidden");
           }
         }

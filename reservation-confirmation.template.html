@@ -54,7 +54,7 @@
         --brand-tint2: #F6FAFF;    /* faintest wash */
         --accent: #FFDE70;         /* Naples yellow accent */
         --accent-hover: #E9C653;
-        --accent-strong: #6B4A00;  /* text-safe yellow-brown */
+        --accent-strong: #9A6A00;  /* text-safe yellow-brown */
         --accent-tint: #FFE9A3;
         --accent-tint2: #FFF7DE;
         /* RGB triplets for the few places that need alpha, e.g.
@@ -69,7 +69,7 @@
         --brand-soft-rgb: 163 196 235;
         --accent-rgb: 255 222 112;
         --accent-hover-rgb: 233 198 83;
-        --accent-strong-rgb: 107 74 0;
+        --accent-strong-rgb: 154 106 0;
 
 
         --primary: var(--brand);
@@ -326,7 +326,7 @@
       }
       .btn-gold-action {
         background: var(--gold);
-        color: white;
+        color: var(--brand-deepest);
       }
       .btn-gold-action:hover {
         background: var(--accent-hover);
@@ -828,22 +828,10 @@
 
         // ── Pre-load web fonts so canvas renders them correctly ──
         try {
-          const fontBase =
-            "https://fonts.gstatic.com/s/dmsans/v15/rP2Hp2ywxg089UriCZa4ET-DNl0.woff2";
-          const fontBold =
-            "https://fonts.gstatic.com/s/dmsans/v15/rP2Cp2ywxg089UriAaIwXb-_lh2.woff2";
-          const fontSerif =
-            "https://fonts.gstatic.com/s/cormorantgaramond/v22/co3WmX5slCNuHLi8bLeY9MK7whWMhyjQAllvuQ.woff2";
           await Promise.all([
-            new FontFace("DMSans", `url(${fontBase})`)
-              .load()
-              .then((f) => document.fonts.add(f)),
-            new FontFace("DMSans", `url(${fontBold})`, { weight: "600" })
-              .load()
-              .then((f) => document.fonts.add(f)),
-            new FontFace("Cormorant", `url(${fontSerif})`, { weight: "500" })
-              .load()
-              .then((f) => document.fonts.add(f)),
+            document.fonts.load('400 28px "Plus Jakarta Sans"'),
+            document.fonts.load('500 86px "Plus Jakarta Sans"'),
+            document.fonts.load('600 22px "Plus Jakarta Sans"'),
           ]);
         } catch (e) {
           /* fall back to system fonts gracefully */
@@ -901,7 +889,7 @@
           };
           img.onerror = () => {
             ctx.fillStyle = "var(--brand-ink)";
-            ctx.font = "500 56px Cormorant, Georgia, serif";
+            ctx.font = '500 56px "Plus Jakarta Sans", system-ui, sans-serif';
             ctx.textAlign = "center";
             ctx.fillText(RESTAURANT_LABEL, W / 2, 160);
             resolve();
@@ -918,7 +906,7 @@
 
         // ── RESERVATION CONFIRMED ──
         ctx.fillStyle = "var(--accent)";
-        ctx.font = '600 22px DMSans, "DM Sans", sans-serif';
+        ctx.font = '600 22px "Plus Jakarta Sans", system-ui, sans-serif';
         ctx.textAlign = "center";
         // Manually spaced since canvas letterSpacing is unreliable
         const label = "R E S E R V A T I O N   C O N F I R M E D";
@@ -926,13 +914,13 @@
 
         // ── Welcome name ──
         ctx.fillStyle = "var(--brand-ink)";
-        ctx.font = `500 86px Cormorant, "Cormorant Garamond", Georgia, serif`;
+        ctx.font = '500 86px "Plus Jakarta Sans", system-ui, sans-serif';
         ctx.textAlign = "center";
         ctx.fillText(`Welcome, ${displayName}!`, W / 2, 370);
 
         // ── Date subheading ──
         ctx.fillStyle = "#888888";
-        ctx.font = '400 28px DMSans, "DM Sans", sans-serif';
+        ctx.font = '400 28px "Plus Jakarta Sans", system-ui, sans-serif';
         ctx.fillText(
           `${formatDate(r.reservation_date)}  ·  ${formatTime(r.reservation_time)}`,
           W / 2,
@@ -966,7 +954,7 @@
         ctx.fill();
         // text
         ctx.fillStyle = sc.color;
-        ctx.font = '600 22px DMSans, "DM Sans", sans-serif';
+        ctx.font = '600 22px "Plus Jakarta Sans", system-ui, sans-serif';
         ctx.textAlign = "left";
         ctx.fillText(r.status, badgeX + 34, badgeY + 29);
 
@@ -995,12 +983,12 @@
           ctx.fillText(emoji, cardX + 76, rowY + 30);
           // Label
           ctx.fillStyle = "#AAAAAA";
-          ctx.font = '600 19px DMSans, "DM Sans", sans-serif';
+          ctx.font = '600 19px "Plus Jakarta Sans", system-ui, sans-serif';
           ctx.textAlign = "left";
           ctx.fillText(lbl, cardX + 118, rowY + 12);
           // Value
           ctx.fillStyle = "#222222";
-          ctx.font = '500 27px DMSans, "DM Sans", sans-serif';
+          ctx.font = '500 27px "Plus Jakarta Sans", system-ui, sans-serif';
           ctx.fillText(val, cardX + 118, rowY + 44);
 
           rowY += ROW_H;
@@ -1016,11 +1004,11 @@
           ctx.lineWidth = 2;
           ctx.stroke();
           ctx.fillStyle = "#AAAAAA";
-          ctx.font = '600 20px DMSans, "DM Sans", sans-serif';
+          ctx.font = '600 20px "Plus Jakarta Sans", system-ui, sans-serif';
           ctx.textAlign = "left";
           ctx.fillText("Note from our team", cardX + 68, noteY + 30);
           ctx.fillStyle = "#555555";
-          ctx.font = '400 24px DMSans, "DM Sans", sans-serif';
+          ctx.font = '400 24px "Plus Jakarta Sans", system-ui, sans-serif';
           const noteText =
             r.notes.length > 65 ? r.notes.slice(0, 62) + "…" : r.notes;
           ctx.fillText(noteText, cardX + 68, noteY + 70);
@@ -1034,11 +1022,11 @@
         roundRect(ctx, cardX, infoY, infoW, infoH, 16);
         ctx.fillStyle = "#EEF3F7";
         ctx.fill();
-        ctx.font = '600 24px DMSans, "DM Sans", sans-serif';
+        ctx.font = '600 24px "Plus Jakarta Sans", system-ui, sans-serif';
         ctx.fillStyle = "var(--brand-ink)";
         ctx.textAlign = "center";
         ctx.fillText("📍 Kami menunggu kedatangan kamu!", W / 2, infoY + 38);
-        ctx.font = '400 22px DMSans, "DM Sans", sans-serif';
+        ctx.font = '400 22px "Plus Jakarta Sans", system-ui, sans-serif';
         ctx.fillStyle = "#555555";
         ctx.fillText(
           "Silakan datang tepat waktu. Jika rencana Anda berubah,",
@@ -1050,11 +1038,11 @@
         // ── Footer ──
         // const footY = infoY + infoH + 44;
         // ctx.fillStyle = "#AAAAAA";
-        // ctx.font = '400 24px DMSans, "DM Sans", sans-serif';
+        // ctx.font = '400 24px "Plus Jakarta Sans", system-ui, sans-serif';
         // ctx.textAlign = "center";
         // ctx.fillText("Kami menanti kedatangan anda!", W / 2, footY);
         // ctx.fillStyle = "var(--accent)";
-        // ctx.font = '500 22px DMSans, "DM Sans", sans-serif';
+        // ctx.font = '500 22px "Plus Jakarta Sans", system-ui, sans-serif';
         // ctx.fillText(RESTAURANT_LABEL, W / 2, footY + 38);
 
         // ── Save ──

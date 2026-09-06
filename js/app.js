@@ -5152,7 +5152,7 @@ async function lookupGuestManual(prefix) {
       <div class="returning-badge">
         <div class="flex items-center gap-2 mb-2">
           <span class="text-xs font-semibold text-[color:var(--accent)] uppercase tracking-widest">Welcome Back</span>
-          ${totalVisits > 0 ? `<span class="bg-[color:var(--accent)] text-white text-[10px] px-2 py-0.5 rounded-full">${totalVisits} visits</span>` : ""}
+          ${totalVisits > 0 ? `<span class="bg-[color:var(--accent)] text-[color:var(--brand-deepest)] text-[10px] px-2 py-0.5 rounded-full">${totalVisits} visits</span>` : ""}
           ${memberBadge(guest.id)}
         </div>
         <p class="font-display text-xl font-semibold text-[color:var(--brand-ink)] mb-1">${guest.name}</p>

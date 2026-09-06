@@ -716,7 +716,7 @@ function renderVoucherRow(v) {
   const actions =
     !v.redeemed && !voucherIsExpired(v)
       ? `<div class="flex flex-wrap gap-2 mt-2">
-          <button onclick="vcOpenCard(${v.id})" class="text-xs font-medium text-white bg-[color:var(--accent)] hover:bg-[color:var(--accent-hover)] px-3 py-1.5 rounded-lg">Download Voucher</button>
+          <button onclick="vcOpenCard(${v.id})" class="text-xs font-medium text-[color:var(--brand-deepest)] bg-[color:var(--accent)] hover:bg-[color:var(--accent-hover)] px-3 py-1.5 rounded-lg">Download Voucher</button>
           <button onclick="vcOpenCard(${v.id}, 'wa')" class="text-xs font-medium text-[#1FAF5E] border border-[#1FAF5E] hover:bg-[#F2FBF6] px-3 py-1.5 rounded-lg">Kirim WA Follow Up</button>
         </div>`
       : "";

@@ -69,6 +69,8 @@ ok("a settled invoice says so and hides the payment details",
 console.log("\nPayment details, and the button that needs a number");
 ok("bank details render as typed", /\$\("bank"\)\.textContent = pay\.bank/.test(page));
 ok("the QRIS is only used when it is a real URL", page.includes("test(pay.qris)"));
+ok("the QRIS can be downloaded from the invoice",
+   /id="qris-download"/.test(page) && /function downloadQris/.test(page) && /download = "deposit-qris\.png"/.test(page));
 ok("a blank WhatsApp number hides the button rather than building a broken link",
    /digits\.length < 8\) return null/.test(page));
 
