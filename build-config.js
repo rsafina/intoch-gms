@@ -74,6 +74,13 @@ const TARGETS = [
     to: "deposit-invoice.html",
     requires: ["__SUPABASE_URL__", "__SUPABASE_ANON_KEY__", "__SITE_URL__", "__RESTAURANT_NAME__"],
   },
+  {
+    // The saved invoice a guest opens from WhatsApp. Draws the same sheet as
+    // the staff generator, from css/invoice-sheet.css and js/invoice-sheet.js.
+    from: "invoice-view.template.html",
+    to: "invoice-view.html",
+    requires: ["__SUPABASE_URL__", "__SUPABASE_ANON_KEY__", "__SITE_URL__", "__RESTAURANT_NAME__"],
+  },
 ];
 
 const REQUIRED = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SITE_URL"];

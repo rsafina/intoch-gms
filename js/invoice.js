@@ -42,41 +42,9 @@ let invNextItemId = 1;
 
 // ── Formatting / parsing ────────────────────────────────────
 
-// Rupiah has no cents in practice here, and staff type it in
-// every shape imaginable: "136000", "136.000", "Rp 136.000",
-// "136,000". Strip everything that is not a digit and treat
-// the rest as whole rupiah. A blank stays blank (null), which
-// is different from zero — a blank Service Charge is hidden on
-// the sheet, a zero is printed as Rp 0.
-function invParseNum(value) {
-  if (value === null || value === undefined) return null;
-  const digits = String(value).replace(/[^\d]/g, "");
-  if (digits === "") return null;
-  return parseInt(digits, 10);
-}
 
-// Percentages may legitimately have a decimal (e.g. 11.5% tax).
-function invParsePct(value) {
-  if (value === null || value === undefined) return null;
-  const cleaned = String(value).replace(/[^\d.,]/g, "").replace(",", ".");
-  if (cleaned === "") return null;
-  const n = parseFloat(cleaned);
-  return isNaN(n) ? null : n;
-}
 
-function invRupiah(n) {
-  if (n === null || n === undefined) return "";
-  return "Rp " + Number(n).toLocaleString("id-ID");
-}
 
-// 2300000 → "2.300.000". Used inside the form fields themselves,
-// not just the preview: seven unbroken digits are genuinely hard
-// to read, and a mistyped extra zero is the one error on this
-// page that reaches a guest as a wrong price.
-function invGroup(n) {
-  if (n === null || n === undefined || n === "") return "";
-  return Number(n).toLocaleString("id-ID");
-}
 
 // Re-formats a money field while it is being typed in. The caret
 // is restored by counting DIGITS rather than characters — dots
@@ -108,25 +76,7 @@ function invFormatMoneyField(el) {
   }
 }
 
-// "2026-07-24" → "24 Juli 2026". Built from the yyyy-mm-dd
-// parts, never through new Date(str).toLocaleDateString with a
-// bare date string — that is parsed as UTC and prints the day
-// before in Jakarta. Same bug already documented in config.js.
-const INV_MONTHS_ID = [
-  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
-];
 
-function invDateId(ymd) {
-  if (!ymd) return "";
-  const parts = String(ymd).split("-");
-  if (parts.length !== 3) return String(ymd);
-  const y = parseInt(parts[0], 10);
-  const m = parseInt(parts[1], 10);
-  const d = parseInt(parts[2], 10);
-  if (!y || !m || !d || m < 1 || m > 12) return String(ymd);
-  return `${d} ${INV_MONTHS_ID[m - 1]} ${y}`;
-}
 
 // Local-time yyyy-mm-dd for <input type="date">.
 function invToday() {
@@ -135,13 +85,6 @@ function invToday() {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-function invSafeFileName(s) {
-  return String(s || "")
-    .trim()
-    .replace(/[^a-zA-Z0-9\-_ ]/g, "")
-    .replace(/\s+/g, "-")
-    .slice(0, 40);
-}
 
 function invEl(id) {
   return document.getElementById(id);
@@ -190,14 +133,6 @@ function invOnItemInput(id, field, value) {
   invRecalc();
 }
 
-// Qty × unit price, unless the person typed their own amount.
-function invItemAmount(item) {
-  if (item.amountLocked) return invParseNum(item.amount);
-  const qty = invParseNum(item.qty);
-  const price = invParseNum(item.price);
-  if (qty === null || price === null) return null;
-  return qty * price;
-}
 
 function invRenderItemInputs() {
   const wrap = invEl("inv-items");
@@ -228,13 +163,6 @@ function invRenderItemInputs() {
     .join("");
 }
 
-function invEscape(s) {
-  return String(s === null || s === undefined ? "" : s)
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
 
 // ── Calculation ─────────────────────────────────────────────
 //
@@ -328,62 +256,19 @@ function invRecalc() {
 // More than 8 items simply grows the table; anything past 11
 // would run into the totals block, so we warn instead of
 // silently producing an overlapping page.
-const INV_MIN_ROWS = 8;
-const INV_MAX_ROWS = 11;
-const INV_MAX_NAME_CHARS = 44;
 
+
+// The live preview. Everything the SHEET shows is drawn by invSheetRender from
+// a snapshot, exactly as the guest page draws it, so the two cannot diverge.
+// What stays here is the part that belongs to the form and not to the document:
+// the too-long-name warning, and fitting the preview to the column.
 function invRenderPreview() {
-  const left = [
-    ["Name", invVal("inv-name")],
-    ["Table", invVal("inv-table")],
-    ["Pax", invVal("inv-pax")],
-  ];
-  const right = [
-    ["Receipt no", invVal("inv-receipt")],
-    ["Payment Date", invDateId(invVal("inv-paydate"))],
-    ["Event Date", invDateId(invVal("inv-eventdate"))],
-  ];
-  const metaHtml = (rows) =>
-    rows
-      .filter(([, v]) => String(v).trim() !== "")
-      .map(
-        ([k, v]) =>
-          `<div class="inv-meta-row"><span class="inv-meta-k">${invEscape(k)}</span><span>: ${invEscape(v)}</span></div>`,
-      )
-      .join("");
-  invEl("inv-p-meta-left").innerHTML = metaHtml(left);
-  invEl("inv-p-meta-right").innerHTML = metaHtml(right);
+  const snap = invSnapshot();
+  invSheetRender(snap);
 
-  const filled = invItems.filter(
-    (it) => String(it.name).trim() !== "" || invItemAmount(it) !== null,
-  );
-  const slots = Math.max(INV_MIN_ROWS, filled.length);
-  let rowsHtml = "";
-  for (let i = 0; i < slots; i++) {
-    const it = filled[i];
-    if (!it) {
-      rowsHtml += `<div class="inv-row"><div class="inv-c1"></div><div class="inv-c2"></div><div class="inv-c3"></div><div class="inv-c4"></div></div>`;
-      continue;
-    }
-    const qty = invParseNum(it.qty);
-    const price = invParseNum(it.price);
-    const unit = String(it.unit || "").trim();
-    const unitText =
-      price === null ? "" : invRupiah(price) + (unit ? ` / ${unit}` : "");
-    rowsHtml += `<div class="inv-row">
-      <div class="inv-c1">${invEscape(it.name)}</div>
-      <div class="inv-c2">${qty === null ? "" : qty}</div>
-      <div class="inv-c3">${invEscape(unitText)}</div>
-      <div class="inv-c4">${invRupiah(invItemAmount(it))}</div>
-    </div>`;
-  }
-  invEl("inv-p-rows").innerHTML = rowsHtml;
-
-  // The Items column is 44% of a 702px content area at 12.5px, so
-  // roughly 44 characters fit. Anything longer is silently cut off
-  // by the cell — say so while it is being typed rather than
-  // letting someone discover it in a PDF already sent to a guest.
-  const tooLong = filled.filter((it) => String(it.name).length > INV_MAX_NAME_CHARS);
+  // Said while it is being typed, rather than discovered in a PDF already sent
+  // to a guest.
+  const tooLong = invSheetTooLongNames(snap);
   const warn = invEl("inv-name-warning");
   if (warn) {
     warn.classList.toggle("hidden", tooLong.length === 0);
@@ -395,67 +280,11 @@ function invRenderPreview() {
     }
   }
 
-  invEl("inv-p-note").textContent = invVal("inv-note");
-
-  const subtotal = invParseNum(invVal("inv-subtotal"));
-  const svcOn = invEl("inv-svc-on").checked;
-  const svc = invParseNum(invVal("inv-svc"));
-  const taxOn = invEl("inv-tax-on").checked;
-  const tax = invParseNum(invVal("inv-tax"));
-  const taxPct = invParsePct(invVal("inv-tax-pct"));
-  const total = invParseNum(invVal("inv-total"));
-  const dpOn = invEl("inv-dp-on").checked;
-  const dp = invParseNum(invVal("inv-dp"));
-  const dpPct = invParsePct(invVal("inv-dp-pct"));
-  const settleOn = dpOn && invEl("inv-settle-on").checked;
-  const settle = invParseNum(invVal("inv-settle"));
-
-  // A switched-on line with a blank amount still prints its label —
-  // that is how the sample invoice showed Service Charge. Switched
-  // off, the line is gone completely.
-  let totalsHtml = `<div class="inv-trow"><span>Sub Total</span><span>${invRupiah(subtotal)}</span></div>`;
-  if (svcOn) {
-    totalsHtml += `<div class="inv-trow"><span>Service Charge</span><span>${invRupiah(svc)}</span></div>`;
-  }
-  if (taxOn) {
-    totalsHtml += `<div class="inv-trow"><span>Tax${taxPct ? " " + invPctLabel(taxPct) + "%" : ""}</span><span>${invRupiah(tax)}</span></div>`;
-  }
-  totalsHtml += `<div class="inv-tbar"><span>Total</span><span>${invRupiah(total)}</span></div>`;
-  if (dpOn) {
-    // With a settlement line present the deposit has already been
-    // received, so it is shown as a settled amount: pale bar, and
-    // "Paid" in the label. Without one, the invoice IS the request
-    // for the deposit, so it stays solid like the Total.
-    const dpPaidStyle = settleOn ? " inv-tbar-paid" : "";
-    const dpLabel = settleOn ? "Down Payment Paid" : "Down Payment";
-    totalsHtml += `<div class="inv-tbar${dpPaidStyle}"><span>${dpLabel}${dpPct === null ? "" : " " + invPctLabel(dpPct) + "%"}</span><span>${invRupiah(dp)}</span></div>`;
-  }
-  if (settleOn) {
-    totalsHtml += `<div class="inv-tbar"><span>Settlement</span><span>${invRupiah(settle)}</span></div>`;
-  }
-  invEl("inv-p-totals").innerHTML = totalsHtml;
-
   invFitPreview();
 }
 
-// 50 not 50.0, but 12.5 stays 12.5.
-function invPctLabel(n) {
-  return Number(n) % 1 === 0 ? String(Number(n)) : String(n).replace(".", ",");
-}
-
-// The sheet is a fixed 794px wide. Scale it down (never up) so
-// it fits the column on smaller screens. The scale is undone
-// during PDF capture so the export is always full resolution.
 function invFitPreview() {
-  const scaler = invEl("inv-scaler");
-  if (!scaler || !scaler.parentElement) return;
-  const available = scaler.parentElement.clientWidth;
-  if (!available) return;
-  const scale = Math.min(1, available / 794);
-  scaler.style.transform = `scale(${scale})`;
-  // A scaled element still reserves its unscaled height, which
-  // would leave ~300px of dead space under the sheet.
-  scaler.style.height = 1123 * scale + "px";
+  invSheetFit(invEl("inv-scaler"));
 }
 
 window.addEventListener("resize", () => {
@@ -465,6 +294,10 @@ window.addEventListener("resize", () => {
 
 // ── PDF ─────────────────────────────────────────────────────
 
+// The staff download. The document itself and the capture live in
+// js/invoice-sheet.js so the guest gets the identical file; what stays here is
+// what belongs to the staff form: the checks worth making BEFORE spending three
+// seconds on a render, the button state, and the local history entry.
 async function invDownloadPdf() {
   if (!invVal("inv-name").trim()) {
     toast("Fill in the guest name first.", "error");
@@ -477,6 +310,8 @@ async function invDownloadPdf() {
   const filled = invItems.filter(
     (it) => String(it.name).trim() !== "" || invItemAmount(it) !== null,
   );
+  // Refused rather than truncated. Past 11 rows the table runs into the totals
+  // block, and the guest receives a page with figures printed over each other.
   if (filled.length > INV_MAX_ROWS) {
     toast(
       `Too many items for one page (${filled.length}). Keep it to ${INV_MAX_ROWS} or combine lines.`,
@@ -484,70 +319,224 @@ async function invDownloadPdf() {
     );
     return;
   }
-  if (typeof html2canvas === "undefined" || !window.jspdf) {
-    toast("PDF library did not load. Check the internet connection.", "error");
-    return;
-  }
 
   const btn = invEl("inv-download-btn");
   const label = btn.textContent;
   btn.disabled = true;
   btn.textContent = "Preparing…";
-
-  const scaler = invEl("inv-scaler");
-  const sheet = invEl("inv-sheet");
-  const priorTransform = scaler.style.transform;
-  const priorHeight = scaler.style.height;
-
   try {
-    // html2canvas reads layout, not the CSS transform, so the
-    // scale must come off before capture or the output is soft.
-    scaler.style.transform = "none";
-    scaler.style.height = "";
-    // Baseline compensation — see .inv-exporting in index.html.
-    sheet.classList.add("inv-exporting");
-
-    const canvas = await html2canvas(invEl("inv-sheet"), {
-      scale: 2, // ~192dpi: sharp when printed, still a sane file size
-      backgroundColor: "#ffffff",
-      useCORS: true,
-      logging: false,
-      windowWidth: 794,
-    });
-
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    pdf.addImage(
-      canvas.toDataURL("image/jpeg", 0.95),
-      "JPEG",
-      0,
-      0,
-      210,
-      297,
-      undefined,
-      "FAST",
-    );
-    const who = invSafeFileName(invVal("inv-name")) || "Guest";
-    const receipt = invSafeFileName(invVal("inv-receipt"));
-    pdf.save(`Invoice-${receipt ? receipt + "-" : ""}${who}.pdf`);
-
-    invSaveToHistory();
-    toast("Invoice downloaded.");
-  } catch (err) {
-    console.error("[invoice] PDF export failed", err);
-    toast("Could not build the PDF. Try again.", "error");
+    const built = await invSheetPdf(invSnapshot(), { say: toast });
+    // History only when a file actually reached the guest's disk. Recording a
+    // failed export would put an invoice in the recent list that nobody has.
+    if (built) {
+      invSaveToHistory();
+      toast("Invoice downloaded.");
+    }
   } finally {
-    // Must run even if the capture threw, or the preview would be
-    // left stuck at full scale with the export nudge applied.
-    sheet.classList.remove("inv-exporting");
-    scaler.style.transform = priorTransform;
-    scaler.style.height = priorHeight;
-    invFitPreview();
     btn.disabled = false;
     btn.textContent = label;
   }
 }
 
+
+// ── Save and send ───────────────────────────────────────────
+// Until 2026-09-06 this page produced a picture and nothing else. The last five
+// invoices lived in ONE staff member's browser, so a colleague could not see
+// them, a cleared cache lost them, and none was attached to a booking.
+//
+// Saving writes the whole document to invoices.doc, gets a number from the
+// database, and returns a token. Sending is that same save followed by
+// WhatsApp, deliberately in that order: staff can never send a link to an
+// invoice that was not stored.
+
+// The row this page is currently editing, so a second click updates rather than
+// creating a twin. Cleared by invReset() and by loading a different invoice.
+let invSavedId = null;
+let invSavedToken = null;
+let invSavedNo = null;
+
+// The public link, resolved against whatever address the staff app is served
+// from. Deliberately NOT a configured base URL: a wrong one produces a link
+// that 404s in a guest's phone and nowhere anybody here would see it.
+function invPublicLink(token) {
+  return new URL(
+    "invoice-view.html?t=" + encodeURIComponent(token),
+    window.location.href,
+  ).href;
+}
+
+function invShowSavedLine() {
+  const line = invEl("inv-saved-line");
+  const no = invEl("inv-saved-no");
+  if (!line || !no) return;
+  if (!invSavedToken) {
+    line.classList.add("hidden");
+    return;
+  }
+  no.textContent = t("Saved as") + " " + (invSavedNo || "-");
+  line.classList.remove("hidden");
+}
+
+function invCopyLink() {
+  if (!invSavedToken) return;
+  const url = invPublicLink(invSavedToken);
+  // The clipboard API needs a secure context and can be refused outright, and a
+  // silent failure here means staff paste the previous thing on their
+  // clipboard into a guest's chat. Falling back to a prompt always works.
+  const fallback = () => window.prompt(t("Copy this link"), url);
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(url).then(
+      () => toast(t("Link copied")),
+      fallback,
+    );
+  } else {
+    fallback();
+  }
+}
+
+// The figures a screen needs to query without opening the document. Read from
+// the SAME snapshot that is stored, in one place, so the columns and the
+// document can never state different numbers.
+function invSummaryFrom(snap) {
+  const total = invParseNum(snap.total) || 0;
+  const dp = snap.dpOn ? invParseNum(snap.dp) : null;
+  const settleOn = !!snap.dpOn && !!snap.settleOn;
+  return {
+    subtotal: invParseNum(snap.subtotal),
+    total,
+    // Only when a settlement line is present is the deposit money already in.
+    // Without one the invoice IS the deposit request, so nothing is applied yet
+    // and the whole total is still due.
+    deposit_applied: settleOn ? dp : null,
+    amount_due: settleOn ? invParseNum(snap.settle) : total,
+  };
+}
+
+async function invSaveInvoice(send) {
+  if (!invVal("inv-name").trim()) {
+    toast(t("Fill in the guest name first."), "error");
+    return;
+  }
+  if (invItems.filter((it) => String(it.name).trim() !== "").length === 0) {
+    toast(t("Add at least one item."), "error");
+    return;
+  }
+  const snap = invSnapshot();
+  // Refused here for the same reason the PDF refuses it: past 11 rows the table
+  // runs into the totals block and the guest opens a page with figures printed
+  // over each other. Better to refuse the save than to store that.
+  if (invSheetFilledItems(snap).length > INV_MAX_ROWS) {
+    toast(
+      t("Too many items for one page. Keep it to") + " " + INV_MAX_ROWS + ".",
+      "error",
+    );
+    return;
+  }
+  const phone = invVal("inv-wa").trim();
+  if (send && !waPhone(phone)) {
+    toast(t("Add a WhatsApp number to send this, or use Copy guest link."), "error");
+    return;
+  }
+
+  const btn = invEl(send ? "inv-send-btn" : "inv-save-btn");
+  const label = btn ? btn.textContent : "";
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = t("Saving…");
+  }
+  try {
+    const sums = invSummaryFrom(snap);
+    const payload = {
+      kind: "general",
+      bill_to_name: snap.name || null,
+      pax: invParseNum(snap.pax),
+      event_date: snap.eventdate || null,
+      note: snap.note || null,
+      doc: snap,
+      subtotal: sums.subtotal,
+      total: sums.total,
+      deposit_applied: sums.deposit_applied,
+      amount_due: sums.amount_due,
+      status: "issued",
+    };
+
+    let row = null;
+    if (invSavedId) {
+      // An edit of the invoice already on screen. The NUMBER and the token are
+      // kept: a guest who already has the link must still reach the document,
+      // and renumbering would break the restaurant's own books.
+      const { data, error } = await supabaseQuery(
+        () => db.from("invoices").update(payload).eq("id", invSavedId).select("id, token, invoice_no"),
+        "Failed to update the invoice",
+      );
+      // PostgREST answers 204 for an update that matched nothing, which is
+      // byte-identical to success. An empty result is a failure, always.
+      if (error || !data || !data.length) {
+        toast(t("Nothing was saved. The invoice may have been deleted."), "error");
+        return;
+      }
+      row = data[0];
+    } else {
+      const { data: noData, error: noErr } = await supabaseQuery(
+        () => db.rpc("next_invoice_no"),
+        "Failed to allocate an invoice number",
+      );
+      if (noErr || !noData) {
+        toast(t("Could not allocate an invoice number."), "error");
+        return;
+      }
+      payload.invoice_no = noData;
+      payload.issued_by = currentStaffId();
+      const { data, error } = await supabaseQuery(
+        () => db.from("invoices").insert(payload).select("id, token, invoice_no"),
+        "Failed to save the invoice",
+      );
+      if (error || !data || !data.length) {
+        toast(t("The invoice was not saved."), "error");
+        return;
+      }
+      row = data[0];
+    }
+
+    invSavedId = row.id;
+    invSavedToken = row.token;
+    invSavedNo = row.invoice_no;
+    invShowSavedLine();
+    // Kept as well as the row: the local list is what staff use to pick up
+    // where they left off, and it works with no connection.
+    invSaveToHistory();
+
+    if (!send) {
+      toast(t("Invoice saved as") + " " + invSavedNo);
+      return;
+    }
+
+    await waLoadTemplates();
+    const link = invPublicLink(invSavedToken);
+    const opened = waOpenChat(
+      phone,
+      waInvoiceMessage({
+        guestName: snap.name,
+        invoiceNo: invSavedNo,
+        amountText: invRupiah(invParseNum(snap.total)),
+        link,
+      }),
+    );
+    // The invoice exists whether or not WhatsApp opened. A popup blocker must
+    // not cost staff the work they just did, so say so and leave the link on
+    // screen to copy.
+    toast(
+      opened
+        ? t("Invoice saved and WhatsApp opened")
+        : t("Invoice saved — copy the link and send it yourself"),
+    );
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = label;
+    }
+  }
+}
 // ── Local history (last 5, this browser only) ───────────────
 
 function invSnapshot() {
@@ -654,6 +643,15 @@ function invLoadFromHistory(index) {
 }
 
 function invApplySnapshot(h) {
+  // Whatever row was on screen is no longer what the form holds, so the next
+  // Save must create a new invoice rather than overwriting the previous one.
+  // Without this, loading yesterday's invoice from the local history and
+  // pressing Save would silently rewrite yesterday's saved document, keeping
+  // its number, and the guest who has that link would see somebody else's bill.
+  invSavedId = null;
+  invSavedToken = null;
+  invSavedNo = null;
+  invShowSavedLine();
   invEl("inv-name").value = h.name || "";
   invEl("inv-table").value = h.table || "";
   invEl("inv-pax").value = h.pax || "";
@@ -711,6 +709,12 @@ function invReset() {
   // cannot reach it — this one string has to be translated at the
   // source with t().
   if (!confirm(t("Clear the form and start a new invoice?"))) return;
+  // A cleared form is a new invoice. The saved row stays in the database with
+  // its number and its link intact; this page just stops editing it.
+  invSavedId = null;
+  invSavedToken = null;
+  invSavedNo = null;
+  invShowSavedLine();
   ["inv-name", "inv-table", "inv-pax", "inv-receipt", "inv-subtotal",
    "inv-svc", "inv-tax", "inv-total", "inv-dp", "inv-settle"].forEach((id) => {
     invEl(id).value = "";
@@ -747,6 +751,14 @@ function invCheckReceipt() {
 let invBooted = false;
 
 function initInvoice() {
+  // The sheet's markup is built here rather than sitting in index.html, so the
+  // guest page can build the identical document from the same function.
+  // Before applyInvoiceStyle and applyBranding, both of which reach into
+  // nodes that do not exist until this line has run.
+  const sheet = invEl("inv-sheet");
+  if (sheet && !sheet.firstElementChild) sheet.innerHTML = invSheetMarkup();
+  if (typeof applyBranding === "function") applyBranding(sheet || document);
+
   // Re-applied on every visit, not only the first: a manager can change the
   // design and come straight back here, and a stale sheet would send them
   // hunting for a bug that is not there.

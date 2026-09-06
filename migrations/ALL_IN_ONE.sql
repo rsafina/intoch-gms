@@ -5788,6 +5788,45 @@ select r.id as reservation_id,
 comment on view public.reservation_money is
   'Every rupiah against a booking: deposits (attached to the reservation) plus invoice payments, added once each, whether or not the invoice was later voided. paid_on_void_invoices flags the part that sits against a cancelled invoice, which usually means a refund is owed. settlement_total counts only an issued settlement invoice, because that is a billing figure rather than a cash one.';
 
+-- ---------- The public invoice page reads this, and only this ----------
+-- SECURITY DEFINER so the page needs no table access at all, mirroring
+-- deposit_invoice_by_token. Returns ONE invoice by its random token and
+-- nothing else: no guest phone, no other bookings, no way to enumerate.
+--
+-- A draft or voided invoice returns nothing, so a cancelled invoice's link
+-- goes dead on its own and a half-written one was never reachable.
+--
+-- `doc` is returned whole because that IS the document. The page renders it
+-- with the same invSheetRender() the staff preview used, so what the guest
+-- downloads is what staff saw before pressing send.
+drop function if exists public.invoice_by_token(text);
+create or replace function public.invoice_by_token(p_token text)
+returns table (
+  invoice_no text, kind text, doc jsonb, note text,
+  total numeric, amount_due numeric, paid numeric, outstanding numeric,
+  issued_at timestamptz
+)
+language sql
+security definer
+set search_path = public
+as $function$
+  select i.invoice_no, i.kind, i.doc, i.note,
+         i.total,
+         coalesce(i.amount_due, i.total),
+         coalesce((select sum(p.amount) from invoice_payments p
+                    where p.invoice_id = i.id), 0),
+         coalesce(i.amount_due, i.total)
+           - coalesce((select sum(p.amount) from invoice_payments p
+                        where p.invoice_id = i.id), 0),
+         i.issued_at
+    from invoices i
+   where i.token = p_token
+     and i.status = 'issued'
+   limit 1;
+$function$;
+
+grant execute on function public.invoice_by_token(text) to anon, authenticated;
+
 -- ---------- Confirm ----------
 select 'areas.is_bookable_online' as checked, count(*) as found
 from information_schema.columns
@@ -5968,6 +6007,18 @@ union all
 -- Voiding an invoice is a billing decision and moves no money. A view that
 -- drops voided payments reports a booking as barely paid when the guest has
 -- transferred most of it, which is how a refund gets missed.
+-- The guest page reads through this and nothing else, so a missing function
+-- is a link that 404s in somebody's phone.
+select 'invoice_by_token exists', count(*)
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname = 'invoice_by_token'
+union all
+-- A draft or a voided invoice must not be reachable from a link.
+select 'invoice_by_token serves only issued invoices',
+       case when pg_get_functiondef(p.oid) like '%status = ''issued''%' then 1 else 0 end
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname = 'invoice_by_token'
+union all
 select 'voiding an invoice does not hide money received',
        case when pg_get_viewdef('public.reservation_money'::regclass) like '%paid_on_void_invoices%'
             then 1 else 0 end
@@ -5983,7 +6034,7 @@ union all
 select 'the expiry job is scheduled',
        public.cron_job_count('intoch-expire-unpaid-deposits');
 -- expect: 1, 4, 3, 1, 1, 1, [see below], 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1,
---         then the saved-invoice rows: 1, 4, 1, 1, 1, 1, 1, 1, 1, 1
+--         then the saved-invoice rows: 1, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 --
 -- "no area is bookable online yet" returns 1 only BEFORE any area is switched
 -- on. Indoor Dining was switched on 2026-09-05, so it now returns 0 and that is

@@ -37,7 +37,15 @@ w.restaurantName = () => "Restoran";
 w.currentPage = "invoice";
 Object.defineProperty(w.HTMLElement.prototype, "clientWidth", { value: 900 });
 
-w.eval(fs.readFileSync(ROOT + "/js/invoice.js", "utf8"));
+// Both files in ONE eval. In a browser these are two <script> tags sharing the
+// global lexical scope, so a `const` in invoice-sheet.js is visible to
+// invoice.js. Two separate w.eval() calls would NOT share it, and the split
+// would fail only here, in a way that looks like the code being broken.
+w.eval(
+  fs.readFileSync(ROOT + "/js/invoice-sheet.js", "utf8") +
+    "\n" +
+    fs.readFileSync(ROOT + "/js/invoice.js", "utf8"),
+);
 
 let fails = 0;
 function check(label, actual, expected) {

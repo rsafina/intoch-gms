@@ -8,6 +8,7 @@ reservation-created.html
 reservation-confirmation.html
 spin.html
 deposit-invoice.html
+invoice-view.html
 
 node_modules/
 .DS_Store

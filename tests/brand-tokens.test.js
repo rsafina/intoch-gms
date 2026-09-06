@@ -79,10 +79,16 @@ console.log("\nThe rasterised invoice sheet stays literal");
 // html2canvas cannot resolve custom properties. This is the one place where
 // a var() would look right on screen and come out wrong in the PDF.
 {
-  const src = read(path.join(ROOT, "index.html"));
-  const styleEnd = src.indexOf("</style>");
-  const lines = src.slice(0, styleEnd).split("\n");
-  let selBuf = [], inRule = false, offenders = [];
+  // Moved out of index.html into its own file on 2026-09-06, because the
+  // public invoice page draws the same sheet. This check followed it.
+  //
+  // When it was still pointed at index.html after the move it passed by
+  // examining NOTHING: zero rules found, zero offenders, green. The
+  // "it actually examined some rules" assertion below exists so that can
+  // never happen quietly again, here or after the next move.
+  const src = read(path.join(ROOT, "css", "invoice-sheet.css"));
+  const lines = src.split("\n");
+  let selBuf = [], inRule = false, offenders = [], rulesSeen = 0;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (inRule) {
@@ -94,6 +100,7 @@ console.log("\nThe rasterised invoice sheet stays literal");
       const sel = selBuf.join(" ") + " " + line.split("{")[0];
       selBuf = [];
       if (sel.includes("inv-sheet")) {
+        rulesSeen++;
         inRule = !line.includes("}");
         if (/var\(--(?:brand|accent)/.test(line)) offenders.push(`line ${i + 1}: ${line.trim().slice(0, 50)}`);
       }
@@ -101,6 +108,12 @@ console.log("\nThe rasterised invoice sheet stays literal");
       selBuf.push(line); if (selBuf.length > 2) selBuf = selBuf.slice(-2);
     }
   }
+  ok(
+    "the sheet stylesheet was actually found and read",
+    rulesSeen > 10,
+    `Only ${rulesSeen} #inv-sheet rules were examined. The file moved, or the ` +
+      "selector shape changed, and this check is now protecting nothing.",
+  );
   ok("no #inv-sheet rule uses a CSS variable", offenders.length === 0, offenders.join("\n        "));
 }
 {

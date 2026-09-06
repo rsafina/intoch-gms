@@ -731,6 +731,25 @@ const ID_DICT = {
   // member in the building.
   Incoming: "Menunggu DP",
 
+  // ── Saved invoices (Phase 3) ───────────────────────────────────────
+  "WhatsApp number (to send the link)": "Nomor WhatsApp (untuk mengirim tautan)",
+  "Saved as": "Disimpan sebagai",
+  "Copy guest link": "Salin tautan tamu",
+  "Copy this link": "Salin tautan ini",
+  "Link copied": "Tautan disalin",
+  "Saving…": "Menyimpan…",
+  "Invoice saved as": "Invoice disimpan sebagai",
+  "The invoice was not saved.": "Invoice gagal disimpan.",
+  "Nothing was saved. The invoice may have been deleted.":
+    "Tidak ada yang tersimpan. Invoice mungkin sudah dihapus.",
+  "Could not allocate an invoice number.": "Nomor invoice gagal dibuat.",
+  "Add a WhatsApp number to send this, or use Copy guest link.":
+    "Isi nomor WhatsApp untuk mengirim, atau pakai Salin tautan tamu.",
+  "Invoice saved and WhatsApp opened": "Invoice disimpan, WhatsApp terbuka",
+  "Invoice saved — copy the link and send it yourself":
+    "Invoice disimpan — salin tautannya dan kirim sendiri ya",
+  "Too many items for one page. Keep it to": "Terlalu banyak item untuk satu halaman. Maksimal",
+
   // ── Large-party WhatsApp handoff (settings labels) ─────────────────
   "Send large parties to WhatsApp": "Kirim rombongan besar ke WhatsApp",
   "Uses the Largest party limit below. Bigger groups do not create an online reservation; they are sent to admin chat so the team can arrange the event.":
@@ -754,7 +773,6 @@ const ID_DICT = {
   "Due by": "Batas waktu",
   "Asked on": "Ditagih tanggal",
   Owed: "Kurang",
-  of: "dari",
   "Invoice & WhatsApp": "Kirim invoice via WA",
   "Record payment": "Catat pembayaran",
   Waive: "Bebaskan DP",

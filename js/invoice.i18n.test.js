@@ -41,6 +41,7 @@ function bootPage(lang) {
     [
       read("js/config.js"),
       read("js/i18n.js"),
+      read("js/invoice-sheet.js"),
       read("js/invoice.js"),
       // vouchers.js only defines functions at load, so it is safe to
       // include without a database: nothing here calls initVouchers().

@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>__RESTAURANT_NAME__ — Invoice</title>
+    <!-- Deliberately NOT indexed and NOT share-carded, the same rule as
+         deposit-invoice.html. This page states what a NAMED guest owes and
+         lists what they ordered; an og:description would put all of that into
+         a WhatsApp group preview before anyone opened the link. The token in
+         the URL is the only thing protecting it. -->
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="canonical" href="__SITE_URL__/invoice-view" />
+    <link rel="icon" href="assets/intoch-favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- The SAME stylesheet the staff generator uses. That is the whole point
+         of this page: what the guest downloads has to be the document staff
+         previewed before pressing send. -->
+    <link rel="stylesheet" href="css/invoice-sheet.css?v=1" />
+    <style>
+      body {
+        margin: 0;
+        background: #f2f0ec;
+        font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+        color: #333;
+      }
+      .wrap {
+        max-width: 840px;
+        margin: 0 auto;
+        padding: 20px 16px 48px;
+      }
+      .bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
+      .meta {
+        font-size: 13px;
+        color: #666;
+      }
+      .meta strong {
+        color: #173b64;
+      }
+      .btn {
+        border: none;
+        border-radius: 999px;
+        padding: 13px 22px;
+        font-family: inherit;
+        font-size: 15px;
+        font-weight: 600;
+        color: #fff;
+        background: #173b64;
+        cursor: pointer;
+      }
+      .btn:disabled {
+        opacity: 0.55;
+        cursor: default;
+      }
+      .state {
+        max-width: 460px;
+        margin: 64px auto;
+        text-align: center;
+        font-size: 15px;
+        line-height: 1.6;
+        color: #555;
+      }
+      .hidden {
+        display: none;
+      }
+      /* The sheet is 794px wide and phones are not. invSheetFit scales it to
+         the column, and this is the box it measures. */
+      .sheet-host {
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div id="loading" class="state">Memuat invoice…</div>
+
+      <div id="dead" class="state hidden">
+        <p id="dead-msg">
+          Tautan ini sudah tidak berlaku. Silakan hubungi kami untuk invoice
+          terbaru.
+        </p>
+      </div>
+
+      <div id="invoice" class="hidden">
+        <div class="bar">
+          <div class="meta">
+            <div><strong id="v-no">-</strong></div>
+            <div id="v-due"></div>
+          </div>
+          <button id="v-download" class="btn" onclick="downloadPdf()">
+            Unduh PDF
+          </button>
+        </div>
+
+        <div class="sheet-host">
+          <div id="inv-scaler" class="origin-top-left">
+            <!-- Filled by invSheetMarkup(), the same function the staff
+                 generator calls. -->
+            <div id="inv-sheet"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- The document itself. This page deliberately does NOT load js/config.js:
+         both declare `const SUPABASE_URL` and the redeclaration kills the page,
+         the same restriction reserve.html is written around. That is why
+         invoice-sheet.js has no t() and no toast() in it. -->
+    <script src="js/invoice-sheet.js?v=1"></script>
+    <script>
+      const SUPABASE_URL = "__SUPABASE_URL__";
+      const SUPABASE_ANON_KEY = "__SUPABASE_ANON_KEY__";
+      const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      const $ = (id) => document.getElementById(id);
+      const show = (which) => {
+        ["loading", "dead", "invoice"].forEach((id) =>
+          $(id).classList.toggle("hidden", id !== which),
+        );
+      };
+
+      let SNAP = null;
+
+      function rupiah(n) {
+        const v = Number(n);
+        return isFinite(v) ? "Rp " + v.toLocaleString("id-ID") : "";
+      }
+
+      async function load() {
+        const token = new URLSearchParams(location.search).get("t");
+        if (!token) return show("dead");
+
+        let row;
+        try {
+          const { data, error } = await db.rpc("invoice_by_token", {
+            p_token: token,
+          });
+          if (error) throw error;
+          row = Array.isArray(data) ? data[0] : data;
+        } catch (_) {
+          // A network failure is NOT a dead link. Telling a guest their invoice
+          // has been cancelled because their wifi dropped is the worse of the
+          // two lies, and it starts a phone call.
+          $("dead-msg").textContent =
+            "Tidak bisa memuat invoice. Periksa koneksi Anda lalu muat ulang halaman ini.";
+          return show("dead");
+        }
+        if (!row || !row.doc) return show("dead");
+
+        SNAP = row.doc;
+        $("v-no").textContent = row.invoice_no || "Invoice";
+        const due = Number(row.outstanding);
+        $("v-due").textContent =
+          isFinite(due) && due > 0
+            ? "Sisa tagihan " + rupiah(due)
+            : "Lunas";
+
+        $("inv-sheet").innerHTML = invSheetMarkup();
+        invSheetRender(SNAP);
+        show("invoice");
+        // After the sheet is visible: a hidden element has no width, so fitting
+        // it while the page still showed the loader would scale it to zero.
+        invSheetFit($("inv-scaler"));
+      }
+
+      async function downloadPdf() {
+        if (!SNAP) return;
+        const btn = $("v-download");
+        const label = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Menyiapkan…";
+        try {
+          await invSheetPdf(SNAP, {
+            // invSheetPdf cannot call toast(): this page has no config.js. The
+            // message goes where the guest is already looking instead.
+            say: (msg) => {
+              $("dead-msg").textContent =
+                "Tidak bisa membuat PDF. Coba lagi, atau screenshot halaman ini.";
+              console.warn("[invoice-view]", msg);
+            },
+          });
+        } finally {
+          btn.disabled = false;
+          btn.textContent = label;
+        }
+      }
+
+      window.addEventListener("resize", () => {
+        if (SNAP) invSheetFit($("inv-scaler"));
+      });
+      load();
+    </script>
+  </body>
+</html>

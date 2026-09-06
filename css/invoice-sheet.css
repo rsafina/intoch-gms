@@ -1,0 +1,244 @@
+/* ===== THE INVOICE SHEET =========================================
+   The printed A4 document, 794 x 1123 px (A4 at 96dpi).
+
+   Lives in its own file because TWO pages draw it: the staff generator
+   in index.html, and the public invoice-view.html a guest opens from
+   WhatsApp. It was inline in index.html until 2026-09-06; copying it to
+   the second page would have guaranteed the two drift, and the guest
+   would download a document that looks nothing like the one staff
+   previewed before sending it.
+
+   Everything here is deliberately plain CSS with pixel values and hex
+   colours. html2canvas rasterises this node and does not reliably
+   understand Tailwind utilities, newer colour functions, or CSS
+   variables. A brand sweep swept this file once already and broke the
+   invoice; tests/invoice-style.test.js exists because of it. Do not
+   swap these for tokens or utility classes.
+
+   Changing the 794 x 1123 size means changing the jsPDF page size in
+   js/invoice-sheet.js as well.
+================================================================== */
+
+#inv-sheet {
+  width: 794px;
+  height: 1123px;
+  background: #ffffff;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  color: #173B64;
+  position: relative;
+  box-shadow: 0 4px 24px rgba(23, 59, 100, 0.12); /* literal: html2canvas rasterises #inv-sheet */
+}
+#inv-sheet .inv-frame {
+  position: absolute;
+  inset: 22px;
+  border: 1px solid #A3C4EB;
+  padding: 30px 46px 0;
+}
+#inv-sheet .inv-logo {
+  display: block;
+  width: 172px;
+  margin: 24px auto 0;
+}
+#inv-sheet .inv-rule-top {
+  height: 2px;
+  background: #173B64;
+  margin-top: 22px;
+}
+#inv-sheet .inv-billto {
+  font-size: 17px;
+  font-weight: 400;
+  color: #3d3d3d;
+  margin-top: 26px;
+}
+#inv-sheet .inv-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 12px;
+  column-gap: 24px;
+}
+#inv-sheet .inv-meta-row {
+  display: flex;
+  font-size: 12.5px;
+  color: #173B64;
+  line-height: 1.05;
+  margin-bottom: 12px;
+}
+#inv-sheet .inv-meta-k {
+  width: 96px;
+  flex: none;
+}
+#inv-sheet .inv-thead {
+  display: flex;
+  margin-top: 22px;
+  background: #173B64;
+  color: #fff;
+  font-size: 12.5px;
+  height: 30px;
+  align-items: center;
+}
+/* Centring is done with flex, not line-height. Web font metrics can sit high in their
+   line box, so a line-height equal to the bar height pushed the text
+   visibly above centre. Flex centres the glyph box itself. */
+#inv-sheet .inv-thead > div {
+  text-align: center;
+  border-right: 2px solid #fff;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#inv-sheet .inv-thead > div:last-child {
+  border-right: none;
+}
+#inv-sheet .inv-c1 {
+  width: 44%;
+}
+#inv-sheet .inv-c2 {
+  width: 11%;
+}
+#inv-sheet .inv-c3 {
+  width: 23%;
+}
+#inv-sheet .inv-c4 {
+  width: 22%;
+}
+#inv-sheet .inv-row {
+  display: flex;
+  background: #DCEBFB;
+  height: 31px;
+  margin-top: 11px;
+  font-size: 12.5px;
+  color: #173B64;
+}
+#inv-sheet .inv-row > div {
+  height: 31px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+}
+/* The item name is a bare text node, exactly like the three
+   numeric cells. It used to be wrapped in a <span> so long
+   names could get an ellipsis — but html2canvas gives that
+   inner box its own height and clips the glyphs, which is
+   invisible on screen and only shows up in the exported PDF.
+   Names are length-checked before download instead. */
+#inv-sheet .inv-row .inv-c1 {
+  padding-left: 16px;
+}
+#inv-sheet .inv-row .inv-c2,
+#inv-sheet .inv-row .inv-c3 {
+  justify-content: center;
+}
+#inv-sheet .inv-row .inv-c4 {
+  justify-content: flex-end;
+  padding-right: 16px;
+}
+#inv-sheet .inv-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-top: 26px;
+  gap: 24px;
+}
+#inv-sheet .inv-note {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #173B64;
+  white-space: pre-line;
+  max-width: 46%;
+}
+#inv-sheet .inv-totals {
+  width: 47%;
+  flex: none;
+}
+#inv-sheet .inv-trow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  color: #173B64;
+  margin-bottom: 10px;
+  padding: 0 16px 0 12px;
+}
+#inv-sheet .inv-trow span:last-child {
+  color: #173B64;
+}
+#inv-sheet .inv-tbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #173B64;
+  color: #fff;
+  font-size: 12.5px;
+  height: 29px;
+  padding: 0 16px 0 12px;
+  margin-top: 6px;
+}
+/* html2canvas draws text a few pixels lower than the browser
+   does — it approximates the baseline from font metrics rather
+   than using the real one. On screen the bars look centred; in
+   the exported PDF the same text sits low and descenders get
+   clipped by the 31px cell. This class is added to the sheet
+   only for the duration of the capture, so the preview stays
+   truthful and the PDF gets the correction.
+   --inv-export-lift is the ONLY number to tune here: 1px of it
+   moves the text in every blue bar 1px up in the PDF. It is a
+   relative offset rather than bottom padding, so raising it
+   never squeezes the text box and re-clips the descenders. */
+#inv-sheet {
+  --inv-export-lift: 6px;
+}
+/* Only ever offset elements that carry no background or border.
+   The row cells are transparent (the blue lives on .inv-row),
+   and the header/total bars are offset via their inner spans —
+   moving the bars themselves would drag the white dividers and
+   the blue fill out of place. */
+#inv-sheet.inv-exporting .inv-row > div,
+#inv-sheet.inv-exporting .inv-thead > div > span,
+#inv-sheet.inv-exporting .inv-tbar > span {
+  position: relative;
+  top: calc(-1 * var(--inv-export-lift));
+}
+/* A settled amount is pale, an amount still owed is solid.
+   Used for the Down Payment bar once a Settlement line is on
+   the invoice, so a guest cannot read the deposit they have
+   already paid as another sum being asked for. */
+#inv-sheet .inv-tbar-paid {
+  background: #DCEBFB;
+  color: #173B64;
+}
+#inv-sheet .inv-footer {
+  position: absolute;
+  left: 46px;
+  right: 46px;
+  bottom: 22px;
+}
+#inv-sheet .inv-heron {
+  position: absolute;
+  left: 0;
+  bottom: 56px;
+  width: 62px;
+}
+#inv-sheet .inv-welcome {
+  text-align: center;
+  font-size: 12px;
+  color: #173B64;
+  margin-bottom: 14px;
+}
+#inv-sheet .inv-rule-a {
+  height: 2px;
+  background: #173B64;
+  margin-bottom: 3px;
+}
+#inv-sheet .inv-rule-b {
+  height: 1px;
+  background: #A3C4EB;
+  margin-bottom: 3px;
+}
+#inv-sheet .inv-address {
+  text-align: center;
+  font-size: 10px;
+  line-height: 1.5;
+  color: #173B64;
+  margin-top: 10px;
+}

@@ -77,6 +77,22 @@ const WA_DEFAULT_TEMPLATES = {
       "Detail pembayaran ada di sini:\n{invoice}\n\n" +
       "Setelah transfer, mohon balas pesan ini ya. Terima kasih!",
   },
+  // The saved invoice. {invoice} is the ONLY way the guest reaches the
+  // document: there is no login and no lookup by phone number. NOT {link},
+  // which belongs to the broadcast campaign page and is treated as such by
+  // the send path; a transactional template carrying it ships a dead
+  // placeholder. Same rule as deposit_request, pinned by
+  // campaign-editor.test.js.
+  invoice_send: {
+    label: "Invoice (kirim tautan invoice)",
+    is_broadcast: false,
+    body:
+      "Halo {nama}!\n\n" +
+      "Berikut invoice dari {resto}:\n\n" +
+      "No. invoice: {nomor}\nTotal: {jumlah}\n\n" +
+      "Detail lengkapnya bisa dilihat dan diunduh di sini:\n{invoice}\n\n" +
+      "Terima kasih!",
+  },
   at_risk: {
     label: "Broadcast: At Risk (lama tidak berkunjung)",
     is_broadcast: true,
@@ -423,6 +439,20 @@ function waDepositRequestMessage(ctx) {
     pax: ctx.pax || "-",
     dp: ctx.amountText || "-",
     batas: ctx.deadlineText || "-",
+    invoice: ctx.link || "",
+  });
+  return msg.includes(ctx.link) ? msg : msg.trimEnd() + "\n\n" + ctx.link;
+}
+
+// The saved-invoice link. Same shape as waDepositRequestMessage: if the
+// restaurant has edited {invoice} out of the template we put the URL back on
+// the end, rather than sending a document nobody can open.
+function waInvoiceMessage(ctx) {
+  const msg = waRenderTemplate(waTemplateBody("invoice_send"), {
+    nama: waGreetName(ctx.guestName),
+    resto: WA_RESTAURANT_NAME,
+    nomor: ctx.invoiceNo || "-",
+    jumlah: ctx.amountText || "-",
     invoice: ctx.link || "",
   });
   return msg.includes(ctx.link) ? msg : msg.trimEnd() + "\n\n" + ctx.link;
