@@ -6698,6 +6698,25 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
+                <!-- Photo or flat colour. Above the photo control on purpose:
+                     it decides whether that control matters at all. Option
+                     VALUES stay English while only the labels translate, the
+                     same rule the reservation source dropdown follows. -->
+                <div class="mb-4">
+                  <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n
+                    >Background style</label
+                  >
+                  <select
+                    id="rf-bg-style"
+                    class="form-input settings-field"
+                    onchange="previewReserveAppearance()"
+                  >
+                    <option value="photo" data-i18n>Photo behind glass panels</option>
+                    <option value="solid" data-i18n>Solid colour, no photo</option>
+                  </select>
+                  <p id="rf-bg-style-note" class="text-[11px] text-[#999] mt-1" data-i18n-skip></p>
+                </div>
+
                 <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n
                   >Background photo</label
                 >
@@ -6797,7 +6816,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 style="position: relative; height: 260px; border-radius: 14px; overflow: hidden; border: 1px solid #EDE9E3"
               >
                 <div id="rf-preview-bg" style="position: absolute; inset: 0; background: url('assets/background-generic.jpg') center / cover no-repeat; filter: brightness(0.85) saturate(0.95)"></div>
-                <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(24,34,66,.5) 0%, rgba(40,56,94,.3) 45%, rgba(18,28,54,.55) 100%)"></div>
+                <div id="rf-preview-tint" style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(24,34,66,.5) 0%, rgba(40,56,94,.3) 45%, rgba(18,28,54,.55) 100%)"></div>
                 <div style="position: relative; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 16px">
                   <img id="rf-preview-logo" data-brand-logo="full" src="assets/full-logo.png" alt="" style="max-height: 40px; max-width: 180px; object-fit: contain; filter: drop-shadow(0 4px 16px rgba(0,0,0,.35))" />
                   <div id="rf-preview-card" style="width: min(300px, 90%); border-radius: 14px; border: 1px solid rgba(255,255,255,.18); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); padding: 14px; text-align: center">
@@ -6865,6 +6884,36 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 <span>
                   <span class="block text-sm font-medium text-[#333]" data-i18n>Show how full each area is</span>
                   <span class="block text-xs text-[#999] mt-0.5" data-i18n>Adds a line like "60% terisi" under each area. It nudges guests towards a quiet night, but it also tells them when you are empty. Off unless you turn it on.</span>
+                </span>
+              </label>
+            </div>
+
+            <!-- Language of the four pages a guest sees: this form, the page
+                 after it, the reservation card and the spin wheel. Option
+                 VALUES stay English, the same rule the reservation source and
+                 the background style follow. -->
+            <div class="mb-5">
+              <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n
+                >Language guests see</label
+              >
+              <select id="rff-language" class="form-input settings-field">
+                <option value="id" data-i18n>Indonesian</option>
+                <option value="en" data-i18n>English</option>
+                <option value="auto" data-i18n>Follow the guest's phone</option>
+              </select>
+              <p class="text-[11px] text-[#999] mt-1" data-i18n>
+                "Follow the guest's phone" shows English to a phone set to English and
+                Indonesian to everything else. Your welcome line above is never translated
+                either way.
+              </p>
+            </div>
+
+            <div class="rounded-10 border border-[#EDE9E3] p-4 mb-5">
+              <label class="flex items-start gap-3 cursor-pointer">
+                <input id="rff-lang-switch" type="checkbox" class="mt-0.5" />
+                <span>
+                  <span class="block text-sm font-medium text-[#333]" data-i18n>ID / EN switch on the guest pages</span>
+                  <span class="block text-xs text-[#999] mt-0.5" data-i18n>Lets a guest change the language themselves, whatever you picked above. Their choice is remembered on their own phone only. On unless you turn it off.</span>
                 </span>
               </label>
             </div>

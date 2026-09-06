@@ -296,6 +296,22 @@ const ID_DICT = {
     "Tidak ada yang tersimpan. Hubungi administrator Anda.",
   "How the booking page looks to a guest. The same backdrop and colours carry over to the thank-you page they land on after booking.":
     "Tampilan halaman reservasi untuk tamu. Latar dan warna yang sama juga dipakai di halaman terima kasih setelah mereka memesan.",
+  "Language guests see": "Bahasa yang dilihat tamu",
+  Indonesian: "Bahasa Indonesia",
+  English: "Bahasa Inggris",
+  "Follow the guest's phone": "Ikuti bahasa ponsel tamu",
+  "\"Follow the guest's phone\" shows English to a phone set to English and Indonesian to everything else. Your welcome line above is never translated either way.":
+    "\"Ikuti bahasa ponsel tamu\" menampilkan bahasa Inggris untuk ponsel berbahasa Inggris, dan bahasa Indonesia untuk sisanya. Kalimat sambutan Anda di atas tidak pernah diterjemahkan.",
+  "ID / EN switch on the guest pages": "Tombol ID / EN di halaman tamu",
+  "Lets a guest change the language themselves, whatever you picked above. Their choice is remembered on their own phone only. On unless you turn it off.":
+    "Tamu bisa mengganti bahasa sendiri, apa pun pilihan Anda di atas. Pilihan itu hanya tersimpan di ponsel mereka. Aktif kecuali Anda matikan.",
+  "Background style": "Gaya latar",
+  "Photo behind glass panels": "Foto dengan panel kaca",
+  "Solid colour, no photo": "Warna polos, tanpa foto",
+  "The page is painted in the form panel colour below. The photo is kept but not shown.":
+    "Halaman memakai warna panel formulir di bawah. Fotonya tetap tersimpan, hanya tidak ditampilkan.",
+  "The photo fills the screen and the form sits on it behind glass.":
+    "Foto memenuhi layar dan formulir tampil di atasnya dengan efek kaca.",
   "Background photo": "Foto latar",
   "Landscape, at least 1600px wide, max 2 MB. A darker photo makes the form easier to read.":
     "Format melebar, minimal 1600px, maks 2 MB. Foto yang lebih gelap membuat formulir lebih mudah dibaca.",
@@ -1645,6 +1661,11 @@ const RESERVE_APPEARANCE_DEFAULTS = {
   // step with --brand-ink / --brand by hand.
   glass_color: "#4F41A8",
   glass_opacity: 0.6,
+  // "photo" keeps the backdrop photograph and the glass panels; "solid" drops
+  // the photo and paints the page in glass_color. English values, never the
+  // translated label, or a setting saved in Indonesian reads as an unknown
+  // style in English.
+  bg_style: "photo",
   accent_color: "#5B4CBD",
   logo_max_height: 72,
 };
@@ -1723,6 +1744,16 @@ function applyReserveAppearance(cfg, target) {
   if (isHexColor(conf.glass_color)) {
     const rgba = hexToRgba(conf.glass_color, clampGlassOpacity(conf.glass_opacity));
     if (rgba) root.setProperty("--rf-glass", rgba);
+    root.setProperty("--rf-solid", conf.glass_color.trim());
+  }
+
+  // Solid mode is an attribute on <html>, not a variable: it switches rules on
+  // and off. Only when styling the real document — a caller that passed its
+  // own target is previewing, and must not restyle the page it is previewing
+  // inside. reserve.html carries a copy of this; change one, change the other.
+  if (!target) {
+    const solid = String(conf.bg_style || "photo").toLowerCase() === "solid";
+    document.documentElement.setAttribute("data-rf-bg", solid ? "solid" : "photo");
   }
 
   if (isHexColor(conf.accent_color)) {

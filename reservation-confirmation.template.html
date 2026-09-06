@@ -220,6 +220,34 @@
         line-height: 1.6;
       }
 
+      .lang-switch {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        display: flex;
+        gap: 4px;
+        padding: 3px;
+        border-radius: 999px;
+        background: #f1efea;
+        border: 1px solid #e4e0d8;
+        z-index: 5;
+      }
+      .lang-switch button {
+        font: inherit;
+        font-size: 11.5px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        padding: 4px 10px;
+        border: none;
+        border-radius: 999px;
+        cursor: pointer;
+        color: #7a776f;
+        background: transparent;
+      }
+      .lang-switch button[aria-pressed="true"] {
+        background: var(--primary);
+        color: #fff;
+      }
       .status-badge {
         display: inline-flex;
         align-items: center;
@@ -314,6 +342,14 @@
     </style>
   </head>
   <body>
+    <div class="lang-switch" id="lang-switch">
+      <button type="button" data-lang-btn="id" aria-pressed="true" onclick="setGuestLanguage('id')">
+        ID
+      </button>
+      <button type="button" data-lang-btn="en" aria-pressed="false" onclick="setGuestLanguage('en')">
+        EN
+      </button>
+    </div>
     <div
       style="
         position: fixed;
@@ -386,7 +422,9 @@
             margin: 0 auto 16px;
           "
         ></div>
-        <p style="color: #aaa; font-size: 14px">Loading your reservation…</p>
+        <p style="color: #aaa; font-size: 14px" data-i18n>
+          Loading your reservation…
+        </p>
       </div>
 
       <!-- Error -->
@@ -399,9 +437,9 @@
           class="font-display"
           style="font-size: 22px; color: var(--dark); margin-bottom: 8px"
         >
-          Reservation not found
+          <span data-i18n>Reservation not found</span>
         </p>
-        <p style="color: #aaa; font-size: 14px">
+        <p style="color: #aaa; font-size: 14px" data-i18n>
           This link may be invalid or expired.
         </p>
       </div>
@@ -432,7 +470,7 @@
               margin-bottom: 6px;
             "
           >
-            Reservation Confirmed
+            <span data-i18n>Reservation Confirmed</span>
           </p>
           <h1
             class="font-display"
@@ -490,7 +528,7 @@
                 margin-bottom: 8px;
               "
             >
-              Note from our team
+              <span data-i18n>Note from our team</span>
             </p>
             <div class="notes-box" id="notes-content"></div>
           </div>
@@ -521,11 +559,12 @@
 
           <!-- Editable name -->
           <div class="name-edit-bar" style="margin-bottom: 10px">
-            <label>Name</label>
+            <label data-i18n>Name</label>
             <input
               type="text"
               id="display-name-input"
               placeholder="e.g. Ibu Ima"
+              data-i18n-placeholder
               oninput="updateDisplayName(this.value)"
             />
             <svg
@@ -563,7 +602,7 @@
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            Download as Image
+            <span data-i18n>Download as Image</span>
           </button>
         </div>
 
@@ -622,6 +661,7 @@
     <div id="confetti-wrap" style="pointer-events: none"></div>
 
     <script src="js/config.js"></script>
+    <script src="js/guest-i18n.js"></script>
     <script>
       // Renders with the bundled logo, then swaps in the client's own.
       if (typeof initBranding === "function") initBranding();
@@ -676,21 +716,30 @@
       // ── Update heading live as staff types ────────────────────
       function updateDisplayName(val) {
         const name =
-          val.trim() || reservation?.guests?.name?.split(" ")[0] || "Guest";
-        document.getElementById("guest-name-heading").textContent =
-          `Welcome, ${name}!`;
+          val.trim() || reservation?.guests?.name?.split(" ")[0] || gt("Guest");
+        document.getElementById("guest-name-heading").textContent = gtf(
+          "Welcome, {name}!",
+          { name },
+        );
       }
 
       // ── Render page ───────────────────────────────────────────
       function renderPage(r) {
-        const fullName = r.guests?.name || "Guest";
+        const fullName = r.guests?.name || gt("Guest");
         const firstName = fullName.split(" ")[0];
         const sc = statusConfig(r.status);
 
-        document.getElementById("guest-name-heading").textContent =
-          `Welcome, ${firstName}!`;
-        document.getElementById("res-date-subheading").textContent =
-          `${formatDate(r.reservation_date)} at ${formatTime(r.reservation_time)}`;
+        document.getElementById("guest-name-heading").textContent = gtf(
+          "Welcome, {name}!",
+          { name: firstName },
+        );
+        document.getElementById("res-date-subheading").textContent = gtf(
+          "{date} at {time}",
+          {
+            date: formatDate(r.reservation_date),
+            time: formatTime(r.reservation_time),
+          },
+        );
         document.getElementById("display-name-input").value = firstName;
 
         document.getElementById("status-badge").innerHTML =
@@ -701,20 +750,22 @@
         const areaName = r.areas?.name || null;
         const tableName = r.tables?.name || null;
         let rows = "";
-        rows += detailRow(IC.cal, "Date", formatDate(r.reservation_date));
-        rows += detailRow(IC.clk, "Time", formatTime(r.reservation_time));
+        rows += detailRow(IC.cal, gt("Date"), formatDate(r.reservation_date));
+        rows += detailRow(IC.clk, gt("Time"), formatTime(r.reservation_time));
         rows += detailRow(
           IC.ppl,
-          "Guests",
-          `${r.pax} ${r.pax === 1 ? "person" : "people"}`,
+          gt("Guests"),
+          gtf(r.pax === 1 ? "{n} person" : "{n} people", { n: r.pax }),
         );
+        // The area and table are the restaurant's own names for its rooms, so
+        // they are printed as typed.
         if (areaName || tableName)
           rows += detailRow(
             IC.loc,
-            "Location",
+            gt("Location"),
             [areaName, tableName].filter(Boolean).join(" · "),
           );
-        if (r.occasion) rows += detailRow(IC.tag, "Occasion", r.occasion);
+        if (r.occasion) rows += detailRow(IC.tag, gt("Occasion"), r.occasion);
         document.getElementById("details-grid").innerHTML = rows;
 
         if (r.notes) {
@@ -761,7 +812,7 @@
 
         const btn = document.querySelector(".btn-gold-action");
         if (btn) {
-          btn.textContent = "Generating…";
+          btn.textContent = gt("Generating…");
           btn.disabled = true;
         }
 
@@ -1076,7 +1127,32 @@
         setTimeout(() => (wrap.innerHTML = ""), 5000);
       }
 
-      document.addEventListener("DOMContentLoaded", loadReservation);
+      // Everything on this page is drawn from one reservation object, so a
+      // language switch just draws it again. renderPage() is idempotent: it
+      // overwrites the heading, the rows and the notes rather than appending.
+      function onGuestLanguageChange() {
+        if (reservation) renderPage(reservation);
+      }
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        // The guest's own choice first and synchronously, then the
+        // restaurant's setting when it arrives. Loading the reservation does
+        // not wait for either: a card that renders in the wrong language for
+        // one paint beats a card that waits on two round trips.
+        initGuestLanguageSync();
+        applyGuestLanguage(GUEST_LANG); // config.js has run by now; keep t() in step
+        loadReservation();
+        try {
+          const { data } = await db
+            .from("app_settings")
+            .select("value")
+            .eq("key", "reservation_form")
+            .maybeSingle();
+          applyGuestLanguageSetting(data?.value || {});
+        } catch (_) {
+          /* the guest's own choice, or the cached hint, still stands */
+        }
+      });
     </script>
   </body>
 </html>

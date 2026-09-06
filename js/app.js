@@ -13502,6 +13502,11 @@ const RESERVATION_FORM_DEFAULTS = {
   show_company: false,
   show_capacity: false,
   welcome_text: null,
+  // The language of the four GUEST pages, not of this one. Staff keep their
+  // own toggle. "id" is what those pages did before the setting existed, so an
+  // absent key changes nothing; "auto" follows the guest's phone.
+  guest_language: "id",
+  show_lang_switch: true,
 };
 
 // The booking page truncates to the same number on read, because this row can
@@ -13527,6 +13532,12 @@ function renderReservationFormFields() {
   check("rff-show-capacity", cfg.show_capacity === true);
   const w = document.getElementById("rff-welcome");
   if (w) w.value = String(cfg.welcome_text || "").slice(0, RESERVATION_WELCOME_MAX);
+  const lang = document.getElementById("rff-language");
+  if (lang)
+    lang.value = ["id", "en", "auto"].includes(cfg.guest_language)
+      ? cfg.guest_language
+      : "id";
+  check("rff-lang-switch", cfg.show_lang_switch !== false);
   onReservationWelcomeInput();
 }
 
@@ -13556,6 +13567,16 @@ async function saveReservationFormFields() {
     show_notes: on("rff-show-notes"),
     show_company: on("rff-show-company"),
     show_capacity: on("rff-show-capacity"),
+    // English values, never the translated label: a setting saved while the
+    // staff app is in Indonesian must not read as an unknown language in
+    // English. Anything unexpected degrades to Indonesian, which is what the
+    // guest pages did before this existed.
+    guest_language: ["id", "en", "auto"].includes(
+      document.getElementById("rff-language")?.value,
+    )
+      ? document.getElementById("rff-language").value
+      : "id",
+    show_lang_switch: on("rff-lang-switch"),
     // Blank is stored as null, not "", so the booking page falls back to its
     // bundled sentence rather than rendering an empty line. The text is the
     // client's own words: it is never run through the translation dictionary,
@@ -13618,11 +13639,19 @@ function reserveAppearanceForm() {
     const v = document.getElementById(id)?.value;
     return isHexColor(v) ? v.toUpperCase() : fallback;
   };
+  // English, always. The labels translate; the stored value must not, or a
+  // page saved in Indonesian reads as an unknown style in English and falls
+  // back to the photo the client just switched off.
+  const bgStyle = () =>
+    String(document.getElementById("rf-bg-style")?.value || "").toLowerCase() === "solid"
+      ? "solid"
+      : "photo";
   return {
     // The uploaded background is NOT part of this form. It is saved the moment
     // it uploads, so a slow photo upload followed by a browser crash does not
     // lose the file with nothing pointing at it.
     bg_url: (RESERVE_APPEARANCE && RESERVE_APPEARANCE.bg_url) || null,
+    bg_style: bgStyle(),
     glass_color: color("rf-glass-color", RESERVE_APPEARANCE_DEFAULTS.glass_color),
     glass_opacity: num("rf-glass-opacity", 60) / 100,
     accent_color: color("rf-accent-color", RESERVE_APPEARANCE_DEFAULTS.accent_color),
@@ -13643,6 +13672,7 @@ function renderReserveAppearanceSettings() {
   set("rf-accent-color-hex", isHexColor(cfg.accent_color) ? cfg.accent_color.toUpperCase() : RESERVE_APPEARANCE_DEFAULTS.accent_color);
   set("rf-glass-opacity", Math.round(clampGlassOpacity(cfg.glass_opacity) * 100));
   set("rf-logo-height", cfg.logo_max_height || RESERVE_APPEARANCE_DEFAULTS.logo_max_height);
+  set("rf-bg-style", cfg.bg_style === "solid" ? "solid" : "photo");
 
   const bgCustom = /^https?:\/\/\S+$/i.test(String(cfg.bg_url || "").trim());
   const preview = document.getElementById("rf-bg-preview");
@@ -13695,10 +13725,29 @@ function previewReserveAppearance() {
   const hLabel = document.getElementById("rf-logo-height-value");
   if (hLabel) hLabel.textContent = cfg.logo_max_height + "px";
 
+  // In solid mode the panel colour becomes the page, so a panel of that same
+  // colour on top of it would be invisible. The guest pages solve it the same
+  // way, with white: keep the two in step or the preview stops predicting the
+  // page it is previewing.
+  const solid = cfg.bg_style === "solid";
   const card = document.getElementById("rf-preview-card");
-  if (card)
-    card.style.background =
-      hexToRgba(cfg.glass_color, clampGlassOpacity(cfg.glass_opacity)) || "";
+  if (card) {
+    card.style.background = solid
+      ? "rgba(255,255,255,.10)"
+      : hexToRgba(cfg.glass_color, clampGlassOpacity(cfg.glass_opacity)) || "";
+    card.style.backdropFilter = solid ? "none" : "blur(14px)";
+    card.style.webkitBackdropFilter = solid ? "none" : "blur(14px)";
+  }
+  const tint = document.getElementById("rf-preview-tint");
+  if (tint)
+    tint.style.background = solid
+      ? cfg.glass_color
+      : "linear-gradient(180deg, rgba(24,34,66,.5) 0%, rgba(40,56,94,.3) 45%, rgba(18,28,54,.55) 100%)";
+  const styleNote = document.getElementById("rf-bg-style-note");
+  if (styleNote)
+    styleNote.textContent = solid
+      ? t("The page is painted in the form panel colour below. The photo is kept but not shown.")
+      : t("The photo fills the screen and the form sits on it behind glass.");
   const btn = document.getElementById("rf-preview-btn");
   if (btn)
     btn.style.background = `linear-gradient(135deg, ${cfg.accent_color}, ${shadeHex(cfg.accent_color, -0.32)})`;
@@ -13711,10 +13760,12 @@ function previewReserveAppearance() {
 
   const bgEl = document.getElementById("rf-preview-bg");
   const bg = String((RESERVE_APPEARANCE && RESERVE_APPEARANCE.bg_url) || "").trim();
-  if (bgEl)
+  if (bgEl) {
     bgEl.style.backgroundImage = /^https?:\/\/\S+$/i.test(bg)
       ? `url("${bg}")`
       : 'url("assets/background-generic.jpg")';
+    bgEl.style.display = solid ? "none" : "";
+  }
 }
 
 async function saveReserveAppearance() {
@@ -13738,9 +13789,17 @@ async function resetReserveAppearanceDefaults() {
   // The photo is deliberately NOT cleared here: it is a file somebody
   // uploaded, and "back to defaults" on a colour picker should not silently
   // throw it away. "Use built-in" under the photo does that, on purpose.
+  //
+  // Nor is the background style. Photo-or-solid is a choice about which look
+  // the restaurant is having, not a value inside one, and a manager tidying up
+  // the colours would not expect the photo to reappear across the whole
+  // booking page.
   const cfg = {
     ...RESERVE_APPEARANCE_DEFAULTS,
     bg_url: (RESERVE_APPEARANCE && RESERVE_APPEARANCE.bg_url) || null,
+    bg_style:
+      (RESERVE_APPEARANCE && RESERVE_APPEARANCE.bg_style) ||
+      RESERVE_APPEARANCE_DEFAULTS.bg_style,
   };
   loader(true);
   const ok = await writeReserveAppearance(cfg);

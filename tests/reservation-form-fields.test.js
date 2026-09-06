@@ -74,7 +74,9 @@ console.log("\nNothing that cannot actually be switched off is offered");
 for (const forbidden of ["show_name", "show_phone", "show_date", "show_time", "show_pax"])
   ok("no " + forbidden + " control", !new RegExp(forbidden).test(card));
 const boxes = (card.match(/type="checkbox"/g) || []).length;
-ok("exactly three checkboxes", boxes === 3, String(boxes));
+// Four since 2026-09-06: the three field switches plus the guest-page
+// ID/EN switch. The count is pinned so a fifth cannot appear unnoticed.
+ok("exactly four checkboxes", boxes === 4, String(boxes));
 
 console.log("\nThe screen is wired into the settings page load");
 ok(
@@ -254,7 +256,7 @@ function harness(opts) {
   console.log("\nThe booking page reads it the way this screen writes it");
   ok(
     "welcome line is printed with textContent, never innerHTML",
-    /welcome-line"\)\.textContent = w/.test(reserveTpl),
+    /welcome-line"\)[\s\S]{0,240}line\.textContent = w/.test(reserveTpl),
   );
   ok(
     "the public page caps it too",

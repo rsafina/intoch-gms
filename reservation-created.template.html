@@ -85,6 +85,9 @@
            before the fetch lands, and stays correct if it never does. */
         --rf-bg-image: url("assets/background-generic.jpg");
         --rf-glass: rgb(var(--brand-ink-rgb) / 0.6);
+        /* The page colour when Background style is "solid". Set from the same
+           panel colour the glass uses, at full strength. */
+        --rf-solid: rgb(var(--brand-ink-rgb));
         --rf-logo-max-h: 72px;
       }
       html,
@@ -115,6 +118,59 @@
           rgba(18, 28, 54, 0.55) 100%
         );
         z-index: -1;
+      }
+      /* Solid background mode (Settings > Reservation Form > Background
+         style). The photo layer is taken out of the picture rather than
+         covered over, and the tint layer becomes the flat colour: a client
+         who has no good photograph of the room gets a page that looks
+         deliberate instead of one that looks like a photo failed to load.
+
+         An attribute on <html> rather than another custom property, because
+         this switches rules on and off rather than swapping a value. It is
+         set by applyReserveAppearance(), and the bundled default is the
+         photo, so the page renders the way it always did before the fetch
+         lands and if it never does. */
+      :root[data-rf-bg="solid"] .bg-photo {
+        display: none;
+      }
+      :root[data-rf-bg="solid"] .bg-tint {
+        background: var(--rf-solid);
+      }
+      /* Panel colour glass over a page of the SAME colour is invisible, so in
+         solid mode the cards lift off the ground with white instead. The blur
+         goes too: there is nothing behind them left to blur. */
+      :root[data-rf-bg="solid"] .card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+      }
+      /* Same switch as the booking page, same place. A guest lands here one
+         tap after that form and must not have to hunt for it again. */
+      .lang-switch {
+        align-self: flex-end;
+        display: flex;
+        gap: 4px;
+        margin-bottom: 10px;
+        padding: 3px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+      }
+      .lang-switch button {
+        font: inherit;
+        font-size: 11.5px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        padding: 5px 11px;
+        border: none;
+        border-radius: 999px;
+        cursor: pointer;
+        color: rgba(242, 239, 233, 0.75);
+        background: transparent;
+      }
+      .lang-switch button[aria-pressed="true"] {
+        background: var(--primary);
+        color: #fff;
       }
       .wrap {
         max-width: 430px;
@@ -258,6 +314,14 @@
     <div class="bg-tint"></div>
 
     <div class="wrap">
+      <div class="lang-switch" id="lang-switch">
+        <button type="button" data-lang-btn="id" aria-pressed="true" onclick="setGuestLanguage('id')">
+          ID
+        </button>
+        <button type="button" data-lang-btn="en" aria-pressed="false" onclick="setGuestLanguage('en')">
+          EN
+        </button>
+      </div>
       <div class="logo-plain">
         <img
           data-brand-logo="full"
@@ -279,22 +343,18 @@
             <path d="M20 6L9 17l-5-5" />
           </svg>
         </div>
-        <h1 id="created-title">Reservation Created</h1>
+        <h1 id="created-title" data-i18n>Reservation Created</h1>
         <!-- Rewritten in place for a waitlisted booking. The default wording
              below is a confirmation, and a guest whose booking is still waiting
              on a human must not read it. -->
         <div id="waitlist-note" class="summary" style="display: none"></div>
         <div id="deposit-note" class="summary" style="display: none"></div>
-        <p class="note" id="created-note">
-          Staff kami akan segera menghubungi Anda, atau Anda bisa menambahkan
-          sentuhan lebih personal dengan mengklik tombol di bawah untuk
-          terhubung dengan kami.
-        </p>
-        <p class="note">
-          <i>
-            Our staff will contact you soon, or you can add a more personalized
-            touch by clicking the button below to connect with us.
-          </i>
+        <!-- One paragraph, not two. This page used to print the sentence in
+             Indonesian and then again in English underneath, because there was
+             no way to know which the guest read. There is now. -->
+        <p class="note" id="created-note" data-i18n>
+          Our staff will contact you shortly, or you can add a more personal
+          touch by tapping the button below to reach us.
         </p>
 
         <div id="res-summary" class="summary"></div>
@@ -311,59 +371,81 @@
               d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2zm5.4 14.1c-.2.7-1.3 1.3-1.9 1.4-.5.1-1.1.1-1.8-.1-.4-.1-1-.3-1.7-.6-2.9-1.3-4.8-4.2-5-4.4-.1-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.4.2.5.7 1.9.8 2 .1.1.1.3 0 .5l-.4.6c-.1.2-.3.3-.1.6.1.3.6 1.1 1.4 1.8 1 .9 1.8 1.2 2.1 1.3.3.1.4.1.6-.1l.7-.9c.2-.3.4-.2.6-.1l1.9.9c.2.1.4.2.5.3 0 .1 0 .5-.3 1.1z"
             />
           </svg>
-          Chat with us on WhatsApp
+          <span data-i18n>Chat with us on WhatsApp</span>
         </a>
 
-        <a class="back" href="reserve.html">&larr; Make another reservation</a>
+        <a class="back" href="reserve.html"
+          >&larr; <span data-i18n>Make another reservation</span></a
+        >
       </div>
 
       <p class="foot">Serving stories on every plate since 2023</p>
     </div>
 
+    <script src="js/guest-i18n.js"></script>
     <script>
       // Show a small summary + prefill the WhatsApp message with the
       // reservation details (handed over via sessionStorage — no PII in the URL).
-      try {
+      // A function, and called again on every language switch, because all of
+      // it is composed in JavaScript: the walker in guest-i18n.js only reaches
+      // the static labels.
+      function renderCreated() {
         const raw = sessionStorage.getItem("bhPublicRes");
-        if (raw) {
+        if (!raw) return;
+        {
           const r = JSON.parse(raw);
           const d = new Date(r.date + "T00:00:00");
-          const dateLabel = d.toLocaleDateString("id-ID", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          });
+          const dateLabel = d.toLocaleDateString(
+            GUEST_LANG === "id" ? "id-ID" : "en-GB",
+            {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            },
+          );
           // ===== Waitlist =====
           // `ok: true` from the booking function does NOT mean confirmed. A
           // party outside the area's rules is stored as a request, and telling
           // that guest they have a table is the worst outcome this flow has.
           if (r.waitlisted) {
-            const why = {
-              over_capacity:
-                "Rombongan Anda lebih besar dari kapasitas area yang dipilih",
-              below_min_pax:
-                "Rombongan Anda di bawah minimum area yang dipilih",
-              over_max_pax: "Rombongan Anda cukup besar",
-            }[r.waitlist_reason] || "Permintaan Anda perlu kami tinjau";
-            document.getElementById("created-title").textContent =
-              "Permintaan Terkirim";
-            document.getElementById("created-note").innerHTML =
-              "<strong>Ini belum menjadi reservasi yang terkonfirmasi.</strong> " +
-              why +
-              ", jadi staff kami akan meninjau dan mengabari Anda lewat WhatsApp. " +
-              "Mohon jangan datang sebelum kami konfirmasi.";
+            const why =
+              {
+                over_capacity: "Your party is larger than the area you chose",
+                below_min_pax:
+                  "Your party is below the minimum for the area you chose",
+                over_max_pax: "Your party is a large one",
+              }[r.waitlist_reason] || "We need to review your request";
+            // The heading swaps its SOURCE string rather than its text, so the
+            // walker keeps translating it on every later switch instead of
+            // putting "Reservation Created" back over a request.
+            const title = document.getElementById("created-title");
+            title.dataset.i18nEn = "Request Sent";
+            title.textContent = gt("Request Sent");
+            const note = document.getElementById("created-note");
+            note.removeAttribute("data-i18n"); // composed below, not walked
+            note.innerHTML =
+              "<strong>" +
+              gt("This is not a confirmed reservation yet.") +
+              "</strong> " +
+              gtf(
+                "{reason}, so our staff will review it and let you know on WhatsApp. Please do not come in before we confirm.",
+                { reason: gt(why) },
+              );
             const wl = document.getElementById("waitlist-note");
-            wl.textContent = "Status: menunggu konfirmasi staff";
+            wl.textContent = gt("Status: waiting for staff to confirm");
             wl.style.display = "block";
           } else if (r.deposit_required && r.deposit_expected) {
             // Only a booking that was actually accepted is asked for money.
             const dep = document.getElementById("deposit-note");
             dep.innerHTML =
-              "Deposit (DP) <strong>Rp " +
+              gt("Deposit (DP)") +
+              " <strong>Rp " +
               Number(r.deposit_expected).toLocaleString("id-ID") +
-              "</strong><br>Kami akan mengirimkan detail pembayaran lewat WhatsApp. " +
-              "Reservasi Anda kami tahan sampai DP diterima.";
+              "</strong><br>" +
+              gt(
+                "We will send the payment details on WhatsApp. Your reservation is held until the deposit arrives.",
+              );
             dep.style.display = "block";
           }
 
@@ -381,17 +463,28 @@
             (r.area ? " &middot; " + String(r.area).replace(/[<>&]/g, "") : "");
           box.style.display = "block";
 
+          // The guest is the one sending this, so it goes in the language
+          // they are reading.
           const wa = document.getElementById("btn-wa");
-          const msg =
-            "Reservasi atas nama " +
-            r.name +
-            " untuk " +
-            dateLabel +
-            " " +
-            r.time +
-            ". Halo, saya ada catatan tambahan untuk reservasi saya.";
+          const msg = gtf(
+            "Reservation for {name} on {date} at {time}. Hello, I have something to add to my reservation.",
+            { name: r.name, date: dateLabel, time: r.time },
+          );
           wa.href = wa.href.split("?")[0] + "?text=" + encodeURIComponent(msg);
         }
+      }
+
+      // Language before the summary, so it is composed once, in the right one.
+      initGuestLanguageSync();
+      function onGuestLanguageChange() {
+        try {
+          renderCreated();
+        } catch (_) {
+          /* a broken summary must not take the switch down with it */
+        }
+      }
+      try {
+        renderCreated();
       } catch (_) {
         /* page still works without the summary */
       }
@@ -411,6 +504,24 @@
       // A guest who books and lands here must not watch the restaurant change
       // colour between two consecutive screens.
       if (typeof initReserveAppearance === "function") initReserveAppearance();
+
+      // config.js sets its own CURRENT_LANG from the STAFF browser's key when
+      // it loads, which on a guest's phone is simply absent. Re-applying puts
+      // t() and the month names back in step with the guest's choice, and
+      // then the restaurant's own setting lands on top.
+      (async function guestLanguage() {
+        applyGuestLanguage(GUEST_LANG);
+        try {
+          const { data } = await db
+            .from("app_settings")
+            .select("value")
+            .eq("key", "reservation_form")
+            .maybeSingle();
+          applyGuestLanguageSetting(data?.value || {});
+        } catch (_) {
+          /* the guest's own choice, or the cached hint, still stands */
+        }
+      })();
     </script>
   </body>
 </html>

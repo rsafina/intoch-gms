@@ -16,6 +16,11 @@ const path = require("path");
 
 const ROOT = path.join(__dirname, "..");
 const form = fs.readFileSync(path.join(ROOT, "reserve.template.html"), "utf8");
+// Guest-facing copy moved to English sources plus js/guest-i18n.js on
+// 2026-09-06. Both halves are checked: an English sentence with no
+// translation is an Indonesian guest reading English.
+const dict = fs.readFileSync(path.join(ROOT, "js", "guest-i18n.js"), "utf8");
+
 const created = fs.readFileSync(path.join(ROOT, "reservation-created.template.html"), "utf8");
 const sql = fs.readFileSync(path.join(ROOT, "migrations", "ALL_IN_ONE.sql"), "utf8");
 
@@ -47,7 +52,8 @@ ok("no hardcoded clamp to 20 survives", !/Math\.min\(20,/.test(form));
 ok("the pax input is not capped at 20", !/id="pax-value"[\s\S]{0,200}max="20"/.test(form));
 ok("max_pax is read from settings", /MAX_PAX\s*=\s*Math\.max\(1,\s*\+data\.value\.max_pax\)/.test(form));
 ok("a big party is warned BEFORE submitting", /function renderPaxNote/.test(form) &&
-   form.includes("masuk sebagai permintaan"));
+   form.includes("goes in as a request") &&
+   dict.includes("masuk sebagai permintaan"));
 
 console.log("\nThe area picker keeps the inherited fallback");
 ok("no bookable area means no picker at all",
@@ -71,14 +77,23 @@ console.log("\nA waitlisted booking is not dressed up as a confirmation");
 ok("the form passes the waitlist flag on", /waitlisted:\s*data\.waitlisted === true/.test(created) ||
    /waitlisted:\s*data\.waitlisted === true/.test(fs.readFileSync(path.join(ROOT, "reserve.template.html"), "utf8")));
 ok("the confirmation page branches on it", /if \(r\.waitlisted\)/.test(created));
-ok("the title is rewritten, not just a note added", /created-title[\s\S]{0,120}Permintaan Terkirim/.test(created));
-ok("it says plainly that this is not confirmed", created.includes("belum menjadi reservasi yang terkonfirmasi"));
+// The heading swaps its SOURCE string ("Request Sent") rather than its
+// text, so the walker keeps translating it instead of putting "Reservation
+// Created" back over a request on the next language switch.
+ok("the title is rewritten, not just a note added",
+   /created-title[\s\S]{0,220}i18nEn = "Request Sent"/.test(created));
+ok("and the Indonesian for it exists",
+   dict.includes('"Request Sent": "Permintaan Terkirim"'));
+ok("it says plainly that this is not confirmed",
+   created.includes("This is not a confirmed reservation yet."));
+ok("in Indonesian too",
+   dict.includes("Ini belum menjadi reservasi yang terkonfirmasi."));
 ok("each waitlist reason has its own wording",
    ["over_capacity", "below_min_pax", "over_max_pax"].every((r) => created.includes(r)));
 
 console.log("\nNobody is asked for money for a booking that was not accepted");
 ok("the deposit block is an ELSE of the waitlist branch",
-   /if \(r\.waitlisted\)[\s\S]{0,1400}\} else if \(r\.deposit_required/.test(created));
+   /if \(r\.waitlisted\)[\s\S]{0,2400}\} else if \(r\.deposit_required/.test(created));
 ok("the function reports no deposit due on a waitlisted booking",
    /'deposit_required',\s*\(v_dep_req and v_status <> 'Waitlist'\)/.test(fn));
 ok("and stores the same thing it reported",

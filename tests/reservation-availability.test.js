@@ -166,10 +166,25 @@ check("every code the gate can return has guest-facing copy", () => {
   const body = sql.slice(i, sql.indexOf("$function$;", i));
   const codes = [...body.matchAll(/'code',\s*'([a-z_]+)'/g)].map((m) => m[1]);
   assert.ok(codes.length >= 8, "found only " + codes.length + " codes, the slice is probably wrong");
-  const errBlock = reserve.slice(reserve.indexOf("const ERR_ID = {"), reserve.indexOf("};", reserve.indexOf("const ERR_ID = {")));
+  // ERR_EN since 2026-09-06: the messages are authored in English and
+  // translated by gt() when they are shown. A code with no entry still
+  // falls through to "connection problem", and the guest retries forever
+  // against a refusal that will never change.
+  const errBlock = reserve.slice(reserve.indexOf("const ERR_EN = {"), reserve.indexOf("};", reserve.indexOf("const ERR_EN = {")));
   for (const c of new Set(codes)) {
-    assert.ok(new RegExp("\\b" + c + ":").test(errBlock), `code "${c}" has no ERR_ID entry, so guests see "connection problem"`);
+    assert.ok(new RegExp("\\b" + c + ":").test(errBlock), `code "${c}" has no ERR_EN entry, so guests see "connection problem"`);
   }
+  // And every one of those English sentences needs a translation, or an
+  // Indonesian guest reads an English refusal.
+  const dict = fs.readFileSync(path.join(ROOT, "js", "guest-i18n.js"), "utf8");
+  // Comments stripped first: the block explains itself in prose that also
+  // contains quoted English, and a comment needs no translation.
+  const errCode = errBlock.replace(/^\s*\/\/.*$/gm, "");
+  for (const m of errCode.matchAll(/"([^"]{12,})"/g))
+    assert.ok(
+      dict.includes(JSON.stringify(m[1])),
+      "no Indonesian for the refusal: " + m[1],
+    );
 });
 
 console.log("\nThe lead time reaches the guest form, not just the server");
