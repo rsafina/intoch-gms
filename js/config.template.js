@@ -271,6 +271,29 @@ const ID_DICT = {
   "Everything a guest sees on the online booking page: how it looks, the dishes you feature, and where the full menu lives":
     "Semua yang dilihat tamu di halaman reservasi online: tampilannya, menu yang ditonjolkan, dan di mana menu lengkap berada",
   "Page Appearance": "Tampilan Halaman",
+
+  // -- Settings > Reservation Form > Fields on the Form (2026-09-06) --
+  // The welcome line a client types is NOT in here and must never be: it is
+  // their own words, printed as typed in whatever language they wrote it.
+  "Fields on the Form": "Kolom di Formulir",
+  "Which optional boxes a guest fills in, and the line under the page title. Name, phone, date, time and party size are always shown: the booking cannot be taken without them.":
+    "Kolom opsional yang diisi tamu, dan kalimat di bawah judul halaman. Nama, nomor HP, tanggal, jam dan jumlah orang selalu ditampilkan: reservasi tidak bisa diproses tanpa itu.",
+  "Notes box": "Kolom Catatan",
+  "Where a guest asks for a highchair, a birthday setup or a pre-order. On unless you turn it off.":
+    "Tempat tamu meminta kursi bayi, dekorasi ulang tahun atau pre-order. Aktif kecuali Anda matikan.",
+  "Company box": "Kolom Perusahaan",
+  "For corporate bookings. Only filled in on the guest record when that guest has no company saved yet, so a blank never wipes what you already have.":
+    "Untuk reservasi kantor. Hanya diisikan ke data tamu bila tamu tersebut belum punya perusahaan tersimpan, jadi kolom kosong tidak pernah menghapus data yang sudah ada.",
+  "Show how full each area is": "Tampilkan seberapa penuh tiap area",
+  "Adds a line like \"60% terisi\" under each area. It nudges guests towards a quiet night, but it also tells them when you are empty. Off unless you turn it on.":
+    "Menambah keterangan seperti \"60% terisi\" di bawah tiap area. Ini mengarahkan tamu ke hari yang sepi, tapi juga memberi tahu saat restoran kosong. Nonaktif kecuali Anda aktifkan.",
+  "Welcome line under the page title": "Kalimat sambutan di bawah judul halaman",
+  "Your own words, shown exactly as typed and never translated. Leave it empty for the built-in sentence in the box above.":
+    "Kalimat Anda sendiri, ditampilkan persis seperti yang diketik dan tidak pernah diterjemahkan. Kosongkan untuk memakai kalimat bawaan pada kotak di atas.",
+  "Save Fields": "Simpan Kolom",
+  "Form fields saved": "Kolom formulir tersimpan",
+  "Nothing was saved. Check with your administrator.":
+    "Tidak ada yang tersimpan. Hubungi administrator Anda.",
   "How the booking page looks to a guest. The same backdrop and colours carry over to the thank-you page they land on after booking.":
     "Tampilan halaman reservasi untuk tamu. Latar dan warna yang sama juga dipakai di halaman terima kasih setelah mereka memesan.",
   "Background photo": "Foto latar",

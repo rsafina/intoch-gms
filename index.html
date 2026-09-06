@@ -6819,6 +6819,84 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             </div>
           </div>
 
+
+          <!-- Which optional fields the public booking form shows (2026-09-06).
+               Writes app_settings.reservation_form, a DIFFERENT row from the
+               appearance card above, which is why it has its own Save.
+
+               Name, phone, date, time and pax are deliberately absent. The
+               first two create and match the guest record and pax is what
+               every capacity rule is checked against, so a switch for them
+               could never be turned off. A switch that cannot move is a
+               settings screen that lies. -->
+          <div class="card p-6 mb-8">
+            <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)] mb-1" data-i18n>
+              Fields on the Form
+            </h2>
+            <p class="text-xs text-[#999] mb-5" data-i18n>
+              Which optional boxes a guest fills in, and the line under the page title. Name,
+              phone, date, time and party size are always shown: the booking cannot be taken
+              without them.
+            </p>
+
+            <div class="rounded-10 border border-[#EDE9E3] p-4 mb-3">
+              <label class="flex items-start gap-3 cursor-pointer">
+                <input id="rff-show-notes" type="checkbox" class="mt-0.5" />
+                <span>
+                  <span class="block text-sm font-medium text-[#333]" data-i18n>Notes box</span>
+                  <span class="block text-xs text-[#999] mt-0.5" data-i18n>Where a guest asks for a highchair, a birthday setup or a pre-order. On unless you turn it off.</span>
+                </span>
+              </label>
+            </div>
+
+            <div class="rounded-10 border border-[#EDE9E3] p-4 mb-3">
+              <label class="flex items-start gap-3 cursor-pointer">
+                <input id="rff-show-company" type="checkbox" class="mt-0.5" />
+                <span>
+                  <span class="block text-sm font-medium text-[#333]" data-i18n>Company box</span>
+                  <span class="block text-xs text-[#999] mt-0.5" data-i18n>For corporate bookings. Only filled in on the guest record when that guest has no company saved yet, so a blank never wipes what you already have.</span>
+                </span>
+              </label>
+            </div>
+
+            <div class="rounded-10 border border-[#EDE9E3] p-4 mb-5">
+              <label class="flex items-start gap-3 cursor-pointer">
+                <input id="rff-show-capacity" type="checkbox" class="mt-0.5" />
+                <span>
+                  <span class="block text-sm font-medium text-[#333]" data-i18n>Show how full each area is</span>
+                  <span class="block text-xs text-[#999] mt-0.5" data-i18n>Adds a line like "60% terisi" under each area. It nudges guests towards a quiet night, but it also tells them when you are empty. Off unless you turn it on.</span>
+                </span>
+              </label>
+            </div>
+
+            <div class="mb-5">
+              <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n
+                >Welcome line under the page title</label
+              >
+              <input
+                id="rff-welcome"
+                type="text"
+                maxlength="160"
+                class="form-input"
+                oninput="onReservationWelcomeInput()"
+                placeholder="Hanya butuh 1 menit, reservasi dengan cepat, sampai jumpa!"
+              />
+              <div class="flex justify-between gap-3 mt-1">
+                <p class="text-[11px] text-[#999]" data-i18n>
+                  Your own words, shown exactly as typed and never translated. Leave it empty
+                  for the built-in sentence in the box above.
+                </p>
+                <span id="rff-welcome-count" class="text-[11px] text-[#999] whitespace-nowrap" data-i18n-skip></span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button onclick="saveReservationFormFields()" class="btn-primary px-6 py-2.5 manager-only-ui" data-i18n>
+                Save Fields
+              </button>
+            </div>
+          </div>
+
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div class="card p-5">
               <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)] mb-1" data-i18n>
@@ -9152,9 +9230,9 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
 
-    <script src="js/config.js?v=19"></script>
+    <script src="js/config.js?v=20"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=31"></script>
+    <script src="js/app.js?v=32"></script>
     <script src="js/membership.js?v=6"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->

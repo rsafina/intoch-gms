@@ -846,6 +846,7 @@ function navigateTo(page) {
     loadFeaturedDishes();
     renderFullMenuLink();
     renderReserveAppearanceSettings();
+    renderReservationFormFields();
   }
   if (page === "settings-thresholds") renderThresholdSettings();
   if (page === "settings-branding") renderBrandingSettings();
@@ -13478,6 +13479,124 @@ async function toggleStaffActive(staffId) {
   }
   toast(user.is_active ? t("Staff deactivated") : t("Staff reactivated"));
   loadStaffUsers();
+}
+
+
+// ============================================================
+// SETTINGS: WHICH FIELDS THE PUBLIC BOOKING FORM SHOWS (manager+)
+// ============================================================
+// Writes app_settings.reservation_form. The reading half lives inline in
+// reserve.template.html under "Which optional fields this restaurant shows".
+//
+// Only optional things are here. Name, phone, date, time and pax are not
+// configurable: the first two create and match the guest record, and pax is
+// what every capacity rule is checked against. A switch that cannot be turned
+// off is a settings screen that lies, so they get no switch.
+//
+// Every default is the ABSENT-KEY behaviour of the booking page, not a
+// preference. Notes hide only on an explicit false, company shows only on an
+// explicit true, capacity shows only on an explicit true. A restaurant that
+// has never opened this screen must see exactly what it sees today.
+const RESERVATION_FORM_DEFAULTS = {
+  show_notes: true,
+  show_company: false,
+  show_capacity: false,
+  welcome_text: null,
+};
+
+// The booking page truncates to the same number on read, because this row can
+// also be edited straight in the Supabase table editor. Change one, change the
+// other: reserve.template.html, loadFormFields(), WELCOME_MAX.
+const RESERVATION_WELCOME_MAX = 160;
+
+function reservationFormSettings() {
+  return { ...RESERVATION_FORM_DEFAULTS, ...(APP_SETTINGS.reservation_form || {}) };
+}
+
+function renderReservationFormFields() {
+  if (!isManagerOrAdmin()) return; // hasAccess() already blocks staff
+  const cfg = reservationFormSettings();
+  const check = (id, on) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = !!on;
+  };
+  // Read the stored value the same way the booking page does, so the boxes
+  // show what a guest actually gets rather than what looks tidy here.
+  check("rff-show-notes", cfg.show_notes !== false);
+  check("rff-show-company", cfg.show_company === true);
+  check("rff-show-capacity", cfg.show_capacity === true);
+  const w = document.getElementById("rff-welcome");
+  if (w) w.value = String(cfg.welcome_text || "").slice(0, RESERVATION_WELCOME_MAX);
+  onReservationWelcomeInput();
+}
+
+function onReservationWelcomeInput() {
+  const el = document.getElementById("rff-welcome");
+  const out = document.getElementById("rff-welcome-count");
+  if (!el || !out) return;
+  const n = el.value.length;
+  out.textContent = n + "/" + RESERVATION_WELCOME_MAX;
+}
+
+async function saveReservationFormFields() {
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can change settings"), "error");
+    return;
+  }
+  const on = (id) => !!document.getElementById(id)?.checked;
+  const raw = String(document.getElementById("rff-welcome")?.value || "")
+    .trim()
+    .slice(0, RESERVATION_WELCOME_MAX);
+
+  const value = {
+    // Spread the EXISTING value first. This key family lost data once by
+    // being written as a fresh object: anything the booking page gains later
+    // and this screen does not know about would be wiped by every save here.
+    ...(APP_SETTINGS.reservation_form || {}),
+    show_notes: on("rff-show-notes"),
+    show_company: on("rff-show-company"),
+    show_capacity: on("rff-show-capacity"),
+    // Blank is stored as null, not "", so the booking page falls back to its
+    // bundled sentence rather than rendering an empty line. The text is the
+    // client's own words: it is never run through the translation dictionary,
+    // and the page prints it with textContent so it can never be markup.
+    welcome_text: raw || null,
+  };
+
+  loader(true);
+  // .select() is not decoration. With no staff auth every request is the anon
+  // role, and a write no policy permits updates zero rows and still answers
+  // 204, which is byte-identical to success. Asking for the row back is the
+  // only way to tell a save from a silence. See CLAUDE.md, RLS.
+  const { data, error } = await supabaseQuery(
+    () =>
+      db
+        .from("app_settings")
+        .upsert(
+          {
+            key: "reservation_form",
+            value,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "key" },
+        )
+        .select(),
+    "Failed to save reservation form fields",
+  );
+  loader(false);
+
+  if (error) {
+    toast(error.message || t("Unable to save settings"), "error");
+    return;
+  }
+  if (!Array.isArray(data) || data.length === 0) {
+    toast(t("Nothing was saved. Check with your administrator."), "error");
+    return;
+  }
+
+  APP_SETTINGS.reservation_form = data[0].value || value;
+  renderReservationFormFields();
+  toast(t("Form fields saved"));
 }
 
 

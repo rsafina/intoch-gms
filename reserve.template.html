@@ -852,6 +852,7 @@
       let AREA_ID = null;      // the chosen one, null while none is
       let AVAIL = {};          // area_id -> availability for the chosen date
       let SHOW_CAPACITY = false;
+      const WELCOME_MAX = 160; // mirrors RESERVATION_WELCOME_MAX in js/app.js
       const rupiah = (n) => "Rp " + Number(n).toLocaleString("id-ID");
       let HOURS = { open: "10:00", close: "21:30" }; // fallback; real value from app_settings
       let MIN_LEAD_DAYS = 0; // 0 = same-day booking allowed; from app_settings
@@ -1149,7 +1150,16 @@
           if (v.show_notes === false) $("notes-field").style.display = "none";
           if (v.show_company === true) $("company-field").style.display = "";
           SHOW_CAPACITY = v.show_capacity === true;
-          const w = (v.welcome_text || "").trim();
+          // Trimmed AND capped. Settings caps it too, but this row can be
+          // edited straight in the Supabase table editor, and a 900-character
+          // welcome line pushes the whole form below the fold. Same number as
+          // RESERVATION_WELCOME_MAX in js/app.js; change one, change the other.
+          //
+          // Blank falls back to the bundled sentence already in the markup.
+          // textContent, never innerHTML: this is the client's own typing, so
+          // it is printed as characters and can never become markup. It is
+          // also never run through the translation dictionary, on purpose.
+          const w = (v.welcome_text || "").trim().slice(0, WELCOME_MAX);
           if (w) $("welcome-line").textContent = w;
         } catch (_) {
           /* the bundled defaults are already on screen */

@@ -751,9 +751,12 @@ Everything below is IN THE REPO but the migration is NOT applied and nothing is 
 
 ### Do these three things first, in this order
 
-1. **`npm run build`.** `reserve.html` is a gitignored build output and its local copy was
-   overwritten with the template's placeholders, so it needs regenerating with the real
-   env vars before anything is tested locally.
+1. **Nothing, locally.** `node build-config.js` is the DEPLOY PLATFORM's build command
+   (Cloudflare > Settings > Build), not something Rere runs. It regenerates
+   `reserve.html`, `spin.html` and the rest from their templates on every push, using the
+   host's own env vars. A local build is only needed to open those pages from disk, and
+   it needs SUPABASE_URL, SUPABASE_ANON_KEY and SITE_URL set, which Rere does not have to
+   hand. Edit the `.template.html`, push, and let the host build.
 2. **Run `migrations/ALL_IN_ONE.sql`.** Confirm block is 12 rows. Note that
    "no area is bookable online yet" now returns 0, correctly, because Indoor Dining was
    switched on by hand.
