@@ -65,8 +65,8 @@ function eq(label, got, want) {
 
 console.log("\nColours: only a full six-digit hex is accepted");
 eq("lowercase", T.isHexColor("#28547c"), true);
-eq("uppercase", T.isHexColor("#4F41A8"), true);
-eq("padded", T.isHexColor("  #4F41A8  "), true);
+eq("uppercase", T.isHexColor("#173B64"), true);
+eq("padded", T.isHexColor("  #173B64  "), true);
 eq("three-digit shorthand rejected", T.isHexColor("#abc"), false);
 // The colour <input> always emits six digits, but the hex TEXT box next to it
 // is free typing, and a half-typed value must not be pushed to the page.
@@ -85,7 +85,7 @@ eq("white lightens no further than white", T.shadeHex("#FFFFFF", 0.5), "#ffffff"
 eq("garbage passes through", T.shadeHex("nope", -0.3), "nope");
 
 console.log("\nGlass panel: rgba built from hex plus opacity");
-eq("mid opacity", T.hexToRgba("#4F41A8", 0.6), "rgba(79, 65, 168, 0.6)");
+eq("mid opacity", T.hexToRgba("#173B64", 0.6), "rgba(23, 59, 100, 0.6)");
 eq("bad hex gives null", T.hexToRgba("nope", 0.6), null);
 
 console.log("\nOpacity is clamped, because both ends are unusable");
@@ -102,7 +102,7 @@ T.setStyle(null);
 eq("nothing saved gives the built-in card", T.vcStyle().bg_color, "#F9F5F2");
 T.setStyle({ bg_color: "#1B2A3A" });
 eq("one field set", T.vcStyle().bg_color, "#1B2A3A");
-eq("the rest keep their defaults", T.vcStyle().text_color, "#4F41A8");
+eq("the rest keep their defaults", T.vcStyle().text_color, "#173B64");
 T.setStyle({ bg_color: "not a colour", accent_color: "#C8A96B" });
 eq("a broken field falls back alone", T.vcStyle().bg_color, "#F9F5F2");
 eq("the good field beside it survives", T.vcStyle().accent_color, "#C8A96B");
@@ -116,7 +116,7 @@ T.setStyle({ logo_scale: 140 });
 eq("in-range scale kept", T.vcStyle().logo_scale, 140);
 
 console.log("\nSecondary colours are derived, not configured");
-eq("muted label", T.vcAlpha("#4F41A8", 0.58), "rgba(79, 65, 168, 0.58)");
+eq("muted label", T.vcAlpha("#173B64", 0.58), "rgba(23, 59, 100, 0.58)");
 
 console.log("\nDark background detection drives the readability warning");
 eq("cream is light", T.vcIsDarkBackground("#F9F5F2"), false);
@@ -125,7 +125,7 @@ eq("black is dark", T.vcIsDarkBackground("#000000"), true);
 eq("white is light", T.vcIsDarkBackground("#FFFFFF"), false);
 // Mid-tones are the interesting case: this is what decides whether an owner
 // gets told their card is unreadable.
-eq("brand navy is dark", T.vcIsDarkBackground("#4F41A8"), true);
+eq("Yale blue is dark", T.vcIsDarkBackground("#173B64"), true);
 eq("sand is light", T.vcIsDarkBackground("#F4EDE3"), false);
 // Pure green is far lighter than pure blue at the same nominal brightness,
 // which is exactly why this uses luminance and not an average of the channels.

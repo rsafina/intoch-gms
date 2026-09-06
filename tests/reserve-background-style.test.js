@@ -88,7 +88,7 @@ check("the bundled default is the photo", () => {
 
 check("no bg_style at all keeps the photo", () => {
   // Every client saved before this setting existed looks exactly like this.
-  assert.strictEqual(apply({ glass_color: "#4F41A8" }).root.attrs["data-rf-bg"], "photo");
+  assert.strictEqual(apply({ glass_color: "#173B64" }).root.attrs["data-rf-bg"], "photo");
 });
 
 check('"solid" switches the page over', () => {

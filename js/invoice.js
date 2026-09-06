@@ -880,11 +880,11 @@ function initInvoice() {
 // page. Nothing in the invoice sheet depends on var() resolution at capture
 // time, which sidesteps the question entirely.
 const INVOICE_STYLE_DEFAULTS = {
-  ink: "#4F41A8",
-  accent: "#4A3DA3",
-  frame: "#A99BF0",
-  row_fill: "#E4E0F8",
-  muted: "#4A3DA3",
+  ink: "#173B64",
+  accent: "#173B64",
+  frame: "#A3C4EB",
+  row_fill: "#DCEBFB",
+  muted: "#2F5F92",
   logo_width: 172,
   mark_width: 62,
   address: "",

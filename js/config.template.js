@@ -311,6 +311,8 @@ const ID_DICT = {
     "Tidak ada yang tersimpan. Hubungi administrator Anda.",
   "How the booking page looks to a guest. The same backdrop and colours carry over to the thank-you page they land on after booking.":
     "Tampilan halaman reservasi untuk tamu. Latar dan warna yang sama juga dipakai di halaman terima kasih setelah mereka memesan.",
+  "How the booking page looks to a guest. The same backdrop and colours carry over to the thank-you page and deposit invoice.":
+    "Tampilan halaman reservasi untuk tamu. Latar dan warna yang sama juga dipakai di halaman terima kasih dan invoice DP.",
   "Tick box under the party size": "Kotak centang di bawah jumlah tamu",
   "A single request a guest can tick, written into the top of the reservation notes when they do. Off unless you turn it on: a restaurant with no private room should not offer one.":
     "Satu permintaan yang bisa dicentang tamu, dan ditulis di bagian atas catatan reservasi kalau dicentang. Nonaktif kecuali Anda aktifkan: restoran tanpa ruang privat sebaiknya tidak menawarkannya.",
@@ -1743,14 +1745,14 @@ const RESERVE_APPEARANCE_DEFAULTS = {
   // 2026-09-05 brand sweep turned them into var() and a client with no saved
   // appearance would have got no panel colour at all, silently. Keep them in
   // step with --brand-ink / --brand by hand.
-  glass_color: "#4F41A8",
+  glass_color: "#173B64",
   glass_opacity: 0.6,
   // "photo" keeps the backdrop photograph and the glass panels; "solid" drops
   // the photo and paints the page in glass_color. English values, never the
   // translated label, or a setting saved in Indonesian reads as an unknown
   // style in English.
   bg_style: "photo",
-  accent_color: "#5B4CBD",
+  accent_color: "#173B64",
   logo_max_height: 72,
 };
 

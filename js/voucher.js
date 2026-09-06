@@ -36,8 +36,8 @@ const VC_H = 1940;
 // original navy-on-cream card.
 const VC_DEFAULTS = {
   bg_color: "#F9F5F2",
-  accent_color: "#4A3DA3",
-  text_color: "#4F41A8",
+  accent_color: "#173B64",
+  text_color: "#173B64",
   logo_scale: 100, // percent of the standard logo width
   use_artwork: false,
 };

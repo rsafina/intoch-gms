@@ -26,7 +26,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500;600&family=Montserrat:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -47,33 +47,33 @@
            than to look pleasant. Two of these fix long-standing failures:
            the old button blue (5596CE) under white text was 3.16:1 and the
            old gold (C8A96B) on cream was 2.08:1, against a 4.5 bar. */
-        --brand: #5B4CBD;          /* primary fill. white on it: 6.54 */
-        --brand-hover: #4A3DA3;    /* pressed/hover. white on it: 8.44 */
-        --brand-ink: #4F41A8;      /* headings. on cream: 7.33, matched to the old navy */
-        --brand-deep: #453897;     /* dark panels. on cream: 8.59 */
-        --brand-deepest: #3C3084;  /* deepest. on cream: 9.99 */
-        --brand-muted: #7565D6;    /* de-emphasised */
-        --brand-soft: #A99BF0;     /* soft accents on dark */
-        --brand-tint: #E4E0F8;     /* selected row / chip background */
-        --brand-tint2: #F4F2FD;    /* faintest wash */
-        --accent: #E24701;         /* FILLS ONLY. 3.79 on cream, so never small text */
-        --accent-hover: #C63D01;   /* also the text-safe orange: 4.78 on cream */
-        --accent-strong: #B23600;  /* 5.69 on cream */
-        --accent-tint: #F7C9AF;
-        --accent-tint2: #FBEDE4;
+        --brand: #173B64;          /* primary fill */
+        --brand-hover: #102B49;    /* pressed/hover */
+        --brand-ink: #173B64;      /* headings */
+        --brand-deep: #102B49;     /* dark panels */
+        --brand-deepest: #0A1D33;  /* deepest */
+        --brand-muted: #2F5F92;    /* de-emphasised */
+        --brand-soft: #A3C4EB;     /* soft accents on dark */
+        --brand-tint: #DCEBFB;     /* selected row / chip background */
+        --brand-tint2: #F6FAFF;    /* faintest wash */
+        --accent: #FFDE70;         /* Naples yellow accent */
+        --accent-hover: #E9C653;
+        --accent-strong: #6B4A00;  /* text-safe yellow-brown */
+        --accent-tint: #FFE9A3;
+        --accent-tint2: #FFF7DE;
         /* RGB triplets for the few places that need alpha, e.g.
            rgb(var(--brand-ink-rgb) / 0.12). A settings screen that changes
            --brand MUST set --brand-rgb in the same write, or a shadow keeps
            the old hue while everything around it moves. */
-        --brand-rgb: 91 76 189;
-        --brand-ink-rgb: 79 65 168;
-        --brand-hover-rgb: 74 61 163;
-        --brand-deep-rgb: 69 56 151;
-        --brand-deepest-rgb: 60 48 132;
-        --brand-soft-rgb: 169 155 240;
-        --accent-rgb: 226 71 1;
-        --accent-hover-rgb: 198 61 1;
-        --accent-strong-rgb: 178 54 0;
+        --brand-rgb: 23 59 100;
+        --brand-ink-rgb: 23 59 100;
+        --brand-hover-rgb: 16 43 73;
+        --brand-deep-rgb: 16 43 73;
+        --brand-deepest-rgb: 10 29 51;
+        --brand-soft-rgb: 163 196 235;
+        --accent-rgb: 255 222 112;
+        --accent-hover-rgb: 233 198 83;
+        --accent-strong-rgb: 107 74 0;
 
 
         --primary: var(--brand);
@@ -96,7 +96,7 @@
         min-height: 100%;
       }
       body {
-        font-family: "DM Sans", sans-serif;
+        font-family: "Plus Jakarta Sans", sans-serif;
         background: #101820;
         color: #f2efe9;
         -webkit-font-smoothing: antialiased;
@@ -428,7 +428,7 @@
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
       }
       .card h1 {
-        font-family: "Montserrat", sans-serif;
+        font-family: "Plus Jakarta Sans", sans-serif;
         font-weight: 400;
         font-size: 21px;
         text-transform: uppercase;
@@ -751,7 +751,7 @@
         margin-bottom: 4px;
       }
       .sheet-head h2 {
-        font-family: "Montserrat", sans-serif;
+        font-family: "Plus Jakarta Sans", sans-serif;
         font-weight: 400;
         font-size: 19px;
         text-transform: uppercase;

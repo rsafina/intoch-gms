@@ -73,6 +73,20 @@ ok("a blank WhatsApp number hides the button rather than building a broken link"
    /digits\.length < 8\) return null/.test(page));
 
 console.log("\nThe settings that feed it");
+ok("it reads the shared reservation appearance row",
+   /\.in\("key", \["reserve_appearance", "reservation_form"\]\)/.test(page));
+ok("it applies the reservation form background mode",
+   /function applyReserveAppearance\(ra\)/.test(page) &&
+   /data-rf-bg/.test(page) &&
+   /cfg\.bg_style/.test(page));
+ok("it applies the reservation form colours and logo height",
+   /--rf-glass/.test(page) &&
+   /--rf-solid/.test(page) &&
+   /--primary/.test(page) &&
+   /--rf-logo-max-h/.test(page));
+ok("solid mode on the invoice drops the glass too",
+   /:root\[data-rf-bg="solid"\] \.card[\s\S]*?backdrop-filter: none/.test(page) &&
+   /:root\[data-rf-bg="solid"\] \.btn[\s\S]*?border-radius: 12px/.test(page));
 for (const [id, label] of [["rff-bank", "bank details"], ["rff-wa", "WhatsApp number"],
                            ["rff-qris-file", "QRIS upload"], ["rff-qris-preview", "QRIS preview"]]) {
   ok(`${label} has a field`, new RegExp(`id="${id}"`).test(html));
