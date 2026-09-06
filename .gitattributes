@@ -1,0 +1,25 @@
+# Line endings.
+#
+# Every line in a text file ends with an invisible marker. Windows writes one
+# kind, macOS and Linux write another. Without this file git treats that marker
+# as content, so a Windows editor that rewrites a file can turn a 46-line change
+# into a 29,000-line diff: every line looks changed because every line now ends
+# differently. That happened on 2026-09-06 and made the change under it
+# unreviewable.
+#
+# `text=auto eol=lf` tells git: work out for yourself which files are text, and
+# always store them with the Linux marker. Editors on Windows read that
+# perfectly well, so nothing changes for anyone working there.
+* text=auto eol=lf
+
+# Binaries must never be touched. Rewriting a marker inside a PNG corrupts it.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.pdf binary

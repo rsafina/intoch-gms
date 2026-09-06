@@ -5618,6 +5618,176 @@ do $$ begin
   end if;
 end $$;
 
+-- ============================================================
+-- SAVED RESERVATION INVOICES (2026-09-06)
+-- ============================================================
+-- Until now the invoice generator produced a picture. It kept the last five
+-- invoices in ONE staff member's browser, so nobody else could see them, a
+-- cleared cache lost them, and none of them was attached to a booking. That is
+-- fine for a walk-in receipt and useless for a 60-pax company event, where the
+-- deposit invoice in March and the settlement invoice in May are the same
+-- conversation and have to be visible to whoever is on shift.
+--
+-- This section extends the EXISTING invoices table rather than adding a second
+-- one. Deposits already write here. A separate reservation_invoices table would
+-- put deposit money in one place and event billing in another, and every
+-- question about what a booking owes would have to read both and hope they
+-- agree. Decided with Rere, 2026-09-06.
+
+alter table public.invoices
+  -- The whole document, exactly as the generator's invSnapshot() produces it:
+  -- items, the figures AS DISPLAYED, and the per-field lock flags. Reopening a
+  -- saved invoice is invApplySnapshot(doc), the function the browser-local
+  -- history already uses, instead of new rendering code that would drift
+  -- from the live form.
+  --
+  -- The lock flags are the reason this is stored whole rather than recomputed.
+  -- A staff member who typed an agreed total by hand must see that total again;
+  -- recalculating from items and percentages would silently rewrite a figure a
+  -- guest has already been shown and agreed to.
+  add column if not exists doc jsonb,
+  -- Human-readable, on the printed sheet, and the number a guest quotes on a
+  -- transfer. The uuid is for machines.
+  add column if not exists invoice_no text,
+  add column if not exists subtotal numeric,
+  -- What of this bill the deposit already covers. A NUMBER on the settlement
+  -- invoice, not a link: the invoice states what was agreed on a date, and a
+  -- later edit to the deposit must not silently restate an invoice already sent.
+  add column if not exists deposit_applied numeric,
+  add column if not exists amount_due numeric;
+
+comment on column public.invoices.doc is
+  'The invoice document as invSnapshot() produces it, including per-field lock flags. Restored with invApplySnapshot(). The summary columns beside it exist for querying and are written from this same object in one statement; if they ever disagree, THIS is right.';
+comment on column public.invoices.deposit_applied is
+  'How much of this bill the deposit covers. A number copied at issue time, never a live join: an invoice states what was agreed on a date.';
+
+-- The three kinds this table is designed for. Constrained now that a second
+-- kind is actually written: without it a typo ("settlment") creates a row that
+-- every screen filters out and nobody can find again.
+alter table public.invoices drop constraint if exists invoices_kind_check;
+alter table public.invoices
+  add constraint invoices_kind_check check (kind in ('deposit', 'settlement', 'general'));
+
+-- Two invoices sharing a number is a bookkeeping problem, not a UI one.
+create unique index if not exists idx_invoices_invoice_no
+  on public.invoices(invoice_no) where invoice_no is not null;
+create index if not exists idx_invoices_reservation_kind
+  on public.invoices(reservation_id, kind);
+
+-- ---------- Numbering ----------
+-- Allocated in the database, not the browser. Two staff members clicking Save
+-- at the same moment on different machines would otherwise both read "the last
+-- number is 41" and both write 42, and the unique index above would reject the
+-- slower one AFTER they had done the work.
+--
+-- Resets each year, which is what an Indonesian restaurant's books expect.
+-- Gaps are possible (a transaction that rolls back keeps its number) and that
+-- is correct: a gap is visible and harmless, a duplicate is neither.
+drop function if exists public.next_invoice_no();
+create or replace function public.next_invoice_no()
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $function$
+  declare
+    v_year text := to_char(now() at time zone 'Asia/Jakarta', 'YYYY');
+    v_n    integer;
+  begin
+    -- An advisory lock, not SELECT ... FOR UPDATE. Postgres refuses FOR UPDATE
+    -- alongside an aggregate ("FOR UPDATE is not allowed with aggregate
+    -- functions"), so the obvious spelling of this would have thrown on the
+    -- first invoice anyone saved. The lock is held to the end of the
+    -- transaction, which is what makes two simultaneous callers queue instead
+    -- of both reading the same maximum.
+    perform pg_advisory_xact_lock(hashtext('intoch_invoice_no'));
+    select coalesce(max(split_part(invoice_no, '/', 2)::integer), 0) + 1
+      into v_n
+      from invoices
+     where invoice_no like 'INV/%/' || v_year
+       and split_part(invoice_no, '/', 2) ~ '^[0-9]+$';
+    return 'INV/' || lpad(v_n::text, 4, '0') || '/' || v_year;
+  end;
+  $function$;
+
+grant execute on function public.next_invoice_no() to anon, authenticated;
+
+-- ---------- What an invoice has been paid ----------
+-- Derived, never stored, for the same reason reservation_deposit_balances is:
+-- a `paid` column on invoices would be a second truth that drifts the moment
+-- somebody corrects a payment row. This is why `status` deliberately stays
+-- draft/issued/void and never gains a 'paid' value.
+drop view if exists public.invoice_balances;
+create view public.invoice_balances as
+select i.id                                            as invoice_id,
+       i.reservation_id,
+       i.kind,
+       i.invoice_no,
+       i.status,
+       coalesce(i.amount_due, i.total, 0)               as due,
+       coalesce(sum(p.amount), 0)                       as paid,
+       coalesce(i.amount_due, i.total, 0)
+         - coalesce(sum(p.amount), 0)                   as outstanding,
+       case
+         when i.status = 'void'                                    then 'void'
+         when coalesce(sum(p.amount), 0) <= 0                      then 'unpaid'
+         when coalesce(sum(p.amount), 0)
+              >= coalesce(i.amount_due, i.total, 0)                then 'paid'
+         else 'partial'
+       end                                             as state
+  from invoices i
+  left join invoice_payments p on p.invoice_id = i.id
+ group by i.id;
+
+comment on view public.invoice_balances is
+  'Per-invoice money. Counts ONLY payments attached to the invoice. Deposit payments attach to the RESERVATION and are counted by reservation_deposit_balances; reservation_money adds the two without double counting.';
+
+-- ---------- Everything a booking has been paid ----------
+-- invoice_payments attaches to an invoice OR a reservation, never both. The
+-- deposit flow writes reservation-attached rows (it issues no invoice of its
+-- own on purpose), the settlement flow writes invoice-attached ones. Anyone
+-- answering "what has this booking paid" has to add both, and adding them by
+-- hand in each screen is how one of them eventually gets forgotten or counted
+-- twice. One view, so every screen agrees by construction.
+drop view if exists public.reservation_money;
+create view public.reservation_money as
+select r.id as reservation_id,
+       coalesce((select sum(p.amount) from invoice_payments p
+                  where p.reservation_id = r.id), 0)          as paid_direct,
+       -- Void or not. An earlier draft excluded voided invoices here, and the
+       -- rehearsal showed what that does: void a part-paid invoice and the
+       -- booking suddenly reports 3.000.000 paid when 13.000.000 had arrived.
+       -- Voiding is a BILLING decision and it moves no money, exactly like the
+       -- cancel-a-paid-booking modal. Money that arrived is a fact.
+       coalesce((select sum(p.amount) from invoice_payments p
+                  join invoices i on i.id = p.invoice_id
+                 where i.reservation_id = r.id), 0)           as paid_on_invoices,
+       coalesce((select sum(p.amount) from invoice_payments p
+                  where p.reservation_id = r.id), 0)
+       + coalesce((select sum(p.amount) from invoice_payments p
+                    join invoices i on i.id = p.invoice_id
+                   where i.reservation_id = r.id), 0)         as paid_total,
+       -- Money sitting against an invoice somebody cancelled. Almost always
+       -- means a refund is owed, so it is surfaced rather than buried in the
+       -- total: this is the settlement-invoice twin of the deposit refund
+       -- question, and the same hole it leaves open.
+       coalesce((select sum(p.amount) from invoice_payments p
+                  join invoices i on i.id = p.invoice_id
+                 where i.reservation_id = r.id
+                   and i.status = 'void'), 0)                 as paid_on_void_invoices,
+       -- The settlement invoice is the better figure for what the guest
+       -- actually spent. A deposit is money received, not revenue, and a
+       -- booking with a deposit and no settlement has no final bill yet.
+       (select i.total from invoices i
+         where i.reservation_id = r.id
+           and i.kind = 'settlement'
+           and i.status = 'issued'
+         order by i.issued_at desc limit 1)                   as settlement_total
+  from reservations r;
+
+comment on view public.reservation_money is
+  'Every rupiah against a booking: deposits (attached to the reservation) plus invoice payments, added once each, whether or not the invoice was later voided. paid_on_void_invoices flags the part that sits against a cancelled invoice, which usually means a refund is owed. settlement_total counts only an issued settlement invoice, because that is a billing figure rather than a cash one.';
+
 -- ---------- Confirm ----------
 select 'areas.is_bookable_online' as checked, count(*) as found
 from information_schema.columns
@@ -5755,9 +5925,65 @@ select 'pg_cron is installed', count(*) from pg_extension where extname = 'pg_cr
 union all
 -- 1 once pg_cron is enabled. 0 is not a failure: it means the sweep runs only
 -- when the staff app loads, which still works.
+-- ---------- Saved reservation invoices ----------
+select 'invoices.doc (the stored document)', count(*)
+from information_schema.columns
+where table_schema = 'public' and table_name = 'invoices' and column_name = 'doc'
+union all
+select 'invoices billing columns', count(*)
+from information_schema.columns
+where table_schema = 'public' and table_name = 'invoices'
+  and column_name in ('invoice_no', 'subtotal', 'deposit_applied', 'amount_due')
+union all
+-- A typo in `kind` creates a row every screen filters out and nobody finds.
+select 'kind is constrained to the three we handle',
+       case when pg_get_constraintdef(c.oid) like '%deposit%'
+             and pg_get_constraintdef(c.oid) like '%settlement%'
+             and pg_get_constraintdef(c.oid) like '%general%'
+            then 1 else 0 end
+from pg_constraint c where c.conname = 'invoices_kind_check'
+union all
+select 'invoice numbers are unique', count(*)
+from pg_indexes
+where schemaname = 'public' and indexname = 'idx_invoices_invoice_no'
+union all
+-- FOR UPDATE beside an aggregate throws at RUN time, not at CREATE time, so
+-- a definition carrying it looks perfectly healthy until the first save.
+select 'numbering does not use FOR UPDATE with an aggregate',
+       case when pg_get_functiondef(p.oid) ilike '%for update%' then 0 else 1 end
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname = 'next_invoice_no'
+union all
+select 'numbering actually allocates a number',
+       case when public.next_invoice_no() ~ '^INV/[0-9]{4}/[0-9]{4}$' then 1 else 0 end
+union all
+select 'invoice_balances exists', count(*)
+from information_schema.views
+where table_schema = 'public' and table_name = 'invoice_balances'
+union all
+select 'reservation_money exists', count(*)
+from information_schema.views
+where table_schema = 'public' and table_name = 'reservation_money'
+union all
+-- Voiding an invoice is a billing decision and moves no money. A view that
+-- drops voided payments reports a booking as barely paid when the guest has
+-- transferred most of it, which is how a refund gets missed.
+select 'voiding an invoice does not hide money received',
+       case when pg_get_viewdef('public.reservation_money'::regclass) like '%paid_on_void_invoices%'
+            then 1 else 0 end
+union all
+-- A stored paid/unpaid flag would drift the moment a payment row is edited,
+-- the same reason reservations has no deposit status column.
+select 'no stored payment status on invoices',
+       case when count(*) = 0 then 1 else 0 end
+from information_schema.columns
+where table_schema = 'public' and table_name = 'invoices'
+  and column_name in ('paid', 'paid_amount', 'payment_status', 'is_paid')
+union all
 select 'the expiry job is scheduled',
        public.cron_job_count('intoch-expire-unpaid-deposits');
--- expect: 1, 4, 3, 1, 1, 1, [see below], 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1
+-- expect: 1, 4, 3, 1, 1, 1, [see below], 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1,
+--         then the saved-invoice rows: 1, 4, 1, 1, 1, 1, 1, 1, 1, 1
 --
 -- "no area is bookable online yet" returns 1 only BEFORE any area is switched
 -- on. Indoor Dining was switched on 2026-09-05, so it now returns 0 and that is
