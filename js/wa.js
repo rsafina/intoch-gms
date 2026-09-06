@@ -562,6 +562,9 @@ function waThankYouVisitBtn(visit) {
 
 function waReservationBtns(res) {
   if (!res.guests?.phone) return "";
+  if (res.status === "Incoming" && res.deposit_required && Number(res.deposit_expected) > 0) {
+    return `<button onclick="openDepositInvoice('${res.id}')" class="${WA_BTN_CLASS}">Invoice Followup</button>`;
+  }
   if (res.status === "Reserved") {
     return `<button onclick="waSendFollowUpReservation('${res.id}')" class="${WA_BTN_CLASS}">WA Follow Up</button>`;
   }

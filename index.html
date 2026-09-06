@@ -6723,7 +6723,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     onchange="previewReserveAppearance()"
                   >
                     <option value="photo" data-i18n>Photo behind glass panels</option>
-                    <option value="solid" data-i18n>Solid colour, no photo</option>
+                    <option value="solid" data-i18n>Solid background, no glass</option>
                   </select>
                   <p id="rf-bg-style-note" class="text-[11px] text-[#999] mt-1" data-i18n-skip></p>
                 </div>
@@ -6831,8 +6831,8 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 <div style="position: relative; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 16px">
                   <img id="rf-preview-logo" data-brand-logo="full" src="assets/full-logo.png" alt="" style="max-height: 40px; max-width: 180px; object-fit: contain; filter: drop-shadow(0 4px 16px rgba(0,0,0,.35))" />
                   <div id="rf-preview-card" style="width: min(300px, 90%); border-radius: 14px; border: 1px solid rgba(255,255,255,.18); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); padding: 14px; text-align: center">
-                    <p style="color: #fff; font-size: 15px; font-weight: 600; margin-bottom: 8px" data-i18n>Book a Table</p>
-                    <div style="background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); border-radius: 10px; height: 30px; margin-bottom: 8px"></div>
+                    <p id="rf-preview-title" style="color: #fff; font-size: 15px; font-weight: 600; margin-bottom: 8px" data-i18n>Book a Table</p>
+                    <div id="rf-preview-field" style="background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); border-radius: 10px; height: 30px; margin-bottom: 8px"></div>
                     <div id="rf-preview-btn" style="border-radius: 10px; height: 34px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 600" data-i18n>Reserve</div>
                   </div>
                 </div>
@@ -9546,11 +9546,11 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
     <script src="js/config.js?v=29"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=41"></script>
+    <script src="js/app.js?v=43"></script>
     <script src="js/membership.js?v=6"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->
-    <script src="js/wa.js?v=12"></script>
+    <script src="js/wa.js?v=13"></script>
     <script src="js/broadcast.js?v=16"></script>
     <!-- campaign.js  = attribution maths + the Hasil tab
          campaign-editor.js = the campaign workspace (list, message, image,
@@ -9560,7 +9560,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     <script src="js/campaign-editor.js?v=10"></script>
     <!-- voucher.js uses waTemplateBody/waOpenChat, so it must load after wa.js -->
     <script src="js/voucher.js?v=5"></script>
-    <script src="js/notify.js?v=8"></script>
+    <script src="js/notify.js?v=9"></script>
     <script src="js/version-check.js?v=1"></script>
     <!-- Invoice generator: rasterises the preview node and wraps it in a PDF.
          Both libraries are only needed on the Invoice page. -->

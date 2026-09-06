@@ -14,6 +14,8 @@ const root = path.join(__dirname, "..");
 const read = (f) => fs.readFileSync(path.join(root, f), "utf8").replace(/\r\n/g, "\n");
 
 const app = read("js/app.js");
+const wa = read("js/wa.js");
+const notify = read("js/notify.js");
 const html = read("index.html");
 const sql = read("migrations/ALL_IN_ONE.sql");
 const cfgTpl = read("js/config.template.js");
@@ -99,6 +101,29 @@ ok(
   "the reservations row renders the deposit badge next to the status badge",
   /statusBadge\(r\.status\) \+\s*\n\s*depositRowBadge\(r\)/.test(app),
 );
+ok(
+  "Incoming rows are sorted above ordinary reservations",
+  /Incoming:\s*0/.test(app) && /resStatusSortRank\(a\.status\)/.test(app),
+  "The deposit queue should not sit below later ordinary bookings.",
+);
+ok(
+  "the dashboard query carries deposit fields",
+  /loadDashboardReservations[\s\S]{0,1200}deposit_required, deposit_expected, deposit_due_at/.test(app),
+  "Without these, the dashboard cannot show the deposit badge or invoice follow-up action.",
+);
+ok(
+  "the dashboard renders the deposit badge beside status",
+  /statusBadge\(r\.status\)\}\$\{depositRowBadge\(r\)\}/.test(app),
+);
+ok(
+  "Incoming deposit rows expose invoice follow-up beside Update",
+  /res\.status === "Incoming"[\s\S]{0,180}openDepositInvoice\('\$\{res\.id\}'\)[\s\S]{0,120}Invoice Followup/.test(wa),
+  "Staff should not have to open Update Reservation just to chase a deposit.",
+);
+ok(
+  "Reserved rows keep the ordinary WA follow-up",
+  /res\.status === "Reserved"[\s\S]{0,120}waSendFollowUpReservation\('\$\{res\.id\}'\)[\s\S]{0,120}WA Follow Up/.test(wa),
+);
 
 // ── The one blocked transition ────────────────────────────────────────────
 console.log("\nAn Incoming booking cannot be set to Reserved by hand");
@@ -119,6 +144,20 @@ ok(
 ok("explainIncomingLock exists and names both legitimate doors",
    /function explainIncomingLock/.test(app) &&
    /waive/i.test(app.slice(app.indexOf("function explainIncomingLock"), app.indexOf("function explainIncomingLock") + 400)));
+
+console.log("\nIncoming deposit bookings are in the bell");
+ok(
+  "notify.js fetches Incoming online reservations",
+  /\.in\("status", \["Reserved", "Confirmed", "Incoming", "Arrived", "Completed"\]\)/.test(notify),
+);
+ok(
+  "notify.js classifies deposit Incoming separately from arrival reminders",
+  /return "deposit"/.test(notify) && /Perlu invoice DP/.test(notify),
+);
+ok(
+  "the bell gives deposit rows the same invoice action",
+  /openDepositInvoice\('\$\{it\.id\}'\)[\s\S]{0,120}Invoice Followup/.test(notify),
+);
 
 // ── Issuing an invoice ────────────────────────────────────────────────────
 console.log("\nIssuing an invoice");

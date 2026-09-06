@@ -123,9 +123,11 @@ function _resNotifySlot(dateStr) {
 }
 
 // pending  → nobody has followed up yet (red, highest priority)
+// deposit  → booking is held while staff chase the DP invoice/payment
 // incoming → followed up, now in an unacknowledged reminder slot (amber)
 // quiet    → nothing to do; hidden from the panel
 function _resNotifyClassify(it) {
+  if (it.status === "Incoming" && it.depositRequired && Number(it.depositExpected) > 0) return "deposit";
   if (!it.done) return "pending";
   const slot = _resNotifySlot(it.date);
   if (slot === "dday" && !it.ddayAck) return "incoming";
@@ -170,7 +172,7 @@ async function _resNotifyFetch() {
   const { data, error } = await db
     .from("reservations")
     .select(
-      "id, reservation_date, reservation_time, pax, booking_name, follow_up_done, follow_up_done_at, follow_up_done_by, reminder_d1_ack_at, reminder_dday_ack_at, guests(name)",
+      "id, status, reservation_date, reservation_time, pax, booking_name, deposit_required, deposit_expected, follow_up_done, follow_up_done_at, follow_up_done_by, reminder_d1_ack_at, reminder_dday_ack_at, guests(name)",
     )
     .eq("reservation_source", "Online Form")
     .is("deleted_at", null)
@@ -188,7 +190,7 @@ async function _resNotifyFetch() {
     // Cancelled / No Show / Deleted stay out on purpose. Chasing a follow-up
     // for a booking that is already cancelled is noise, and noise is what
     // gets a bell ignored.
-    .in("status", ["Reserved", "Confirmed", "Arrived", "Completed"])
+    .in("status", ["Reserved", "Confirmed", "Incoming", "Arrived", "Completed"])
     // Still-unhandled bookings of ANY date, plus anything dated today
     // or later (those can still enter a reminder slot). Past bookings
     // already followed up are done with — excluding them keeps old
@@ -213,6 +215,9 @@ async function _resNotifyFetch() {
     date: row.reservation_date,
     time: String(row.reservation_time || "").slice(0, 5),
     pax: row.pax || 1,
+    status: row.status,
+    depositRequired: row.deposit_required === true,
+    depositExpected: row.deposit_expected || null,
     done: !!row.follow_up_done,
     doneAt: row.follow_up_done_at || null,
     doneBy: row.follow_up_done_by || null,
@@ -258,6 +263,7 @@ async function _resNotifyRefresh({ chimeNew = false } = {}) {
   _resNotifyLoadStaffNames();
 
   const pending = items.filter((it) => _resNotifyClassify(it) === "pending");
+  const deposit = items.filter((it) => _resNotifyClassify(it) === "deposit");
   const incoming = items.filter((it) => _resNotifyClassify(it) === "incoming");
 
   if (chimeNew && _resNotifyPrimed) {
@@ -269,6 +275,25 @@ async function _resNotifyRefresh({ chimeNew = false } = {}) {
         if (typeof toast === "function") {
           toast(
             "Reservasi online baru: " +
+              it.name +
+              " · " +
+              _resNotifyFmtDate(it.date) +
+              " " +
+              it.time +
+              " (" +
+              it.pax +
+              " pax)",
+          );
+        }
+      });
+      _resNotifyChime();
+    }
+    const freshDeposit = deposit.filter((it) => !_resNotifySeenPending.has(it.id));
+    if (freshDeposit.length) {
+      freshDeposit.forEach((it) => {
+        if (typeof toast === "function") {
+          toast(
+            "Reservasi perlu invoice DP: " +
               it.name +
               " · " +
               _resNotifyFmtDate(it.date) +
@@ -298,6 +323,7 @@ async function _resNotifyRefresh({ chimeNew = false } = {}) {
   }
 
   pending.forEach((it) => _resNotifySeenPending.add(it.id));
+  deposit.forEach((it) => _resNotifySeenPending.add(it.id));
   incoming.forEach((it) => _resNotifySeenIncoming.add(it.id + ":" + it.date));
   _resNotifyPrimed = true;
 
@@ -309,22 +335,25 @@ async function _resNotifyRefresh({ chimeNew = false } = {}) {
 
 function _resNotifyCounts() {
   let pending = 0;
+  let deposit = 0;
   let incoming = 0;
   _resNotifyItems.forEach((it) => {
     const c = _resNotifyClassify(it);
     if (c === "pending") pending++;
+    else if (c === "deposit") deposit++;
     else if (c === "incoming") incoming++;
   });
-  return { pending, incoming };
+  return { pending, deposit, incoming };
 }
 
 function _resNotifyRenderBadge() {
-  const { pending, incoming } = _resNotifyCounts();
+  const { pending, deposit, incoming } = _resNotifyCounts();
 
   const badge = document.getElementById("res-alert-badge");
   if (badge) {
-    if (pending > 0) {
-      badge.textContent = pending > 9 ? "9+" : String(pending);
+    const urgent = pending + deposit;
+    if (urgent > 0) {
+      badge.textContent = urgent > 9 ? "9+" : String(urgent);
       badge.classList.remove("hidden");
     } else {
       badge.classList.add("hidden");
@@ -345,6 +374,7 @@ function _resNotifyRenderBadge() {
   if (bell) {
     const parts = [];
     if (pending) parts.push(pending + " perlu follow up");
+    if (deposit) parts.push(deposit + " perlu invoice DP");
     if (incoming) parts.push(incoming + " cek kehadiran");
     bell.title =
       (parts.length ? parts.join(" · ") : "Reservasi online") +
@@ -409,6 +439,8 @@ function _resNotifyRow(it, kind) {
       ? '<label class="flex items-center gap-1.5 mt-1 cursor-pointer text-xs text-[#888]">' +
         `<input type="checkbox" onchange="resNotifyToggleDone('${it.id}')" />` +
         "Sudah di-follow up</label>"
+      : kind === "deposit"
+        ? `<button onclick="openDepositInvoice('${it.id}')" class="text-xs text-[color:var(--brand)] hover:underline mt-1">Invoice Followup</button>`
       : '<label class="flex items-center gap-1.5 mt-1 cursor-pointer text-xs text-[#888]">' +
         `<input type="checkbox" onchange="resNotifyAckReminder('${it.id}')" />` +
         "Sudah dicek</label>";
@@ -433,10 +465,11 @@ function _resNotifyRenderList() {
   if (!list) return;
 
   const pending = _resNotifyItems.filter((it) => _resNotifyClassify(it) === "pending");
+  const deposit = _resNotifyItems.filter((it) => _resNotifyClassify(it) === "deposit");
   const incoming = _resNotifyItems.filter((it) => _resNotifyClassify(it) === "incoming");
   const handled = _resNotifyItems.filter((it) => _resNotifyClassify(it) === "quiet");
 
-  if (!pending.length && !incoming.length && !handled.length) {
+  if (!pending.length && !deposit.length && !incoming.length && !handled.length) {
     list.innerHTML =
       '<p class="text-xs text-[#bbb] text-center py-4">Belum ada reservasi online</p>';
     return;
@@ -444,7 +477,7 @@ function _resNotifyRenderList() {
 
   let html = "";
 
-  if (!pending.length && !incoming.length) {
+  if (!pending.length && !deposit.length && !incoming.length) {
     html +=
       '<p class="text-xs text-[#1FAF5E] text-center py-3">Semua reservasi online sudah ditangani ✓</p>';
   }
@@ -457,10 +490,21 @@ function _resNotifyRenderList() {
       pending.map((it) => _resNotifyRow(it, "pending")).join("");
   }
 
+  if (deposit.length) {
+    html +=
+      '<p class="text-[11px] font-semibold text-[color:var(--brand-ink)] mb-1 ' +
+      (pending.length ? "mt-3 pt-3 border-t border-[#EDE9E3]" : "") +
+      '">Perlu invoice DP (' +
+      deposit.length +
+      ")</p>" +
+      '<p class="text-[10px] text-[#999] mb-1 leading-snug">Kirim invoice dan tagih DP.</p>' +
+      deposit.map((it) => _resNotifyRow(it, "deposit")).join("");
+  }
+
   if (incoming.length) {
     html +=
       '<p class="text-[11px] font-semibold text-[#B7791F] mb-1 ' +
-      (pending.length ? "mt-3 pt-3 border-t border-[#EDE9E3]" : "") +
+      (pending.length || deposit.length ? "mt-3 pt-3 border-t border-[#EDE9E3]" : "") +
       '">Cek kehadiran (' +
       incoming.length +
       ")</p>" +
@@ -471,7 +515,7 @@ function _resNotifyRenderList() {
   if (handled.length) {
     html +=
       '<button onclick="resNotifyToggleHandled()" class="w-full flex items-center justify-between text-left text-[11px] font-semibold text-[#777] ' +
-      (pending.length || incoming.length ? "mt-3 pt-3 border-t border-[#EDE9E3]" : "") +
+      (pending.length || deposit.length || incoming.length ? "mt-3 pt-3 border-t border-[#EDE9E3]" : "") +
       '"><span>Sudah ditangani (' +
       handled.length +
       ")</span><span>" +

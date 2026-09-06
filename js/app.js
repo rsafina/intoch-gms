@@ -2765,7 +2765,7 @@ async function loadDashboard() {
           db
             .from("reservations")
             .select(
-              "id, pax, status, guest_id, reservation_time, occasion, reservation_source, assigned_area, table_id, notes, guests(name,phone,booking_alias,spending_tier,tag,food_allergy,notes,favorite_menu), tables(name)",
+              "id, pax, status, guest_id, reservation_time, occasion, reservation_source, assigned_area, table_id, notes, deposit_required, deposit_expected, deposit_due_at, guests(name,phone,booking_alias,spending_tier,tag,food_allergy,notes,favorite_menu), tables(name)",
             )
             .eq("reservation_date", TODAY)
             .order("reservation_time"),
@@ -3007,7 +3007,7 @@ async function loadDashboardReservations(offset = 0, initialData = null) {
         db
           .from("reservations")
           .select(
-            "id, pax, status, guest_id, reservation_time, occasion, reservation_source, assigned_area, notes, guests(name,phone,booking_alias,spending_tier,tag,food_allergy,notes,favorite_menu,last_order), areas(name), tables(name)",
+            "id, pax, status, guest_id, reservation_time, occasion, reservation_source, assigned_area, notes, deposit_required, deposit_expected, deposit_due_at, guests(name,phone,booking_alias,spending_tier,tag,food_allergy,notes,favorite_menu,last_order), areas(name), tables(name)",
           )
           .eq("reservation_date", date)
           .order("reservation_time"),
@@ -3022,6 +3022,7 @@ async function loadDashboardReservations(offset = 0, initialData = null) {
     }
   }
 
+  await loadDepositBalances(data);
   await attachGuestVisitCounts(data);
   renderDashboardReservations(data);
 }
@@ -3339,25 +3340,43 @@ function isCancelledRes(status) {
   return CANCELLED_RES_STATUSES.has(status);
 }
 
-// Returns a NEW array — callers keep whatever order the DB gave them
-// within each group, so this is a stable "sink the cancelled ones" pass
-// rather than a re-sort. Array.prototype.sort is stable in every browser
-// we support, so equal-rank rows hold their existing time order.
-function sortResCancelledLast(rows) {
+const RES_STATUS_SORT_RANK = {
+  Incoming: 0,
+  Reserved: 1,
+  Confirmed: 1,
+  Waitlist: 2,
+  Arrived: 3,
+  Completed: 4,
+  "Cancelled": 5,
+  "Cancelled (No Show)": 5,
+  "No Show": 5,
+  Deleted: 6,
+};
+
+function resStatusSortRank(status) {
+  return Object.prototype.hasOwnProperty.call(RES_STATUS_SORT_RANK, status)
+    ? RES_STATUS_SORT_RANK[status]
+    : 2;
+}
+
+// Returns a NEW array. Within each status group the DB's time order is kept,
+// so "sort by status" is still readable as a service list rather than an
+// alphabet soup.
+function sortReservationsByStatus(rows) {
   return [...(rows || [])].sort(
-    (a, b) => (isCancelledRes(a.status) ? 1 : 0) - (isCancelledRes(b.status) ? 1 : 0),
+    (a, b) => resStatusSortRank(a.status) - resStatusSortRank(b.status),
   );
 }
 
 function renderDashboardReservations(data) {
   // Store full dataset and reset page when new data arrives
   if (data !== dashboardResData) {
-    // Dashboard keeps its extra tier: Completed also drops below the
+    // Dashboard keeps its extra tier: Incoming rises above ordinary active
+    // bookings, because it is money/table risk staff must chase; Completed also drops below the
     // still-active bookings (that behaviour predates this change and is
     // what makes the "who's still coming today" glance work), with
     // cancelled below that again.
-    const rank = (r) =>
-      isCancelledRes(r.status) ? 2 : r.status === "Completed" ? 1 : 0;
+    const rank = (r) => resStatusSortRank(r.status);
     dashboardResData = [...data].sort((a, b) => rank(a) - rank(b));
     dashboardResPage = 0;
   }
@@ -3437,7 +3456,7 @@ function renderDashboardReservations(data) {
             </div>
           </div>
           <div class="flex items-center gap-3">
-            ${statusBadge(r.status)}
+            <div>${statusBadge(r.status)}${depositRowBadge(r)}</div>
             <a href="reservation-confirmation.html?id=${r.id}" target="_blank" title="View confirmation page" class="text-xs text-[color:var(--brand)] hover:underline flex items-center gap-1">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               Link
@@ -5977,7 +5996,7 @@ async function loadReservations() {
   // Time order from the DB is preserved inside each group; cancelled rows
   // just move to the end so the top of the list is only people who are
   // actually still expected.
-  allReservations = sortResCancelledLast(data);
+  allReservations = sortReservationsByStatus(data);
   await renderReservationsTable(allReservations);
 
   // Occupancy summary always reflects the FULL day regardless of the
@@ -6358,7 +6377,7 @@ document.addEventListener("click", (e) => {
 // have vanished from the occupancy summary and from the day run sheet, both
 // of which read this list. Added before the feature that would have exposed
 // it, which is why adding it changes nothing observable today.
-const RES_OCCUPANCY_STATUSES = ["Reserved", "Confirmed", "Arrived", "Completed"];
+const RES_OCCUPANCY_STATUSES = ["Reserved", "Confirmed", "Incoming", "Arrived", "Completed"];
 const VIP_TIMELINE_START_MIN = 10 * 60; // 10:00
 const VIP_TIMELINE_END_MIN = 21 * 60; // 21:00
 
@@ -14591,10 +14610,13 @@ function previewReserveAppearance() {
   const card = document.getElementById("rf-preview-card");
   if (card) {
     card.style.background = solid
-      ? "rgba(255,255,255,.10)"
+      ? "rgba(255,255,255,.94)"
       : hexToRgba(cfg.glass_color, clampGlassOpacity(cfg.glass_opacity)) || "";
     card.style.backdropFilter = solid ? "none" : "blur(14px)";
     card.style.webkitBackdropFilter = solid ? "none" : "blur(14px)";
+    card.style.borderColor = solid ? "rgba(255,255,255,.65)" : "rgba(255,255,255,.18)";
+    card.style.borderRadius = solid ? "22px" : "14px";
+    card.style.boxShadow = solid ? "0 18px 46px rgba(35,27,74,.20)" : "";
   }
   const tint = document.getElementById("rf-preview-tint");
   if (tint)
@@ -14607,8 +14629,18 @@ function previewReserveAppearance() {
       ? t("The page is painted in the form panel colour below. The photo is kept but not shown.")
       : t("The photo fills the screen and the form sits on it behind glass.");
   const btn = document.getElementById("rf-preview-btn");
-  if (btn)
+  if (btn) {
     btn.style.background = `linear-gradient(135deg, ${cfg.accent_color}, ${shadeHex(cfg.accent_color, -0.32)})`;
+    btn.style.borderRadius = solid ? "10px" : "999px";
+  }
+
+  const title = document.getElementById("rf-preview-title");
+  if (title) title.style.color = solid ? "#252035" : "#fff";
+  const field = document.getElementById("rf-preview-field");
+  if (field) {
+    field.style.background = solid ? "#f4f1fb" : "rgba(255,255,255,.08)";
+    field.style.borderColor = solid ? "rgba(91,76,189,.14)" : "rgba(255,255,255,.18)";
+  }
 
   // The preview box is 260px tall against a real page around 800px, so the
   // logo is scaled to match rather than shown at its literal pixel height —

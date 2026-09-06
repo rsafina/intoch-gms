@@ -116,6 +116,7 @@ eq(
 const rows = [
   // day 0 — a normal mix
   { reservation_date: DATES[0], pax: 4, status: "Reserved", assigned_area: null },
+  { reservation_date: DATES[0], pax: 2, status: "Incoming", assigned_area: null },
   { reservation_date: DATES[0], pax: 8, status: "Arrived", assigned_area: "indoor" },
   { reservation_date: DATES[0], pax: 6, status: "Completed", assigned_area: "indoor" },
   { reservation_date: DATES[0], pax: 10, status: "Cancelled", assigned_area: null },
@@ -130,12 +131,12 @@ const rows = [
 
 const totals = bucketReservationTotals(rows, DATES);
 
-eq("day 0 — tab count includes every row for the date", totals[0].count, 6);
-eq("day 0 — active count excludes cancelled/no-show/deleted", totals[0].activeCount, 3);
-eq("day 0 — pax is 4+8+6, cancelled 10 and no-show 5 excluded", totals[0].pax, 18);
+eq("day 0 — tab count includes every row for the date", totals[0].count, 7);
+eq("day 0 — active count excludes cancelled/no-show/deleted", totals[0].activeCount, 4);
+eq("day 0 — pax includes Incoming, cancelled 10 and no-show 5 excluded", totals[0].pax, 20);
 eq("day 0 — excluded counts cancelled + no-show but NOT deleted", totals[0].excluded, 2);
-eq("day 0 — unplaced counts only the active unassigned row", totals[0].unplacedCount, 1);
-eq("day 0 — unplaced pax ignores the cancelled unassigned party", totals[0].unplacedPax, 4);
+eq("day 0 — unplaced counts active unassigned rows including Incoming", totals[0].unplacedCount, 2);
+eq("day 0 — unplaced pax ignores the cancelled unassigned party", totals[0].unplacedPax, 6);
 
 eq("day 1 — all unplaced", totals[1], {
   count: 2,
@@ -147,7 +148,7 @@ eq("day 1 — all unplaced", totals[1], {
 });
 
 eq("day 2 — untouched by out-of-range rows", totals[2].pax, 0);
-eq("out-of-range row never lands in a bucket", totals.reduce((s, b) => s + b.count, 0), 8);
+eq("out-of-range row never lands in a bucket", totals.reduce((s, b) => s + b.count, 0), 9);
 
 // Regression guard for the bug this feature fixes: the visible area cards
 // only count placed reservations, so total pax must be >= their sum and the

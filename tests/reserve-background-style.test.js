@@ -131,7 +131,22 @@ check("both guest pages carry the solid rules and the fallback colour", () => {
       /:root\[data-rf-bg="solid"\] \.bg-tint/.test(src),
       name + " never fills the page with the solid colour",
     );
+    assert.ok(
+      /:root\[data-rf-bg="solid"\] \.card[\s\S]*?rgba\(255, 255, 255, 0\.94\)/.test(src),
+      name + " does not turn the glass card into a solid light panel",
+    );
   }
+});
+
+check("solid mode has squared-off primary actions", () => {
+  assert.ok(
+    /:root\[data-rf-bg="solid"\] \.btn-submit[\s\S]*?border-radius: 12px/.test(reserve),
+    "the booking form button stays pill-shaped in solid mode",
+  );
+  assert.ok(
+    /:root\[data-rf-bg="solid"\] \.btn-wa[\s\S]*?border-radius: 12px/.test(created),
+    "the thank-you WhatsApp button stays pill-shaped in solid mode",
+  );
 });
 
 check("reserve.html's own copy of the helper sets the attribute too", () => {
@@ -148,6 +163,8 @@ check("the settings screen has the control, with English values", () => {
   const block = index.slice(i, i + 600);
   assert.ok(/value="photo"/.test(block) && /value="solid"/.test(block),
     "the option values are not the English photo/solid");
+  assert.ok(/Solid background, no glass/.test(block),
+    "the solid option does not name the no-glass look");
   assert.ok(index.includes('id="rf-preview-tint"'),
     "the preview tint has no handle, so the preview cannot go solid");
 });

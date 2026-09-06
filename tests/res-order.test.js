@@ -12,13 +12,19 @@ const grab = (name) => {
 };
 const setSrc = src.slice(grab("const CANCELLED_RES_STATUSES"), grab("function renderDashboardReservations"));
 const sandbox = {};
-new Function("ctx", setSrc + "\nctx.isCancelledRes=isCancelledRes;ctx.sortResCancelledLast=sortResCancelledLast;ctx.CANCELLED_RES_STATUSES=CANCELLED_RES_STATUSES;")(sandbox);
-const { isCancelledRes, sortResCancelledLast, CANCELLED_RES_STATUSES } = sandbox;
+new Function("ctx", setSrc + "\nctx.isCancelledRes=isCancelledRes;ctx.sortReservationsByStatus=sortReservationsByStatus;ctx.resStatusSortRank=resStatusSortRank;ctx.CANCELLED_RES_STATUSES=CANCELLED_RES_STATUSES;")(sandbox);
+const { isCancelledRes, sortReservationsByStatus, resStatusSortRank, CANCELLED_RES_STATUSES } = sandbox;
 
 // Dashboard rank, extracted the same way.
-const dashSrc = src.slice(grab("const rank = (r) =>"), grab("dashboardResData = [...data]"));
+const dashStart = src.indexOf("const rank = (r) =>", grab("function renderDashboardReservations"));
+assert.ok(dashStart > -1, "dashboard rank not found in app.js");
+const dashSrc = src.slice(dashStart, grab("dashboardResData = [...data]"));
 const dash = {};
-new Function("ctx", "isCancelledRes", dashSrc + "\nctx.rank=rank;")(dash, isCancelledRes);
+new Function("ctx", "isCancelledRes", "resStatusSortRank", dashSrc + "\nctx.rank=rank;")(
+  dash,
+  isCancelledRes,
+  resStatusSortRank,
+);
 const rank = dash.rank;
 
 let pass = 0, fail = 0;
@@ -32,7 +38,7 @@ check("all three cancelled statuses in the DB constraint are covered", () => {
 });
 
 check("active and completed statuses do not sink", () => {
-  ["Reserved", "Confirmed", "Arrived", "Completed"].forEach((s) =>
+  ["Reserved", "Confirmed", "Incoming", "Arrived", "Completed"].forEach((s) =>
     assert.ok(!isCancelledRes(s), s + " should NOT sink"));
 });
 
@@ -40,18 +46,32 @@ check("Deleted is deliberately excluded", () => {
   assert.ok(!CANCELLED_RES_STATUSES.has("Deleted"));
 });
 
-check("day list: cancelled sink, everything else keeps time order", () => {
+check("day list: status groups sort in service priority order", () => {
   // Mirrors the 9 Aug screenshot.
   const day = [
     r("Ibu Ari", "11:00", "Completed"),
     r("Rian", "15:15", "Completed"),
     r("Febrianing", "18:00", "Cancelled"),
+    r("Walked in", "19:00", "Arrived"),
+    r("Deposit", "20:00", "Incoming"),
     r("Anindya", "18:30", "Reserved"),
   ];
   assert.deepStrictEqual(
-    sortResCancelledLast(day).map((x) => x.name),
-    ["Ibu Ari", "Rian", "Anindya", "Febrianing"],
+    sortReservationsByStatus(day).map((x) => x.name),
+    ["Deposit", "Anindya", "Walked in", "Ibu Ari", "Rian", "Febrianing"],
   );
+});
+
+check("day list: status sort keeps time order inside a group", () => {
+  const day = [
+    r("early-reserved", "18:00", "Reserved"),
+    r("deposit-needed", "21:00", "Incoming"),
+    r("cancelled", "17:00", "Cancelled"),
+    r("late-reserved", "22:00", "Reserved"),
+  ];
+  assert.deepStrictEqual(
+    sortReservationsByStatus(day).map((x) => x.name),
+    ["deposit-needed", "early-reserved", "late-reserved", "cancelled"]);
 });
 
 check("day list: no-show sinks too (the bug being fixed)", () => {
@@ -62,7 +82,7 @@ check("day list: no-show sinks too (the bug being fixed)", () => {
     r("D", "13:00", "Arrived"),
   ];
   assert.deepStrictEqual(
-    sortResCancelledLast(day).map((x) => x.name), ["B", "D", "A", "C"]);
+    sortReservationsByStatus(day).map((x) => x.name), ["B", "D", "A", "C"]);
 });
 
 check("multiple cancelled keep their relative time order at the bottom", () => {
@@ -72,35 +92,46 @@ check("multiple cancelled keep their relative time order at the bottom", () => {
     r("live", "12:00", "Reserved"),
   ];
   assert.deepStrictEqual(
-    sortResCancelledLast(day).map((x) => x.name),
+    sortReservationsByStatus(day).map((x) => x.name),
     ["live", "early-cancel", "late-cancel"]);
 });
 
 check("sort does not mutate the caller's array", () => {
   const day = [r("A", "10:00", "Cancelled"), r("B", "11:00", "Reserved")];
   const copy = day.slice();
-  sortResCancelledLast(day);
+  sortReservationsByStatus(day);
   assert.deepStrictEqual(day, copy);
 });
 
 check("handles empty / null input", () => {
-  assert.deepStrictEqual(sortResCancelledLast([]), []);
-  assert.deepStrictEqual(sortResCancelledLast(null), []);
-  assert.deepStrictEqual(sortResCancelledLast(undefined), []);
+  assert.deepStrictEqual(sortReservationsByStatus([]), []);
+  assert.deepStrictEqual(sortReservationsByStatus(null), []);
+  assert.deepStrictEqual(sortReservationsByStatus(undefined), []);
 });
 
 check("all-cancelled list (Cancelled chip) is a no-op", () => {
   const day = [r("A", "09:00", "Cancelled"), r("B", "10:00", "Cancelled (No Show)")];
-  assert.deepStrictEqual(sortResCancelledLast(day).map((x) => x.name), ["A", "B"]);
+  assert.deepStrictEqual(sortReservationsByStatus(day).map((x) => x.name), ["A", "B"]);
 });
 
-check("dashboard uses three tiers: active < completed < cancelled", () => {
-  assert.strictEqual(rank(r("", "", "Reserved")), 0);
-  assert.strictEqual(rank(r("", "", "Arrived")), 0);
-  assert.strictEqual(rank(r("", "", "Completed")), 1);
-  assert.strictEqual(rank(r("", "", "Cancelled")), 2);
-  assert.strictEqual(rank(r("", "", "Cancelled (No Show)")), 2);
-  assert.strictEqual(rank(r("", "", "No Show")), 2);
+check("status ranks match the requested service priority", () => {
+  assert.ok(resStatusSortRank("Incoming") < resStatusSortRank("Reserved"));
+  assert.ok(resStatusSortRank("Reserved") < resStatusSortRank("Arrived"));
+  assert.ok(resStatusSortRank("Arrived") < resStatusSortRank("Completed"));
+  assert.ok(resStatusSortRank("Completed") < resStatusSortRank("Cancelled"));
+  assert.ok(resStatusSortRank("Cancelled") < resStatusSortRank("Deleted"));
+});
+
+check("dashboard order follows the same status rank", () => {
+  const rows = [
+    r("Reserved", "18:00", "Reserved"),
+    r("Incoming", "21:00", "Incoming"),
+    r("Arrived", "19:00", "Arrived"),
+    r("Completed", "17:00", "Completed"),
+  ];
+  assert.deepStrictEqual(
+    [...rows].sort((a, b) => rank(a) - rank(b)).map((x) => x.name),
+    ["Incoming", "Reserved", "Arrived", "Completed"]);
 });
 
 check("dashboard order matches the 9 Aug screenshot expectation", () => {
@@ -117,7 +148,7 @@ check("dashboard order matches the 9 Aug screenshot expectation", () => {
 
 check("day list sort is actually wired into loadReservations", () => {
   const i = src.indexOf("async function loadReservations()");
-  assert.ok(src.slice(i, i + 3000).includes("allReservations = sortResCancelledLast(data)"));
+  assert.ok(src.slice(i, i + 3000).includes("allReservations = sortReservationsByStatus(data)"));
 });
 
 check("old incomplete TERMINAL_RES set is gone", () => {
