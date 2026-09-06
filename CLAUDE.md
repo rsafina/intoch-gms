@@ -745,61 +745,72 @@ Sinta.
 
 ---
 
-## Where the work is, 2026-09-05
+## Where the work is, 2026-09-05 (end of day)
 
-Three threads are open. They are ordered; do not start the third before the second.
+Everything below is IN THE REPO but the migration is NOT applied and nothing is deployed.
 
-### 1. DONE and pushed: the deposit settings + the recolour
+### Do these three things first, in this order
 
-- Area booking conditions are configurable in Settings: a "bookable online" switch,
-  minimum party, minimum spend, and a **flat rupiah deposit** (`areas.deposit_amount`).
-  `deposit_pct` is dead but kept, and commented as superseded. `ALL_IN_ONE.sql` is applied.
-- The whole app moved from navy/gold to purple/orange, and every brand colour is a token.
-  See the brand colour section above.
+1. **`npm run build`.** `reserve.html` is a gitignored build output and its local copy was
+   overwritten with the template's placeholders, so it needs regenerating with the real
+   env vars before anything is tested locally.
+2. **Run `migrations/ALL_IN_ONE.sql`.** Confirm block is 12 rows. Note that
+   "no area is bookable online yet" now returns 0, correctly, because Indoor Dining was
+   switched on by hand.
+3. **Deploy the app in the SAME push.** The migration and the form are two halves of one
+   change: applying the migration alone makes a waitlisted booking report itself as
+   confirmed on the old form, and gives a guest "connection problem, try again" forever
+   for a refusal that will never change.
 
-### 2. NEXT: the Settings screen for brand colours
+### What landed today
 
-The plumbing exists, so this should be small. Two pickers, `--brand` and `--accent`,
-stored in `app_settings`, applied at runtime the way `loadReserveAppearance()` already
-applies the reservation page's look.
+- **Deposit is a flat rupiah amount** (`areas.deposit_amount`), not a percentage.
+  `deposit_pct` is dead, kept, and commented as superseded.
+- **RLS**: `areas` was silently unwritable for days. Fixed. See "Must be fixed before the
+  first sale", which was rewritten today and is the section worth reading.
+- **The whole app went navy/gold to purple/orange**, and every brand colour is now a
+  token. See "Brand colour: tokens only".
+- **Waitlist + the public booking form.** A party too big, too small, or over the house
+  ceiling becomes a `Waitlist` booking instead of a refusal. The form gained area pills,
+  a conditions panel showing the deposit before the submit button, a sticky submit, and
+  configurable Company/Notes fields. `reservation-created.html` rewrites its own title so
+  a waitlisted guest is never told they are confirmed.
+- `saveArea()` now proves its write landed. **Nothing else in the app does yet** — see
+  the RLS section. That audit is unstarted and is the highest-value cleanup available.
 
-Derive everything else and derive it to pass: darken the heading shade until it clears
-4.5:1 on cream, fixed step for hovers, and choose white-vs-ink on a fill by whichever wins
-on contrast. Refuse a colour that cannot be made readable rather than saving it.
+### What is NOT built, roughly in order of usefulness
 
-**It must write `--brand-rgb` alongside `--brand`.** A few places need the triplet for
-alpha (`rgb(var(--brand-ink-rgb) / 0.12)`), and a picker that sets only the hex leaves
-shadows on the old hue.
+1. **The Settings screen for the `reservation_form` keys.** The form READS
+   `show_notes` / `show_company` / `show_capacity` / `welcome_text` from an `app_settings`
+   row that nothing writes. Defaults fail safe (notes on, company off, capacity off), so
+   the form works today; the restaurant simply cannot change any of it. Small, and it
+   makes four features reachable.
+2. **The deposit QR.** Decided: ONE QRIS image for the whole restaurant, uploaded in
+   Settings, shown with the amount after a booking that owes a deposit, proof returned by
+   WhatsApp. No upload path on the public page while the anon key is the only barrier.
+   The confirmation page currently promises a WhatsApp follow-up instead, which is honest
+   but manual.
+3. **Accepting a waitlisted booking** from the staff app: status to Reserved or Confirmed,
+   `waitlist_reason` KEPT as the record of why it was ever held, and that is the moment
+   the deposit becomes payable. Today a manager can only change status through the generic
+   Update flow.
+4. **The brand colour picker.** Two colours, `--brand` and `--accent`, stored in
+   `app_settings` and applied at runtime like `loadReserveAppearance()` already does.
+   Everything else derives from them and derives to PASS contrast. It must write
+   `--brand-rgb` alongside `--brand` or shadows keep the old hue.
+5. **The write-audit** from the RLS section. `saveTable` and the settings saves can still
+   report success over a write that changed nothing.
 
-### 3. THEN: the public booking form
+### Open questions nobody has answered
 
-Spec: `RESERVATION_FORM_SPEC.md`. It supersedes sections 4, 5 and 9 of
-`RESERVATION_DEPOSIT_PHASE1.md`, which carries a pointer at its top. Every decision is
-settled; four small open items are listed in its section 8.
-
-Shape: one page, sticky submit, areas as pills with a conditions panel underneath, a
-single QRIS for the deposit, proof by WhatsApp. A party that is too big, too small, or
-over the global `max_pax` becomes a **Waitlist** booking rather than a refusal.
-
-Two guardrails from the spec worth repeating, because both fail silently:
-
-- **`Waitlist` must NOT join `RES_HOLDS_SEAT_STATUSES`.** It is not accepted yet, so it
-  must not consume capacity, or a run of requests blocks the real bookings behind them.
-  It must still appear in the reservations list, or it is a booking nobody ever sees.
-- **The form must not read `reservations` to show availability.** Add a `SECURITY DEFINER`
-  `area_availability(p_date)` returning aggregates only, or a public page ends up selecting
-  every guest's booking to render a percentage.
-
-### Known-failing test, on purpose
-
-`tests/reservation-availability.test.js` fails one assertion: `area_unavailable` has no
-`ERR_ID` entry, so a guest would see "connection problem" and retry forever. It closes when
-the booking form lands and adds the copy in the same change. Do not "fix" it early.
+In `RESERVATION_FORM_SPEC.md` section 8: whether a pending waitlist request should block
+the same phone booking again that day (probably yes, or a guest refused a big table just
+books twice), and who may accept a waitlist entry.
 
 ### Two tests cannot run over the Cowork device bridge
 
 `tests/settings-screens.test.js` and `tests/reservation-gate.test.js` use jsdom and hang.
-Run them locally before pushing.
+Run them locally before pushing. Everything else passes.
 
 ## Testing approach that earned its keep
 
