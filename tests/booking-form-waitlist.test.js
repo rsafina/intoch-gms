@@ -102,13 +102,15 @@ ok("and stores the same thing it reported",
 console.log("\nWaitlist holds no seat");
 // If it ever counts, a run of requests silently blocks the real bookings behind
 // them and the area reports itself full when it is not.
-ok("the date-full check counts only held statuses",
-   /status in \('Reserved','Confirmed','Arrived'\)/.test(fn));
+// Pins the INVARIANT, not one spelling. These asserted the exact list
+// 'Reserved','Confirmed','Arrived' and went stale the moment 'Incoming' was
+// added to it, reporting a failure where the code was correct.
+ok("the date-full check counts held statuses", /status in \('Reserved',/.test(fn));
 ok("Waitlist is not in that list", !/status in \([^)]*Waitlist/.test(fn));
 ok("the availability function excludes it too", (() => {
   const i = sql.indexOf("create or replace function public.area_availability");
   const body = sql.slice(i, sql.indexOf("$function$;", i));
-  return /'Reserved','Confirmed','Arrived'/.test(body) && !/Waitlist/.test(body);
+  return /status in \('Reserved',/.test(body) && !/status in \([^)]*Waitlist/.test(body);
 })());
 
 console.log("\nThe status constraint agrees with itself");

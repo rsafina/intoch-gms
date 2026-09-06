@@ -1,12 +1,13 @@
 # Generated at build time by build-config.js from the .template files.
 # Never commit them: js/config.js and reserve.html carry the client's
-# Supabase credentials, and all five carry that client's site URL and name.
+# Supabase credentials, and all six carry that client's site URL and name.
 # Edit the matching .template file instead, or the next build overwrites you.
 js/config.js
 reserve.html
 reservation-created.html
 reservation-confirmation.html
 spin.html
+deposit-invoice.html
 
 node_modules/
 .DS_Store

@@ -66,6 +66,14 @@ const TARGETS = [
     to: "spin.html",
     requires: ["__SITE_URL__", "__RESTAURANT_NAME__"],
   },
+  {
+    // Needs its own Supabase client: it looks an invoice up by token. Unlike
+    // the other guest pages it cannot read js/config.js, for the same reason
+    // reserve.html cannot — redeclaring const SUPABASE_URL.
+    from: "deposit-invoice.template.html",
+    to: "deposit-invoice.html",
+    requires: ["__SUPABASE_URL__", "__SUPABASE_ANON_KEY__", "__SITE_URL__", "__RESTAURANT_NAME__"],
+  },
 ];
 
 const REQUIRED = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SITE_URL"];

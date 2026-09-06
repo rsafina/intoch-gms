@@ -54,6 +54,29 @@ const WA_DEFAULT_TEMPLATES = {
       "Tanggal: {tanggal}\nJam: {jam}\nJumlah: {pax} orang\n\n" +
       "Kami nantikan kehadiran dari anda di {resto}. Terima kasih!",
   },
+  // The deposit chase. Editable like every other template, because the wording
+  // of a message asking someone for money is exactly the thing a restaurant
+  // will want to say in its own voice.
+  //
+  // {invoice} is the ONLY way the guest reaches the payment page: there is no
+  // login and no lookup by phone number. A template edited to drop it produces
+  // a message that asks for money and gives no way to pay, so
+  // waDepositRequestMessage() appends the link when the body has no {invoice}.
+  //
+  // NOT {link}. That name belongs to the broadcast campaign page and the send
+  // path treats it as such; a transactional template carrying it ships a dead
+  // placeholder to the guest. campaign-editor.test.js pins that separation.
+  deposit_request: {
+    label: "DP (minta pembayaran deposit)",
+    is_broadcast: false,
+    body:
+      "Halo {nama}!\n\n" +
+      "Reservasi Bapak/Ibu di {resto} sudah kami terima:\n\n" +
+      "Tanggal: {tanggal}\nJam: {jam}\nJumlah: {pax} orang\n\n" +
+      "Untuk mengunci meja, mohon transfer DP sebesar {dp} sebelum {batas}. " +
+      "Detail pembayaran ada di sini:\n{invoice}\n\n" +
+      "Setelah transfer, mohon balas pesan ini ya. Terima kasih!",
+  },
   at_risk: {
     label: "Broadcast: At Risk (lama tidak berkunjung)",
     is_broadcast: true,
@@ -380,6 +403,29 @@ function waFollowUpMessage(guestName, resDate, resTime, pax) {
     jam: resTime ? resTime.slice(0, 5).replace(":", ".") : "-",
     pax: pax || "-",
   });
+}
+
+// The deposit chase. `link` is the invoice preview URL and `dp` an already
+// formatted Rupiah string, because the caller has the balance and this file
+// has no opinion about currency.
+//
+// If the restaurant has edited {link} out of the template we put the URL back
+// on the end rather than sending a demand for money with no way to pay it.
+// Silently dropping it would look fine in the editor and fail in the guest's
+// phone, which is the one place nobody here can see.
+function waDepositRequestMessage(ctx) {
+  const body = waTemplateBody("deposit_request");
+  const msg = waRenderTemplate(body, {
+    nama: waGreetName(ctx.guestName),
+    resto: WA_RESTAURANT_NAME,
+    tanggal: waFormatDateId(ctx.resDate),
+    jam: ctx.resTime ? String(ctx.resTime).slice(0, 5).replace(":", ".") : "-",
+    pax: ctx.pax || "-",
+    dp: ctx.amountText || "-",
+    batas: ctx.deadlineText || "-",
+    invoice: ctx.link || "",
+  });
+  return msg.includes(ctx.link) ? msg : msg.trimEnd() + "\n\n" + ctx.link;
 }
 
 function waBirthdayMessage(guestName) {

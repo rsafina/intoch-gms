@@ -174,7 +174,11 @@ CREATE TABLE IF NOT EXISTS reservations (
   assigned_area UUID REFERENCES areas(id),
   table_id UUID REFERENCES tables(id),
   status TEXT NOT NULL DEFAULT 'Reserved'
-    CHECK (status IN ('Reserved','Confirmed','Arrived','Cancelled','Cancelled (No Show)','No Show','Completed','Deleted')),
+    -- Kept in step with the two ALTERs further down that also define this
+    -- constraint. Only reached when creating the table from nothing, but three
+    -- definitions of one rule drifting apart is how the Waitlist re-run
+    -- failure happened.
+    CHECK (status IN ('Reserved','Confirmed','Waitlist','Incoming','Arrived','Cancelled','Cancelled (No Show)','No Show','Completed','Deleted')),
   notes TEXT,
   created_by UUID REFERENCES staff_users(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -1065,7 +1069,7 @@ ALTER TABLE reservations
 ALTER TABLE reservations DROP CONSTRAINT IF EXISTS reservations_status_check;
 ALTER TABLE reservations
   ADD CONSTRAINT reservations_status_check
-  CHECK (status IN ('Reserved','Confirmed','Waitlist','Arrived','Cancelled','Cancelled (No Show)','No Show','Completed','Deleted'));
+  CHECK (status IN ('Reserved','Confirmed','Waitlist','Incoming','Arrived','Cancelled','Cancelled (No Show)','No Show','Completed','Deleted'));
 
 CREATE INDEX IF NOT EXISTS idx_reservations_deleted_at ON reservations(deleted_at) WHERE deleted_at IS NOT NULL;
 
@@ -4812,7 +4816,7 @@ comment on column public.reservations.waitlist_reason is
 alter table public.reservations drop constraint if exists reservations_status_check;
 alter table public.reservations
   add constraint reservations_status_check
-  check (status in ('Reserved','Confirmed','Waitlist','Arrived','Cancelled',
+  check (status in ('Reserved','Confirmed','Waitlist','Incoming','Arrived','Cancelled',
                     'Cancelled (No Show)','No Show','Completed','Deleted'));
 
 -- WAITLIST HOLDS NOTHING. It is not accepted, so it must not consume a seat:
@@ -4846,7 +4850,8 @@ as $function$
     select r.assigned_area as aid, sum(r.pax)::integer as pax
       from reservations r
      where r.reservation_date = p_date
-       and r.status in ('Reserved','Confirmed','Arrived')
+       -- Incoming holds a seat (see DEPOSIT_FLOW_SPEC.md D2). Waitlist does not.
+       and r.status in ('Reserved','Confirmed','Incoming','Arrived')
        and r.deleted_at is null
      group by r.assigned_area
   ),
@@ -4929,6 +4934,7 @@ as $function$
     v_wl_why   text;
     v_seats    integer;
     v_taken    integer;
+    v_due_at   timestamptz;
     v_dep_req  boolean := false;
     v_dep_amt  numeric;
     v_dep_note text;
@@ -5076,7 +5082,9 @@ as $function$
           from reservations r
          where r.assigned_area = v_area.id
            and r.reservation_date = p_date
-           and r.status in ('Reserved','Confirmed','Arrived')
+           -- Incoming holds a seat: the table is held while the guest pays.
+           -- Waitlist deliberately does not.
+           and r.status in ('Reserved','Confirmed','Incoming','Arrived')
            and r.deleted_at is null;
         if v_taken >= v_area.capacity then
           return jsonb_build_object('ok', false, 'code', 'date_full',
@@ -5171,6 +5179,18 @@ as $function$
       v_status := 'Waitlist'; v_wl_why := 'over_max_pax';
     end if;
 
+    -- ===== Incoming: a deposit booking is not secure until money arrives =====
+    -- WAITLIST WINS OVER INCOMING. A booking nobody has agreed to yet must not
+    -- start a deposit clock, or a guest is auto-cancelled for failing to pay for
+    -- a table they were never offered. The clock starts when staff accept it.
+    if v_status = 'Reserved' and v_dep_req then
+      v_status := 'Incoming';
+      -- The deadline IS the booking. No grace period, by decision: it needed a
+      -- setting, a min(), and a special case for imminent bookings, all to say
+      -- something less obvious than "pay before you eat".
+      v_due_at := (p_date + p_time) at time zone 'Asia/Jakarta';
+    end if;
+
     -- A waitlisted booking KEEPS the deposit figure so staff can see what would
     -- be owed if they accept it, but `deposit_required` stays FALSE until it is
     -- accepted. The guest was told no payment is due; a row saying otherwise
@@ -5181,11 +5201,13 @@ as $function$
     insert into reservations
       (guest_id, reservation_date, reservation_time, pax, status,
       reservation_source, notes, booking_name, assigned_area,
-      deposit_required, deposit_expected, deposit_rule_note, waitlist_reason)
+      deposit_required, deposit_expected, deposit_rule_note, waitlist_reason,
+      deposit_due_at)
     values
       (v_guest_id, p_date, p_time, p_pax, v_status,
       'Online Form', v_notes, v_name, p_area_id,
-      (v_dep_req and v_status <> 'Waitlist'), v_dep_amt, v_dep_note, v_wl_why)
+      (v_dep_req and v_status <> 'Waitlist'), v_dep_amt, v_dep_note, v_wl_why,
+      v_due_at)
     returning id into v_res_id;
 
     -- ===== ALIAS 2/2: refresh the denormalised latest alias =====
@@ -5203,6 +5225,8 @@ as $function$
     return jsonb_build_object('ok', true, 'reservation_id', v_res_id,
       'status', v_status,
       'waitlisted', (v_status = 'Waitlist'),
+      'awaiting_deposit', (v_status = 'Incoming'),
+      'deposit_due_at', v_due_at,
       'waitlist_reason', v_wl_why,
       'deposit_required', (v_dep_req and v_status <> 'Waitlist'),
       'deposit_expected', v_dep_amt);
@@ -5292,6 +5316,308 @@ drop policy if exists "Public full access - invoice_payments" on public.invoice_
 create policy "Public full access - invoice_payments" on public.invoice_payments for all
   using (true) with check (true);
 
+-- ============================================================
+-- 20260906_deposit_flow.sql — Incoming, invoices, expiry
+-- ============================================================
+-- Spec: DEPOSIT_FLOW_SPEC.md. A booking in an area that asks for a deposit is
+-- NOT secure until a human confirms the money arrived, so it lands as
+-- `Incoming` rather than `Reserved`. Self-service payment is out of scope by
+-- decision: every deposit is confirmed by staff reading a WhatsApp reply.
+
+alter table public.reservations
+  add column if not exists deposit_due_at     timestamptz,
+  add column if not exists deposit_expired_at timestamptz,
+  add column if not exists deposit_asked_at   timestamptz;
+
+comment on column public.reservations.deposit_due_at is
+  'When an unpaid Incoming booking expires: the reservation own date+time. Pay before you eat. STORED, not derived, so the sweep is one indexed comparison and moving a booking time is a deliberate act. There is deliberately no grace-period setting.';
+comment on column public.reservations.deposit_expired_at is
+  'Set by the sweep. Distinguishes "cancelled because nobody paid" from "cancelled by a person", which the status alone cannot.';
+comment on column public.reservations.deposit_asked_at is
+  'When staff last sent the deposit invoice on WhatsApp. A FACT (a message was sent), not a tick.';
+
+create index if not exists idx_reservations_deposit_due
+  on public.reservations(deposit_due_at)
+  where status = 'Incoming' and deleted_at is null;
+
+-- ---------- Invoices ----------
+-- Columns follow RESERVATION_INVOICE_SPEC.md so the full invoice generator
+-- later extends this table rather than creating a second one. Only the deposit
+-- subset is populated today; the rest are nullable and unused.
+create table if not exists public.invoices (
+  id             uuid primary key default uuid_generate_v4(),
+  reservation_id uuid references public.reservations(id) on delete cascade,
+  guest_id       uuid references public.guests(id),
+  -- The ONLY thing protecting the public preview page. Random, and NOT the
+  -- reservation id: a guessable id would let anyone walk a restaurant bookings.
+  token          text not null unique default encode(gen_random_bytes(16), 'hex'),
+  kind           text not null default 'deposit',
+  bill_to_name   text,
+  pax            integer,
+  event_date     date,
+  total          numeric not null,
+  note           text,
+  status         text not null default 'issued',
+  issued_at      timestamptz not null default now(),
+  issued_by      uuid references public.staff_users(id),
+  voided_at      timestamptz,
+  voided_by      uuid references public.staff_users(id),
+  void_reason    text,
+  created_at     timestamptz not null default now(),
+  constraint invoices_status_check check (status in ('draft','issued','void'))
+);
+
+create index if not exists idx_invoices_reservation on public.invoices(reservation_id);
+
+comment on column public.invoices.token is
+  'Random 32-char id for the public preview link. Never the reservation id.';
+comment on column public.invoices.bill_to_name is
+  'Copied from the booking at issue time, not joined. An invoice states what was agreed on a date; joining live would silently rewrite history.';
+
+alter table public.invoices enable row level security;
+drop policy if exists "Public full access - invoices" on public.invoices;
+create policy "Public full access - invoices" on public.invoices for all
+  using (true) with check (true);
+
+-- Now that invoices exists, give the payments table its foreign key. It was
+-- created earlier with a bare uuid because invoices did not exist yet.
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'invoice_payments_invoice_fk') then
+    alter table public.invoice_payments
+      add constraint invoice_payments_invoice_fk
+      foreign key (invoice_id) references public.invoices(id) on delete cascade;
+  end if;
+end $$;
+
+-- ---------- The public preview page reads this, and only this ----------
+-- SECURITY DEFINER so the page needs no table access. Returns one invoice by
+-- its token and nothing else: no guest phone, no other bookings, no way to
+-- enumerate. A voided invoice returns nothing, so a cancelled booking link
+-- goes dead on its own.
+drop function if exists public.deposit_invoice_by_token(text);
+create or replace function public.deposit_invoice_by_token(p_token text)
+returns table (
+  bill_to_name text, pax integer, event_date date, event_time time,
+  total numeric, note text, issued_at timestamptz, paid numeric, outstanding numeric
+)
+language sql
+security definer
+set search_path = public
+as $function$
+  select i.bill_to_name, i.pax, i.event_date, r.reservation_time,
+         i.total, i.note, i.issued_at,
+         coalesce((select sum(p.amount) from invoice_payments p
+                    where p.reservation_id = i.reservation_id), 0),
+         i.total - coalesce((select sum(p.amount) from invoice_payments p
+                              where p.reservation_id = i.reservation_id), 0)
+    from invoices i
+    left join reservations r on r.id = i.reservation_id
+   where i.token = p_token
+     and i.status = 'issued'
+   limit 1;
+$function$;
+
+grant execute on function public.deposit_invoice_by_token(text) to anon, authenticated;
+
+-- ---------- The three staff actions, as functions ----------
+-- These change status AND money together. Done from the client they would be
+-- two calls, and a booking could end up paid-but-still-Incoming, or moved
+-- without its payment. One transaction each.
+
+-- 1. Record a deposit payment. Clearing the balance locks the booking.
+drop function if exists public.record_deposit_payment(uuid, numeric, date, text, text, text, uuid);
+create or replace function public.record_deposit_payment(
+  p_reservation_id uuid, p_amount numeric, p_paid_on date,
+  p_method text default null, p_reference text default null,
+  p_note text default null, p_staff_id uuid default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $function$
+  declare
+    v_res      record;
+    v_paid     numeric;
+    v_expected numeric;
+  begin
+    if p_amount is null or p_amount = 0 then
+      return jsonb_build_object('ok', false, 'code', 'invalid_amount',
+        'message', 'A payment cannot be zero');
+    end if;
+
+    select id, status, deposit_expected into v_res
+      from reservations where id = p_reservation_id and deleted_at is null;
+    if v_res.id is null then
+      return jsonb_build_object('ok', false, 'code', 'not_found',
+        'message', 'That booking no longer exists');
+    end if;
+
+    insert into invoice_payments
+      (reservation_id, amount, paid_on, method, reference, note, recorded_by)
+    values
+      (p_reservation_id, p_amount, coalesce(p_paid_on, current_date),
+       p_method, p_reference, p_note, p_staff_id);
+
+    select coalesce(sum(amount), 0) into v_paid
+      from invoice_payments where reservation_id = p_reservation_id;
+    v_expected := coalesce(v_res.deposit_expected, 0);
+
+    -- Clearing the balance locks the booking, in this same transaction, so it
+    -- cannot be a forgotten second click. A PARTIAL payment leaves it Incoming
+    -- and does NOT move the deadline: otherwise a guest holds a table forever
+    -- by sending Rp 1.000 a day.
+    if v_res.status = 'Incoming' and v_paid >= v_expected and v_expected > 0 then
+      update reservations
+         set status = 'Reserved', updated_at = now()
+       where id = p_reservation_id;
+      return jsonb_build_object('ok', true, 'status', 'Reserved',
+        'paid', v_paid, 'outstanding', 0, 'locked', true);
+    end if;
+
+    return jsonb_build_object('ok', true, 'status', v_res.status,
+      'paid', v_paid, 'outstanding', greatest(v_expected - v_paid, 0),
+      'locked', false);
+  end;
+  $function$;
+
+-- 2. Waive the deposit. ANY staff member may, and the reason is REQUIRED.
+-- deposit_rule_note is what makes a waived deposit distinguishable from one
+-- that was never required; without a reason a report cannot tell "this area
+-- asks for nothing" from "somebody comped it".
+drop function if exists public.waive_deposit(uuid, text, uuid);
+create or replace function public.waive_deposit(
+  p_reservation_id uuid, p_reason text, p_staff_id uuid default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $function$
+  declare
+    v_res  record;
+    v_who  text;
+  begin
+    if coalesce(btrim(p_reason), '') = '' then
+      return jsonb_build_object('ok', false, 'code', 'reason_required',
+        'message', 'A reason is required to waive a deposit');
+    end if;
+
+    select id, status into v_res
+      from reservations where id = p_reservation_id and deleted_at is null;
+    if v_res.id is null then
+      return jsonb_build_object('ok', false, 'code', 'not_found',
+        'message', 'That booking no longer exists');
+    end if;
+
+    select coalesce(display_name, username) into v_who
+      from staff_users where id = p_staff_id;
+
+    -- Payment rows are NOT deleted. Money that arrived is a fact; the waiver
+    -- only changes what is still owed.
+    update reservations
+       set status            = case when status = 'Incoming' then 'Reserved' else status end,
+           deposit_required  = false,
+           deposit_due_at    = null,
+           deposit_rule_note = format('Waived by %s on %s: %s',
+                                 coalesce(v_who, 'staff'),
+                                 to_char(now() at time zone 'Asia/Jakarta', 'YYYY-MM-DD HH24:MI'),
+                                 btrim(p_reason)),
+           updated_at        = now()
+     where id = p_reservation_id;
+
+    return jsonb_build_object('ok', true, 'status', 'Reserved', 'waived', true);
+  end;
+  $function$;
+
+-- 3. The expiry sweep. Called by pg_cron AND by the staff app on load: same
+-- function, two triggers, so a client project without cron still self-heals
+-- and there is nothing to reimplement.
+drop function if exists public.expire_unpaid_deposits();
+create or replace function public.expire_unpaid_deposits()
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $function$
+  declare v_n integer;
+  begin
+    with victims as (
+      select r.id
+        from reservations r
+       where r.status = 'Incoming'
+         and r.deleted_at is null
+         and r.deposit_due_at is not null
+         and r.deposit_due_at <= now()
+         -- NEVER expire a booking somebody has paid towards, even partly.
+         -- Someone who has sent money is a conversation, not a cleanup job.
+         and not exists (
+           select 1 from invoice_payments p where p.reservation_id = r.id
+         )
+    )
+    update reservations r
+       set status             = 'Cancelled',
+           deposit_expired_at = now(),
+           notes              = coalesce(nullif(r.notes, '') || ' | ', '')
+                                || 'Dibatalkan otomatis: DP tidak diterima sebelum jam reservasi.',
+           updated_at         = now()
+      from victims v
+     where r.id = v.id;
+    get diagnostics v_n = row_count;
+
+    -- A dead invoice link should stop working rather than invite a payment for
+    -- a booking that no longer exists.
+    update invoices i
+       set status = 'void', voided_at = now(),
+           void_reason = 'Reservation expired unpaid'
+      from reservations r
+     where r.id = i.reservation_id
+       and i.status = 'issued'
+       and r.deposit_expired_at is not null
+       and i.voided_at is null;
+
+    return v_n;
+  end;
+  $function$;
+
+grant execute on function public.expire_unpaid_deposits() to anon, authenticated;
+grant execute on function public.record_deposit_payment(uuid, numeric, date, text, text, text, uuid) to anon, authenticated;
+grant execute on function public.waive_deposit(uuid, text, uuid) to anon, authenticated;
+
+-- Counting scheduled jobs needs care: a bare `select from cron.job` fails to
+-- PLAN when pg_cron is not installed, so a `where exists (...)` guard around it
+-- never gets the chance to run. Dynamic SQL defers the name lookup to runtime.
+create or replace function public.cron_job_count(p_name text)
+returns integer
+language plpgsql
+stable
+as $function$
+  declare n integer := 0;
+  begin
+    if to_regclass('cron.job') is not null then
+      execute 'select count(*) from cron.job where jobname = $1' into n using p_name;
+    end if;
+    return n;
+  end;
+  $function$;
+
+-- ---------- Schedule it ----------
+-- Every 10 minutes. The deadline is a booking time, so minute-level precision
+-- buys nothing and a tighter schedule just wakes the database more often.
+-- Wrapped because pg_cron may not be installed on a given client project; the
+-- staff app calls the same function on load either way.
+do $$ begin
+  if exists (select 1 from pg_extension where extname = 'pg_cron') then
+    -- Through the helper, not a direct cron.job reference: consistent with the
+    -- confirm row, and it keeps working if this block is ever moved somewhere
+    -- the extension check no longer guards it.
+    perform cron.unschedule('intoch-expire-unpaid-deposits')
+      where public.cron_job_count('intoch-expire-unpaid-deposits') > 0;
+    perform cron.schedule('intoch-expire-unpaid-deposits', '*/10 * * * *',
+                          'select public.expire_unpaid_deposits();');
+  else
+    raise notice 'pg_cron not installed: expiry runs only when the staff app loads. Enable it in Database > Extensions.';
+  end if;
+end $$;
+
 -- ---------- Confirm ----------
 select 'areas.is_bookable_online' as checked, count(*) as found
 from information_schema.columns
@@ -5356,9 +5682,12 @@ where n.nspname = 'public' and p.proname = 'area_availability'
 union all
 -- Waitlist must NOT be treated as holding a seat. If this function ever starts
 -- counting it, a run of requests silently blocks the real bookings behind them.
-select 'the live function does not count Waitlist as held',
-       case when pg_get_functiondef(p.oid) like '%''Reserved'',''Confirmed'',''Arrived''%'
-            then 1 else 0 end
+-- Pins the INVARIANT, not one spelling of the list: no `status in (...)` clause
+-- anywhere in the function may mention Waitlist. The previous version matched an
+-- exact list and silently went stale the moment Incoming was added to it.
+select 'no held-status list counts Waitlist',
+       case when pg_get_functiondef(p.oid) ~ 'status in \([^)]*Waitlist'
+            then 0 else 1 end
 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
 where n.nspname = 'public' and p.proname = 'create_public_reservation'
 union all
@@ -5386,8 +5715,49 @@ select 'no deposit status column was added',
        case when count(*) = 0 then 1 else 0 end
 from information_schema.columns
 where table_schema = 'public' and table_name = 'reservations'
-  and column_name in ('deposit_paid', 'deposit_status', 'payment_status');
--- expect: 1, 4, 3, 1, 1, 1, [see below], 1, 1, 1, 1, 1, 1, 1, 1, 1
+  and column_name in ('deposit_paid', 'deposit_status', 'payment_status')
+union all
+select 'the status check allows Incoming (BOTH definitions)',
+       case when count(*) = 1 then 1 else 0 end
+from pg_constraint c
+where c.conname = 'reservations_status_check'
+  and pg_get_constraintdef(c.oid) like '%Incoming%'
+union all
+select 'reservations deposit_due_at', count(*)
+from information_schema.columns
+where table_schema = 'public' and table_name = 'reservations'
+  and column_name = 'deposit_due_at'
+union all
+select 'invoices table exists', count(*)
+from information_schema.tables
+where table_schema = 'public' and table_name = 'invoices'
+union all
+-- Incoming must HOLD a seat or the room is oversold while a guest transfers.
+select 'the booking gate counts Incoming as held',
+       case when pg_get_functiondef(p.oid) like '%''Reserved'',''Confirmed'',''Incoming'',''Arrived''%'
+            then 1 else 0 end
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname = 'create_public_reservation'
+union all
+select 'availability counts Incoming as held',
+       case when pg_get_functiondef(p.oid) like '%''Reserved'',''Confirmed'',''Incoming'',''Arrived''%'
+            then 1 else 0 end
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname = 'area_availability'
+union all
+select 'the three staff functions exist', count(*)
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public'
+  and p.proname in ('record_deposit_payment', 'waive_deposit', 'expire_unpaid_deposits')
+union all
+-- Without cron the sweep only runs when somebody opens the staff app.
+select 'pg_cron is installed', count(*) from pg_extension where extname = 'pg_cron'
+union all
+-- 1 once pg_cron is enabled. 0 is not a failure: it means the sweep runs only
+-- when the staff app loads, which still works.
+select 'the expiry job is scheduled',
+       public.cron_job_count('intoch-expire-unpaid-deposits');
+-- expect: 1, 4, 3, 1, 1, 1, [see below], 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1
 --
 -- "no area is bookable online yet" returns 1 only BEFORE any area is switched
 -- on. Indoor Dining was switched on 2026-09-05, so it now returns 0 and that is

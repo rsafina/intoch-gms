@@ -2375,7 +2375,19 @@ function syncVipFromTime() {
 // hand. Nothing sets that status today, so it cost nothing; the deposit flow
 // promotes a paid booking to Confirmed, at which point every paid booking would
 // have vanished from the capacity cards and stopped blocking its own table.
-const RES_HOLDS_SEAT_STATUSES = ["Reserved", "Confirmed", "Arrived"];
+//
+// "Incoming" is here for the opposite reason, and it is the more dangerous of
+// the two. An Incoming booking is somebody who has been given a table and is
+// standing at an ATM. Leave it out of this list and the app cheerfully sells
+// that same table to the next person, who pays, and now two parties arrive for
+// one table with both deposits taken. This mirrors the status lists spelled out
+// inline in create_public_reservation's date_full check and in
+// area_availability(); all three must agree or the room is oversold in exactly
+// one of the three places nobody is looking at.
+//
+// "Waitlist" is deliberately NOT here. A waitlisted party has not been agreed
+// to, so holding a seat for them would block the bookings behind them.
+const RES_HOLDS_SEAT_STATUSES = ["Reserved", "Confirmed", "Incoming", "Arrived"];
 
 // Returns conflicting booking description, or null if the slot is free.
 async function findVipTimeConflict(tableId, date, startTime, endTime, excludeResId) {
@@ -5903,6 +5915,12 @@ async function saveReservation() {
 }
 
 async function loadReservations() {
+  // Runs once a session. pg_cron does this every ten minutes; doing it here
+  // too is what makes the feature work on a client project where cron is not
+  // available, without a second implementation to keep in step. Awaited so
+  // the list that renders next already reflects it.
+  await sweepExpiredDeposits();
+
   // A guest search is date-independent, so it owns the table while it's
   // active. Every "reload the list" path in the app funnels through
   // loadReservations() (status update, table assignment, delete, rename,
@@ -6574,6 +6592,10 @@ async function renderReservationsTable(data) {
     return;
   }
 
+  // Balances first: depositRowBadge() reads them synchronously while building
+  // the rows, so a render that beat this call would silently show no deposits.
+  await loadDepositBalances(data);
+
   // Attach visit counts
   const allGuestIds = data.map((r) => ({ guest_id: r.guest_id }));
   if (allGuestIds.length) {
@@ -6671,6 +6693,7 @@ async function renderReservationsTable(data) {
         "</span></td>" +
         '<td class="px-5 py-3.5">' +
         statusBadge(r.status) +
+        depositRowBadge(r) +
         "</td>" +
         '<td class="px-5 py-3.5"><div class="flex items-center gap-3"><a href="reservation-confirmation.html?id=' +
         r.id +
@@ -6697,7 +6720,24 @@ async function openResActions(resId) {
   );
   if (error || !res) return;
 
+  // Balance drives the deposit panel below. Fetched here rather than reused
+  // from the list, because this modal is opened from a row that may have been
+  // on screen for hours.
+  const { data: bals } = await supabaseQuery(
+    () =>
+      db
+        .from("reservation_deposit_balances")
+        .select("expected, paid, outstanding, state")
+        .eq("reservation_id", resId),
+    "Failed to load the deposit balance",
+  );
+  const bal = (bals || [])[0] || null;
+
   const STATUSES = [
+    // Only listed when the booking is actually in it. Incoming is not a
+    // status anyone sets; it is one the booking arrives in and leaves by
+    // paying. Showing it always would invite exactly the click this refuses.
+    ...(res.status === "Incoming" ? ["Incoming"] : []),
     "Reserved",
     "Arrived",
     "Completed",
@@ -6712,11 +6752,23 @@ async function openResActions(resId) {
       <p class="text-xs text-[#999]">${fmt.time(res.reservation_time)} · ${fmt.pax(res.pax)}</p>
       ${res.reservation_source ? `<p class="text-xs text-[#999] mt-1">Source: ${escapeHtml(res.reservation_source)}</p>` : ""}
     </div>
+    ${depositActionsPanel(res, bal)}
     <p class="text-xs text-[#999] uppercase tracking-wider mb-3 font-medium">Update Status</p>
     <div class="grid grid-cols-2 gap-2 mb-4">
       ${STATUSES.map(
         (s) => `
-        <button onclick="${s === "Completed" ? `openCompleteReservation('${res.id}')` : `updateResStatus('${res.id}','${s}')`}" 
+        <button onclick="${
+          // The ONE blocked transition. Arrived and Cancelled stay available
+          // on an Incoming booking, because a guest turning up without having
+          // paid and a guest backing out are both real and both need
+          // recording. Only Reserved is refused, because that is the one that
+          // would claim money arrived when none did.
+          s === "Incoming" || (s === "Reserved" && res.status === "Incoming")
+            ? "explainIncomingLock()"
+            : s === "Completed"
+              ? `openCompleteReservation('${res.id}')`
+              : `updateResStatus('${res.id}','${s}')`
+        }" 
           class="text-sm py-2.5 px-3 rounded-10 border transition-all text-left font-medium ${res.status === s ? "border-[color:var(--brand)] bg-[#EEF3F7] text-[color:var(--brand)]" : "border-[#E0DDD7] text-[#555] hover:border-[color:var(--brand)]"}">
           ${s}
         </button>
@@ -7167,7 +7219,629 @@ async function editReservation(resId) {
   if (data) openReservationModal(data);
 }
 
+// ============================================================
+// DEPOSITS: chasing, recording, waiving
+// ============================================================
+// See DEPOSIT_FLOW_SPEC.md. The whole shape of this section is three doors
+// out of one status:
+//
+//   Incoming --record a payment that clears the balance--> Reserved
+//   Incoming --waive it, with a written reason----------> Reserved
+//   Incoming --nobody pays before the booking time------> Cancelled (swept)
+//
+// There is deliberately no fourth door. In particular staff CANNOT click
+// "Reserved" in the status grid on an Incoming booking: that would lock a
+// table with neither money against it nor a reason for the exception, and a
+// week later nobody could tell "they paid" from "somebody clicked the wrong
+// button". Both legitimate doors write a record; a status click writes none.
+//
+// NOTHING in here trusts the row on screen. The reservations list sits open
+// on a front-desk PC all day while a colleague on another machine records the
+// payment, so every action re-fetches first and lets the database decide.
+
+// Balances for the rows currently rendered, keyed by reservation id. Reset on
+// every render so a stale balance can never outlive the row it described.
+let resDepositBalances = {};
+
+async function loadDepositBalances(rows) {
+  resDepositBalances = {};
+  const ids = (rows || []).filter((r) => r && r.id && r.deposit_required).map((r) => r.id);
+  if (!ids.length) return;
+  const { data, error } = await supabaseQuery(
+    () =>
+      db
+        .from("reservation_deposit_balances")
+        .select("reservation_id, expected, paid, outstanding, state")
+        .in("reservation_id", ids),
+    "Failed to load deposit balances",
+  );
+  // A missing badge is a cosmetic loss. A blank reservations list because the
+  // balances view hiccuped is an outage, so this never blocks the render.
+  if (error || !data) return;
+  data.forEach((b) => {
+    resDepositBalances[b.reservation_id] = b;
+  });
+}
+
+function depositRupiah(n) {
+  return "Rp " + Number(n || 0).toLocaleString("id-ID");
+}
+
+// Compact, because this lives inside a table cell beside a status badge.
+// The unit letters follow the staff language: "h" means hours to an English
+// reader and "hari" to an Indonesian one, which is a 24x difference in the
+// one number staff use to decide who to chase first.
+function depositDeadline(dueAt) {
+  if (!dueAt) return null;
+  const ms = new Date(dueAt).getTime() - Date.now();
+  if (!isFinite(ms)) return null;
+  if (ms <= 0) return { label: t("overdue"), overdue: true };
+  const id = CURRENT_LANG === "id";
+  const mins = Math.round(ms / 60000);
+  if (mins < 60) return { label: mins + (id ? "mnt" : "m"), overdue: false };
+  const hrs = Math.round(mins / 60);
+  if (hrs < 48) return { label: hrs + (id ? "jam" : "h"), overdue: false };
+  return { label: Math.round(hrs / 24) + (id ? "hr" : "d"), overdue: false };
+}
+
+function depositChip(text, cls) {
+  return (
+    '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ' +
+    cls +
+    '">' +
+    escapeHtml(text) +
+    "</span>"
+  );
+}
+
+// Sits under the status badge on the reservations row. The status badge says
+// which queue the booking is in; THIS says how urgent, and it is the only one
+// of the two that turns red.
+function depositRowBadge(r) {
+  const bal = resDepositBalances[r.id];
+  if (!bal || bal.state === "none") return "";
+  if (bal.state === "paid")
+    return '<div class="mt-1.5">' + depositChip(t("Deposit paid"), "bg-green-50 text-green-700") + "</div>";
+  const dl = depositDeadline(r.deposit_due_at);
+  const owed = depositRupiah(bal.outstanding);
+  const label =
+    (bal.state === "partial" ? t("Part paid") + " · " : "") + owed + (dl ? " · " + dl.label : "");
+  return (
+    '<div class="mt-1.5">' +
+    depositChip(label, dl && dl.overdue ? "bg-red-100 text-red-700" : "bg-cyan-50 text-cyan-800") +
+    "</div>"
+  );
+}
+
+// The absolute URL of the public payment page, resolved against whatever page
+// the staff app is being served from. Deliberately NOT a configured base URL:
+// a wrong one produces a link that 404s in a guest's phone and nowhere else,
+// and there is no reason to make that mistake possible.
+function depositInvoiceUrl(token) {
+  return new URL("deposit-invoice.html?t=" + encodeURIComponent(token), window.location.href).href;
+}
+
+// ── The expiry sweep ──────────────────────────────────────────────────────
+// pg_cron runs this every ten minutes. Running it again when staff open the
+// reservations list is what makes the feature work on a client project where
+// cron is unavailable: same function, two triggers, nothing reimplemented.
+// It is idempotent, so a double run is harmless.
+let depositSweepDone = false;
+
+async function sweepExpiredDeposits() {
+  if (depositSweepDone) return;
+  // Set BEFORE awaiting: two loads firing at once must not both sweep.
+  depositSweepDone = true;
+  const { error } = await supabaseQuery(
+    () => db.rpc("expire_unpaid_deposits"),
+    "Failed to expire unpaid deposits",
+  );
+  // A red toast on every page load would be noise, but staying silent is how
+  // the area saves went unnoticed for days. One warning in the console, and
+  // the badge on the row still shows the booking as overdue, so an expiry
+  // that never runs is visible on screen rather than invisible everywhere.
+  if (error) console.warn("expire_unpaid_deposits failed", error);
+}
+
+// ── 1. Generate the invoice and chase on WhatsApp ─────────────────────────
+let depositActionResId = null;
+let depositActionRes = null;
+
+async function openDepositInvoice(resId) {
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can issue an invoice"), "error");
+    return;
+  }
+  const cfg = reservationFormSettings();
+  const hasBank = String(cfg.bank_details || "").trim().length > 0;
+  const hasQris = String(cfg.qris_url || "").trim().length > 0;
+  if (!hasBank && !hasQris) {
+    // Refusing is the point. An invoice page with nothing to pay into wastes
+    // the one message the guest will actually open.
+    toast(t("Add bank details or a QRIS image in Settings first"), "error");
+    return;
+  }
+  const { data: res, error } = await supabaseQuery(
+    () =>
+      db
+        .from("reservations")
+        .select(
+          "id, status, pax, reservation_date, reservation_time, deposit_required, deposit_expected, deposit_due_at, guest_id, guests(name, phone)",
+        )
+        .eq("id", resId)
+        .single(),
+    "Failed to load the booking",
+  );
+  if (error || !res) return;
+  if (!res.deposit_required || !(Number(res.deposit_expected) > 0)) {
+    toast(t("This booking has no deposit to invoice"), "error");
+    return;
+  }
+  if (!res.guests || !res.guests.phone) {
+    toast(t("This guest has no phone number — add one first"), "error");
+    return;
+  }
+  depositActionResId = resId;
+  depositActionRes = res;
+  const dl = res.deposit_due_at
+    ? new Date(res.deposit_due_at).toLocaleString(CURRENT_LANG === "id" ? "id-ID" : "en-GB", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "-";
+  const el = (id) => document.getElementById(id);
+  if (el("dep-inv-summary"))
+    el("dep-inv-summary").innerHTML =
+      '<p class="font-medium text-[#222]">' +
+      escapeHtml(res.guests.name || "—") +
+      "</p>" +
+      '<p class="text-xs text-[#999] mt-0.5">' +
+      escapeHtml(fmt.pax(res.pax)) +
+      " · " +
+      escapeHtml(fmt.time(res.reservation_time)) +
+      "</p>" +
+      '<p class="text-sm mt-2">' +
+      escapeHtml(t("Deposit")) +
+      ': <span class="font-display text-lg text-[color:var(--brand-ink)]">' +
+      escapeHtml(depositRupiah(res.deposit_expected)) +
+      "</span></p>" +
+      '<p class="text-xs text-[#999] mt-0.5">' +
+      escapeHtml(t("Due by") + " " + dl) +
+      "</p>";
+  if (el("dep-inv-note")) el("dep-inv-note").value = "";
+  hideModal("modal-res-actions");
+  showModal("modal-deposit-invoice");
+}
+
+async function submitDepositInvoice() {
+  // Re-checked here as well as in the opener: this function is reachable from
+  // the console, and "the button was hidden" is not an access control.
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can issue an invoice"), "error");
+    return;
+  }
+  const resId = depositActionResId;
+  const res = depositActionRes;
+  if (!resId || !res) return;
+  const note = String(document.getElementById("dep-inv-note")?.value || "").trim().slice(0, 300);
+  const expected = Number(res.deposit_expected);
+
+  loader(true);
+  // Reuse the live invoice instead of minting a second token for the same
+  // booking. Two live links is two versions of the truth and the guest opens
+  // whichever one they happen to scroll to. A CHANGED amount is different: the
+  // old link would keep quoting the old figure, so that one is voided.
+  const { data: live } = await supabaseQuery(
+    () =>
+      db
+        .from("invoices")
+        .select("id, token, total")
+        .eq("reservation_id", resId)
+        .eq("status", "issued")
+        .order("issued_at", { ascending: false }),
+    "Failed to check existing invoices",
+  );
+  let invoice = (live || []).find((i) => Number(i.total) === expected) || null;
+  const stale = (live || []).filter((i) => !invoice || i.id !== invoice.id);
+  for (const s of stale) {
+    await supabaseQuery(
+      () =>
+        db
+          .from("invoices")
+          .update({ status: "void", voided_at: new Date().toISOString(), voided_by: currentStaffId(), void_reason: "Reissued with a different amount" })
+          .eq("id", s.id)
+          .select("id"),
+      "Failed to void the old invoice",
+    );
+  }
+
+  if (invoice) {
+    const { data: upd, error: updErr } = await supabaseQuery(
+      () => db.from("invoices").update({ note: note || null }).eq("id", invoice.id).select("id, token"),
+      "Failed to update the invoice",
+    );
+    // PostgREST answers 204 for an update that matched nothing, which is
+    // byte-identical to success. An empty result is a failure, always.
+    if (updErr || !upd || !upd.length) {
+      loader(false);
+      toast(t("Could not update the invoice"), "error");
+      return;
+    }
+  } else {
+    const { data: ins, error: insErr } = await supabaseQuery(
+      () =>
+        db
+          .from("invoices")
+          .insert({
+            reservation_id: resId,
+            guest_id: res.guest_id,
+            kind: "deposit",
+            // Copied, not joined. An invoice states what was agreed on a date;
+            // joining live would silently rewrite history when a guest is renamed.
+            bill_to_name: res.guests?.name || null,
+            pax: res.pax,
+            event_date: res.reservation_date,
+            total: expected,
+            note: note || null,
+            issued_by: currentStaffId(),
+          })
+          .select("id, token"),
+      "Failed to create the invoice",
+    );
+    if (insErr || !ins || !ins.length) {
+      loader(false);
+      toast(t("Could not create the invoice"), "error");
+      return;
+    }
+    invoice = ins[0];
+  }
+
+  // A record that a message was sent, not a tick somebody can set. Written
+  // before WhatsApp opens, because the window may never come back.
+  await supabaseQuery(
+    () =>
+      db
+        .from("reservations")
+        .update({ deposit_asked_at: new Date().toISOString() })
+        .eq("id", resId)
+        .select("id"),
+    "Failed to record the request",
+  );
+  loader(false);
+
+  const link = depositInvoiceUrl(invoice.token);
+  const deadline = res.deposit_due_at
+    ? new Date(res.deposit_due_at).toLocaleString("id-ID", {
+        day: "numeric",
+        month: "long",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "-";
+  await waLoadTemplates();
+  const opened = waOpenChat(
+    res.guests.phone,
+    waDepositRequestMessage({
+      guestName: res.guests.name,
+      resDate: res.reservation_date,
+      resTime: res.reservation_time,
+      pax: res.pax,
+      amountText: depositRupiah(expected),
+      deadlineText: deadline,
+      link,
+    }),
+  );
+  hideModal("modal-deposit-invoice");
+  // The invoice exists whether or not WhatsApp opened, so say so, and hand
+  // over the link. A popup blocker must not cost staff the work they just did.
+  toast(opened ? t("Invoice created, WhatsApp opened") : t("Invoice created — copy the link from the booking"));
+  await loadReservations();
+}
+
+// ── 2. Record a payment ───────────────────────────────────────────────────
+async function openRecordDepositPayment(resId) {
+  const { data: res, error } = await supabaseQuery(
+    () =>
+      db
+        .from("reservations")
+        .select("id, status, deposit_required, deposit_expected, guests(name)")
+        .eq("id", resId)
+        .single(),
+    "Failed to load the booking",
+  );
+  if (error || !res) return;
+  const { data: bals } = await supabaseQuery(
+    () =>
+      db
+        .from("reservation_deposit_balances")
+        .select("expected, paid, outstanding, state")
+        .eq("reservation_id", resId),
+    "Failed to load the deposit balance",
+  );
+  const bal = (bals || [])[0] || { outstanding: res.deposit_expected, paid: 0 };
+  depositActionResId = resId;
+  const el = (id) => document.getElementById(id);
+  if (el("dep-pay-summary"))
+    el("dep-pay-summary").innerHTML =
+      '<p class="font-medium text-[#222]">' +
+      escapeHtml(res.guests?.name || "—") +
+      "</p>" +
+      '<p class="text-xs text-[#999] mt-0.5">' +
+      escapeHtml(
+        t("Owed") + " " + depositRupiah(bal.outstanding) + " " + t("of") + " " + depositRupiah(bal.expected != null ? bal.expected : res.deposit_expected),
+      ) +
+      "</p>";
+  // Prefilled with what is outstanding, which is the amount in almost every
+  // case, but editable: a guest who transferred the wrong figure is a fact to
+  // record, not an error to argue with.
+  if (el("dep-pay-amount")) el("dep-pay-amount").value = Number(bal.outstanding || 0) || "";
+  if (el("dep-pay-date")) el("dep-pay-date").value = TODAY;
+  if (el("dep-pay-method")) el("dep-pay-method").value = "";
+  if (el("dep-pay-ref")) el("dep-pay-ref").value = "";
+  if (el("dep-pay-note")) el("dep-pay-note").value = "";
+  hideModal("modal-res-actions");
+  showModal("modal-deposit-payment");
+}
+
+async function submitDepositPayment() {
+  const resId = depositActionResId;
+  if (!resId) return;
+  const raw = String(document.getElementById("dep-pay-amount")?.value || "").replace(/[^\d-]/g, "");
+  const amount = Number(raw);
+  if (!amount) {
+    toast(t("Enter the amount that was paid"), "error");
+    return;
+  }
+  loader(true);
+  // One RPC, not two calls. Recording the money and locking the booking happen
+  // in the same transaction so the pair can never be half-done, which is the
+  // state where a guest has paid and the table is still being sold.
+  const { data, error } = await supabaseQuery(
+    () =>
+      db.rpc("record_deposit_payment", {
+        p_reservation_id: resId,
+        p_amount: amount,
+        p_paid_on: document.getElementById("dep-pay-date")?.value || TODAY,
+        p_method: document.getElementById("dep-pay-method")?.value || null,
+        p_reference: document.getElementById("dep-pay-ref")?.value || null,
+        p_note: document.getElementById("dep-pay-note")?.value || null,
+        p_staff_id: currentStaffId(),
+      }),
+    "Failed to record the payment",
+  );
+  loader(false);
+  if (error) return;
+  // The function reports its own refusals in the payload rather than raising,
+  // so a false `ok` here is a real failure and must not be read as success.
+  if (!data || data.ok !== true) {
+    toast((data && data.message) || t("Could not record the payment"), "error");
+    return;
+  }
+  hideModal("modal-deposit-payment");
+  toast(
+    data.locked
+      ? t("Payment recorded — booking is now Reserved")
+      : t("Payment recorded") +
+        " — " +
+        depositRupiah(data.outstanding) +
+        " " +
+        t("still outstanding"),
+  );
+  await loadReservations();
+}
+
+// ── 3. Waive the deposit ──────────────────────────────────────────────────
+// Any staff member may, and the reason is required. Without a reason a report
+// cannot tell "this area asks for nothing" from "somebody comped it", and the
+// chef's guest is indistinguishable from a mistake.
+async function openWaiveDeposit(resId) {
+  depositActionResId = resId;
+  const el = document.getElementById("dep-waive-reason");
+  if (el) el.value = "";
+  hideModal("modal-res-actions");
+  showModal("modal-deposit-waive");
+}
+
+async function submitWaiveDeposit() {
+  const resId = depositActionResId;
+  if (!resId) return;
+  const reason = String(document.getElementById("dep-waive-reason")?.value || "").trim();
+  // Checked here as well as in the database. The server refusal is the one
+  // that counts; this one exists so staff get told before the round trip.
+  if (!reason) {
+    toast(t("A reason is required to waive a deposit"), "error");
+    return;
+  }
+  loader(true);
+  const { data, error } = await supabaseQuery(
+    () => db.rpc("waive_deposit", { p_reservation_id: resId, p_reason: reason, p_staff_id: currentStaffId() }),
+    "Failed to waive the deposit",
+  );
+  loader(false);
+  if (error) return;
+  if (!data || data.ok !== true) {
+    toast((data && data.message) || t("Could not waive the deposit"), "error");
+    return;
+  }
+  hideModal("modal-deposit-waive");
+  toast(t("Deposit waived — booking is now Reserved"));
+  await loadReservations();
+}
+
+// ── 4. Cancelling something that has been paid ────────────────────────────
+// This modal does not move money and does not pretend to. It exists so that
+// nobody cancels a paid booking without being asked the question out loud.
+// Rere: "Its hole-y but it works for now atleast." Recorded so the hole is a
+// known one rather than a discovered one.
+//
+// Returns TRUE when the caller should carry on with an ordinary cancellation,
+// FALSE when this has taken over and will finish the job itself.
+async function depositRefundGate(resId) {
+  const { data: pays, error } = await supabaseQuery(
+    () => db.from("invoice_payments").select("amount").eq("reservation_id", resId),
+    "Failed to check for payments",
+  );
+  // If we cannot tell whether money arrived, do NOT quietly fall through to a
+  // plain confirm(): that is precisely how a paid booking gets cancelled with
+  // nobody asked. Stop and let staff retry.
+  if (error) {
+    toast(t("Could not check for payments — try again"), "error");
+    return false;
+  }
+  const total = (pays || []).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  if (total <= 0) return true;
+
+  depositActionResId = resId;
+  const el = (id) => document.getElementById(id);
+  if (el("dep-refund-amount")) el("dep-refund-amount").textContent = depositRupiah(total);
+  ["dep-refund-yes", "dep-refund-no"].forEach((id) => {
+    const r = el(id);
+    if (r) r.checked = false;
+  });
+  if (el("dep-refund-note")) el("dep-refund-note").value = "";
+  el("dep-refund-error")?.classList.add("hidden");
+  hideModal("modal-res-actions");
+  showModal("modal-deposit-refund");
+  return false;
+}
+
+async function submitDepositRefundAck() {
+  const resId = depositActionResId;
+  if (!resId) return;
+  const yes = document.getElementById("dep-refund-yes")?.checked;
+  const no = document.getElementById("dep-refund-no")?.checked;
+  // Neither preselected and neither optional: an unanswered question that
+  // defaults to "yes, refunded" is worse than no question at all.
+  if (!yes && !no) {
+    document.getElementById("dep-refund-error")?.classList.remove("hidden");
+    return;
+  }
+  const note = String(document.getElementById("dep-refund-note")?.value || "").trim();
+  const stamp = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+  const line =
+    "[DP] " +
+    (yes ? t("Refunded") : t("NOT refunded")) +
+    " · " +
+    stamp +
+    (note ? " · " + note : "");
+
+  loader(true);
+  // Appended to the booking notes rather than dropped into a new column: the
+  // notes are already on the row, already exported, and already what staff
+  // read. A field nobody looks at is not a record.
+  const { data: res } = await supabaseQuery(
+    () => db.from("reservations").select("notes").eq("id", resId).single(),
+    "Failed to load the booking",
+  );
+  const notes = [String((res && res.notes) || "").trim(), line].filter(Boolean).join("\n");
+  const { data: upd, error } = await supabaseQuery(
+    () => db.from("reservations").update({ status: "Cancelled", notes }).eq("id", resId).select("id"),
+    "Failed to cancel the booking",
+  );
+  loader(false);
+  if (error || !upd || !upd.length) {
+    toast(t("Could not cancel the booking"), "error");
+    return;
+  }
+  hideModal("modal-deposit-refund");
+  toast(yes ? t("Cancelled and marked refunded") : t("Cancelled — refund still outstanding"));
+  await loadReservations();
+}
+
+// ── The panel inside the Update Reservation modal ─────────────────────────
+// Built as a string so it drops into the existing modal template. Returns ""
+// for every booking with no deposit, which is most of them: an area that asks
+// for nothing must look exactly as it did before this feature existed.
+function depositActionsPanel(res, bal) {
+  if (!res || !res.deposit_required || !(Number(res.deposit_expected) > 0)) return "";
+  const owed = bal ? Number(bal.outstanding || 0) : Number(res.deposit_expected);
+  const paid = bal ? Number(bal.paid || 0) : 0;
+  const settled = owed <= 0;
+  const dl = depositDeadline(res.deposit_due_at);
+  return (
+    '<div class="mb-4 p-3 rounded-10 border ' +
+    (settled ? "border-green-200 bg-green-50" : "border-cyan-200 bg-cyan-50") +
+    '">' +
+    '<p class="text-xs uppercase tracking-wider font-medium ' +
+    (settled ? "text-green-700" : "text-cyan-800") +
+    '">' +
+    escapeHtml(t("Deposit")) +
+    "</p>" +
+    '<p class="font-display text-lg text-[#222] mt-1">' +
+    escapeHtml(settled ? t("Paid in full") : depositRupiah(owed) + " " + t("outstanding")) +
+    "</p>" +
+    '<p class="text-xs text-[#666] mt-0.5">' +
+    escapeHtml(
+      t("Expected") + " " + depositRupiah(res.deposit_expected) + " · " + t("received") + " " + depositRupiah(paid),
+    ) +
+    (dl && res.status === "Incoming"
+      ? " · " + escapeHtml(dl.overdue ? t("overdue") : t("due in") + " " + dl.label)
+      : "") +
+    "</p>" +
+    (res.deposit_asked_at
+      ? '<p class="text-xs text-[#999] mt-0.5">' +
+        escapeHtml(
+          t("Asked on") +
+            " " +
+            new Date(res.deposit_asked_at).toLocaleDateString(CURRENT_LANG === "id" ? "id-ID" : "en-GB", {
+              day: "numeric",
+              month: "short",
+            }),
+        ) +
+        "</p>"
+      : "") +
+    '<div class="flex flex-wrap gap-2 mt-3">' +
+    // Manager-gated in the markup AND in the function. applyManagerOnlyUI()
+    // hides this for staff; openDepositInvoice() refuses for them too, because
+    // a hidden button is a UI decision, not an access control.
+    (settled
+      ? ""
+      : '<button onclick="openDepositInvoice(\'' +
+        res.id +
+        '\')" class="manager-only-ui btn-primary text-xs px-3 py-1.5">' +
+        escapeHtml(t("Invoice & WhatsApp")) +
+        "</button>") +
+    (settled
+      ? ""
+      : '<button onclick="openRecordDepositPayment(\'' +
+        res.id +
+        '\')" class="btn-ghost text-xs px-3 py-1.5">' +
+        escapeHtml(t("Record payment")) +
+        "</button>") +
+    (settled
+      ? ""
+      : '<button onclick="openWaiveDeposit(\'' +
+        res.id +
+        '\')" class="btn-ghost text-xs px-3 py-1.5">' +
+        escapeHtml(t("Waive")) +
+        "</button>") +
+    "</div>" +
+    (res.status === "Incoming"
+      ? '<p class="text-[11px] text-[#666] mt-2 leading-snug">' +
+        escapeHtml(
+          t(
+            "This booking becomes Reserved when the deposit is recorded or waived. It cannot be moved by hand.",
+          ),
+        ) +
+        "</p>"
+      : "") +
+    "</div>"
+  );
+}
+
+// Why the status grid refuses to move an Incoming booking by hand. Spelling
+// out the two doors is more useful than a disabled button with no explanation.
+function explainIncomingLock() {
+  toast(t("Record the deposit payment or waive it — Incoming cannot be set to Reserved by hand"), "error");
+}
+
 async function cancelReservation(resId) {
+  // A booking with money against it cannot be cancelled with a yes/no.
+  // depositRefundGate returns false when it has taken the cancellation over
+  // and will finish it itself, true when nothing was paid and this can carry on.
+  if (!(await depositRefundGate(resId))) return;
   if (!confirm("Cancel this reservation?")) return;
   await updateResStatus(resId, "Cancelled");
 }
@@ -13512,7 +14186,22 @@ const RESERVATION_FORM_DEFAULTS = {
   // translate.
   pax_request: false,
   pax_request_label: null,
+  // Deposit payment details, shown on deposit-invoice.html. All null by
+  // default: a restaurant that asks for no deposit never sees this page, and
+  // one that does is REFUSED an invoice until at least one of bank_details or
+  // qris_url is set, rather than sending a guest a page with nothing to pay
+  // into. See DEPOSIT_FLOW_SPEC.md section 7.
+  bank_details: null,
+  qris_url: null,
+  // Where "Saya sudah transfer" goes. Without it the button is simply hidden,
+  // because a wa.me link built from a blank number opens a broken chat.
+  wa_number: null,
 };
+
+// Bank details are free text on purpose: an account number, a holder name and
+// a bank vary in shape by country and by bank, and a set of separate fields
+// would be wrong for the first client who has two accounts.
+const RESERVATION_BANK_MAX = 400;
 
 // The booking page truncates to the same number on read. Change one, change
 // the other: reserve.template.html, PAX_REQUEST_MAX.
@@ -13553,6 +14242,27 @@ function renderReservationFormFields() {
     pl.value = String(cfg.pax_request_label || "").slice(0, RESERVATION_PAX_REQUEST_MAX);
   renderPaxRequestLabelState();
   onReservationWelcomeInput();
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.value = v == null ? "" : String(v);
+  };
+  set("rff-bank", cfg.bank_details);
+  set("rff-wa", cfg.wa_number);
+  renderQrisPreview(cfg.qris_url);
+}
+
+// The uploaded QRIS, shown back so a manager can see WHICH code is live. A
+// filename alone does not tell you that, and a wrong QRIS sends money to
+// somebody else.
+function renderQrisPreview(url) {
+  const img = document.getElementById("rff-qris-preview");
+  const empty = document.getElementById("rff-qris-empty");
+  const ok = typeof url === "string" && /^https?:\/\//i.test(url.trim());
+  if (img) {
+    if (ok) img.src = url.trim();
+    img.classList.toggle("hidden", !ok);
+  }
+  if (empty) empty.classList.toggle("hidden", ok);
 }
 
 // The wording box is meaningless while the tick box is off, and a field that
@@ -13614,6 +14324,20 @@ async function saveReservationFormFields() {
     // client's own words: it is never run through the translation dictionary,
     // and the page prints it with textContent so it can never be markup.
     welcome_text: raw || null,
+    // Blank stays null so `generating an invoice is refused when nothing is
+    // configured` stays a simple null check rather than a trim-and-compare.
+    bank_details:
+      String(document.getElementById("rff-bank")?.value || "")
+        .trim()
+        .slice(0, RESERVATION_BANK_MAX) || null,
+    // Digits only, and stored without the +. wa.me wants 62812..., and a
+    // number pasted as "+62 812-3456" would otherwise produce a dead link that
+    // nobody notices until a guest cannot reach anyone.
+    wa_number:
+      String(document.getElementById("rff-wa")?.value || "").replace(/\D/g, "") || null,
+    // qris_url is NOT read from a field here: it is written by the uploader,
+    // which is the only thing that knows the storage URL. Listing it here
+    // would blank it on every save.
   };
 
   loader(true);
@@ -13660,6 +14384,108 @@ async function saveReservationFormFields() {
 // page. The reading half (CSS variables, validation, fallbacks) lives in
 // config.template.js under "RESERVATION PAGE APPEARANCE".
 const RESERVE_BG_PREFIX = "reserve-bg";
+const QRIS_PREFIX = "deposit-qris";
+
+// Uploads the QRIS shown on deposit-invoice.html. Mirrors
+// uploadReserveBackground(), including saving IMMEDIATELY so the file is never
+// left orphaned in storage with nothing pointing at it.
+async function uploadDepositQris() {
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can change settings"), "error");
+    return;
+  }
+  const file = document.getElementById("rff-qris-file")?.files?.[0];
+  if (!file) {
+    toast(t("Pick an image file first"), "error");
+    return;
+  }
+  const problem = validateBrandFile(file);
+  if (problem) {
+    toast(problem, "error");
+    return;
+  }
+
+  const btn = document.getElementById("rff-qris-upload");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = t("Uploading...");
+  }
+  loader(true);
+  try {
+    const ext = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[file.type];
+    const path = `${QRIS_PREFIX}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error: upErr } = await db.storage
+      .from(BRAND_BUCKET)
+      .upload(path, file, { contentType: file.type, upsert: false });
+    if (upErr) {
+      toast(upErr.message || t("Upload failed. Please try again."), "error");
+      return;
+    }
+    const { data: pub } = db.storage.from(BRAND_BUCKET).getPublicUrl(path);
+    const url = pub?.publicUrl || null;
+    if (!brandUrlOk(url)) {
+      toast(t("Upload failed. Please try again."), "error");
+      return;
+    }
+
+    const previous = (APP_SETTINGS.reservation_form || {}).qris_url;
+    const ok = await writeReservationFormValue({ qris_url: url });
+    if (!ok) return;
+    if (brandUrlOk(previous)) removeBrandImageByUrl(previous);
+    renderQrisPreview(url);
+    toast(t("QRIS updated"));
+  } finally {
+    loader(false);
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = t("Upload");
+    }
+  }
+}
+
+async function removeDepositQris() {
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can change settings"), "error");
+    return;
+  }
+  const previous = (APP_SETTINGS.reservation_form || {}).qris_url;
+  const ok = await writeReservationFormValue({ qris_url: null });
+  if (!ok) return;
+  if (brandUrlOk(previous)) removeBrandImageByUrl(previous);
+  renderQrisPreview(null);
+  toast(t("QRIS removed"));
+}
+
+// Merges ONE key into app_settings.reservation_form without touching the rest.
+// The uploader must not write the whole form: a manager who uploads a QRIS
+// while a colleague is mid-edit elsewhere would otherwise save that colleague's
+// half-typed screen. This key family has already lost data once by being
+// written as a fresh object.
+async function writeReservationFormValue(patch) {
+  const value = { ...(APP_SETTINGS.reservation_form || {}), ...patch };
+  const { data, error } = await supabaseQuery(
+    () =>
+      db
+        .from("app_settings")
+        .upsert(
+          { key: "reservation_form", value, updated_at: new Date().toISOString() },
+          { onConflict: "key" },
+        )
+        .select("value"),
+    "Failed to save settings",
+  );
+  if (error) {
+    toast(error.message || t("Unable to save settings"), "error");
+    return false;
+  }
+  // No row back means the write matched nothing and silently did nothing.
+  if (!data || !data.length) {
+    toast(t("Nothing was saved. Please try again."), "error");
+    return false;
+  }
+  APP_SETTINGS.reservation_form = data[0].value || value;
+  return true;
+}
 
 function reserveAppearanceForm() {
   const num = (id, fallback) => {

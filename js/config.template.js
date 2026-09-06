@@ -133,6 +133,21 @@ const ID_DICT = {
   "This deposit is larger than the minimum spend.":
     "Deposit ini lebih besar dari minimum belanja.",
   "Staff only": "Khusus staf",
+  // ── Deposit payment details (2026-09-06) ───────────────────
+  "Deposit payment details": "Detail pembayaran DP",
+  "Shown to a guest on the deposit invoice you send them. Fill in the bank details, the QRIS, or both.":
+    "Ditampilkan ke tamu di invoice DP yang Anda kirim. Isi detail bank, QRIS, atau keduanya.",
+  "Bank transfer details": "Detail transfer bank",
+  "Free text, shown exactly as typed. Bank, account number and account holder.": "Teks bebas, ditampilkan persis seperti yang diketik. Bank, nomor rekening, dan nama pemilik.",
+  "QRIS image": "Gambar QRIS",
+  "PNG or JPG, max 2 MB. Upload the same code you would put on the counter.": "PNG atau JPG, maks 2 MB. Unggah kode yang sama seperti yang Anda pasang di kasir.",
+  "No QRIS uploaded": "Belum ada QRIS",
+  "WhatsApp number for payment confirmation": "Nomor WhatsApp untuk konfirmasi pembayaran",
+  "Where the guest's \"I have transferred\" message goes. Country code first, no plus sign. Leave empty to hide that button.":
+    "Tujuan pesan \"saya sudah transfer\" dari tamu. Kode negara dulu, tanpa tanda plus. Kosongkan untuk menyembunyikan tombol itu.",
+  "QRIS updated": "QRIS diperbarui",
+  "QRIS removed": "QRIS dihapus",
+  "Nothing was saved. Please try again.": "Tidak ada yang tersimpan. Silakan coba lagi.",
   "Nothing was saved. The area may have been deleted, or the database refused the change.":
     "Tidak ada yang tersimpan. Area mungkin sudah dihapus, atau database menolak perubahan.",
   "Saved, but the database did not keep the online booking settings.":
@@ -709,6 +724,60 @@ const ID_DICT = {
   // translating these here covers every reservation/walk-in table & card.
   Reserved: "Dipesan",
   Waitlist: "Daftar Tunggu",
+  // Not "Masuk". The status is about the DEPOSIT, not about the guest having
+  // arrived, and "Masuk" would be read as arrival by every front-desk staff
+  // member in the building.
+  Incoming: "Menunggu DP",
+
+  // ── Deposit flow (Phase 3, staff app) ──────────────────────────────
+  // Long sentences are single keys on purpose. Splitting one into "still "
+  // and " outstanding" makes two fragments no translator can reorder, and
+  // Indonesian puts them in the other order.
+  "Deposit paid": "DP lunas",
+  "Part paid": "DP sebagian",
+  "Paid in full": "Lunas",
+  overdue: "Lewat batas",
+  "due in": "sisa",
+  Expected: "Seharusnya",
+  received: "diterima",
+  outstanding: "belum dibayar",
+  "still outstanding": "belum dibayar",
+  "Due by": "Batas waktu",
+  "Asked on": "Ditagih tanggal",
+  Owed: "Kurang",
+  of: "dari",
+  "Invoice & WhatsApp": "Kirim invoice via WA",
+  "Record payment": "Catat pembayaran",
+  Waive: "Bebaskan DP",
+  "Only a manager can issue an invoice": "Hanya manager yang bisa membuat invoice",
+  "Add bank details or a QRIS image in Settings first":
+    "Isi rekening atau gambar QRIS di Pengaturan dulu ya",
+  "This booking has no deposit to invoice": "Reservasi ini tidak ada DP-nya",
+  "This guest has no phone number — add one first":
+    "Tamu ini belum punya nomor telepon — isi dulu ya",
+  "Could not create the invoice": "Invoice gagal dibuat",
+  "Could not update the invoice": "Invoice gagal diperbarui",
+  "Invoice created, WhatsApp opened": "Invoice dibuat, WhatsApp terbuka",
+  "Invoice created — copy the link from the booking":
+    "Invoice dibuat — salin tautannya dari reservasi",
+  "Enter the amount that was paid": "Isi jumlah yang dibayar",
+  "Could not record the payment": "Pembayaran gagal dicatat",
+  "Payment recorded — booking is now Reserved":
+    "Pembayaran dicatat — reservasi jadi Reserved",
+  "Payment recorded": "Pembayaran dicatat",
+  "A reason is required to waive a deposit": "Alasan wajib diisi untuk membebaskan DP",
+  "Could not waive the deposit": "DP gagal dibebaskan",
+  "Deposit waived — booking is now Reserved": "DP dibebaskan — reservasi jadi Reserved",
+  "Could not check for payments — try again": "Gagal mengecek pembayaran — coba lagi",
+  Refunded: "Sudah direfund",
+  "NOT refunded": "BELUM direfund",
+  "Could not cancel the booking": "Reservasi gagal dibatalkan",
+  "Cancelled and marked refunded": "Dibatalkan dan ditandai sudah direfund",
+  "Cancelled — refund still outstanding": "Dibatalkan — refund belum dilakukan",
+  "This booking becomes Reserved when the deposit is recorded or waived. It cannot be moved by hand.":
+    "Reservasi ini jadi Reserved setelah DP dicatat atau dibebaskan. Tidak bisa diubah manual.",
+  "Record the deposit payment or waive it — Incoming cannot be set to Reserved by hand":
+    "Catat pembayaran DP atau bebaskan dulu — Menunggu DP tidak bisa diubah manual jadi Reserved",
   // Waitlist reasons, shown as words in the reservations list. The stored value
   // is a code; staff should never have to read one.
   over_capacity: "Terlalu besar untuk area",
@@ -1446,6 +1515,16 @@ const STATUS_COLORS = {
   // decision. Orange is the "this wants a human" colour here, and Confirmed is
   // listed for the same reason.
   Waitlist: { bg: "bg-orange-50", text: "text-orange-700", dot: "bg-orange-500" },
+  // A booking holding a table while the guest pays the deposit. Cyan because
+  // every other colour here is taken and Incoming must not be mistaken for any
+  // of them, least of all Reserved (the statusBadge fallback) which would make
+  // an unpaid booking look secure.
+  //
+  // Deliberately NOT an alarm colour. The status badge answers "which queue is
+  // this in"; the deposit badge beside it answers "how urgent", and only that
+  // one turns red, when the deadline has passed. If both shouted, neither would
+  // mean anything on a list where every row is Incoming.
+  Incoming: { bg: "bg-cyan-50", text: "text-cyan-800", dot: "bg-cyan-500" },
   Confirmed: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500" },
   Arrived: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-400" },
   Cancelled: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-400" },

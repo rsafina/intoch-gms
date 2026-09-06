@@ -3022,6 +3022,17 @@
               >
                 Waitlist
               </button>
+              <!-- Bookings holding a table while the guest pays a deposit.
+                   Sorted soonest-expiry-first inside the list because this is
+                   a worklist: the thing about to be lost belongs at the top. -->
+              <button
+                onclick="filterResByStatus('Incoming')"
+                class="status-filter-btn btn-ghost text-xs px-3 py-1.5"
+                data-status="Incoming"
+                title="Bookings waiting on a deposit payment"
+              >
+                Incoming
+              </button>
               <button
                 onclick="filterResByStatus('Arrived')"
                 class="status-filter-btn btn-ghost text-xs px-3 py-1.5"
@@ -6957,6 +6968,68 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               </div>
             </div>
 
+            <!-- Deposit payment details. Shown on the invoice page a guest
+                 opens from WhatsApp. Empty is fine for a restaurant that asks
+                 for no deposit; one that does is refused an invoice until at
+                 least one of these is filled, rather than sending a guest a
+                 page with nothing to pay into. -->
+            <div class="pt-5 mb-5 border-t border-[#EDE9E3]">
+              <p class="text-xs font-medium text-[#555] mb-1" data-i18n>Deposit payment details</p>
+              <p class="text-[11px] text-[#999] mb-4" data-i18n>
+                Shown to a guest on the deposit invoice you send them. Fill in the bank
+                details, the QRIS, or both.
+              </p>
+
+              <div class="mb-4">
+                <label class="block text-[11px] text-[#777] mb-1" data-i18n>Bank transfer details</label>
+                <textarea
+                  id="rff-bank"
+                  maxlength="400"
+                  rows="3"
+                  class="form-input"
+                  placeholder="BCA 1234567890&#10;a.n. Nama Restoran"
+                ></textarea>
+                <p class="text-[11px] text-[#999] mt-1" data-i18n>
+                  Free text, shown exactly as typed. Bank, account number and account holder.
+                </p>
+              </div>
+
+              <div class="mb-4">
+                <label class="block text-[11px] text-[#777] mb-1" data-i18n>QRIS image</label>
+                <div class="flex items-start gap-4">
+                  <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                      <input id="rff-qris-file" type="file" accept="image/png,image/jpeg,image/webp" class="form-input flex-1" />
+                      <button id="rff-qris-upload" onclick="uploadDepositQris()" class="btn-primary px-4 py-2 whitespace-nowrap manager-only-ui" data-i18n>
+                        Upload
+                      </button>
+                      <button onclick="removeDepositQris()" class="btn-ghost px-4 py-2 whitespace-nowrap manager-only-ui" data-i18n>
+                        Remove
+                      </button>
+                    </div>
+                    <p class="text-[11px] text-[#999] mt-1" data-i18n>
+                      PNG or JPG, max 2 MB. Upload the same code you would put on the counter.
+                    </p>
+                  </div>
+                  <div class="w-24 shrink-0 text-center">
+                    <img id="rff-qris-preview" class="hidden w-24 h-24 object-contain rounded-lg border border-[#EDE9E3] bg-white p-1" alt="QRIS" />
+                    <p id="rff-qris-empty" class="text-[11px] text-[#BBB] leading-tight" data-i18n>
+                      No QRIS uploaded
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] text-[#777] mb-1" data-i18n>WhatsApp number for payment confirmation</label>
+                <input id="rff-wa" type="text" inputmode="numeric" class="form-input" placeholder="62812xxxxxxx" />
+                <p class="text-[11px] text-[#999] mt-1" data-i18n>
+                  Where the guest's "I have transferred" message goes. Country code first,
+                  no plus sign. Leave empty to hide that button.
+                </p>
+              </div>
+            </div>
+
             <div class="flex items-center gap-3">
               <button onclick="saveReservationFormFields()" class="btn-primary px-6 py-2.5 manager-only-ui" data-i18n>
                 Save Fields
@@ -8710,6 +8783,180 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
 
+
+    <!-- ══ DEPOSIT MODALS ══════════════════════════════════════════════
+         Four separate boxes rather than one that changes shape. Each is a
+         different question with a different consequence, and a modal that
+         reuses its fields is how "record a payment" gets submitted with the
+         waiver reason still sitting in a hidden input. -->
+
+    <!-- 1. Generate the invoice and open WhatsApp. Manager and admin only,
+            enforced in openDepositInvoice() as well as by this markup. -->
+    <div
+      id="modal-deposit-invoice"
+      class="modal-overlay hidden"
+      onclick="if (event.target === this) hideModal('modal-deposit-invoice');"
+    >
+      <div class="modal-box" style="max-width: 420px">
+        <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)] mb-4">
+          Send deposit request
+        </h2>
+        <div id="dep-inv-summary" class="mb-4 p-3 bg-[#F8F6F2] rounded-10"></div>
+        <label class="block text-xs text-[#999] uppercase tracking-wider mb-1.5 font-medium">
+          Note on the invoice (optional)
+        </label>
+        <textarea
+          id="dep-inv-note"
+          rows="2"
+          maxlength="300"
+          class="form-input text-sm w-full mb-4"
+          placeholder="e.g. DP dapat dipotong dari total bill"
+        ></textarea>
+        <!-- Says both things it does. Staff who expect only a link are the
+             ones who close the WhatsApp tab without sending. -->
+        <button
+          onclick="submitDepositInvoice()"
+          class="btn-primary w-full justify-center text-sm mb-2"
+        >
+          Create invoice & open WhatsApp
+        </button>
+        <button
+          onclick="hideModal('modal-deposit-invoice')"
+          class="btn-ghost w-full justify-center text-xs"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. Record a payment. Clearing the balance locks the booking, in the
+            same transaction, inside record_deposit_payment(). -->
+    <div
+      id="modal-deposit-payment"
+      class="modal-overlay hidden"
+      onclick="if (event.target === this) hideModal('modal-deposit-payment');"
+    >
+      <div class="modal-box" style="max-width: 420px">
+        <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)] mb-4">
+          Record deposit payment
+        </h2>
+        <div id="dep-pay-summary" class="mb-4 p-3 bg-[#F8F6F2] rounded-10"></div>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <div>
+            <label class="block text-xs text-[#999] uppercase tracking-wider mb-1.5 font-medium">
+              Amount
+            </label>
+            <input id="dep-pay-amount" type="number" inputmode="numeric" class="form-input text-sm w-full" />
+          </div>
+          <div>
+            <label class="block text-xs text-[#999] uppercase tracking-wider mb-1.5 font-medium">
+              Paid on
+            </label>
+            <input id="dep-pay-date" type="date" class="form-input text-sm w-full" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <div>
+            <!-- Free text on purpose. A dropdown here would be wrong for the
+                 first restaurant that takes a transfer this app never heard of. -->
+            <label class="block text-xs text-[#999] uppercase tracking-wider mb-1.5 font-medium">
+              Method
+            </label>
+            <input id="dep-pay-method" type="text" class="form-input text-sm w-full" placeholder="Transfer / QRIS / Cash" />
+          </div>
+          <div>
+            <label class="block text-xs text-[#999] uppercase tracking-wider mb-1.5 font-medium">
+              Reference
+            </label>
+            <input id="dep-pay-ref" type="text" class="form-input text-sm w-full" placeholder="Optional" />
+          </div>
+        </div>
+        <label class="block text-xs text-[#999] uppercase tracking-wider mb-1.5 font-medium">
+          Note (optional)
+        </label>
+        <input id="dep-pay-note" type="text" class="form-input text-sm w-full mb-4" />
+        <button onclick="submitDepositPayment()" class="btn-primary w-full justify-center text-sm mb-2">
+          Save payment
+        </button>
+        <button onclick="hideModal('modal-deposit-payment')" class="btn-ghost w-full justify-center text-xs">
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. Waive the deposit. Any staff member may; the reason is required
+            both here and in waive_deposit(), which refuses an empty one. -->
+    <div
+      id="modal-deposit-waive"
+      class="modal-overlay hidden"
+      onclick="if (event.target === this) hideModal('modal-deposit-waive');"
+    >
+      <div class="modal-box" style="max-width: 420px">
+        <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)] mb-2">
+          Waive this deposit
+        </h2>
+        <p class="text-xs text-[#666] mb-4 leading-snug">
+          The booking becomes Reserved without payment. Any payment already
+          recorded stays on the booking.
+        </p>
+        <label class="block text-xs text-[#999] uppercase tracking-wider mb-1.5 font-medium">
+          Reason (required)
+        </label>
+        <textarea
+          id="dep-waive-reason"
+          rows="3"
+          maxlength="300"
+          class="form-input text-sm w-full mb-4"
+          placeholder="e.g. Tamu chef, DP dibebaskan atas permintaan chef"
+        ></textarea>
+        <button onclick="submitWaiveDeposit()" class="btn-primary w-full justify-center text-sm mb-2">
+          Waive deposit
+        </button>
+        <button onclick="hideModal('modal-deposit-waive')" class="btn-ghost w-full justify-center text-xs">
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <!-- 4. Cancelling a booking that has money against it.
+            NO onclick-to-dismiss on the overlay: this is the one modal in the
+            app that must not be closable by a stray click on the background.
+            The whole point is that somebody is asked the question. -->
+    <div id="modal-deposit-refund" class="modal-overlay hidden">
+      <div class="modal-box" style="max-width: 420px">
+        <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)] mb-2">
+          This booking has been paid
+        </h2>
+        <p class="text-sm text-[#555] mb-4 leading-snug">
+          <span id="dep-refund-amount" class="font-display text-lg text-[color:var(--brand-ink)]">—</span>
+          has been received against this booking. Cancelling does not move any
+          money. Has it been refunded?
+        </p>
+        <div class="space-y-2 mb-3">
+          <label class="flex items-center gap-2 text-sm text-[#333] cursor-pointer">
+            <input type="radio" name="dep-refund" id="dep-refund-yes" class="accent-[color:var(--brand)]" />
+            Yes, already refunded
+          </label>
+          <label class="flex items-center gap-2 text-sm text-[#333] cursor-pointer">
+            <input type="radio" name="dep-refund" id="dep-refund-no" class="accent-[color:var(--brand)]" />
+            No, not refunded yet
+          </label>
+        </div>
+        <p id="dep-refund-error" class="hidden text-xs text-red-600 mb-3">
+          Choose one before cancelling.
+        </p>
+        <label class="block text-xs text-[#999] uppercase tracking-wider mb-1.5 font-medium">
+          Note (optional)
+        </label>
+        <input id="dep-refund-note" type="text" class="form-input text-sm w-full mb-4" />
+        <button onclick="submitDepositRefundAck()" class="btn-primary w-full justify-center text-sm mb-2">
+          Cancel the booking
+        </button>
+        <button onclick="hideModal('modal-deposit-refund')" class="btn-ghost w-full justify-center text-xs">
+          Keep the booking
+        </button>
+      </div>
+    </div>
     <!-- DELETE / VOID REASON MODAL (manager-only, used for both
          "Delete Reservation" and "Void Walk-In") -->
     <div
@@ -9297,13 +9544,13 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
 
-    <script src="js/config.js?v=20"></script>
+    <script src="js/config.js?v=29"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=32"></script>
+    <script src="js/app.js?v=41"></script>
     <script src="js/membership.js?v=6"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->
-    <script src="js/wa.js?v=11"></script>
+    <script src="js/wa.js?v=12"></script>
     <script src="js/broadcast.js?v=16"></script>
     <!-- campaign.js  = attribution maths + the Hasil tab
          campaign-editor.js = the campaign workspace (list, message, image,

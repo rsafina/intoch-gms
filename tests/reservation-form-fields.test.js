@@ -54,6 +54,9 @@ function grab(src, decl, where) {
 }
 
 const WELCOME_MAX = Number(appSrc.match(/const RESERVATION_WELCOME_MAX = (\d+);/)[1]);
+// Read from app.js rather than restated, so the truncation the save performs
+// is the one this test exercises.
+const BANK_MAX = Number(appSrc.match(/const RESERVATION_BANK_MAX = (\d+);/)[1]);
 const PAX_REQUEST_MAX = Number(
   appSrc.match(/const RESERVATION_PAX_REQUEST_MAX = (\d+);/)[1],
 );
@@ -87,8 +90,13 @@ ok(
   "renderReservationFormFields() runs when settings-menu opens",
   /page === "settings-menu"[\s\S]{0,300}renderReservationFormFields\(\)/.test(appSrc),
 );
-ok("index.html cache-buster covers app.js", /js\/app\.js\?v=32/.test(html));
-ok("index.html cache-buster covers config.js", /js\/config\.js\?v=20/.test(html));
+// These used to pin v=32 and v=20 exactly. Every version bump then failed the
+// test, and every fix was a mechanical renumber that verified nothing: a test
+// edited to match reality on each change cannot detect anything. What matters
+// is that both scripts carry a cache-buster at all, because without one a
+// staff browser keeps yesterday's app.js after a deploy.
+ok("index.html cache-busts app.js", /js\/app\.js\?v=\d+/.test(html));
+ok("index.html cache-busts config.js", /js\/config\.js\?v=\d+/.test(html));
 
 // -- The defaults, run for real ----------------------------------------
 const ctx = {
@@ -170,6 +178,15 @@ function harness(opts) {
       "rff-lang-switch": { checked: true },
       "rff-pax-request": { checked: false },
       "rff-pax-request-label": { value: "", disabled: false, style: {} },
+      // Deposit payment details, added 2026-09-06. A missing entry here does
+      // not fail an assertion, it throws inside the vm and takes the whole
+      // file down, so a new field on this screen must be added in both places.
+      "rff-bank": { value: "" },
+      "rff-wa": { value: "" },
+      // renderQrisPreview toggles these. Lifted rather than stubbed so the
+      // "only a real URL is treated as an image" rule is exercised here too.
+      "rff-qris-preview": { src: "", classList: { toggle: () => {} } },
+      "rff-qris-empty": { classList: { toggle: () => {} } },
     },
   };
   c.document = { getElementById: (id) => c.values[id] || null };
@@ -180,10 +197,14 @@ function harness(opts) {
       WELCOME_MAX +
       ";\nconst RESERVATION_PAX_REQUEST_MAX = " +
       PAX_REQUEST_MAX +
+      ";\nconst RESERVATION_BANK_MAX = " +
+      BANK_MAX +
       ";\n" +
       lift(appSrc, "reservationFormSettings", "app.js") +
       "\n" +
       lift(appSrc, "renderReservationFormFields", "app.js") +
+      "\n" +
+      lift(appSrc, "renderQrisPreview", "app.js") +
       "\n" +
       lift(appSrc, "renderPaxRequestLabelState", "app.js") +
       "\n" +

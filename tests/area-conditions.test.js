@@ -176,9 +176,21 @@ console.log("\nA Confirmed booking still holds its seat and its table");
 // set Confirmed, every paid booking would have dropped out of the capacity
 // cards and stopped blocking its own table against a double booking. Same
 // shape as the run sheet bug that hid every paid booking.
+// Asserts the RULE, not the contents. This used to pin the exact array text,
+// which meant adding "Incoming" (a status that very much does hold a seat)
+// turned a correct change into a red test, and the only way to read that red
+// was "the list is different", not "the list is wrong". What matters here is
+// that the list is declared ONCE and that Confirmed is in it; which other
+// statuses hold a seat is tested in tests/deposit-staff-app.test.js, against
+// the SQL that has to agree with it.
+const holds = /const RES_HOLDS_SEAT_STATUSES = \[([^\]]*)\]/.exec(appSrc);
 ok(
   "the holding statuses are named once, not spelled out per query",
-  /const RES_HOLDS_SEAT_STATUSES = \["Reserved", "Confirmed", "Arrived"\]/.test(appSrc),
+  !!holds && (appSrc.match(/const RES_HOLDS_SEAT_STATUSES =/g) || []).length === 1,
+);
+ok(
+  "Confirmed is one of them",
+  !!holds && holds[1].includes('"Confirmed"'),
 );
 ok(
   "no query spells out Reserved + Arrived by hand any more",

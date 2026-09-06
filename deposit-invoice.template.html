@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>__RESTAURANT_NAME__ — Pembayaran DP</title>
+    <!-- Deliberately NOT indexed and NOT share-carded. This page states what a
+         named guest owes; an og:description in a WhatsApp preview would put
+         that in a group chat before anyone opened it. -->
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="assets/intoch-favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        /* Brand tokens. This page has its own <style>, so it cannot borrow
+           index.html's :root — see CLAUDE.md, "Brand colour: tokens only". */
+        --brand: #5b4cbd;
+        --brand-hover: #4a3da3;
+        --brand-ink: #4f41a8;
+        --brand-deep: #453897;
+        --brand-deepest: #3c3084;
+        --brand-muted: #7565d6;
+        --brand-soft: #a99bf0;
+        --brand-tint: #e4e0f8;
+        --brand-tint2: #f4f2fd;
+        --accent: #e24701;
+        --accent-hover: #c63d01;
+        --accent-strong: #b23600;
+        --accent-tint: #f7c9af;
+        --accent-tint2: #fbede4;
+        --brand-rgb: 91 76 189;
+        --brand-ink-rgb: 79 65 168;
+        --brand-hover-rgb: 74 61 163;
+        --brand-deep-rgb: 69 56 151;
+        --brand-deepest-rgb: 60 48 132;
+        --brand-soft-rgb: 169 155 240;
+        --accent-rgb: 226 71 1;
+        --accent-hover-rgb: 198 61 1;
+        --accent-strong-rgb: 178 54 0;
+
+        /* Overwritten at runtime from app_settings.reserve_appearance so this
+           page matches the booking form the guest just came from. */
+        --rf-bg-image: url("assets/background-generic.jpg");
+        --rf-glass: rgba(79, 65, 168, 0.62);
+      }
+      * { box-sizing: border-box; }
+      html, body { min-height: 100%; }
+      body {
+        margin: 0;
+        font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+        background: #101820;
+        color: #f2efe9;
+        -webkit-font-smoothing: antialiased;
+      }
+      .bg-photo {
+        position: fixed; inset: -24px; z-index: -2;
+        background: var(--rf-bg-image) center / cover no-repeat;
+        filter: brightness(0.8) saturate(0.95);
+      }
+      .bg-tint {
+        position: fixed; inset: 0; z-index: -1;
+        background: linear-gradient(180deg, rgba(18,22,40,.6) 0%, rgba(20,26,48,.45) 45%, rgba(14,18,34,.7) 100%);
+      }
+      .wrap {
+        max-width: 430px; margin: 0 auto; padding: 30px 20px 44px;
+        min-height: 100dvh; display: flex; flex-direction: column;
+      }
+      .logo { align-self: center; margin-bottom: 20px; }
+      .logo img { max-height: 60px; width: auto; display: block; }
+      .card {
+        background: var(--rf-glass);
+        border: 1px solid rgba(255,255,255,.16);
+        border-radius: 20px; padding: 22px 20px;
+        backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      }
+      h1 { font-size: 20px; margin: 0 0 4px; letter-spacing: -.01em; }
+      .sub { font-size: 13px; opacity: .78; margin: 0 0 20px; line-height: 1.5; }
+      .amount-box {
+        text-align: center; padding: 18px 14px; border-radius: 14px;
+        background: rgb(var(--accent-rgb) / .16);
+        border: 1px solid rgb(var(--accent-rgb) / .42);
+        margin-bottom: 18px;
+      }
+      .amount-label { font-size: 12px; opacity: .8; margin-bottom: 4px; }
+      .amount { font-size: 30px; font-weight: 700; letter-spacing: -.02em; color: #ffb98f; }
+      .paid-note { font-size: 12px; opacity: .78; margin-top: 6px; }
+      .rows { font-size: 13.5px; line-height: 1.6; }
+      .row { display: flex; justify-content: space-between; gap: 14px; }
+      .row + .row { margin-top: 5px; }
+      .row span:first-child { opacity: .72; }
+      .row span:last-child { text-align: right; font-weight: 500; }
+      .sep { height: 1px; background: rgba(255,255,255,.14); margin: 18px 0; }
+      .pay-title { font-size: 12px; text-transform: uppercase; letter-spacing: .09em; opacity: .7; margin-bottom: 9px; }
+      .bank {
+        white-space: pre-wrap; font-size: 14px; line-height: 1.65;
+        background: rgba(0,0,0,.22); border: 1px solid rgba(255,255,255,.13);
+        border-radius: 12px; padding: 13px 14px;
+      }
+      .qris { margin-top: 14px; text-align: center; }
+      .qris img {
+        max-width: 240px; width: 100%; border-radius: 12px;
+        background: #fff; padding: 10px; display: inline-block;
+      }
+      .note {
+        margin-top: 14px; font-size: 13px; line-height: 1.6;
+        border-left: 2px solid rgb(var(--accent-rgb) / .5); padding-left: 11px; opacity: .9;
+      }
+      .btn {
+        display: block; width: 100%; text-align: center; text-decoration: none;
+        margin-top: 18px; padding: 15px; border-radius: 999px;
+        font-size: 15.5px; font-weight: 700; color: #fff;
+        background: linear-gradient(135deg, var(--brand), var(--brand-deep));
+        box-shadow: 0 6px 20px rgb(var(--brand-rgb) / .35);
+      }
+      .state { text-align: center; padding: 34px 8px; }
+      .state h1 { margin-bottom: 8px; }
+      .foot { text-align: center; font-size: 11.5px; opacity: .5; margin-top: 22px; }
+      .hidden { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <div class="bg-photo"></div>
+    <div class="bg-tint"></div>
+    <div class="wrap">
+      <div class="logo">
+        <img id="brand-logo" src="assets/full-logo.png" alt="__RESTAURANT_NAME__" />
+      </div>
+
+      <!-- Three states. The page starts on `loading` so a slow connection never
+           shows an empty card that looks like a broken link. -->
+      <div id="loading" class="card state"><h1>Memuat…</h1></div>
+
+      <div id="dead" class="card state hidden">
+        <h1>Link tidak berlaku</h1>
+        <p class="sub" id="dead-msg" style="margin-bottom:0">
+          Tautan pembayaran ini sudah tidak aktif. Reservasi mungkin sudah dibayar,
+          dibatalkan, atau tautannya salah. Silakan hubungi kami.
+        </p>
+        <a id="dead-wa" class="btn hidden" target="_blank" rel="noopener">Hubungi via WhatsApp</a>
+      </div>
+
+      <div id="invoice" class="card hidden">
+        <h1>Pembayaran DP</h1>
+        <p class="sub">
+          Reservasi Anda kami tahan sampai DP diterima. Setelah transfer, kirim bukti
+          pembayaran lewat WhatsApp agar staff kami bisa mengonfirmasi.
+        </p>
+
+        <div class="amount-box">
+          <div class="amount-label">Jumlah yang perlu dibayar</div>
+          <div class="amount" id="amount">—</div>
+          <div class="paid-note hidden" id="paid-note"></div>
+        </div>
+
+        <div class="rows">
+          <div class="row"><span>Nama</span><span id="f-name">—</span></div>
+          <div class="row"><span>Tanggal</span><span id="f-date">—</span></div>
+          <div class="row"><span>Jam</span><span id="f-time">—</span></div>
+          <div class="row"><span>Jumlah tamu</span><span id="f-pax">—</span></div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div id="pay-block">
+          <div class="pay-title">Pembayaran</div>
+          <div class="bank hidden" id="bank"></div>
+          <div class="qris hidden" id="qris-wrap"><img id="qris" alt="QRIS" /></div>
+          <p class="note hidden" id="note"></p>
+        </div>
+
+        <a id="wa" class="btn hidden" target="_blank" rel="noopener">Saya sudah transfer</a>
+      </div>
+
+      <p class="foot">__RESTAURANT_NAME__</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      const SUPABASE_URL = "__SUPABASE_URL__";
+      const SUPABASE_ANON_KEY = "__SUPABASE_ANON_KEY__";
+      const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const $ = (id) => document.getElementById(id);
+      const rupiah = (n) => "Rp " + Number(n || 0).toLocaleString("id-ID");
+
+      function show(which) {
+        for (const id of ["loading", "dead", "invoice"])
+          $(id).classList.toggle("hidden", id !== which);
+      }
+
+      function waLink(number, text) {
+        const digits = String(number || "").replace(/\D/g, "");
+        if (digits.length < 8) return null; // unset or nonsense: no button
+        return "https://wa.me/" + digits + "?text=" + encodeURIComponent(text);
+      }
+
+      (async function () {
+        // Appearance and payment details first, so the card never flashes the
+        // bundled look before the restaurant's own.
+        try {
+          const { data } = await db
+            .from("app_settings")
+            .select("key, value")
+            .in("key", ["reserve_appearance", "reservation_form"]);
+          const byKey = Object.fromEntries((data || []).map((r) => [r.key, r.value || {}]));
+          const ra = byKey.reserve_appearance || {};
+          const root = document.documentElement.style;
+          if (typeof ra.bg_url === "string" && /^https?:\/\//i.test(ra.bg_url))
+            root.setProperty("--rf-bg-image", 'url("' + ra.bg_url + '")');
+          if (typeof ra.logo_url === "string" && /^https?:\/\//i.test(ra.logo_url))
+            $("brand-logo").src = ra.logo_url;
+
+          const rf = byKey.reservation_form || {};
+          window.__PAY = {
+            bank: (rf.bank_details || "").trim(),
+            qris: (rf.qris_url || "").trim(),
+            wa: (rf.wa_number || "").trim(),
+          };
+        } catch (_) {
+          window.__PAY = { bank: "", qris: "", wa: "" };
+        }
+
+        const token = new URLSearchParams(location.search).get("t") || "";
+        if (!token) return show("dead");
+
+        let row = null;
+        try {
+          const { data, error } = await db.rpc("deposit_invoice_by_token", { p_token: token });
+          if (error) throw error;
+          row = Array.isArray(data) ? data[0] : data;
+        } catch (_) {
+          // A network failure is NOT a dead link. Saying "tidak berlaku" here
+          // would send a guest who is trying to pay us away for good.
+          $("dead-msg").textContent =
+            "Tidak bisa memuat data pembayaran. Periksa koneksi Anda lalu muat ulang halaman ini.";
+          return show("dead");
+        }
+        if (!row) return show("dead");
+
+        $("f-name").textContent = row.bill_to_name || "—";
+        $("f-pax").textContent = row.pax ? row.pax + " orang" : "—";
+        $("f-time").textContent = row.event_time ? String(row.event_time).slice(0, 5) : "—";
+        if (row.event_date) {
+          const d = new Date(row.event_date + "T00:00:00");
+          $("f-date").textContent = d.toLocaleDateString("id-ID", {
+            weekday: "long", day: "numeric", month: "long", year: "numeric",
+          });
+        }
+
+        const outstanding = Number(row.outstanding || 0);
+        const paid = Number(row.paid || 0);
+        $("amount").textContent = rupiah(outstanding > 0 ? outstanding : 0);
+
+        if (paid > 0 && outstanding > 0) {
+          // Show what already landed, or a guest who paid half sees the smaller
+          // figure and thinks the first transfer went missing.
+          $("paid-note").textContent = "Sudah diterima " + rupiah(paid) + " dari " + rupiah(row.total);
+          $("paid-note").classList.remove("hidden");
+        }
+
+        if (outstanding <= 0) {
+          $("amount").textContent = "Lunas";
+          $("paid-note").textContent = "Terima kasih, DP Anda sudah kami terima.";
+          $("paid-note").classList.remove("hidden");
+          $("pay-block").classList.add("hidden"); // nothing left to pay into
+        } else {
+          const pay = window.__PAY || {};
+          if (pay.bank) { $("bank").textContent = pay.bank; $("bank").classList.remove("hidden"); }
+          if (/^https?:\/\//i.test(pay.qris)) {
+            $("qris").src = pay.qris;
+            $("qris-wrap").classList.remove("hidden");
+          }
+        }
+
+        if (row.note) { $("note").textContent = row.note; $("note").classList.remove("hidden"); }
+
+        const link = waLink(
+          (window.__PAY || {}).wa,
+          "Halo, saya " + (row.bill_to_name || "") + ". Saya sudah transfer DP untuk reservasi saya.",
+        );
+        if (link && outstanding > 0) { $("wa").href = link; $("wa").classList.remove("hidden"); }
+        const deadLink = waLink((window.__PAY || {}).wa, "Halo, saya ingin menanyakan pembayaran DP reservasi saya.");
+        if (deadLink) { $("dead-wa").href = deadLink; $("dead-wa").classList.remove("hidden"); }
+
+        show("invoice");
+      })();
+    </script>
+  </body>
+</html>
