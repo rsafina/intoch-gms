@@ -731,6 +731,13 @@ const ID_DICT = {
   // member in the building.
   Incoming: "Menunggu DP",
 
+  // ── Large-party WhatsApp handoff (settings labels) ─────────────────
+  "Send large parties to WhatsApp": "Kirim rombongan besar ke WhatsApp",
+  "Uses the Largest party limit below. Bigger groups do not create an online reservation; they are sent to admin chat so the team can arrange the event.":
+    "Memakai batas Rombongan terbesar di bawah. Grup yang lebih besar tidak membuat reservasi online; mereka diarahkan ke chat admin agar tim bisa mengatur acaranya.",
+  "Country code first, no plus sign. Leave empty to keep the normal request flow.":
+    "Kode negara dulu, tanpa tanda plus. Kosongkan untuk tetap memakai alur permintaan biasa.",
+
   // ── Deposit flow (Phase 3, staff app) ──────────────────────────────
   // Long sentences are single keys on purpose. Splitting one into "still "
   // and " outstanding" makes two fragments no translator can reorder, and

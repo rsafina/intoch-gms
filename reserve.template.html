@@ -659,6 +659,30 @@
         opacity: 0.55;
         cursor: default;
       }
+      /* The large-party handoff. WhatsApp green rather than the brand
+         gradient, and deliberately NOT styled as .btn-submit: it does not
+         book a table, it opens a conversation, and a guest who reads it as
+         the submit button will think they have a reservation. */
+      .btn-wa {
+        width: 100%;
+        margin-top: 12px;
+        border: none;
+        border-radius: 999px;
+        padding: 14px;
+        font-family: inherit;
+        font-size: 15px;
+        font-weight: 600;
+        color: #fff;
+        background: #1faf5e;
+        cursor: pointer;
+        box-shadow: 0 6px 18px rgb(0 0 0 / 0.22);
+        transition:
+          opacity 0.15s,
+          transform 0.1s;
+      }
+      .btn-wa:active {
+        transform: scale(0.985);
+      }
       /* Quick-link buttons */
       .quick-links {
         display: flex;
@@ -925,6 +949,15 @@
               >
             </label>
             <p id="pax-note" class="soft-note" style="display: none"></p>
+            <!-- Shown only when the large-party gate is closed. A link, not a
+                 form control: it leaves the page, and nothing is saved. -->
+            <button
+              type="button"
+              id="pax-wa-btn"
+              class="btn-wa"
+              style="display: none"
+              onclick="openLargePartyWa()"
+            ></button>
           </div>
 
           <!-- Area picker. Hidden entirely when no area is bookable online,
@@ -1168,6 +1201,12 @@
       let AVAIL = {};          // area_id -> availability for the chosen date
       let SHOW_CAPACITY = false;
       let SHOW_PAX_REQUEST = false; // the optional tick box under the stepper
+      // Above MAX_PAX, hand the guest to WhatsApp instead of taking a booking.
+      // BOTH must be true for the gate to close: a restaurant that ticks the
+      // box and never fills in the number would otherwise make every large
+      // booking impossible, with no way for the guest to tell anyone.
+      let LARGE_PARTY_WA = false;
+      let LARGE_PARTY_WA_NUMBER = "";
       const WELCOME_MAX = 160; // mirrors RESERVATION_WELCOME_MAX in js/app.js
       const PAX_REQUEST_MAX = 80; // mirrors RESERVATION_PAX_REQUEST_MAX
       const rupiah = (n) => "Rp " + Number(n).toLocaleString("id-ID");
@@ -1310,7 +1349,13 @@
       }
       function readPax() {
         const n = readPaxRaw();
-        return n !== null && n >= 1 && n <= 20 ? n : null;
+        // 1..999, matching clampPax. The old "n <= 20" here was the retired
+        // hard cap, left behind when max_pax replaced it on 2026-09-05: it
+        // sat three lines above the comment announcing the cap was gone and
+        // silently rejected, in the browser, exactly the large parties the
+        // waitlist and the WhatsApp handoff were built to catch. The server
+        // is still the one that refuses an impossible size.
+        return n !== null && n >= 1 && n <= 999 ? n : null;
       }
       // The hard cap of 20 is GONE (2026-09-05). `max_pax` is now the size
       // above which the restaurant wants to decide by hand, not a wall: the
@@ -1334,6 +1379,53 @@
         renderPaxNote();
       }
 
+      // True when this party is too big to book online AND there is somewhere
+      // to send them. Everything about the large-party flow keys off this one
+      // function so the note, the button and the submit guard can never
+      // disagree about whether the gate is closed.
+      function largePartyGate() {
+        const n = readPaxRaw();
+        return (
+          LARGE_PARTY_WA &&
+          !!LARGE_PARTY_WA_NUMBER &&
+          n !== null &&
+          MAX_PAX > 0 &&
+          n > MAX_PAX
+        );
+      }
+
+      // Carries what the guest already typed. Landing in the restaurant's
+      // inbox as "Halo" with no details means the whole conversation starts
+      // over, and the guest has already filled this form in once.
+      function largePartyWaLink() {
+        const n = readPaxRaw();
+        const name = ($("f-name")?.value || "").trim();
+        const date = $("f-date")?.value || "";
+        const time = $("f-time")?.value || "";
+        const parts = [
+          gtf("Hello, I would like to arrange a booking for {n} guests.", { n: n || "" }),
+        ];
+        // Only when all three are filled. A half-written line ("for  at ") is
+        // worse than no line, and the guest can reach this button before
+        // picking a date.
+        if (name && date && time) {
+          parts.push(
+            gtf("My name is {name}, for {date} at {time}.", { name, date, time }),
+          );
+        }
+        return (
+          "https://wa.me/" +
+          LARGE_PARTY_WA_NUMBER +
+          "?text=" +
+          encodeURIComponent(parts.join("\n"))
+        );
+      }
+
+      function openLargePartyWa() {
+        if (!largePartyGate()) return;
+        window.open(largePartyWaLink(), "_blank", "noopener");
+      }
+
       // Says, before submitting, that a large party is a request rather than a
       // booking. Told afterwards it reads as a downgrade; told here it is just
       // how it works.
@@ -1342,13 +1434,30 @@
         if (!el) return;
         const n = readPaxRaw();
         const big = n !== null && MAX_PAX > 0 && n > MAX_PAX;
-        el.textContent = big
+        const gate = largePartyGate();
+        el.textContent = gate
           ? gtf(
-              "Parties of more than {n} are reviewed first, so your booking goes in as a request.",
+              "Parties of more than {n} are arranged with us directly. Tap below and we will help you plan it.",
               { n: MAX_PAX },
             )
-          : "";
+          : big
+            ? gtf(
+                "Parties of more than {n} are reviewed first, so your booking goes in as a request.",
+                { n: MAX_PAX },
+              )
+            : "";
         el.style.display = big ? "" : "none";
+
+        // The submit button is not merely hidden: submit() refuses too. A
+        // hidden button is a layout decision, and this form can be submitted
+        // by pressing Enter in any field.
+        const wa = $("pax-wa-btn");
+        if (wa) {
+          wa.style.display = gate ? "" : "none";
+          wa.textContent = gt("Chat with us on WhatsApp");
+        }
+        const submit = $("btn-submit");
+        if (submit) submit.style.display = gate ? "none" : "";
       }
 
       // Build the bookable hours from opening hours; on today's date, drop
@@ -1574,6 +1683,12 @@
           if (v.show_company === true) $("company-field").style.display = "";
           SHOW_CAPACITY = v.show_capacity === true;
           SHOW_PAX_REQUEST = v.pax_request === true;
+          LARGE_PARTY_WA = v.large_party_wa === true;
+          // Digits only, and long enough to be a real number. A wa.me link
+          // built from "0" or "-" opens a broken chat, which looks to the
+          // guest exactly like the restaurant ignoring them.
+          LARGE_PARTY_WA_NUMBER = String(v.large_party_wa_number || "").replace(/\D/g, "");
+          if (LARGE_PARTY_WA_NUMBER.length < 8) LARGE_PARTY_WA_NUMBER = "";
           if (SHOW_PAX_REQUEST) {
             $("pax-request-row").style.display = "";
             // The restaurant's own wording, when they have written some. Same
@@ -1936,6 +2051,14 @@
         if (pax === null) {
           clampPax(); // restore a visible value so the guest sees what to fix
           return showError(errMsg("invalid_pax"));
+        }
+        // Checked here as well as in renderPaxNote, because Enter in any field
+        // submits this form without the button ever being clicked. Nothing is
+        // written: a 60-pax event is a conversation, and a row created "just
+        // in case" is a table held for a booking nobody agreed to.
+        if (largePartyGate()) {
+          openLargePartyWa();
+          return;
         }
         if (!date || !time) return showError(errMsg("missing_datetime"));
         // Mandatory only once there is something to choose. With no bookable

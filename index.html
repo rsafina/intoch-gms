@@ -6908,6 +6908,24 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               </label>
             </div>
 
+            <div class="rounded-10 border border-[#EDE9E3] p-4 mb-5">
+              <label class="flex items-start gap-3 cursor-pointer">
+                <input id="rff-large-party-wa" type="checkbox" class="mt-0.5" onchange="renderLargePartyWaState()" />
+                <span class="block flex-1">
+                  <span class="block text-sm font-medium text-[#333]" data-i18n>Send large parties to WhatsApp</span>
+                  <span class="block text-xs text-[#999] mt-0.5" data-i18n>Uses the Largest party limit below. Bigger groups do not create an online reservation; they are sent to admin chat so the team can arrange the event.</span>
+                  <input
+                    id="rff-large-party-wa-number"
+                    type="text"
+                    inputmode="numeric"
+                    class="form-input mt-2"
+                    placeholder="62812xxxxxxx"
+                  />
+                  <span class="block text-[11px] text-[#999] mt-1" data-i18n>Country code first, no plus sign. Leave empty to keep the normal request flow.</span>
+                </span>
+              </label>
+            </div>
+
             <!-- Language of the four pages a guest sees: this form, the page
                  after it, the reservation card and the spin wheel. Option
                  VALUES stay English, the same rule the reservation source and
@@ -9535,9 +9553,9 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
 
-    <script src="js/config.js?v=30"></script>
+    <script src="js/config.js?v=31"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=44"></script>
+    <script src="js/app.js?v=45"></script>
     <script src="js/membership.js?v=7"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->

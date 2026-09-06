@@ -14205,6 +14205,11 @@ const RESERVATION_FORM_DEFAULTS = {
   // translate.
   pax_request: false,
   pax_request_label: null,
+  // Uses reservation_hours.max_pax as the threshold. Above that number the
+  // public form opens WhatsApp instead of creating a request, but only when a
+  // destination number is configured. Blank keeps the current waitlist flow.
+  large_party_wa: false,
+  large_party_wa_number: null,
   // Deposit payment details, shown on deposit-invoice.html. All null by
   // default: a restaurant that asks for no deposit never sees this page, and
   // one that does is REFUSED an invoice until at least one of bank_details or
@@ -14242,6 +14247,10 @@ function renderReservationFormFields() {
     const el = document.getElementById(id);
     if (el) el.checked = !!on;
   };
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.value = v == null ? "" : String(v);
+  };
   // Read the stored value the same way the booking page does, so the boxes
   // show what a guest actually gets rather than what looks tidy here.
   check("rff-show-notes", cfg.show_notes !== false);
@@ -14260,11 +14269,10 @@ function renderReservationFormFields() {
   if (pl)
     pl.value = String(cfg.pax_request_label || "").slice(0, RESERVATION_PAX_REQUEST_MAX);
   renderPaxRequestLabelState();
+  check("rff-large-party-wa", cfg.large_party_wa === true);
+  set("rff-large-party-wa-number", cfg.large_party_wa_number);
+  renderLargePartyWaState();
   onReservationWelcomeInput();
-  const set = (id, v) => {
-    const el = document.getElementById(id);
-    if (el) el.value = v == null ? "" : String(v);
-  };
   set("rff-bank", cfg.bank_details);
   set("rff-wa", cfg.wa_number);
   renderQrisPreview(cfg.qris_url);
@@ -14289,6 +14297,14 @@ function renderQrisPreview(url) {
 function renderPaxRequestLabelState() {
   const on = !!document.getElementById("rff-pax-request")?.checked;
   const el = document.getElementById("rff-pax-request-label");
+  if (!el) return;
+  el.disabled = !on;
+  el.style.opacity = on ? "" : "0.5";
+}
+
+function renderLargePartyWaState() {
+  const on = !!document.getElementById("rff-large-party-wa")?.checked;
+  const el = document.getElementById("rff-large-party-wa-number");
   if (!el) return;
   el.disabled = !on;
   el.style.opacity = on ? "" : "0.5";
@@ -14338,6 +14354,10 @@ async function saveReservationFormFields() {
       String(document.getElementById("rff-pax-request-label")?.value || "")
         .trim()
         .slice(0, RESERVATION_PAX_REQUEST_MAX) || null,
+    large_party_wa: on("rff-large-party-wa"),
+    large_party_wa_number:
+      String(document.getElementById("rff-large-party-wa-number")?.value || "")
+        .replace(/\D/g, "") || null,
     // Blank is stored as null, not "", so the booking page falls back to its
     // bundled sentence rather than rendering an empty line. The text is the
     // client's own words: it is never run through the translation dictionary,

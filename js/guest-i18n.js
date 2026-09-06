@@ -153,6 +153,15 @@ const GUEST_DICT = {
   "We will send the payment details on WhatsApp. Your reservation is held until the deposit arrives.":
     "Kami akan mengirimkan detail pembayaran lewat WhatsApp. Reservasi Anda kami tahan sampai DP diterima.",
   "Chat with us on WhatsApp": "Chat dengan kami di WhatsApp",
+  // The large-party handoff. Whole sentences, because a translator cannot
+  // reorder "Name" + ":" + value, and Indonesian would not put them in the
+  // English order anyway.
+  "Parties of more than {n} are arranged with us directly. Tap below and we will help you plan it.":
+    "Rombongan di atas {n} orang kami atur langsung. Tekan tombol di bawah, kami bantu rencanakan.",
+  "Hello, I would like to arrange a booking for {n} guests.":
+    "Halo, saya ingin mengatur reservasi untuk {n} orang.",
+  "My name is {name}, for {date} at {time}.":
+    "Nama saya {name}, untuk tanggal {date} pukul {time}.",
   "Make another reservation": "Buat reservasi lain",
   "Reservation for {name} on {date} at {time}. Hello, I have something to add to my reservation.":
     "Reservasi atas nama {name} untuk {date} jam {time}. Halo, saya ada catatan tambahan untuk reservasi saya.",

@@ -80,10 +80,12 @@ console.log("\nNothing that cannot actually be switched off is offered");
 for (const forbidden of ["show_name", "show_phone", "show_date", "show_time", "show_pax"])
   ok("no " + forbidden + " control", !new RegExp(forbidden).test(card));
 const boxes = (card.match(/type="checkbox"/g) || []).length;
-// Five since 2026-09-06: three field switches, the guest-page ID/EN
-// switch, and the optional tick box under the party size. Pinned so a
-// sixth cannot appear unnoticed.
-ok("exactly five checkboxes", boxes === 5, String(boxes));
+// Six since 2026-09-06: three field switches, the guest-page ID/EN switch,
+// the optional tick box under the party size, and the large-party
+// WhatsApp handoff. Pinned so a seventh cannot appear unnoticed — this
+// assertion did its job on the sixth, which is why the number moved
+// deliberately rather than the check being loosened to "at least five".
+ok("exactly six checkboxes", boxes === 6, String(boxes));
 
 console.log("\nThe screen is wired into the settings page load");
 ok(
@@ -187,6 +189,9 @@ function harness(opts) {
       // "only a real URL is treated as an image" rule is exercised here too.
       "rff-qris-preview": { src: "", classList: { toggle: () => {} } },
       "rff-qris-empty": { classList: { toggle: () => {} } },
+      // Large-party WhatsApp handoff, added 2026-09-06.
+      "rff-large-party-wa": { checked: false },
+      "rff-large-party-wa-number": { value: "", disabled: false, style: {} },
     },
   };
   c.document = { getElementById: (id) => c.values[id] || null };
@@ -203,6 +208,8 @@ function harness(opts) {
       lift(appSrc, "reservationFormSettings", "app.js") +
       "\n" +
       lift(appSrc, "renderReservationFormFields", "app.js") +
+      "\n" +
+      lift(appSrc, "renderLargePartyWaState", "app.js") +
       "\n" +
       lift(appSrc, "renderQrisPreview", "app.js") +
       "\n" +
