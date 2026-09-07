@@ -2268,7 +2268,7 @@ function renderTableSelection(prefix, selectedId = "") {
   container.innerHTML = `
     <div class="mb-3 flex items-center justify-between gap-3">
       <label class="block text-xs font-medium text-[#555]">Table</label>
-      ${selectedId ? '<button type="button" onclick="clearTableSelection(\'' + prefix + '\')" class="text-xs text-[color:var(--accent)] hover:underline">Clear selection</button>' : ""}
+      ${selectedId ? '<button type="button" onclick="clearTableSelection(\'' + prefix + '\')" class="text-xs text-[color:var(--accent-strong)] hover:underline">Clear selection</button>' : ""}
     </div>
     ${rows || '<p class="text-xs text-[#999]">No active tables configured for the selected areas.</p>'}
   `;
@@ -2486,7 +2486,7 @@ function renderTableManagement() {
                   <p class="text-xs text-[#777]">Capacity: ${table.capacity || "—"}${table.description ? ` · ${escapeHtml(table.description)}` : ""}</p>
                 </div>
                 <div class="flex items-center gap-2">
-                  <button type="button" onclick="openTableModal('${table.id}')" class="text-xs text-[color:var(--accent)] hover:underline">Edit</button>
+                  <button type="button" onclick="openTableModal('${table.id}')" class="text-xs text-[color:var(--accent-strong)] hover:underline">Edit</button>
                   <button type="button" onclick="toggleTableActive('${table.id}', ${table.is_active ? "false" : "true"})" class="text-xs ${table.is_active ? "text-[#E05252] hover:text-[#B43B3B]" : "text-[#5F8D4E] hover:text-[#3E6D3F]"}">
                     ${table.is_active ? "Archive" : "Restore"}
                   </button>
@@ -3461,7 +3461,7 @@ function renderDashboardReservations(data) {
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               Link
             </a>
-            <button onclick="openResActions('${r.id}')" class="text-xs text-[color:var(--accent)] hover:underline">Update</button>
+            <button onclick="openResActions('${r.id}')" class="text-xs text-[color:var(--accent-strong)] hover:underline">Update</button>
             ${waReservationBtns(r)}
           </div>
         </div>
@@ -3567,8 +3567,8 @@ function renderDashboardWalkIns(data) {
                 ? '<span class="text-xs text-[#5F8D4E]">✓ Done</span>'
                 : '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>Active</span>'
             }
-            <button onclick="openEditWalkIn('${v.id}')" class="text-xs text-[color:var(--accent)] hover:underline">Edit</button>
-            ${!isCompleted ? `<button onclick="openCompleteVisit('${v.id}','visit')" class="text-xs text-[color:var(--accent)] hover:underline">Complete</button>` : ""}
+            <button onclick="openEditWalkIn('${v.id}')" class="text-xs text-[color:var(--accent-strong)] hover:underline">Edit</button>
+            ${!isCompleted ? `<button onclick="openCompleteVisit('${v.id}','visit')" class="text-xs text-[color:var(--accent-strong)] hover:underline">Complete</button>` : ""}
             ${waThankYouVisitBtn(v)}
           </div>
         </div>
@@ -3652,7 +3652,7 @@ function updateGuestSortIcons() {
     if (!el) return;
     if (k === guestSortKey) {
       el.textContent = guestSortDir === "asc" ? up : down;
-      el.className = "text-[color:var(--accent)]"; // gold — active
+      el.className = "text-[color:var(--accent-strong)]"; // gold — active
     } else {
       el.textContent = el.textContent ? "⬦" : ""; // subtle inactive hint
       el.textContent = "⬦";
@@ -3797,7 +3797,7 @@ async function renderGuestsTable(guests) {
             </div>
             <div>
               <p class="font-medium text-sm text-[#222]">${formatGuestName(g)} ${memberBadge(g.id)}</p>
-              ${visits > 1 ? '<span class="text-[10px] text-[color:var(--accent)] font-medium uppercase tracking-wide">Returning</span>' : ""}
+              ${visits > 1 ? '<span class="text-[10px] text-[color:var(--accent-strong)] font-medium uppercase tracking-wide">Returning</span>' : ""}
             </div>
           </div>
         </td>
@@ -3824,7 +3824,7 @@ async function renderGuestsTable(guests) {
             <button onclick="event.stopPropagation(); viewGuestProfile('${g.id}')" title="View guest profile" class="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-[#EEF3F7] text-[#999] hover:text-[color:var(--brand)] transition-colors">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
-            <button onclick="event.stopPropagation(); editGuest('${g.id}')" title="Edit guest" class="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-[#FBF8EE] text-[#999] hover:text-[color:var(--accent)] transition-colors">
+            <button onclick="event.stopPropagation(); editGuest('${g.id}')" title="Edit guest" class="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-[#FBF8EE] text-[#999] hover:text-[color:var(--accent-strong)] transition-colors">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
           </div>
@@ -4571,7 +4571,7 @@ async function viewGuestProfile(guestId) {
       </div>
       <div class="p-3 bg-[#FBF8EE] rounded-10 border border-[#E8E0D0]" id="fav-menu-card-${guest.id}">
         <div class="flex items-center justify-between mb-1">
-          <p class="text-[10px] text-[color:var(--accent)] uppercase tracking-wider">Favorite</p>
+          <p class="text-[10px] text-[color:var(--accent-strong)] uppercase tracking-wider">Favorite</p>
           <button onclick="startEditFavoriteMenu('${guest.id}')" class="text-[#999] hover:text-[color:var(--brand-ink)] transition-colors" title="Edit favorite menu">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
@@ -4592,7 +4592,7 @@ async function viewGuestProfile(guestId) {
 
     <div class="grid grid-cols-2 gap-3 mb-5 text-sm">
       ${guest.food_allergy ? `<div class="p-3 bg-red-50 rounded-10 border border-red-100"><p class="text-[10px] text-red-400 uppercase tracking-wider mb-1">Allergy</p><p class="text-[#333]">${guest.food_allergy}</p></div>` : ""}
-      ${guest.preference ? `<div class="p-3 bg-[#FBF8EE] rounded-10 border border-[#E8E0D0]"><p class="text-[10px] text-[color:var(--accent)] uppercase tracking-wider mb-1">Preference</p><p class="text-[#333]">${guest.preference}</p></div>` : ""}
+      ${guest.preference ? `<div class="p-3 bg-[#FBF8EE] rounded-10 border border-[#E8E0D0]"><p class="text-[10px] text-[color:var(--accent-strong)] uppercase tracking-wider mb-1">Preference</p><p class="text-[#333]">${guest.preference}</p></div>` : ""}
       ${guest.notes ? `<div class="p-3 bg-[#F8F6F2] rounded-10 border border-[#EDE9E3] col-span-2"><p class="text-[10px] text-[#999] uppercase tracking-wider mb-1">Notes</p><p class="text-[#333]">${guest.notes}</p></div>` : ""}
     </div>
 
@@ -4913,7 +4913,7 @@ function renderGuestSearchResults(prefix, guests, searchTerm) {
         <div class="text-xs text-[#999] p-3 border-b border-[#F0EDE8]">
           No guests found
         </div>
-        <button type="button" onclick="createNewGuestFromSearch('${prefix}')" class="w-full text-left px-3 py-2.5 bg-[#FAFAF8] text-xs text-[color:var(--accent)] font-medium hover:bg-[#F8F6F2]">
+        <button type="button" onclick="createNewGuestFromSearch('${prefix}')" class="w-full text-left px-3 py-2.5 bg-[#FAFAF8] text-xs text-[color:var(--accent-strong)] font-medium hover:bg-[#F8F6F2]">
           + Create new guest
         </button>
       </div>
@@ -4940,7 +4940,7 @@ function renderGuestSearchResults(prefix, guests, searchTerm) {
       `,
         )
         .join("")}
-      <button type="button" onclick="createNewGuestFromSearch('${prefix}')" class="w-full text-left px-3 py-2.5 bg-[#FAFAF8] text-xs text-[color:var(--accent)] font-medium hover:bg-[#F8F6F2] border-t border-[#F0EDE8]">
+      <button type="button" onclick="createNewGuestFromSearch('${prefix}')" class="w-full text-left px-3 py-2.5 bg-[#FAFAF8] text-xs text-[color:var(--accent-strong)] font-medium hover:bg-[#F8F6F2] border-t border-[#F0EDE8]">
         + Create new guest
       </button>
     </div>
@@ -5029,12 +5029,12 @@ async function selectGuestFromSearch(guestId, prefix) {
     guestInfoEl.innerHTML = `
       <div class="returning-badge">
         <div class="flex items-center gap-2 mb-2">
-          <span class="text-xs font-semibold text-[color:var(--accent)] uppercase tracking-widest">Existing Guest</span>
+          <span class="text-xs font-semibold text-[color:var(--accent-strong)] uppercase tracking-widest">Existing Guest</span>
           ${memberBadge(guest.id)}
         </div>
         <p class="font-display text-lg font-semibold text-[color:var(--brand-ink)] mb-1">${formatGuestName(guest)}</p>
         ${guest.phone ? `<p class="text-xs text-[#999]">${escapeHtml(guest.phone)}</p>` : ""}
-        ${guest.preference ? `<p class="text-xs text-[color:var(--accent)] mt-1.5">⭐ ${escapeHtml(guest.preference)}</p>` : ""}
+        ${guest.preference ? `<p class="text-xs text-[color:var(--accent-strong)] mt-1.5">⭐ ${escapeHtml(guest.preference)}</p>` : ""}
         ${guest.food_allergy ? `<p class="text-xs text-red-500 mt-1">⚠️ Allergy: ${escapeHtml(guest.food_allergy)}</p>` : ""}
       </div>
     `;
@@ -5151,13 +5151,13 @@ async function lookupGuestManual(prefix) {
     guestInfoEl.innerHTML = `
       <div class="returning-badge">
         <div class="flex items-center gap-2 mb-2">
-          <span class="text-xs font-semibold text-[color:var(--accent)] uppercase tracking-widest">Welcome Back</span>
+          <span class="text-xs font-semibold text-[color:var(--accent-strong)] uppercase tracking-widest">Welcome Back</span>
           ${totalVisits > 0 ? `<span class="bg-[color:var(--accent)] text-[color:var(--brand-deepest)] text-[10px] px-2 py-0.5 rounded-full">${totalVisits} visits</span>` : ""}
           ${memberBadge(guest.id)}
         </div>
         <p class="font-display text-xl font-semibold text-[color:var(--brand-ink)] mb-1">${guest.name}</p>
         ${lastVisit ? `<p class="text-xs text-[#999]">Last visit: ${fmt.date(lastVisit)}</p>` : ""}
-        ${guest.preference ? `<p class="text-xs text-[color:var(--accent)] mt-1.5">⭐ ${guest.preference}</p>` : ""}
+        ${guest.preference ? `<p class="text-xs text-[color:var(--accent-strong)] mt-1.5">⭐ ${guest.preference}</p>` : ""}
         ${guest.food_allergy ? `<p class="text-xs text-red-500 mt-1">⚠️ Allergy: ${guest.food_allergy}</p>` : ""}
         ${guest.notes ? `<p class="text-xs text-[#888] mt-1">📝 ${guest.notes}</p>` : ""}
       </div>
@@ -5583,7 +5583,7 @@ async function loadWalkIns() {
               ${
                 isCompleted
                   ? '<span class="text-xs text-[#5F8D4E]">✓ Done</span>'
-                  : `<button onclick="openCompleteVisit('${v.id}','visit')" class="text-xs text-[color:var(--accent)] hover:underline">Complete</button>`
+                  : `<button onclick="openCompleteVisit('${v.id}','visit')" class="text-xs text-[color:var(--accent-strong)] hover:underline">Complete</button>`
               }
               ${waThankYouVisitBtn(v)}
               <button onclick="openVoidWalkIn('${v.id}')" class="manager-only-ui text-xs text-red-400 hover:text-red-600">Void</button>
@@ -5659,7 +5659,7 @@ function toggleWiShowVoided() {
   if (btn) {
     // Active state reads as a "filter applied" hint (gold, matching the
     // rest of the manager/audit accents) instead of just static grey text.
-    btn.classList.toggle("text-[color:var(--accent)]", wiShowVoided);
+    btn.classList.toggle("text-[color:var(--accent-strong)]", wiShowVoided);
     btn.classList.toggle("font-medium", wiShowVoided);
     btn.classList.toggle("text-[#999]", !wiShowVoided);
   }
@@ -6323,7 +6323,7 @@ function renderResSearchChip(count, loading) {
       <span class="text-xs text-[color:var(--accent-strong)]">·</span>
       <span class="text-xs text-[color:var(--accent-strong)]">all dates</span>
       <button type="button" onclick="clearResSearch()"
-        class="ml-auto text-xs text-[color:var(--accent)] hover:underline font-medium">
+        class="ml-auto text-xs text-[color:var(--accent-strong)] hover:underline font-medium">
         Back to day view
       </button>
     </div>`;
@@ -6505,7 +6505,7 @@ async function renderResOccupancySummary(date) {
       </div>
       <div>
         <p class="text-[10px] text-[#999] uppercase tracking-wider font-medium">${t("Total Pax")}</p>
-        <p class="font-display text-2xl font-semibold text-[color:var(--accent)] mt-0.5">${totalPax}</p>
+        <p class="font-display text-2xl font-semibold text-[color:var(--accent-strong)] mt-0.5">${totalPax}</p>
         <p class="text-[11px] text-[#999] mt-1">${t("all reservations, placed or not")}</p>
       </div>
       ${renderDiningAreaCard(t("Indoor Dining"), indoorStats)}
@@ -6718,7 +6718,7 @@ async function renderReservationsTable(data) {
         r.id +
         '" target="_blank" class="text-xs text-[color:var(--brand)] hover:underline flex items-center gap-1"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\"/><polyline points=\"15 3 21 3 21 9\"/><line x1=\"10\" y1=\"14\" x2=\"21\" y2=\"3\"/></svg>Link</a><button onclick="openResActions(\'' +
         r.id +
-        '\')" class="text-xs text-[color:var(--accent)] hover:underline">Update</button>' +
+        '\')" class="text-xs text-[color:var(--accent-strong)] hover:underline">Update</button>' +
         waReservationBtns(r) +
         "</div></td>" +
         "</tr>"
@@ -8858,7 +8858,7 @@ function renderWiGuestRow(guest, reportType, rank) {
   const allTagsText =
     guest.tagList && guest.tagList.length > 0 ? guest.tagList.join(", ") : "";
 
-  const rankCell = `<td class="px-3 py-3 text-[#555] text-sm">${rankSymbol ? `<span class="text-[color:var(--accent)] font-semibold">${rankSymbol}</span>` : rank}</td>`;
+  const rankCell = `<td class="px-3 py-3 text-[#555] text-sm">${rankSymbol ? `<span class="text-[color:var(--accent-strong)] font-semibold">${rankSymbol}</span>` : rank}</td>`;
   const nameCell = `<td class="px-3 py-3 text-[#555] text-sm">${formatGuestName(guest)} ${memberBadge(guest.guestId)}</td>`;
   const latestTagCell = `<td class="px-3 py-3 text-sm"><span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-[#EDEDED] text-[#555]">${latestTag ? escapeHtml(latestTag) : "—"}</span></td>`;
   const allTagsCell = `<td class="px-3 py-3 text-[#666] text-xs">${allTagsText ? escapeHtml(allTagsText) : "—"}</td>`;
@@ -10272,7 +10272,7 @@ function renderOpsPeakTraffic(
       <span class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:var(--brand);"></span>Reservations</span>
       <span class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:var(--accent);"></span>Walk-ins</span>
       <span class="flex items-center gap-1.5 ml-1 pl-3 border-l border-[#EDE9E3]">Peak res: <strong class="text-[color:var(--brand)] ml-1">${peakResCount}</strong></span>
-      <span class="flex items-center gap-1.5">Peak walk-in: <strong class="text-[color:var(--accent)] ml-1">${peakWalkCount}</strong></span>
+      <span class="flex items-center gap-1.5">Peak walk-in: <strong class="text-[color:var(--accent-strong)] ml-1">${peakWalkCount}</strong></span>
     </div>
   `;
 }

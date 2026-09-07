@@ -152,5 +152,100 @@ for (const [name, hex] of [["success green", "#1FAF5E"], ["olive green", "#5F8D4
   ok(`${name} ${hex} still exists`, all.toUpperCase().includes(hex));
 }
 
+// ── The accent has to stay readable ─────────────────────────────────────
+// The old gold was retired for failing this. Its replacement, a pale yellow,
+// failed it too: at 1.32:1 on white the "gold" links and stat numbers were
+// nearly invisible, which is how Rere described them on 2026-09-06 ("too
+// washed up, unclear to our eye").
+//
+// So the palette splits the job, the way landing.html already did:
+//   --accent         a FILL. Bars, buttons, borders, anything with dark text
+//                    ON it. Never small text itself.
+//   --accent-strong  the same hue pushed dark enough to be read at 4.5:1.
+//                    Text and icons on light surfaces use this.
+//
+// Nothing enforced that split until now, which is why one colour ended up
+// doing both jobs and doing one of them badly. These assertions are the
+// enforcement: change the accent to anything you like, and this fails the
+// moment the readable half stops being readable.
+console.log("\nThe accent stays readable where it is read");
+{
+  const srgb = (c) => {
+    c /= 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  const lum = (hex) => {
+    const h = hex.replace("#", "");
+    const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+    return 0.2126 * srgb(r) + 0.7152 * srgb(g) + 0.0722 * srgb(b);
+  };
+  const ratio = (a, b) => {
+    const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
+    return (x + 0.05) / (y + 0.05);
+  };
+
+  const WHITE = "#FFFFFF";
+  const CREAM = "#F8F6F2"; // the app's card and panel background
+
+  // Read from index.html rather than hardcoded, so this tests the palette that
+  // actually ships rather than a copy that can drift from it.
+  const src = read(path.join(ROOT, "index.html"));
+  const tok = (name) => {
+    const m = new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`).exec(src);
+    return m ? m[1] : null;
+  };
+  const accent = tok("accent");
+  const strong = tok("accent-strong");
+  const ink = tok("brand-ink");
+  ok("the accent tokens were found", !!accent && !!strong && !!ink,
+     `accent=${accent} strong=${strong} ink=${ink}`);
+
+  ok(
+    `--accent-strong is readable as text on white (${ratio(strong, WHITE).toFixed(2)}:1)`,
+    ratio(strong, WHITE) >= 4.5,
+    "Everything the eye actually READS in the accent colour uses this token. " +
+      "Below 4.5:1 it is the washed-out problem again, in a different hue.",
+  );
+  ok(
+    `--accent-strong is readable on the cream panels too (${ratio(strong, CREAM).toFixed(2)}:1)`,
+    ratio(strong, CREAM) >= 4.5,
+  );
+  ok(
+    `dark text is readable ON an --accent fill (${ratio(accent, ink).toFixed(2)}:1)`,
+    ratio(accent, ink) >= 4.5,
+    "The fill's job is to carry dark text: badges, buttons, bars.",
+  );
+  ok(
+    "the two are the same colour, one darker, not two unrelated colours",
+    ratio(strong, accent) > 1.5 && ratio(strong, accent) < 6,
+    `They differ by ${ratio(strong, accent).toFixed(2)}:1. Too close and the ` +
+      "text one is not dark enough to help; too far and they stop looking " +
+      "like one brand.",
+  );
+}
+
+// Nothing may use the FILL colour as text again. This is the rule the split
+// exists for, and the only way to keep it is to check.
+console.log("\nThe fill colour is never used as text");
+{
+  const offenders = [];
+  for (const f of FILES) {
+    const r = rel(f);
+    // Built files are generated from the templates checked above.
+    if (/^(reserve|spin|reservation-created|reservation-confirmation|deposit-invoice|invoice-view)\.html$/.test(r)) continue;
+    if (r === "js/config.js") continue;
+    if (!/\.(html|js)$/.test(r)) continue;
+    const src = read(f);
+    if (/text-\[color:var\(--accent\)\]/.test(src)) offenders.push(r + " (text-[color:var(--accent)])");
+    if (/stroke="var\(--accent\)"/.test(src)) offenders.push(r + ' (stroke="var(--accent)")');
+  }
+  ok(
+    "no file paints text or an icon stroke with --accent",
+    offenders.length === 0,
+    offenders.join("\n        ") +
+      "\n        Use --accent-strong. --accent is for fills.",
+  );
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

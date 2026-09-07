@@ -38,11 +38,11 @@
         --brand-soft: #A3C4EB;     /* soft accents on dark */
         --brand-tint: #DCEBFB;     /* selected row / chip background */
         --brand-tint2: #F6FAFF;    /* faintest wash */
-        --accent: #FFDE70;         /* Naples yellow accent */
-        --accent-hover: #E9C653;
-        --accent-strong: #9A6A00;  /* text-safe yellow-brown */
-        --accent-tint: #FFE9A3;
-        --accent-tint2: #FFF7DE;
+        --accent: #F9A825;         /* FILLS ONLY. 1.97 on white, so never small text */
+        --accent-hover: #E99206;
+        --accent-strong: #9F6404;  /* text and icons on light: 4.89 on white */
+        --accent-tint: #FCD392;
+        --accent-tint2: #FEF1DC;
         /* RGB triplets for the few places that need alpha, e.g.
            rgb(var(--brand-ink-rgb) / 0.12). A settings screen that changes
            --brand MUST set --brand-rgb in the same write, or a shadow keeps
@@ -53,9 +53,9 @@
         --brand-deep-rgb: 16 43 73;
         --brand-deepest-rgb: 10 29 51;
         --brand-soft-rgb: 163 196 235;
-        --accent-rgb: 255 222 112;
-        --accent-hover-rgb: 233 198 83;
-        --accent-strong-rgb: 154 106 0;
+        --accent-rgb: 249 168 37;
+        --accent-hover-rgb: 233 146 6;
+        --accent-strong-rgb: 159 100 4;
 
 
         --primary: var(--brand);
@@ -1467,7 +1467,7 @@
           <div class="card p-5 mb-8" style="border-left: 4px solid var(--accent)">
             <div class="flex items-center gap-3 flex-wrap">
               <div class="flex-shrink-0">
-                <p class="text-xs font-semibold text-[color:var(--accent)] uppercase tracking-widest">Quick Walk-In</p>
+                <p class="text-xs font-semibold text-[color:var(--accent-strong)] uppercase tracking-widest">Quick Walk-In</p>
                 <p class="text-[11px] text-[#999] mt-0.5">Name & hp, sisa detail bisa menyusul</p>
                 <p class="text-[11px] text-[#999] mt-0.5">Pax bisa di skip untuk diisi nanti</p>
 
@@ -1541,7 +1541,7 @@
                 </button>
                 <button
                   onclick="navigateTo('reservations')"
-                  class="text-xs text-[color:var(--accent)] hover:underline"
+                  class="text-xs text-[color:var(--accent-strong)] hover:underline"
                 >
                   View all →
                 </button>
@@ -1604,7 +1604,7 @@
                 ></div>
                 <button
                   onclick="navigateTo('walkins')"
-                  class="text-xs text-[color:var(--accent)] hover:underline"
+                  class="text-xs text-[color:var(--accent-strong)] hover:underline"
                 >
                   View all →
                 </button>
@@ -1653,7 +1653,7 @@
               <p class="text-xs text-[#999] uppercase tracking-wider mb-2">
                 Total Pax Today
               </p>
-              <p class="font-display text-4xl text-[color:var(--accent)]" id="stat-pax">
+              <p class="font-display text-4xl text-[color:var(--accent-strong)]" id="stat-pax">
                 —
               </p>
             </div>
@@ -1714,7 +1714,7 @@
                   height="20"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="var(--accent)"
+                  stroke="var(--accent-strong)"
                   stroke-width="1.8"
                   class="opacity-70 shrink-0"
                 >
@@ -1802,7 +1802,7 @@
                 height="20"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="var(--accent)"
+                stroke="var(--accent-strong)"
                 stroke-width="1.8"
                 class="mt-1 opacity-70"
               >
@@ -2045,7 +2045,7 @@
                 Walk-Ins So Far
               </p>
               <p
-                class="font-display text-3xl font-semibold text-[color:var(--accent)]"
+                class="font-display text-3xl font-semibold text-[color:var(--accent-strong)]"
                 id="admin-today-walkin-count"
               >
                 —
@@ -2401,7 +2401,7 @@
             </div>
             <div class="bg-white rounded-2xl border border-[#EDE9E3] p-4">
               <p class="text-[11px] uppercase tracking-widest text-[#999]">Stickers</p>
-              <p class="font-display text-2xl text-[color:var(--accent)] mt-1" id="mbr-stat-stickers">—</p>
+              <p class="font-display text-2xl text-[color:var(--accent-strong)] mt-1" id="mbr-stat-stickers">—</p>
             </div>
             <div class="bg-white rounded-2xl border border-[#EDE9E3] p-4">
               <p class="text-[11px] uppercase tracking-widest text-[#999]">Open Vouchers</p>
@@ -3534,7 +3534,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     <span id="inv-saved-no" class="font-medium text-[color:var(--brand-ink)]"></span>
                     <button
                       onclick="invCopyLink()"
-                      class="ml-2 text-[color:var(--accent)] hover:underline"
+                      class="ml-2 text-[color:var(--accent-strong)] hover:underline"
                       data-i18n
                     >
                       Copy guest link
@@ -4171,7 +4171,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               <div class="card p-6 border-t-4 border-t-[var(--accent)] flex flex-col h-full">
                 <div class="flex items-start justify-between mb-1">
                   <p
-                    class="text-xs font-semibold uppercase tracking-widest text-[color:var(--accent)]"
+                    class="text-xs font-semibold uppercase tracking-widest text-[color:var(--accent-strong)]"
                   >
                     Retain
                   </p>
@@ -4181,7 +4181,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     height="16"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="var(--accent)"
+                    stroke="var(--accent-strong)"
                     stroke-width="2"
                     opacity="0.6"
                   >
@@ -4192,7 +4192,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                   </svg>
                 </div>
                 <p
-                  class="font-display text-5xl font-semibold text-[color:var(--accent)] mt-3 mb-1"
+                  class="font-display text-5xl font-semibold text-[color:var(--accent-strong)] mt-3 mb-1"
                   id="mkt-retain-total"
                 >
                   —
@@ -4264,7 +4264,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                   </button>
                   <button
                     onclick="exportGuestSegment('returning')"
-                    class="w-full btn-ghost text-xs py-2 flex items-center justify-center gap-1.5 border border-[color:var(--accent)] text-[color:var(--accent)]"
+                    class="w-full btn-ghost text-xs py-2 flex items-center justify-center gap-1.5 border border-[color:var(--accent)] text-[color:var(--accent-strong)]"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -7944,7 +7944,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
         <!-- Everything below is visible from the moment the modal opens, but
              disabled until a guest is chosen. See setResDetailsEnabled(). -->
-        <p id="res-gate-hint" class="text-xs text-[color:var(--accent)] mb-3">
+        <p id="res-gate-hint" class="text-xs text-[color:var(--accent-strong)] mb-3">
           Pick a guest above, or create a new one, to fill in the rest.
         </p>
         <fieldset id="res-details-fields" class="res-gated" disabled>
@@ -7990,7 +7990,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                VIP table is selected. "from" mirrors the main Time field. -->
           <div id="res-endtime-wrap" class="hidden mb-4 -mt-2">
             <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold text-[color:var(--accent)] uppercase tracking-wide mr-1">VIP hours</span>
+              <span class="text-xs font-semibold text-[color:var(--accent-strong)] uppercase tracking-wide mr-1">VIP hours</span>
               <span class="text-sm text-[#555]">from</span>
               <input id="res-vip-from" type="time" class="form-input" style="width:auto" oninput="syncVipFromTime()" onchange="syncVipFromTime()" />
               <span class="text-sm text-[#555]">to</span>
@@ -9328,7 +9328,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
     <script src="js/config.js?v=33"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=45"></script>
+    <script src="js/app.js?v=46"></script>
     <script src="js/membership.js?v=7"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->
