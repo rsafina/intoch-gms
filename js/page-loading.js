@@ -5,60 +5,21 @@
   let overlay;
   let animationFrame = null;
   let animationStart = null;
-  // One full circle -> infinity -> circle, in milliseconds. The single knob
-  // for how fast the loader reads: lower is busier, higher is calmer. Below
-  // about 1500 the fold stops being legible and just flickers.
-  const CYCLE_MS = 2200;
-  let animationId = 0;
+  const CYCLE_MS = 1500;
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   const root = document.documentElement;
-  // A closed ribbon that folds from a circle into an uneven infinity and
-  // opens back, once every four seconds.
-  //
-  //   t     0 -> 1 -> 0   how far the fold has gone. 0 is the circle, 1 is the
-  //                       full figure-eight (Gerono lemniscate: y carries an
-  //                       extra cos, which is what pinches the middle).
-  //   s                   which loop is the big one. It swaps sign across the
-  //                       cycle, so the two loops trade places instead of the
-  //                       shape merely pulsing.
-  //   f                   the same skew applied to BOTH axes, so the small
-  //                       loop closes to a blob rather than flattening into a
-  //                       sliver. Multiplied by t so it vanishes as the shape
-  //                       returns: skew left in at t=0 dents the circle, which
-  //                       reads as a rendering fault rather than a motion.
-  //
-  // Every term is periodic in `phase`, so the loop joins itself with no jump.
-  function ribbonPath(phase) {
-    const t = (1 - Math.cos(phase)) / 2;
-    const s = 0.62 * Math.sin(phase);
-    const r = 45 - 6 * t; // the fold is wider than the circle; give it room
-    const points = [];
-    // 180 samples. At 128 the crossing point showed a visible corner on a
-    // desktop-sized loader.
-    for (let i = 0; i < 180; i++) {
-      const angle = (i / 180) * Math.PI * 2;
-      const f = 1 + s * t * Math.cos(angle);
-      const x = 70 + r * Math.cos(angle) * f;
-      const y = 70 + r * Math.sin(angle) * ((1 - t) + t * Math.cos(angle)) * f;
-      points.push((i ? 'L' : 'M') + x.toFixed(2) + ',' + y.toFixed(2));
-    }
-    return points.join(' ') + ' Z';
+  // A short rest at contact, then a ballistic rise and fall.
+  function bounceTransform(phase) {
+    const progress = ((phase / (Math.PI * 2)) % 1 + 1) % 1;
+    const flight = Math.min(progress / 0.84, 1);
+    const lift = 4 * flight * (1 - flight);
+    return 'translate(0 ' + (-96 * lift).toFixed(2) + ')';
   }
-  function ribbonMarkup() {
-    const id = 'loading-brand-gradient-' + ++animationId;
-    return '<svg class="loading-ribbon" viewBox="0 0 140 140" aria-hidden="true" focusable="false">' +
-      '<defs><linearGradient id="' + id + '" gradientUnits="userSpaceOnUse" ' +
-      'x1="18" y1="0" x2="122" y2="0">' +
-      // Light to dark to accent, in that order. Brand-first put the darkest
-      // colour hard against the left edge and left the middle of the ring
-      // paler than both ends, which reads as a washed-out shape rather than a
-      // sweep. Each page supplies its own three; the fallbacks are the staff
-      // app's, for the one frame before its stylesheet lands.
-      '<stop offset="0" style="stop-color:var(--brand-light, #245A8D)" />' +
-      '<stop offset="0.52" style="stop-color:var(--brand, #173B64)" />' +
-      '<stop offset="1" style="stop-color:var(--accent, #F9A825)" />' +
-      '</linearGradient></defs><path data-loading-ribbon d="' + ribbonPath(0) +
-      '" fill="none" stroke="url(#' + id + ')" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" /></svg>';
+  function logoMarkup() {
+    // Separate vector pieces preserve the mark's cutouts as the top lifts.
+    return '<svg class="loading-logo" viewBox="-15 -110 480 558" aria-hidden="true" focusable="false" fill="#3c56a6">' +
+      '<path fill-rule="evenodd" d="M160 173 H258 Q285 173 300 200 L349 282 Q362 303 350 325 L299 413 Q288 433 265 433 H19 Q-9 433 4 407 L125 195 Q137 173 160 173 Z M172 195 Q159 195 165 208 L212 287 Q216 295 226 295 H315 Q329 295 322 282 L276 203 Q271 195 262 195 Z" />' +
+      '<g data-loading-top transform="translate(0 0.00)"><path fill-rule="evenodd" d="M255 0 H357 Q385 0 400 27 L444 106 Q456 127 445 149 L396 233 Q381 260 357 260 H255 Q230 260 217 238 L169 152 Q155 131 169 108 L219 22 Q231 0 255 0 Z M268 22 Q253 22 259 35 L305 113 Q310 121 320 121 H409 Q423 121 417 108 L372 31 Q366 22 356 22 Z" /></g></svg>';
   }
   function syncMotion() {
     // The observer can fire one microtask after the document has gone (a
@@ -72,15 +33,15 @@
       if (animationFrame !== null) window.cancelAnimationFrame?.(animationFrame);
       animationFrame = null;
       animationStart = null;
-      document.querySelectorAll('[data-loading-ribbon]').forEach(path => path.setAttribute('d', ribbonPath(0)));
+      document.querySelectorAll('[data-loading-top]').forEach(piece => piece.setAttribute('transform', bounceTransform(0)));
       return;
     }
     if (animationFrame !== null || !window.requestAnimationFrame) return;
     function frame(now) {
       if (animationStart === null) animationStart = now;
       const phase = ((now - animationStart) / CYCLE_MS) * Math.PI * 2;
-      const d = ribbonPath(phase);
-      document.querySelectorAll('[data-loading-ribbon]').forEach(path => path.setAttribute('d', d));
+      const transform = bounceTransform(phase);
+      document.querySelectorAll('[data-loading-top]').forEach(piece => piece.setAttribute('transform', transform));
       animationFrame = window.requestAnimationFrame(frame);
     }
     animationFrame = window.requestAnimationFrame(frame);
@@ -88,11 +49,11 @@
   function mount() {
     if (overlay || !document.body) return;
     const reserveRing = document.querySelector('#reserve-loading .loading-ring');
-    if (reserveRing) reserveRing.outerHTML = ribbonMarkup();
+    if (reserveRing) reserveRing.outerHTML = logoMarkup();
     overlay = document.createElement('div');
     overlay.id = 'page-loading';
     overlay.hidden = !root.hasAttribute('data-page-loading');
-    overlay.innerHTML = ribbonMarkup() +
+    overlay.innerHTML = logoMarkup() +
       // One word, both languages. "Loading" needs no translating for an
       // Indonesian reader and the doubled line was the widest thing on the
       // screen; the failure message below still switches, because that one

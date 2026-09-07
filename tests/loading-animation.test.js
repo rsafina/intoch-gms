@@ -13,10 +13,9 @@ for (const reduced of [false, true]) {
   w.cancelAnimationFrame = n => frames.delete(n);
   w.eval(source);
   w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
-  const paths = w.document.querySelectorAll('[data-loading-ribbon]');
-  assert.equal(paths.length, 2, 'both reserve and shared loaders use the ribbon');
-  assert.equal(new Set([...w.document.querySelectorAll('linearGradient')].map(el => el.id)).size, 2);
-  const circle = paths[0].getAttribute('d');
+  const paths = w.document.querySelectorAll('[data-loading-top]');
+  assert.equal(paths.length, 2, 'both reserve and shared loaders use the logo');
+  const circle = paths[0].getAttribute('transform');
   // Taken from the source, not restated here: the cycle length is a design
   // knob, and a test that hardcodes it fails every time somebody tunes the
   // speed, which teaches people to edit tests to make them green.
@@ -26,16 +25,16 @@ for (const reduced of [false, true]) {
   else {
     const tick = time => { const [key, fn] = [...frames][0]; frames.delete(key); fn(time); };
     tick(0); tick(cycle * 0.19);
-    const loop = paths[0].getAttribute('d');
-    assert.notEqual(loop, circle, 'ring morphs rather than merely rotating');
-    assert.equal(loop, paths[1].getAttribute('d'));
+    const loop = paths[0].getAttribute('transform');
+    assert.notEqual(loop, circle, 'top piece lifts off the base');
+    assert.equal(loop, paths[1].getAttribute('transform'));
     assert.ok(!/NaN|Infinity/.test(loop));
     tick(cycle);
-    assert.equal(paths[0].getAttribute('d'), circle, 'the cycle joins itself seamlessly');
+    assert.equal(paths[0].getAttribute('transform'), circle, 'the cycle joins itself seamlessly');
     w.document.documentElement.removeAttribute('data-reserve-loading');
     w.PageLoading.finish();
     assert.equal(frames.size, 0, 'hidden loaders stop requesting animation frames');
   }
   dom.window.close();
 }
-console.log('Morphing loader: both screens, smooth loop, reduced motion and cleanup passed');
+console.log('Bouncing logo loader: both screens, smooth loop, reduced motion and cleanup passed');
