@@ -21,10 +21,8 @@
 // about who is coming. Note it did NOT contain "Confirmed"
 // before this change; see the comment on that constant.
 //
-// The Deposit column is a placeholder until the payment work
-// lands. It reads from `deposit_required` / `deposit_expected`
-// if those columns exist and prints a dash otherwise, so this
-// file needs no edit when phase 1 adds them.
+// Deposit state comes from the payment balance view, just like
+// the reservation list, and is fetched fresh when opening the sheet.
 // ============================================================
 
 const RUN_SHEET_ROOT_ID = "run-sheet-root";
@@ -115,10 +113,14 @@ function runSheetAreaSummary(rows) {
 }
 
 function runSheetDepositCell(r) {
-  // Placeholder until the payment work lands. `deposit_required` does not
-  // exist yet, so every row prints a dash today and starts filling itself
-  // the moment phase 1 adds the column.
   if (!r || r.deposit_required !== true) return "—";
+  const bal = r.deposit_balance;
+  if (bal && bal.state === "none") return "—";
+  if (bal && bal.state === "paid") return t("Deposit paid");
+  if (bal) {
+    const owed = t("Owed") + " " + runSheetRupiah(bal.outstanding);
+    return bal.state === "partial" ? t("Part paid") + " · " + owed : owed;
+  }
   const amount = runSheetRupiah(r.deposit_expected);
   return amount ? `${t("DP")} ${amount}` : t("DP");
 }
@@ -145,17 +147,12 @@ async function openRunSheet() {
 
   if (!allAreas || !allAreas.length) await loadAreas();
 
-  // NOTE for phase 1: when `deposit_required` and `deposit_expected` are
-  // added to reservations, add them to this select and the Deposit column
-  // fills itself. They are deliberately NOT requested yet — PostgREST
-  // errors on an unknown column, so asking for them today would make every
-  // open of this sheet fail once and log an error before recovering.
   const { data, error } = await supabaseQuery(
     () =>
       db
         .from("reservations")
         .select(
-          "id, reservation_time, pax, notes, assigned_area, status, guests(name, booking_alias), areas(name), tables(name)",
+          "id, reservation_time, pax, notes, assigned_area, status, deposit_required, deposit_expected, guests(name, booking_alias), areas(name), tables(name)",
         )
         .eq("reservation_date", date)
         .in("status", RES_OCCUPANCY_STATUSES)
@@ -167,6 +164,20 @@ async function openRunSheet() {
     return;
   }
   const rows = data || [];
+  const depositIds = rows.filter((r) => r.deposit_required).map((r) => r.id);
+  if (depositIds.length) {
+    const { data: balances, error: balanceError } = await supabaseQuery(
+      () => db.from("reservation_deposit_balances")
+        .select("reservation_id, outstanding, state")
+        .in("reservation_id", depositIds),
+      "Failed to load deposit balances",
+    );
+    // Keep balances local so opening the sheet cannot overwrite dashboard badges.
+    if (!balanceError) {
+      const byId = new Map((balances || []).map((b) => [b.reservation_id, b]));
+      rows.forEach((r) => { r.deposit_balance = byId.get(r.id); });
+    }
+  }
 
   const root = document.getElementById(RUN_SHEET_ROOT_ID);
   if (!root) return;

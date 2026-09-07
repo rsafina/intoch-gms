@@ -7649,6 +7649,7 @@ async function submitDepositPayment() {
         t("still outstanding"),
   );
   await loadReservations();
+  if (isViewingStaffDashboard()) await loadDashboard();
 }
 
 // ── 3. Waive the deposit ──────────────────────────────────────────────────
@@ -7687,6 +7688,7 @@ async function submitWaiveDeposit() {
   hideModal("modal-deposit-waive");
   toast(t("Deposit waived — booking is now Reserved"));
   await loadReservations();
+  if (isViewingStaffDashboard()) await loadDashboard();
 }
 
 // ── 4. Cancelling something that has been paid ────────────────────────────
