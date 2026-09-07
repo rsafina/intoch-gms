@@ -1,105 +1,39 @@
--- ============================================================
--- DEMO SEED: three months of trading
--- ============================================================
--- Builds a restaurant that looks like it has been open for a quarter, so
--- every screen in the app has something real to show: dashboard, reports,
--- retention tiers, spending tiers, birthdays, membership, broadcast segments.
---
--- Run AFTER 00_wipe_except_staff.sql, on a demo database only.
--- Needs areas and tables to exist — the wipe script keeps them.
---
--- ── Size ──────────────────────────────────────────────────────────────
---   120 guests, 287 visits across 90 days (about 96 a month, roughly 460
---   covers a month), 119 reservations of which 28 are in the next five days,
---   24 members.
---
--- This replaced a 64-guest version on 2026-09-01. The visit volume is about
--- the same; the guest book nearly doubled, which is what the segments and the
--- guest list needed.
---
--- At roughly 3 visits a day, an individual day view is still quiet. That is
--- deliberate — it is what this volume of trading looks like — and it is what
--- demo/02_topup_last_5_days.sql exists for: run it before a presentation to
--- fill the last five days and the upcoming bookings.
---
--- ── The numbers are not invented ──────────────────────────────────────
--- The spend and party-size distributions come from a real restaurant, so the
--- reports look like a restaurant rather than like random numbers. Measured
--- against Blue Heron prod on 2026-09-01, over its own last 90 days:
---
---                                    REAL          THIS SEED
---   visits / 90 days                  685           287
---   distinct guests                   597           120
---   visits per guest                  1.15          2.4
---   average pax                       4.56          4.85
---   median pax                        3             3
---   median spend                      672.000       672.000
---   p90 spend                         1.996.000     2.226.000
---   visits at/over 300k per head      18%           18%
---   guests AVERAGING over 300k/head   18%           18%
---   p90 average per head              363.000       339.000
---   High Spenders                     38%           55%
---
--- The spend shape matches closely. TWO figures deliberately do not:
---
--- 1. VISITS PER GUEST. A real restaurant is overwhelmingly one-time guests,
---    and a demo seeded that way has almost nothing in its loyal, VIP and
---    at-risk segments. 2.4 is the compromise, chosen 2026-09-01.
---
--- 2. HIGH SPENDERS, and it follows directly from 1. A guest qualifies if ANY
---    visit crosses the line, so 2.4 visits each is 2.4 chances against the
---    real 1.15. The per-VISIT rates above match reality exactly; the per-GUEST
---    badge cannot also match while the ratio is inflated. Do not "fix" the
---    55% by flattening the spend distribution: that breaks the reports, which
---    read visits, to make one badge look right.
---
--- The per-pax figure is what the tuning is really about: the High Spender
--- threshold is Rp 300.000 per pax OR Rp 1.000.000 on one visit, and the real
--- median per-pax is Rp 192.000. So a realistic spread puts guests on BOTH
--- sides of the line. Seeding round numbers would either make everyone High or
--- nobody, and the tier badges would look broken in a demo.
---
--- The upper TAIL matters as much as the median, and was missing until
--- 2026-09-02. Uniform bands topped out around Rp 276.000 a head, so no visit
--- ever crossed the per-pax line and the "High Average Spend Per Person"
--- report was permanently empty on seeded data. See the big-night multiplier
--- in the spend expression below.
---
--- ── Deterministic ─────────────────────────────────────────────────────
--- Wipe + re-seed gives you the SAME restaurant every time, down to the rupiah.
--- Rehearse a presentation, reset, and the guest you practised on is still
--- there with the same numbers.
---
--- This is NOT done with setseed(). The previous version of this file used
--- setseed() + random() and claimed to be reproducible; it was not. Three
--- resets in a row on 2026-09-01 produced three different restaurants (total
--- revenue 264.083.000 / 264.261.000 / 265.653.000). setseed fixes the SEQUENCE
--- of random numbers, but not which row gets which draw: guest ids are fresh
--- uuids on every run, they feed the joins, and the row order moves with them.
---
--- Instead every varying number is a hash of the row's OWN stable identity
--- (its guest index and visit number). Same input, same output, no matter what
--- order the planner walks the rows in. See pg_temp.rnd below.
---
--- ── Names ─────────────────────────────────────────────────────────────
--- Common Indonesian names, and INVENTED company names. Deliberately not real
--- companies: a screenshot with a real firm's name on a fake Rp 8 juta invoice
--- is not something to put in a sales deck.
---
--- The eight VIPs are hand-named and always come out the same, so you can
--- rehearse on "Budi Santoso" and he is still there after a reset. The other
--- 112 are built from name pools, because typing 120 literals is a place for
--- a duplicate to hide and a duplicate phone number would fail the insert.
+-- DEMO SEED: 120 fictional guests, 287 visits, 24 members, historical
+-- reservations and 24 upcoming bookings (today through four days ahead).
+-- History covers the rolling three calendar months before today in Jakarta.
+-- Run the WHOLE file after demo/00_wipe_except_staff.sql on a demo database.
+-- Requires the current migrations/ALL_IN_ONE.sql schema.
+-- Staff, areas, tables, configuration and saved report filters are unchanged.
+-- Spend and guest patterns are deterministic relative to the run date.
+-- UUIDs and creation metadata may differ between resets.
+-- Phone numbers are synthetic demo values, NOT guaranteed unassigned numbers.
+-- This script does not send messages. Do not use demo contacts for outreach.
+-- Invoices/payments, campaigns and standalone vouchers start empty; membership
+-- vouchers are awarded through the application's transaction function.
+-- Failure rolls back the entire seed. If your SQL client leaves a failed
+-- transaction open, run ROLLBACK before retrying either demo script.
 
--- Not idempotent, by nature: running it twice would give you 240 guests and
--- two of every visit. Refuse rather than quietly double the restaurant.
+begin;
+set local search_path = public, pg_temp;
+set local timezone = 'Asia/Jakarta';
+
+-- Refuse a partial reset as well as an already populated guest book.
 do $$
+declare
+  relation_name text;
+  has_rows boolean;
 begin
-  if (select count(*) from guests) > 0 then
-    raise exception
-      E'This database already has % guest(s).\n\nThis seed is not re-runnable — running it again would duplicate everything.\nRun demo/00_wipe_except_staff.sql first, then this file.',
-      (select count(*) from guests);
-  end if;
+  foreach relation_name in array array[
+    'guests', 'visits', 'reservations', 'members', 'member_transactions',
+    'member_vouchers', 'standalone_vouchers', 'spin_submissions',
+    'wa_campaigns', 'wa_campaign_audience', 'wa_outreach_log',
+    'birthday_greetings', 'invoices', 'invoice_payments'
+  ] loop
+    execute format('select exists (select 1 from public.%I)', relation_name) into has_rows;
+    if has_rows then
+      raise exception 'Table % is not empty. Run demo/00_wipe_except_staff.sql before seeding.', relation_name;
+    end if;
+  end loop;
 end $$;
 
 -- The floor plan is client configuration, not seed data, so this file never
@@ -121,7 +55,7 @@ end $$;
 -- casting to bit(32)::int would be signed, and abs() on the minimum value
 -- overflows, which is a once-in-4-billion crash that would be very hard to
 -- explain the morning of a presentation.
-create function pg_temp.rnd(key text) returns numeric
+create or replace function pg_temp.rnd(key text) returns numeric
 language sql immutable as $fn$
   select (('x' || substr(md5(key), 1, 7))::bit(28)::int)::numeric / 268435456.0
 $fn$;
@@ -129,19 +63,21 @@ $fn$;
 -- Anchor every date to Jakarta, not UTC. Between midnight and 07:00 local the
 -- server's current_date is still yesterday, which would shift the whole
 -- quarter by a day and put "today" in the wrong place on the dashboard.
-create temporary table _anchor as
-select (now() at time zone 'Asia/Jakarta')::date as today;
+create temporary table _anchor on commit drop as
+select today, (today - interval '3 months')::date as start_date,
+       today - (today - interval '3 months')::date as history_days
+from (select (now() at time zone 'Asia/Jakarta')::date as today) d;
 
 -- The floor plan, numbered so visits can be dealt round it evenly instead of
 -- every booking landing on the same table. Empty is tolerated: the joins
 -- below are LEFT joins and the columns are nullable.
-create temporary table _areas as
-select id, row_number() over (order by name) - 1 as n,
+create temporary table _areas on commit drop as
+select id, row_number() over (order by name, id) - 1 as n,
        count(*) over () as total
 from areas;
 
-create temporary table _tables as
-select t.id, t.area_id, row_number() over (order by t.name) - 1 as n,
+create temporary table _tables on commit drop as
+select t.id, t.area_id, row_number() over (order by t.name, t.id) - 1 as n,
        count(*) over () as total
 from tables t where t.is_active;
 
@@ -150,18 +86,12 @@ from tables t where t.is_active;
 -- to show. Random guests would give one undifferentiated blob and the
 -- retention report would say nothing.
 --
---   pattern 'vip'         8 guests, ~2 visits a week, big spend
---   pattern 'loyal'      20 guests, 12 to 16 visits across the quarter
---   pattern 'return'     40 guests, 5 to 8 visits
---   pattern 'corporate'  12 guests, few visits, very large parties and bills
---   pattern 'atrisk'     20 guests, visited early, nothing since
---   pattern 'first'      20 guests, exactly 1 visit, recent
---
--- Those counts are what make the volume land near 300 visits a month. Change
--- a pattern's visit count and the monthly total moves with it.
+--   vip: 6 guests, 6-8 visits; loyal: 16 guests, 3-5 visits;
+--   return: 30 guests, 2-3 visits; corporate: 10 guests, 3-4 visits;
+--   atrisk: 25 guests, 1-2 visits; first: 33 guests, one recent visit.
 create temporary table _people (
   idx int, full_name text, gender text, company text, pattern text, birthday date
-);
+) on commit drop;
 
 -- The eight regulars a restaurant knows by name.
 insert into _people (idx, full_name, gender, company, pattern)
@@ -263,7 +193,7 @@ update _people p set birthday =
 insert into guests (name, phone, gender, birthday, company, notes)
 select
   p.full_name,
-  -- Reserved-looking numbers that cannot collide with a real guest.
+  -- Synthetic demo phone values; not guaranteed to be unassigned.
   '0812' || lpad((55000000 + p.idx)::text, 8, '0'),
   p.gender,
   p.birthday,
@@ -274,20 +204,21 @@ select
 from _people p;
 
 -- ── Visits ────────────────────────────────────────────────────────────
--- One row per visit, dated across the last 90 days.
+-- One row per visit, dated within the previous three calendar months.
 --
 -- Weekends carry roughly double the covers of a weekday, which is what makes
 -- the Peak Traffic chart look like a restaurant instead of a flat line. That
 -- weighting is applied by NUDGING a visit's date onto the nearest weekend for
 -- a share of visits, rather than by choosing dates at random and hoping.
-create temporary table _visits as
+create temporary table _visits on commit drop as
 with p as (
   select g.id as guest_id, pe.pattern, pe.idx,
-         (select today from _anchor) as today
+         (select today from _anchor) as today,
+         (select history_days from _anchor) as history_days
   from guests g join _people pe on pe.full_name = g.name
 ),
 n as (
-  select guest_id, pattern, idx, today,
+  select guest_id, pattern, idx, today, history_days,
          case pattern
            when 'vip'       then 6 + (idx % 3)   -- roughly monthly
            when 'loyal'     then 3 + (idx % 3)
@@ -312,9 +243,8 @@ raw as (
         -- First timers came recently, so they land in the "new, not returned"
         -- segment rather than looking dormant.
         when 'first'  then 3 + ((idx * 5) % 25)
-        -- Everyone else is spread across the whole 90 days. The stride is
-        -- coprime-ish with 89 so a single guest's visits do not clump.
-        else ((idx * 29 + k * 31) % 89)
+        -- Everyone else is spread across the rolling three-month window.
+        else 1 + ((idx * 29 + k * 31) % history_days)
       end
     ))::date as base_date
   from spread
@@ -329,7 +259,7 @@ select
      -- Monday to THURSDAY only. Including Friday drained it onto Saturday and
      -- left Friday the quietest night of the week, which no restaurant's is.
      and extract(isodow from base_date) between 1 and 4
-     and base_date + (6 - extract(isodow from base_date)::int) <= today
+     and base_date + (6 - extract(isodow from base_date)::int) < today
       then (base_date + (6 - extract(isodow from base_date)::int))::date
     else base_date
   end as visit_date
@@ -337,15 +267,17 @@ from raw;
 
 -- Party size and spend are derived twice below (once for the value, once
 -- inside the spend formula), so they live here as one definition instead.
-create temporary table _visit_rows as
+create temporary table _visit_rows on commit drop as
 select
   v.*,
+  gen_random_uuid() as visit_id,
+  gen_random_uuid() as reservation_id,
   case
-    -- Corporate events: the 20-to-40 groups a restaurant gets a few times a
+    -- Corporate events: the 8-to-17 groups a restaurant gets a few times a
     -- month. These are the reason p90 spend is three times the median, and
     -- without them the spend chart is a narrow band with no tail.
     when v.pat = 'corporate' then 8 + ((v.idx * 3 + v.k) % 10)
-    -- Roughly one visit in 23 is a celebration: a family table of 8 to 15.
+    -- Roughly one visit in 20 is a celebration: a family table of 8 to 14.
     when (v.idx * 7 + v.k * 11) % 20 = 0 then 8 + ((v.idx * 5 + v.k) % 7)
     -- Everything else is what a restaurant mostly serves, couples and small
     -- groups. A uniform 2-to-6 here pushed the average past 4.8 and, worse,
@@ -354,15 +286,15 @@ select
     when v.pat = 'vip' then 2 + ((v.idx + v.k) % 3)
     else 2 + ((v.idx * 2 + v.k) % 4)   -- 2 to 5, median 3, same as the real one
   end as pax,
-  row_number() over (order by v.guest_id, v.k) - 1 as seq
+  row_number() over (order by v.idx, v.k) - 1 as seq
 from _visits v;
 
 insert into visits (
-  guest_id, visit_type, visit_date, visit_time, pax, spend_amount,
+  id, guest_id, visit_type, visit_date, visit_time, pax, spend_amount,
   status, completed_at, assigned_area, table_id, created_at, updated_at
 )
 select
-  v.guest_id,
+  v.visit_id, v.guest_id,
   case when (v.idx + v.k) % 3 = 0 then 'Reservation' else 'Walk-In' end,
   v.visit_date,
   -- Lunch and dinner services, not a uniform smear across the day.
@@ -409,13 +341,13 @@ select
   ) / 1000) * 1000 as spend_amount,
   'Done',
   (v.visit_date + time '21:00') at time zone 'Asia/Jakarta',
-  a.id,
+  coalesce(t.area_id, a.id),
   t.id,
-  (v.visit_date + time '19:00') at time zone 'Asia/Jakarta',
+  (v.visit_date + time '10:00') at time zone 'Asia/Jakarta',
   (v.visit_date + time '21:00') at time zone 'Asia/Jakarta'
 from _visit_rows v
 -- Deal the bookings round the floor plan instead of stacking every one of
--- 900 visits on the first table, which would make area occupancy meaningless.
+-- the visits on the first table, which would make area occupancy meaningless.
 left join _areas  a on a.total > 0 and a.n = v.seq % a.total
 left join _tables t on t.total > 0 and t.n = v.seq % t.total;
 
@@ -423,12 +355,13 @@ left join _tables t on t.total > 0 and t.n = v.seq % t.total;
 -- Past bookings that were honoured, plus a handful in the next few days so
 -- the dashboard and the day view are not empty when you open them.
 insert into reservations (
-  guest_id, reservation_date, reservation_time, pax, occasion,
+  id, booking_name, guest_id, reservation_date, reservation_time, pax, occasion,
   reservation_source, status, notes, assigned_area, table_id, created_at
 )
 select
+  v.reservation_id, (select name from guests where id = v.guest_id),
   v.guest_id, v.visit_date,
-  time '19:00' + ((v.k * 19) % 120) * interval '1 minute',
+  time '11:30' + ((v.k * 17) % 90) * interval '1 minute',
   v.pax,
   case (v.idx + v.k) % 7
     when 0 then 'Birthday' when 1 then 'Business Lunch' when 2 then 'Anniversary'
@@ -439,21 +372,32 @@ select
     when 0 then 'Online Form' when 1 then 'WhatsApp' when 2 then 'Instagram'
     when 3 then 'Telepon' else 'Walk-in' end,
   'Completed', null,
-  a.id, t.id,
+  coalesce(t.area_id, a.id), t.id,
   (v.visit_date - 2 + time '10:00') at time zone 'Asia/Jakarta'
 from _visit_rows v
 left join _areas  a on a.total > 0 and a.n = v.seq % a.total
 left join _tables t on t.total > 0 and t.n = v.seq % t.total
 where (v.idx + v.k) % 3 = 0;
 
+-- Link completed bookings to their actual visit, so reports/backfill do not
+-- treat them as two unrelated guest events.
+update visits vi set reservation_id = v.reservation_id
+from _visit_rows v
+where vi.id = v.visit_id and (v.idx + v.k) % 3 = 0;
+
+-- A historical guest should not look newly acquired on the seed date.
+update guests g set created_at = first_visit.at - interval '2 days'
+from (select guest_id, min(created_at) as at from visits group by guest_id) first_visit
+where g.id = first_visit.guest_id;
+
 -- Upcoming: today plus the next four days, 24 bookings so each day has a
 -- handful rather than one lonely row.
 insert into reservations (
-  guest_id, reservation_date, reservation_time, pax, occasion,
+  booking_name, guest_id, reservation_date, reservation_time, pax, occasion,
   reservation_source, status, notes, assigned_area, table_id, created_at
 )
 select
-  g.id,
+  g.name, g.id,
   (select today from _anchor) + (r.n % 5),
   time '18:30' + ((r.n * 25) % 150) * interval '1 minute',
   2 + (r.n % 6),
@@ -463,14 +407,14 @@ select
                when 2 then 'Instagram' else 'Telepon' end,
   'Reserved',
   case when r.n % 4 = 0 then 'Minta meja dekat jendela.' else null end,
-  a.id, t.id,
+  coalesce(t.area_id, a.id), t.id,
   now() - (r.n || ' hours')::interval
 from generate_series(1, 24) as r(n)
 -- Pick by NAME, not by hashing the guest's uuid: uuids are regenerated on
 -- every seed, so hashing them would hand tomorrow's bookings to different
 -- guests each run and break the reproducibility above.
 join lateral (
-  select id from guests order by md5(name || ':up:' || r.n::text) limit 1
+  select id, name from guests order by md5(name || ':up:' || r.n::text) limit 1
 ) g on true
 left join _areas  a on a.total > 0 and a.n = r.n % a.total
 left join _tables t on t.total > 0 and t.n = r.n % t.total;
@@ -478,11 +422,11 @@ left join _tables t on t.total > 0 and t.n = r.n % t.total;
 -- ── Membership ────────────────────────────────────────────────────────
 -- Cards on guests whose visit history justifies the card. A member with no
 -- visits looks like test data, so these are all VIPs, loyals or corporates.
-insert into members (member_number, member_type, full_name, phone_number, guest_id, is_active)
+insert into members (member_number, member_type, full_name, phone_number, guest_id, is_active, created_at)
 select
   'M-' || lpad(row_number() over (order by g.name)::text, 4, '0'),
   case when p.pattern = 'corporate' then 'Company' else 'Family' end,
-  g.name, g.phone, g.id, true
+  g.name, g.phone, g.id, true, g.created_at
 from guests g
 join _people p on p.full_name = g.name
 where p.pattern in ('vip', 'corporate')
@@ -517,22 +461,56 @@ declare
 begin
   for r in select m.id as member_id, m.guest_id, m.member_type from members m loop
     for v in
-      select spend_amount, visit_date
+      select id, spend_amount, visit_date
       from visits
       where guest_id = r.guest_id and spend_amount > 0
-      order by visit_date
+      order by visit_date, visit_time, id
     loop
       perform add_member_transaction(
         r.member_id,
         v.spend_amount,
         (v.visit_date + time '20:00') at time zone 'Asia/Jakarta',
-        null, null, 'Demo'
+        null, null, 'Demo', v.id
       );
     end loop;
   end loop;
 end $$;
 
 -- ── Confirm ───────────────────────────────────────────────────────────
+-- Validate before committing; a broken seed rolls back instead of persisting.
+do $$
+begin
+  if (select count(*) from guests) <> 120 or (select count(*) from visits) <> 287 then
+    raise exception 'Unexpected demo guest/visit counts.';
+  end if;
+  if exists (
+    select 1 from visits, _anchor
+    where visit_date < start_date or visit_date >= today
+  ) then
+    raise exception 'A historical visit falls outside the three-month window.';
+  end if;
+  if exists (
+    select 1 from visits v left join reservations r on r.id = v.reservation_id
+    where v.visit_type = 'Reservation' and
+      (r.id is null or r.guest_id <> v.guest_id or r.reservation_date <> v.visit_date
+       or r.reservation_time <> v.visit_time or r.pax <> v.pax)
+  ) then
+    raise exception 'Reservation and visit histories do not match.';
+  end if;
+  if exists (
+    select 1 from visits v join tables t on t.id = v.table_id
+    where v.assigned_area is distinct from t.area_id
+    union all
+    select 1 from reservations r join tables t on t.id = r.table_id
+    where r.assigned_area is distinct from t.area_id
+  ) then
+    raise exception 'A seeded table is assigned to the wrong area.';
+  end if;
+  if exists (select 1 from member_transactions where visit_id is null) then
+    raise exception 'A membership transaction is missing its visit link.';
+  end if;
+end $$;
+
 select 'guests'                as what, count(*)::text as value from guests
 union all select 'visits',              count(*)::text from visits
 union all select '  visits per month',  to_char(count(*) / 3.0, 'FM990') from visits
@@ -555,3 +533,5 @@ union all select 'p90 spend',            to_char(percentile_disc(0.9) within gro
 union all select 'average pax',          to_char(avg(pax), 'FM990D0') from visits
 union all select 'total revenue',        to_char(sum(spend_amount), 'FM999G999G999G999') from visits
 order by 1;
+
+commit;
