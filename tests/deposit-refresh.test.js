@@ -12,8 +12,14 @@ const extract = (name) => app.match(new RegExp(`^async function ${name}\\([\\s\\
         const calls = [];
         const ctx = vm.createContext({
           depositActionResId: 'booking', TODAY: '2026-09-07',
+          reservationDataRevision: 0,
           document: { getElementById: () => ({ value: '50000' }) },
-          loader() {}, toast() {}, hideModal() {}, t: s => s,
+          loader() {}, toast() {}, hideModal() {
+            if (action === 'submitDepositPayment') {
+              assert.deepEqual(calls, dashboard ? ['reservations', 'dashboard'] : ['reservations'],
+                'payment modal closes only after booking displays have refreshed');
+            }
+          }, t: s => s,
           currentStaffId: () => 'staff', depositRupiah: String,
           db: { rpc: async () => ({ data: { ok: success, locked: true } }) },
           supabaseQuery: fn => fn(), isViewingStaffDashboard: () => dashboard,

@@ -55,7 +55,7 @@
 // rows than it used to. The cap still exists because the one failure this bell
 // must never have is a genuinely new booking pushed off the bottom.
 const RES_NOTIFY_MAX = 150;
-const RES_NOTIFY_POLL_MS = 3 * 60 * 1000; // background catch-up poll
+const RES_NOTIFY_POLL_MS = 30 * 1000; // catch missed socket events without a manual refresh
 const RES_NOTIFY_DEFAULT_OPEN = "10:00"; // fallback if app_settings hasn't loaded yet
 
 let _resNotifyStarted = false;
@@ -190,7 +190,7 @@ async function _resNotifyFetch() {
     // Cancelled / No Show / Deleted stay out on purpose. Chasing a follow-up
     // for a booking that is already cancelled is noise, and noise is what
     // gets a bell ignored.
-    .in("status", ["Reserved", "Confirmed", "Incoming", "Arrived", "Completed"])
+    .in("status", ["Reserved", "Confirmed", "Incoming", "Waitlist", "Arrived", "Completed"])
     // Still-unhandled bookings of ANY date, plus anything dated today
     // or later (those can still enter a reminder slot). Past bookings
     // already followed up are done with — excluding them keeps old
@@ -265,6 +265,13 @@ async function _resNotifyRefresh({ chimeNew = false } = {}) {
   const pending = items.filter((it) => _resNotifyClassify(it) === "pending");
   const deposit = items.filter((it) => _resNotifyClassify(it) === "deposit");
   const incoming = items.filter((it) => _resNotifyClassify(it) === "incoming");
+
+  // A missed socket event caught by the bell must also reach the visible list.
+  const previousIds = new Set(_resNotifyItems.map((it) => it.id));
+  if (_resNotifyPrimed && items.some((it) => !previousIds.has(it.id)) &&
+      typeof scheduleReservationViewsRefresh === "function") {
+    scheduleReservationViewsRefresh();
+  }
 
   if (chimeNew && _resNotifyPrimed) {
     // A brand new online booking: gong + toast. This is the one that
@@ -754,11 +761,13 @@ function setupOnlineResNotify() {
       { event: "UPDATE", schema: "public", table: "reservations" },
       (payload) => {
         if (payload?.new?.reservation_source !== "Online Form") return;
-        _resNotifyRefresh(); // e.g. follow-up or reminder toggled on another device
+        _resNotifyRefresh({ chimeNew: true }); // also catches an INSERT missed during reconnect
       },
     )
     .subscribe((status) => {
       _resNotifyLive = status === "SUBSCRIBED";
+      // Catch bookings created during a disconnect or the initial subscription gap.
+      if (_resNotifyLive) _resNotifyRefresh({ chimeNew: true });
       _resNotifyRenderBadge();
     });
 }

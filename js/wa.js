@@ -596,7 +596,9 @@ function waReservationBtns(res) {
     return `<button onclick="openDepositInvoice('${res.id}')" class="${WA_BTN_CLASS}">Invoice Followup</button>`;
   }
   if (res.status === "Reserved") {
-    return `<button onclick="waSendFollowUpReservation('${res.id}')" class="${WA_BTN_CLASS}">WA Follow Up</button>`;
+    const balance = typeof resDepositBalances !== "undefined" ? resDepositBalances[res.id] : null;
+    const label = balance?.state === "paid" ? t("Deposit Follow Up") : "WA Follow Up";
+    return `<button onclick="waSendFollowUpReservation('${res.id}')" class="${WA_BTN_CLASS}">${label}</button>`;
   }
   if (res.status === "Completed") {
     return `<button onclick="waSendThankYouReservation('${res.id}')" class="${WA_BTN_CLASS}">WA Thanks</button>`;

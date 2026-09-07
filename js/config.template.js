@@ -762,6 +762,7 @@ const ID_DICT = {
   // and " outstanding" makes two fragments no translator can reorder, and
   // Indonesian puts them in the other order.
   "Deposit paid": "DP lunas",
+  "Deposit Follow Up": "Tindak Lanjut DP",
   "Part paid": "DP sebagian",
   "Paid in full": "Lunas",
   overdue: "Lewat batas",

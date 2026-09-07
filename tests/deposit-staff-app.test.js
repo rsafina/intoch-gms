@@ -121,8 +121,8 @@ ok(
   "Staff should not have to open Update Reservation just to chase a deposit.",
 );
 ok(
-  "Reserved rows keep the ordinary WA follow-up",
-  /res\.status === "Reserved"[\s\S]{0,120}waSendFollowUpReservation\('\$\{res\.id\}'\)[\s\S]{0,120}WA Follow Up/.test(wa),
+  "Reserved rows choose a paid-deposit label and keep the reservation follow-up action",
+  /res\.status === "Reserved"[\s\S]{0,400}Deposit Follow Up[\s\S]{0,150}waSendFollowUpReservation/.test(wa),
 );
 
 // ── The one blocked transition ────────────────────────────────────────────
@@ -148,7 +148,7 @@ ok("explainIncomingLock exists and names both legitimate doors",
 console.log("\nIncoming deposit bookings are in the bell");
 ok(
   "notify.js fetches Incoming online reservations",
-  /\.in\("status", \["Reserved", "Confirmed", "Incoming", "Arrived", "Completed"\]\)/.test(notify),
+  /\.in\("status", \["Reserved", "Confirmed", "Incoming", "Waitlist", "Arrived", "Completed"\]\)/.test(notify),
 );
 ok(
   "notify.js classifies deposit Incoming separately from arrival reminders",

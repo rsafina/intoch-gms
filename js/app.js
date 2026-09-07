@@ -531,8 +531,30 @@ function setupAutoRefresh() {
 // work unless I refresh the page". A page refresh cured it because a fresh
 // load starts with no channel. Reproduced against @supabase/supabase-js.
 let _rtTodayChannel = null;
+let _rtReservationTimer = null;
+
+// Shared by realtime and notification catch-up, so both update the visible list.
+function scheduleReservationViewsRefresh() {
+  clearTimeout(_rtReservationTimer);
+  _rtReservationTimer = setTimeout(async () => {
+    _rtReservationTimer = null;
+    try {
+      if (isViewingStaffDashboard()) await loadDashboard();
+      else if (currentPage === "reservations") await loadReservations();
+      else if (currentPage === "reports") {
+        await loadDashboardReservationCounts();
+        await loadOpsForecast();
+        await reloadPeakTrafficOnly();
+      }
+    } catch (error) {
+      console.warn("Live reservation refresh failed", error);
+    }
+  }, 250);
+}
 
 function teardownRealtimeUpdates() {
+  clearTimeout(_rtReservationTimer);
+  _rtReservationTimer = null;
   if (!_rtTodayChannel) return;
   try {
     db.removeChannel(_rtTodayChannel);
@@ -548,28 +570,7 @@ function setupRealtimeUpdates() {
   // must never be the thing that throws: it runs in the middle of app boot
   // and takes everything after it down with it.
   teardownRealtimeUpdates();
-  // Single channel for both tables — coalesces rapid bursts with a 1.5s debounce
-  let _rtTimer = null;
-  function scheduleRefresh() {
-    clearTimeout(_rtTimer);
-    _rtTimer = setTimeout(async () => {
-      // Only refresh views that show today's live data. Admin normally sees
-      // page-admin-dashboard, so a plain "dashboard" page for that role has
-      // nothing on screen consuming this — but an admin who opened the Staff
-      // Dashboard IS looking at page-dashboard and must get live updates like
-      // anyone else, otherwise the owner watches a frozen floor view.
-      if (isViewingStaffDashboard()) {
-        await loadDashboard();
-        return;
-      }
-      // If on ops reports, refresh just the live/forecast sections (not the full report)
-      if (currentPage === "reports") {
-        await loadDashboardReservationCounts(); // updates today's res + cancel cards
-        await loadOpsForecast(); // updates this week / next week / next month
-        await reloadPeakTrafficOnly(); // updates today's bar in peak chart
-      }
-    }, 1500);
-  }
+  const scheduleRefresh = scheduleReservationViewsRefresh;
 
   _rtTodayChannel = db.channel("rt-today-updates");
   _rtTodayChannel
@@ -2744,7 +2745,13 @@ async function renderAreas() {
 // ============================================================
 // DASHBOARD
 // ============================================================
+let reservationDataRevision = 0;
+let dashboardLoadRequest = 0;
+let dashboardReservationRequest = 0;
+
 async function loadDashboard() {
+  const request = ++dashboardLoadRequest;
+  const revision = reservationDataRevision;
   try {
     const [walkins, reservations] = await Promise.all([
       supabaseQuery(
@@ -2773,6 +2780,7 @@ async function loadDashboard() {
       ),
     ]);
 
+    if (request !== dashboardLoadRequest || revision !== reservationDataRevision) return;
     if (walkins.error || reservations.error) {
       toast("Some dashboard data failed to load.", "error");
       return;
@@ -2796,6 +2804,7 @@ async function loadDashboard() {
     await attachGuestVisitCounts(walkins.data || []);
     renderDashboardWalkIns(walkins.data || []);
     await loadDashboardReservationCounts();
+    if (request !== dashboardLoadRequest || revision !== reservationDataRevision) return;
     updateDashboardReservationTabs();
     await loadDashboardReservations(dashboardReservationOffset, resData);
     loadDashboardPrizeRedemptions();
@@ -2995,6 +3004,8 @@ function updateDashboardReservationTabs() {
 }
 
 async function loadDashboardReservations(offset = 0, initialData = null) {
+  const request = ++dashboardReservationRequest;
+  const revision = reservationDataRevision;
   dashboardReservationOffset = offset;
   updateDashboardReservationTabs();
 
@@ -3024,6 +3035,7 @@ async function loadDashboardReservations(offset = 0, initialData = null) {
 
   await loadDepositBalances(data);
   await attachGuestVisitCounts(data);
+  if (request !== dashboardReservationRequest || revision !== reservationDataRevision) return;
   renderDashboardReservations(data);
 }
 
@@ -7261,8 +7273,10 @@ async function editReservation(resId) {
 // Balances for the rows currently rendered, keyed by reservation id. Reset on
 // every render so a stale balance can never outlive the row it described.
 let resDepositBalances = {};
+let depositBalanceRequest = 0;
 
 async function loadDepositBalances(rows) {
+  const request = ++depositBalanceRequest;
   resDepositBalances = {};
   const ids = (rows || []).filter((r) => r && r.id && r.deposit_required).map((r) => r.id);
   if (!ids.length) return;
@@ -7276,7 +7290,7 @@ async function loadDepositBalances(rows) {
   );
   // A missing badge is a cosmetic loss. A blank reservations list because the
   // balances view hiccuped is an outage, so this never blocks the render.
-  if (error || !data) return;
+  if (error || !data || request !== depositBalanceRequest) return;
   data.forEach((b) => {
     resDepositBalances[b.reservation_id] = b;
   });
@@ -7638,6 +7652,11 @@ async function submitDepositPayment() {
     toast((data && data.message) || t("Could not record the payment"), "error");
     return;
   }
+  // Discard dashboard reads started before this payment committed.
+  reservationDataRevision++;
+  await loadReservations();
+  if (isViewingStaffDashboard()) await loadDashboard();
+  if (typeof _resNotifyRefresh === "function") await _resNotifyRefresh();
   hideModal("modal-deposit-payment");
   toast(
     data.locked
@@ -7648,8 +7667,6 @@ async function submitDepositPayment() {
         " " +
         t("still outstanding"),
   );
-  await loadReservations();
-  if (isViewingStaffDashboard()) await loadDashboard();
 }
 
 // ── 3. Waive the deposit ──────────────────────────────────────────────────
@@ -7686,6 +7703,7 @@ async function submitWaiveDeposit() {
     return;
   }
   hideModal("modal-deposit-waive");
+  reservationDataRevision++;
   toast(t("Deposit waived — booking is now Reserved"));
   await loadReservations();
   if (isViewingStaffDashboard()) await loadDashboard();
