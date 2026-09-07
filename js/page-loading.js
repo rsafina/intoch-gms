@@ -8,18 +8,18 @@
   const CYCLE_MS = 1500;
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   const root = document.documentElement;
-  // A short rest at contact, then a ballistic rise and fall.
+  // Follow the base's roughly 60-degree edge up and right, then return to contact.
   function bounceTransform(phase) {
     const progress = ((phase / (Math.PI * 2)) % 1 + 1) % 1;
     const flight = Math.min(progress / 0.84, 1);
     const lift = 4 * flight * (1 - flight);
-    return 'translate(0 ' + (-96 * lift).toFixed(2) + ')';
+    return 'translate(' + (56 * lift).toFixed(2) + ' ' + (-96 * lift).toFixed(2) + ')';
   }
   function logoMarkup() {
     // Separate vector pieces preserve the mark's cutouts as the top lifts.
     return '<svg class="loading-logo" viewBox="-15 -110 480 558" aria-hidden="true" focusable="false" fill="#3c56a6">' +
       '<path fill-rule="evenodd" d="M160 173 H258 Q285 173 300 200 L349 282 Q362 303 350 325 L299 413 Q288 433 265 433 H19 Q-9 433 4 407 L125 195 Q137 173 160 173 Z M172 195 Q159 195 165 208 L212 287 Q216 295 226 295 H315 Q329 295 322 282 L276 203 Q271 195 262 195 Z" />' +
-      '<g data-loading-top transform="translate(0 0.00)"><path fill-rule="evenodd" d="M255 0 H357 Q385 0 400 27 L444 106 Q456 127 445 149 L396 233 Q381 260 357 260 H255 Q230 260 217 238 L169 152 Q155 131 169 108 L219 22 Q231 0 255 0 Z M268 22 Q253 22 259 35 L305 113 Q310 121 320 121 H409 Q423 121 417 108 L372 31 Q366 22 356 22 Z" /></g></svg>';
+      '<g data-loading-top transform="translate(0.00 0.00)"><path fill-rule="evenodd" d="M255 0 H357 Q385 0 400 27 L444 106 Q456 127 445 149 L396 233 Q381 260 357 260 H255 Q230 260 217 238 L169 152 Q155 131 169 108 L219 22 Q231 0 255 0 Z M268 22 Q253 22 259 35 L305 113 Q310 121 320 121 H409 Q423 121 417 108 L372 31 Q366 22 356 22 Z" /></g></svg>';
   }
   function syncMotion() {
     // The observer can fire one microtask after the document has gone (a
