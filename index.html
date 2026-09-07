@@ -3203,6 +3203,10 @@
            previewing a document before it is sent. Every other page matches;
            this one has a reason. -->
       <section id="page-invoice" class="page-section p-8">
+        <div id="inv-reservation-context" class="hidden mb-4 p-4 rounded-xl bg-cyan-50 border border-cyan-100">
+          <span id="inv-reservation-label" class="text-sm"></span>
+          <button onclick="invReturnToReservation()" class="btn-ghost text-xs ml-3" data-i18n>Back to reservation</button>
+        </div>
         <div class="max-w-[1500px] mx-auto">
           <div class="mb-6">
             <div class="gold-bar mb-3"></div>
@@ -3534,6 +3538,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                        seconds and staff need to copy this. -->
                   <p id="inv-saved-line" class="hidden text-xs mt-1">
                     <span id="inv-saved-no" class="font-medium text-[color:var(--brand-ink)]"></span>
+                    <a id="inv-preview-link" target="_blank" rel="noopener" class="ml-2 underline" data-i18n>Preview guest invoice</a>
                     <button
                       onclick="invCopyLink()"
                       class="ml-2 text-[color:var(--accent-strong)] hover:underline"

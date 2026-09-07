@@ -697,37 +697,6 @@
         opacity: 0.55;
         cursor: default;
       }
-      /* The large-party handoff. WhatsApp green rather than the brand
-         gradient, and deliberately NOT styled as .btn-submit: it does not
-         book a table, it opens a conversation, and a guest who reads it as
-         the submit button will think they have a reservation. */
-      .btn-wa {
-        width: 100%;
-        margin-top: 12px;
-        border: none;
-        border-radius: 999px;
-        padding: 14px;
-        font-family: inherit;
-        font-size: 15px;
-        font-weight: 600;
-        color: #fff;
-        background: #1faf5e;
-        cursor: pointer;
-        box-shadow: 0 6px 18px rgb(0 0 0 / 0.22);
-        transition:
-          opacity 0.15s,
-          transform 0.1s;
-      }
-      .btn-wa:active {
-        transform: scale(0.985);
-      }
-      /* Large-party mode. The action is a conversation, not a booking, so the
-         button carries the colour the guest already associates with the
-         WhatsApp step rather than the reserve colour. */
-      .btn-submit.btn-wa-submit {
-        background: #1faf5e;
-        color: #fff;
-      }
       /* Quick-link buttons */
       .quick-links {
         display: flex;
@@ -1000,15 +969,6 @@
               >
             </label>
             <p id="pax-note" class="soft-note" style="display: none"></p>
-            <!-- Shown only when the large-party gate is closed. A link, not a
-                 form control: it leaves the page, and nothing is saved. -->
-            <button
-              type="button"
-              id="pax-wa-btn"
-              class="btn-wa"
-              style="display: none"
-              onclick="openLargePartyWa()"
-            ></button>
           </div>
 
           <!-- Area picker. Hidden entirely when no area is bookable online,
@@ -1257,7 +1217,7 @@
       // lowers the number again — not everything the page can show.
       let SHOW_NOTES = true;
       let SHOW_COMPANY = false;
-      // Above MAX_PAX, hand the guest to WhatsApp instead of taking a booking.
+      // Above MAX_PAX, save a request and offer WhatsApp on the confirmation page.
       // BOTH must be true for the gate to close: a restaurant that ticks the
       // box and never fills in the number would otherwise make every large
       // booking impossible, with no way for the guest to tell anyone.
@@ -1485,11 +1445,6 @@
         );
       }
 
-      function openLargePartyWa() {
-        if (!largePartyGate()) return;
-        window.open(largePartyWaLink(), "_blank", "noopener");
-      }
-
       // Says, before submitting, that a large party is a request rather than a
       // booking. Told afterwards it reads as a downgrade; told here it is just
       // how it works.
@@ -1517,7 +1472,7 @@
         if (el) {
           el.textContent = gate
             ? gt(
-                "For a larger party, please contact our representative directly for a smoother process.",
+                "For larger parties, submit your request first. You can then contact our representative on WhatsApp from the confirmation page.",
               )
             : big
               ? gtf(
@@ -1546,17 +1501,11 @@
           tl.textContent = gt(tl.dataset.i18nEn);
         }
 
-        // One button, two jobs, so the guest is never shown two things that
-        // look like Submit. The standalone WhatsApp button from the previous
-        // version is retired: it left the page without saving, and staff had
-        // nothing to chase if the guest never sent the message.
-        const wa = $("pax-wa-btn");
-        if (wa) wa.style.display = "none";
+        // Save the request first; WhatsApp is optional on the next page.
         const submit = $("btn-submit");
         if (submit) {
-          submit.dataset.i18nEn = gate ? "Contact us" : "Reserve Now";
+          submit.dataset.i18nEn = gate ? "Submit request" : "Reserve Now";
           submit.textContent = gt(submit.dataset.i18nEn);
-          submit.classList.toggle("btn-wa-submit", gate);
         }
       }
 
@@ -2166,11 +2115,8 @@
           clampPax(); // restore a visible value so the guest sees what to fix
           return showError(errMsg("invalid_pax"));
         }
-        // A large party is SAVED and then handed over, not handed over
-        // instead of being saved (decided 2026-09-07). The server marks it
-        // Waitlist / over_max_pax, so it holds no table, and staff have
-        // something to chase if the guest never sends the message. Read
-        // before the await, because the fields are cleared by the redirect.
+        // Save large parties as requests and carry their contact link to the
+        // confirmation page. Opening WhatsApp is the guest's choice there.
         const handoff = largePartyGate() ? largePartyWaLink() : null;
         if (!date || !time) return showError(errMsg("missing_datetime"));
         // Mandatory only once there is something to choose. With no bookable
@@ -2238,15 +2184,7 @@
             if (handoff) sessionStorage.setItem("bhPublicResWa", handoff);
             else sessionStorage.removeItem("bhPublicResWa");
           } catch (_) {}
-          // Opened here, while the tap that submitted the form is still the
-          // reason this code is running, so the browser treats it as the
-          // guest's own action. If it is blocked anyway, nothing is lost: the
-          // next page carries the same link on a button they can tap.
-          if (handoff) {
-            try {
-              window.open(handoff, "_blank", "noopener");
-            } catch (_) {}
-          }
+          // Show the saved request before offering the optional WhatsApp link.
           PageLoading.begin();
           window.location.href = "reservation-created.html";
         } catch (err) {

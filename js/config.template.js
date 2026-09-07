@@ -112,6 +112,15 @@ const I18N_EXCEPTION_TERMS = new Set([
 
 // Indonesian translations, keyed by the English source string.
 const ID_DICT = {
+  "Invoice saved, but the contact date could not be updated.": "Invoice tersimpan, tetapi tanggal kontak tidak dapat diperbarui.",
+  "Back to reservation": "Kembali ke reservasi",
+  "Preview guest invoice": "Pratinjau invoice tamu",
+  "Invoice for reservation": "Invoice untuk reservasi",
+  "Saved invoices": "Invoice tersimpan",
+  "Edit invoice": "Edit invoice",
+  "This invoice is no longer available to edit.": "Invoice ini tidak lagi tersedia untuk diedit.",
+  "Could not load invoices. Reopen the reservation to retry.": "Tidak dapat memuat invoice. Buka kembali reservasi untuk mencoba lagi.",
+
   // ── Area conditions + booking limits (added 2026-09-04) ───
   // Identity mappings are omitted on purpose; see the note above.
   "Booking limits": "Batas reservasi",

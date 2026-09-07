@@ -512,10 +512,8 @@
           // The guest is the one sending this, so it goes in the language
           // they are reading.
           const wa = document.getElementById("btn-wa");
-          // A large party was handed to a different desk with a fuller
-          // message. Reusing the general number here would send the guest who
-          // did not manage to tap through on the booking page to a team with
-          // no idea what they are about.
+          // Large parties can choose to contact the configured representative
+          // here, with their request details already included in the message.
           const handoff = sessionStorage.getItem("bhPublicResWa");
           if (handoff) {
             wa.href = handoff;

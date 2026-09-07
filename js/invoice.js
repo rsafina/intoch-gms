@@ -3,18 +3,9 @@
 // ------------------------------------------------------------
 // Fill a form → see an A4 sheet → download it as PDF.
 //
-// Deliberate non-features (asked and confirmed with Rere,
-// 2026-07-31):
-//   • Nothing is written to Supabase. This is a document
-//     generator, not a billing system. An invoice generated
-//     here does NOT mean anyone owes or paid anything.
-//   • The last 5 are kept in localStorage on this browser
-//     only. A different laptop, or a cleared cache, sees an
-//     empty list. That is expected — do not "fix" it by
-//     adding a table without deciding first who is allowed
-//     to edit an already-issued invoice.
-//   • Receipt numbers are typed by hand. We can only warn
-//     about repeats we happen to have in local history.
+// Saved documents live in invoices and can be attached to a reservation.
+// Saving a document does not record a payment or confirm a booking.
+// The local last-five history remains available for copying old layouts.
 //
 // Every calculated field (amount, subtotal, service, tax,
 // total, DP) auto-fills but stays editable. Once a person
@@ -354,6 +345,8 @@ async function invDownloadPdf() {
 let invSavedId = null;
 let invSavedToken = null;
 let invSavedNo = null;
+let invReservationContext = null;
+let invSaving = false;
 
 // The public link, resolved against whatever address the staff app is served
 // from. Deliberately NOT a configured base URL: a wrong one produces a link
@@ -373,6 +366,8 @@ function invShowSavedLine() {
     line.classList.add("hidden");
     return;
   }
+  const preview = invEl("inv-preview-link");
+  if (preview) preview.href = invPublicLink(invSavedToken);
   no.textContent = t("Saved as") + " " + (invSavedNo || "-");
   line.classList.remove("hidden");
 }
@@ -413,6 +408,11 @@ function invSummaryFrom(snap) {
 }
 
 async function invSaveInvoice(send) {
+  if (invSaving) return;
+  if (invReservationContext && !isManagerOrAdmin()) {
+    toast(t("Only a manager can issue an invoice"), "error");
+    return;
+  }
   if (!invVal("inv-name").trim()) {
     toast(t("Fill in the guest name first."), "error");
     return;
@@ -438,6 +438,10 @@ async function invSaveInvoice(send) {
     return;
   }
 
+  invSaving = true;
+  const context = invReservationContext;
+  const savedId = invSavedId;
+  ["inv-send-btn", "inv-save-btn"].forEach(id => { if (invEl(id)) invEl(id).disabled = true; });
   const btn = invEl(send ? "inv-send-btn" : "inv-save-btn");
   const label = btn ? btn.textContent : "";
   if (btn) {
@@ -447,7 +451,9 @@ async function invSaveInvoice(send) {
   try {
     const sums = invSummaryFrom(snap);
     const payload = {
-      kind: "general",
+      kind: context ? context.kind : "general",
+      reservation_id: context ? context.id : null,
+      guest_id: context ? context.guestId : null,
       bill_to_name: snap.name || null,
       pax: invParseNum(snap.pax),
       event_date: snap.eventdate || null,
@@ -460,13 +466,25 @@ async function invSaveInvoice(send) {
       status: "issued",
     };
 
+    // Older deposit documents have a token but predate invoice numbering.
+    // Upgrading one keeps its identity and allocates its first number once.
+    if (savedId && !invSavedNo) {
+      const { data: noData, error: noErr } = await supabaseQuery(
+        () => db.rpc("next_invoice_no"), "Failed to allocate an invoice number",
+      );
+      if (noErr || !noData) {
+        toast(t("Could not allocate an invoice number."), "error");
+        return;
+      }
+      payload.invoice_no = noData;
+    }
     let row = null;
-    if (invSavedId) {
+    if (savedId) {
       // An edit of the invoice already on screen. The NUMBER and the token are
       // kept: a guest who already has the link must still reach the document,
       // and renumbering would break the restaurant's own books.
       const { data, error } = await supabaseQuery(
-        () => db.from("invoices").update(payload).eq("id", invSavedId).select("id, token, invoice_no"),
+        () => db.from("invoices").update(payload).eq("id", savedId).select("id, token, invoice_no"),
         "Failed to update the invoice",
       );
       // PostgREST answers 204 for an update that matched nothing, which is
@@ -522,6 +540,17 @@ async function invSaveInvoice(send) {
         link,
       }),
     );
+    if (opened && context) {
+      const { data: asked, error: askedError } = await supabaseQuery(
+        () => db.from("reservations").update({ deposit_asked_at: new Date().toISOString() })
+          .eq("id", context.id).select("id"),
+        "Failed to record the request",
+      );
+      if (askedError || !asked?.length) {
+        toast(t("Invoice saved, but the contact date could not be updated."), "error");
+        return;
+      }
+    }
     // The invoice exists whether or not WhatsApp opened. A popup blocker must
     // not cost staff the work they just did, so say so and leave the link on
     // screen to copy.
@@ -531,6 +560,8 @@ async function invSaveInvoice(send) {
         : t("Invoice saved — copy the link and send it yourself"),
     );
   } finally {
+    invSaving = false;
+    ["inv-send-btn", "inv-save-btn"].forEach(id => { if (invEl(id)) invEl(id).disabled = false; });
     if (btn) {
       btn.disabled = false;
       btn.textContent = label;
@@ -648,6 +679,9 @@ function invApplySnapshot(h) {
   // Without this, loading yesterday's invoice from the local history and
   // pressing Save would silently rewrite yesterday's saved document, keeping
   // its number, and the guest who has that link would see somebody else's bill.
+  invReservationContext = null;
+  invShowReservationContext();
+  if (invEl("inv-wa")) invEl("inv-wa").value = "";
   invSavedId = null;
   invSavedToken = null;
   invSavedNo = null;
@@ -705,12 +739,16 @@ function invApplySnapshot(h) {
 // ── Reset / boot ────────────────────────────────────────────
 
 function invReset() {
+  if (invSaving) return;
   // A browser confirm() is not part of the DOM, so the i18n observer
   // cannot reach it — this one string has to be translated at the
   // source with t().
   if (!confirm(t("Clear the form and start a new invoice?"))) return;
   // A cleared form is a new invoice. The saved row stays in the database with
   // its number and its link intact; this page just stops editing it.
+  invReservationContext = null;
+  invShowReservationContext();
+  if (invEl("inv-wa")) invEl("inv-wa").value = "";
   invSavedId = null;
   invSavedToken = null;
   invSavedNo = null;
@@ -1187,4 +1225,107 @@ async function invResetStyle() {
   };
   invRenderStyleForm();
   await invSaveStyle();
+}
+// Reservation-linked invoices use the same editor and public document renderer.
+function invShowReservationContext() {
+  const box = invEl("inv-reservation-context");
+  if (!box) return;
+  box.classList.toggle("hidden", !invReservationContext);
+  const label = invEl("inv-reservation-label");
+  if (label) label.textContent = invReservationContext
+    ? t("Invoice for reservation") + ": " + invReservationContext.name + " · " + invReservationContext.date
+    : "";
+}
+
+async function invReturnToReservation() {
+  if (!invReservationContext || invSaving) return;
+  const id = invReservationContext.id;
+  await navigateTo("reservations");
+  await openResActions(id);
+}
+
+async function invOpenReservation(res, invoiceId = null) {
+  if (invSaving || !isManagerOrAdmin()) return;
+  let query = db.from("invoices").select("*").eq("reservation_id", res.id);
+  if (invoiceId) query = query.eq("id", invoiceId);
+  else query = query.eq("kind", "deposit").eq("status", "issued");
+  const { data, error } = await supabaseQuery(
+    () => query.order("created_at", { ascending: false }),
+    "Failed to load reservation invoices",
+  );
+  if (error) return;
+  const invoice = (data || []).find(row => row.status === "issued" && (!invoiceId || row.doc));
+  if (invoiceId && !invoice) {
+    toast(t("This invoice is no longer available to edit."), "error");
+    return;
+  }
+  hideModal("modal-res-actions");
+  await navigateTo("invoice");
+  const name = res.booking_name || res.guests?.name || "";
+  invApplySnapshot(invoice?.doc ? invoice.doc : {
+    name, pax: String(res.pax || ""), table: res.tables?.name || "",
+    eventdate: res.reservation_date, paydate: invToday(),
+    svcOn: false, taxOn: false, dpOn: false, settleOn: false,
+    // Start with the agreed deposit; staff can replace it with detailed items.
+    items: [{ name: t("Deposit"), qty: "1", price: String(res.deposit_expected || ""),
+      unit: "", amount: "", amountLocked: false }],
+    note: String(reservationFormSettings().bank_details || ""),
+    locked: { subtotal: false, svc: false, tax: false, total: false, dp: false, settle: false },
+  });
+  invReservationContext = {
+    id: res.id, guestId: res.guest_id, kind: invoice ? invoice.kind : "deposit",
+    name, date: res.reservation_date,
+  };
+  invEl("inv-wa").value = res.guests?.phone || "";
+  if (invoice) {
+    invSavedId = invoice.id;
+    invSavedToken = invoice.token;
+    invSavedNo = invoice.invoice_no;
+  }
+  invShowReservationContext();
+  invShowSavedLine();
+  invShowTab("build");
+  invFitPreview();
+}
+
+async function invEditReservationInvoice(invoiceId) {
+  if (invSaving || !isManagerOrAdmin()) return;
+  const { data: invoice, error } = await supabaseQuery(
+    () => db.from("invoices").select("reservation_id").eq("id", invoiceId).single(),
+    "Failed to load the invoice",
+  );
+  if (error || !invoice?.reservation_id) return;
+  const { data: res, error: resError } = await supabaseQuery(
+    () => db.from("reservations").select("*, guests(name, phone), tables(name)")
+      .eq("id", invoice.reservation_id).single(),
+    "Failed to load the booking",
+  );
+  if (!resError && res) await invOpenReservation(res, invoiceId);
+}
+
+function reservationInvoicesPanel(invoices, error) {
+  const title = '<p class="text-xs uppercase tracking-wider mb-2">' + escapeHtml(t("Saved invoices")) + '</p>';
+  if (error) return '<div class="mb-4">' + title + '<p class="text-sm text-red-600">' +
+    escapeHtml(t("Could not load invoices. Reopen the reservation to retry.")) + '</p></div>';
+  if (!invoices?.length) return '';
+  return '<div class="mb-4 p-3 border rounded-xl">' + title + invoices.map(row => {
+    const url = row.doc ? invPublicLink(row.token) : depositInvoiceUrl(row.token);
+    const issued = row.status === "issued";
+    return '<div class="py-2 border-b last:border-0"><p class="text-sm font-medium">' +
+      escapeHtml(row.invoice_no || t("Invoice")) + ' · ' + escapeHtml(invRupiah(row.total)) +
+      ' · ' + escapeHtml(t(row.status)) + '</p>' + (issued ?
+      '<div class="flex flex-wrap gap-3 mt-2 text-xs"><a class="underline" target="_blank" rel="noopener" href="' +
+      escapeHtml(url) + '">' + escapeHtml(t("Preview guest invoice")) + '</a>' +
+      '<button class="underline" data-invoice-url="' + escapeHtml(url) + '" onclick="invCopyReservationLink(this.dataset.invoiceUrl)">' +
+      escapeHtml(t("Copy guest link")) + '</button>' +
+      (row.doc && isManagerOrAdmin() ? '<button class="underline" onclick="invEditReservationInvoice(\'' +
+        escapeHtml(row.id) + '\')">' + escapeHtml(t("Edit invoice")) + '</button>' : '') + '</div>' : '') + '</div>';
+  }).join('') + '</div>';
+}
+
+function invCopyReservationLink(url) {
+  const fallback = () => window.prompt(t("Copy this link"), url);
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(url).then(() => toast(t("Link copied")), fallback);
+  } else fallback();
 }

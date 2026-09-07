@@ -1,10 +1,10 @@
 // The managed-event flow: a party too big to book online is SAVED as a
-// waitlist request and then handed to WhatsApp.
+// waitlist request with optional WhatsApp contact after confirmation.
 //
 // The rule, decided 2026-09-07, replacing the 2026-09-06 one: above
 // reservation_hours.max_pax the form switches to a short handoff (name, phone,
 // pax, area, date, rough time), saves the row — the server marks it
-// Waitlist / over_max_pax, so it holds no table — and then opens WhatsApp.
+// Waitlist / over_max_pax, so it holds no table — and then shows confirmation with an optional WhatsApp button.
 //
 // The reversal is deliberate. Creating nothing meant that a guest who never
 // sent the message left no trace at all, and staff had nobody to chase.
@@ -99,22 +99,20 @@ ok(
     "depends on is never written.",
 );
 ok(
-  "the handoff only happens after ok:true",
-  submitFn.indexOf("window.open(handoff") > submitFn.indexOf("create_public_reservation"),
-  "Opening WhatsApp for a booking the server rejected (closed date, paused, " +
-    "duplicate) promises a conversation about a request that does not exist.",
+  "submitting never opens WhatsApp automatically",
+  !/window\.open\(/.test(submitFn) && !/openLargePartyWa/.test(form),
 );
 ok(
-  "the link survives the redirect for a guest whose popup was blocked",
-  /bhPublicResWa/.test(form) && /bhPublicResWa/.test(read("reservation-created.template.html")),
-  "window.open after an await is blocked by some browsers. Without a second " +
-    "route to the same desk, that guest is simply stranded.",
+  "success navigates to the confirmation page",
+  /window\.location\.href = "reservation-created.html"/.test(submitFn),
 );
 ok(
-  "the submit button is relabelled rather than hidden",
-  /submit\.dataset\.i18nEn = gate \? "Contact us"/.test(form),
-  "Hiding the only button in a form the guest is expected to send is a dead " +
-    "end, and this form also submits on Enter.",
+  "the confirmation button uses the saved representative link",
+  /bhPublicResWa/.test(form) && /wa\.href = handoff/.test(read("reservation-created.template.html")),
+);
+ok(
+  "the submit button describes saving a request",
+  /submit\.dataset\.i18nEn = gate \? "Submit request"/.test(form),
 );
 
 // ── The waitlist keeps its other reasons ──────────────────────────────────
@@ -159,8 +157,8 @@ ok(
 // ── Every new phrase is translatable ──────────────────────────────────────
 console.log("\nEvery new phrase is translatable");
 const guestKeys = [
-  "For a larger party, please contact our representative directly for a smoother process.",
-  "Contact us",
+  "For larger parties, submit your request first. You can then contact our representative on WhatsApp from the confirmation page.",
+  "Submit request",
   "Preferred time (we will confirm)",
   "Hello, I would like to arrange a booking for {n} guests.",
   "My name is {name}, for {date} at {time}.",

@@ -166,6 +166,9 @@
 
         SNAP = row.doc;
         $("v-no").textContent = row.invoice_no || "Invoice";
+        // Deposit payments are recorded against the reservation, not this
+        // document. Its invoice-only balance cannot report their payment status.
+        $("v-due").hidden = row.kind === "deposit";
         const due = Number(row.outstanding);
         $("v-due").textContent =
           isFinite(due) && due > 0

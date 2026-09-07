@@ -6799,6 +6799,13 @@ async function openResActions(resId) {
     "Failed to load the deposit balance",
   );
   const bal = (bals || [])[0] || null;
+  const { data: invoices, error: invoiceError } = await supabaseQuery(
+    () => db.from("invoices")
+      .select("id, token, invoice_no, kind, status, total, created_at, doc")
+      .eq("reservation_id", resId).order("created_at", { ascending: false }),
+    "Failed to load reservation invoices",
+  );
+
 
   const STATUSES = [
     // Only listed when the booking is actually in it. Incoming is not a
@@ -6821,6 +6828,7 @@ async function openResActions(resId) {
     </div>
     ${largePartyAgreePanel(res)}
     ${depositActionsPanel(res, bal)}
+    ${reservationInvoicesPanel(invoices, invoiceError)}
     <p class="text-xs text-[#999] uppercase tracking-wider mb-3 font-medium">Update Status</p>
     <div class="grid grid-cols-2 gap-2 mb-4">
       ${STATUSES.map(
@@ -7492,7 +7500,7 @@ async function openDepositInvoice(resId) {
       db
         .from("reservations")
         .select(
-          "id, status, pax, reservation_date, reservation_time, deposit_required, deposit_expected, deposit_due_at, guest_id, guests(name, phone)",
+          "id, status, pax, booking_name, reservation_date, reservation_time, deposit_required, deposit_expected, deposit_due_at, guest_id, guests(name, phone), tables(name)",
         )
         .eq("id", resId)
         .single(),
@@ -7507,38 +7515,8 @@ async function openDepositInvoice(resId) {
     toast(t("This guest has no phone number — add one first"), "error");
     return;
   }
-  depositActionResId = resId;
-  depositActionRes = res;
-  const dl = res.deposit_due_at
-    ? new Date(res.deposit_due_at).toLocaleString(CURRENT_LANG === "id" ? "id-ID" : "en-GB", {
-        day: "numeric",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : "-";
-  const el = (id) => document.getElementById(id);
-  if (el("dep-inv-summary"))
-    el("dep-inv-summary").innerHTML =
-      '<p class="font-medium text-[#222]">' +
-      escapeHtml(res.guests.name || "—") +
-      "</p>" +
-      '<p class="text-xs text-[#999] mt-0.5">' +
-      escapeHtml(fmt.pax(res.pax)) +
-      " · " +
-      escapeHtml(fmt.time(res.reservation_time)) +
-      "</p>" +
-      '<p class="text-sm mt-2">' +
-      escapeHtml(t("Deposit")) +
-      ': <span class="font-display text-lg text-[color:var(--brand-ink)]">' +
-      escapeHtml(depositRupiah(res.deposit_expected)) +
-      "</span></p>" +
-      '<p class="text-xs text-[#999] mt-0.5">' +
-      escapeHtml(t("Due by") + " " + dl) +
-      "</p>";
-  if (el("dep-inv-note")) el("dep-inv-note").value = "";
-  hideModal("modal-res-actions");
-  showModal("modal-deposit-invoice");
+  await invOpenReservation(res);
+
 }
 
 async function submitDepositInvoice() {

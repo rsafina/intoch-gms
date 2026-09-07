@@ -164,9 +164,10 @@ const GUEST_DICT = {
   "My name is {name}, for {date} at {time}.":
     "Nama saya {name}, untuk tanggal {date} pukul {time}.",
   // Large-party mode: the form itself changes, so its labels do too.
-  "For a larger party, please contact our representative directly for a smoother process.":
-    "Untuk rombongan besar, silakan hubungi perwakilan kami secara langsung agar prosesnya lebih mudah.",
+  "For larger parties, submit your request first. You can then contact our representative on WhatsApp from the confirmation page.":
+    "Untuk rombongan besar, kirim permintaan Anda terlebih dahulu. Setelah itu, Anda dapat menghubungi perwakilan kami melalui WhatsApp dari halaman konfirmasi.",
   "Contact us": "Hubungi Kami",
+  "Submit request": "Kirim permintaan",
   "Preferred time (we will confirm)": "Perkiraan jam (akan kami konfirmasi)",
   "Make another reservation": "Buat reservasi lain",
   "Reservation for {name} on {date} at {time}. Hello, I have something to add to my reservation.":
