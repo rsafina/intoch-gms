@@ -336,6 +336,33 @@
         max-height: 90vh;
         overflow-y: auto;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        /* The scrollbar is painted INSIDE the box, on top of the rounded
+           corner, which is why a scrolling modal looks square down its right
+           edge while a short one looks round. Reserving the gutter and making
+           the track transparent lets the white corner show through, so the
+           shape no longer depends on how much content there is. */
+        scrollbar-gutter: stable;
+        scrollbar-width: thin;
+        scrollbar-color: #d6d1c9 transparent;
+      }
+      .modal-box::-webkit-scrollbar {
+        width: 8px;
+      }
+      .modal-box::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .modal-box::-webkit-scrollbar-thumb {
+        background: #d6d1c9;
+        border-radius: 999px;
+        /* Keeps the thumb clear of the corner radius rather than running into
+           it. The border is transparent and clipped to the padding box, so it
+           reads as breathing room, not as a thicker bar. */
+        border: 2px solid transparent;
+        background-clip: padding-box;
+      }
+      .modal-box::-webkit-scrollbar-thumb:hover {
+        background: #bdb6ac;
+        background-clip: padding-box;
       }
       /* Tag pills and suggestions */
       .tag-pill {
@@ -8530,7 +8557,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       class="modal-overlay hidden"
       onclick="if (event.target === this) hideModal('modal-res-actions');"
     >
-      <div class="modal-box" style="max-width: 400px">
+      <div class="modal-box" style="max-width: 560px">
         <div class="flex items-center justify-between mb-5">
           <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)]">
             Update Reservation

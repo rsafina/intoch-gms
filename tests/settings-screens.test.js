@@ -245,8 +245,12 @@ ok(
 );
 ok(
   "Invoice keeps its wider layout on purpose",
-  [...w.document.getElementById("page-invoice").firstElementChild.classList].some((c) =>
-    c.startsWith("max-w-["),
+  // ANY direct child, not the first one. The invoice page gained a
+  // reservation-context banner above its content wrapper, which is hidden
+  // unless the invoice was opened from a booking; reading only
+  // firstElementChild made this fail on a page whose layout never changed.
+  [...w.document.getElementById("page-invoice").children].some((child) =>
+    [...child.classList].some((c) => c.startsWith("max-w-[")),
   ),
 );
 
