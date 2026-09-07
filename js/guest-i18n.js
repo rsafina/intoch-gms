@@ -39,6 +39,7 @@ const GUEST_KEEP_ENGLISH = new Set([
   "Chef's Recommendation",
   "WhatsApp",
   "Deposit (DP)", // DP is the Indonesian abbreviation already
+  "Area: {area}.", // the word is the same in both, and {area} is the restaurant's own
 ]);
 
 // Indonesian, keyed by the English source string.
@@ -162,6 +163,11 @@ const GUEST_DICT = {
     "Halo, saya ingin mengatur reservasi untuk {n} orang.",
   "My name is {name}, for {date} at {time}.":
     "Nama saya {name}, untuk tanggal {date} pukul {time}.",
+  // Large-party mode: the form itself changes, so its labels do too.
+  "For a larger party, please contact our representative directly for a smoother process.":
+    "Untuk rombongan besar, silakan hubungi perwakilan kami secara langsung agar prosesnya lebih mudah.",
+  "Contact us": "Hubungi Kami",
+  "Preferred time (we will confirm)": "Perkiraan jam (akan kami konfirmasi)",
   "Make another reservation": "Buat reservasi lain",
   "Reservation for {name} on {date} at {time}. Hello, I have something to add to my reservation.":
     "Reservasi atas nama {name} untuk {date} jam {time}. Halo, saya ada catatan tambahan untuk reservasi saya.",

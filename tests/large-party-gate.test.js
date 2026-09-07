@@ -1,10 +1,13 @@
-// Phase 1 of the managed-event flow: a party too big to book online is handed
-// to WhatsApp instead of becoming a reservation.
+// The managed-event flow: a party too big to book online is SAVED as a
+// waitlist request and then handed to WhatsApp.
 //
-// The rule, decided 2026-09-06: above reservation_hours.max_pax the form
-// creates NOTHING and shows a WhatsApp button. It replaces the waitlist for
-// that one reason only — a party below min_pax, or an area over its capacity,
-// still waitlists exactly as before. One number, one meaning.
+// The rule, decided 2026-09-07, replacing the 2026-09-06 one: above
+// reservation_hours.max_pax the form switches to a short handoff (name, phone,
+// pax, area, date, rough time), saves the row — the server marks it
+// Waitlist / over_max_pax, so it holds no table — and then opens WhatsApp.
+//
+// The reversal is deliberate. Creating nothing meant that a guest who never
+// sent the message left no trace at all, and staff had nobody to chase.
 //
 // The gate is CLOSED only when the restaurant has both ticked the box and
 // filled in a number. Ticking the box alone would otherwise make every large
@@ -78,25 +81,40 @@ ok(
   /large_party_wa_number \|\| ""\)\.replace\(\/\\D\/g, ""\)/.test(form),
 );
 
-// ── Nothing is created ────────────────────────────────────────────────────
-console.log("\nA gated party creates nothing");
-const submit = form.slice(form.indexOf("$(\"res-form\").addEventListener"), form.indexOf("create_public_reservation"));
+// ── Saved, then handed over ───────────────────────────────────────────────
+console.log("\nA large party is saved AND handed over");
+const submitFn = form.slice(form.indexOf("$(\"res-form\").addEventListener"));
 ok(
-  "submit refuses before it reaches the booking call",
-  /largePartyGate\(\)/.test(submit),
-  "A row created 'just in case' is a table held for a booking nobody agreed " +
-    "to, and it lands in the normal list where staff will treat it as one.",
+  "the WhatsApp link is built before the booking call",
+  submitFn.indexOf("largePartyWaLink()") > -1 &&
+    submitFn.indexOf("largePartyWaLink()") <
+      submitFn.indexOf("create_public_reservation"),
+  "The link reads the form fields. Building it after the redirect has " +
+    "started gives a message with empty name, date and time.",
 );
 ok(
-  "the guard is in submit, not only on the button",
-  form.indexOf("largePartyGate()", form.indexOf("$(\"res-form\").addEventListener")) <
-    form.indexOf("db.rpc(\"create_public_reservation\""),
-  "This form submits on Enter in any field, so hiding the button guards " +
-    "nothing.",
+  "submit no longer returns early for a large party",
+  !/if \(largePartyGate\(\)\) \{\s*openLargePartyWa\(\);\s*return;/.test(form),
+  "That was the 2026-09-06 rule. Keeping it would mean the row this flow now " +
+    "depends on is never written.",
 );
 ok(
-  "the submit button is hidden while the gate is closed, so the two agree",
-  /btn-submit[\s\S]{0,120}gate \? "none" : ""/.test(form),
+  "the handoff only happens after ok:true",
+  submitFn.indexOf("window.open(handoff") > submitFn.indexOf("create_public_reservation"),
+  "Opening WhatsApp for a booking the server rejected (closed date, paused, " +
+    "duplicate) promises a conversation about a request that does not exist.",
+);
+ok(
+  "the link survives the redirect for a guest whose popup was blocked",
+  /bhPublicResWa/.test(form) && /bhPublicResWa/.test(read("reservation-created.template.html")),
+  "window.open after an await is blocked by some browsers. Without a second " +
+    "route to the same desk, that guest is simply stranded.",
+);
+ok(
+  "the submit button is relabelled rather than hidden",
+  /submit\.dataset\.i18nEn = gate \? "Contact us"/.test(form),
+  "Hiding the only button in a form the guest is expected to send is a dead " +
+    "end, and this form also submits on Enter.",
 );
 
 // ── The waitlist keeps its other reasons ──────────────────────────────────
@@ -104,14 +122,20 @@ console.log("\nThe waitlist still catches everything else");
 ok(
   "the server still waitlists on min_pax and capacity",
   /below_min_pax/.test(sql) && /over_capacity/.test(sql),
-  "The handoff replaces the over-max_pax reason only. Removing the others " +
-    "would silently accept bookings no area can seat.",
+  "Large parties are only one reason a booking waits for a human. Removing " +
+    "the others would silently accept bookings no area can seat.",
 );
 ok(
-  "the server rule is untouched by this change",
+  "the server rule is what makes the saved row a request",
   /over_max_pax/.test(sql),
-  "A restaurant that leaves the toggle off must behave exactly as it did " +
-    "yesterday, which means the server path stays.",
+  "The page saves an ordinary booking and the server downgrades it. If this " +
+    "went, every large party would be written as a confirmed reservation.",
+);
+ok(
+  "the confirmation page already words over_max_pax for a guest",
+  /over_max_pax/.test(read("reservation-created.template.html")),
+  "The row is a request, and the page the guest lands on must say so rather " +
+    "than 'Reservation Created'.",
 );
 
 // ── Settings ──────────────────────────────────────────────────────────────
@@ -135,7 +159,9 @@ ok(
 // ── Every new phrase is translatable ──────────────────────────────────────
 console.log("\nEvery new phrase is translatable");
 const guestKeys = [
-  "Parties of more than {n} are arranged with us directly. Tap below and we will help you plan it.",
+  "For a larger party, please contact our representative directly for a smoother process.",
+  "Contact us",
+  "Preferred time (we will confirm)",
   "Hello, I would like to arrange a booking for {n} guests.",
   "My name is {name}, for {date} at {time}.",
   "Chat with us on WhatsApp",
@@ -162,16 +188,32 @@ for (const [label, cfg] of [["config.template.js", cfgTpl], ["config.js", cfgOut
 // ── The handoff never looks like a booking ────────────────────────────────
 console.log("\nThe handoff never looks like a booking");
 ok(
-  "the WhatsApp button is not styled as the submit button",
-  /id="pax-wa-btn"[\s\S]{0,200}class="btn-wa"/.test(form) &&
-    !/id="pax-wa-btn"[\s\S]{0,200}class="[^"]*btn-submit/.test(form),
-  "A guest who reads it as Submit will believe they have a reservation.",
+  "the time picker is kept, and relabelled so it does not read as booked",
+  /Preferred time \(we will confirm\)/.test(form) &&
+    !/time-field[\s\S]{0,80}gate \? "none"/.test(form),
+  "reservation_time cannot be null. Hiding the picker would mean inventing " +
+    "an hour, and a made-up hour is indistinguishable from a real one in the " +
+    "day view.",
 );
 ok(
-  "the note tells them it is arranged directly, not that it is a request",
-  /arranged with us directly/.test(form),
-  "The waitlist wording ('goes in as a request') would promise a row that " +
-    "this path deliberately never creates.",
+  "the optional boxes are restored to what the RESTAURANT configured",
+  /SHOW_NOTES && !gate/.test(form) && /SHOW_COMPANY && !gate/.test(form),
+  "Restoring them to 'shown' would switch on a Company field the restaurant " +
+    "deliberately turned off, the moment a guest tried 20 and went back to 4.",
+);
+ok(
+  "area is still asked for",
+  !/area-field[\s\S]{0,80}gate \? "none"/.test(form),
+  "Whether 20 people fit indoors is the first thing the person answering " +
+    "WhatsApp needs to know.",
+);
+
+ok(
+  "the stored link is cleared on an ordinary booking",
+  /removeItem\("bhPublicResWa"\)/.test(form),
+  "sessionStorage outlives the page. A guest who tried 25, then booked for " +
+    "4, would otherwise land on a confirmation whose WhatsApp button carries " +
+    "the earlier party's message to the events desk.",
 );
 
 console.log(`\n${pass} passed, ${fail} failed`);

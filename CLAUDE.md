@@ -486,13 +486,30 @@ values before this; do not add a 729th. Tailwind needs the explicit type:
 `text-[color:var(--brand-ink)]`, not `text-[var(--brand-ink)]`.
 
 `--brand` and `--accent` are the two a client sets. Everything else derives from them, and
-derives to **pass contrast** rather than to look nice. `--accent` (`#E24701`) is 3.79:1 on
-cream, so it is **fills only, never small text**; `--accent-hover` (`#C63D01`) is the
-text-safe orange.
+derives to **pass contrast** rather than to look nice.
+
+**The accent does two jobs and needs two tokens (2026-09-06).** This has now been got wrong
+twice, so it is a rule rather than a preference:
+
+- `--accent` is a **FILL**. Bars, badges, buttons, borders, anything with dark text sitting
+  ON it. Never small text itself. In the app it is `#F9A825`, 1.97:1 on white.
+- `--accent-strong` is the same hue pushed dark enough to read: `#9F6404`, 4.89:1 on white
+  and 4.53:1 on the cream panels. **All text and icon strokes use this.**
+
+Before this, 38 places painted text and icons with the fill colour. The old gold was retired
+for failing contrast; its replacement, a pale yellow, failed too at 1.32:1, which is what
+"washed up, unclear to our eye" means in numbers. `landing.html` and `spin.template.html`
+still carry their own orange (`#E24701`) with the same split; whether they should match the
+app is an open question, not an oversight.
+
+`tests/brand-tokens.test.js` now measures the contrast itself and fails if the text colour
+drops below 4.5:1, if dark text stops being readable on the fill, or if any file paints text
+or an icon stroke with `--accent` again.
 
 **Two exemptions, both real, both previously broken by a sweep that ignored them:**
 
-1. `#inv-sheet` rules in `index.html` and `INV_DEFAULTS` in `js/invoice.js`. html2canvas
+1. `css/invoice-sheet.css` (moved out of `index.html` on 2026-09-06) and `INV_DEFAULTS` in
+   `js/invoice.js`. html2canvas
    rasterises that node and does not resolve custom properties, so a `var()` there loses
    the colour in the PDF while the screen looks perfect.
 2. `js/voucher.js` draws to a `<canvas>`; `fillStyle` takes a colour string.
@@ -742,6 +759,119 @@ Sinta.
 
 ---
 
+
+---
+
+## Where the work is, 2026-09-07 (end of day)
+
+Read this section first; the 2026-09-05 one below it is history and its "do these three
+things" list is done.
+
+**Applied and deployed:** the deposit flow (phases 1 to 3), the large-party WhatsApp gate,
+and saved reservation invoices (the database half). **Not yet run:** the migration section
+adding `invoice_by_token`. **Not yet deployed:** everything from the Phase 3 invoice work
+and the accent colour change.
+
+### Three features landed since 2026-09-05
+
+**1. The deposit flow.** A booking in an area with a deposit is created `Incoming`, holds
+its table, and leaves that status by exactly two doors: a recorded payment that clears the
+balance, or a waiver with a written reason. Both write a record. Staff CANNOT click
+"Reserved" on an Incoming booking, deliberately: that would lock a table with neither money
+nor a reason, and a week later nobody could tell it from a real payment. `Arrived` and
+`Cancelled` stay reachable, because a guest turning up unpaid and a guest backing out are
+both real. Unpaid bookings expire at the booking time itself, swept by `pg_cron` every ten
+minutes AND by the staff app on load, so a client project without cron still self-heals.
+See `DEPOSIT_FLOW_SPEC.md`.
+
+**2. The large-party gate.** Above `reservation_hours.max_pax` the public form stops and
+hands the guest to WhatsApp instead of creating anything. It replaces the waitlist for that
+ONE reason; below-min-pax and over-capacity still waitlist exactly as before. The gate
+closes only when the restaurant has BOTH ticked the box and filled in a number, otherwise it
+falls back to the old flow: a half-configured setting must not make large bookings
+impossible with no way for the guest to tell anyone.
+
+**3. Saved invoices.** The generator used to produce a picture and keep the last five in ONE
+staff member's browser. Now Save writes a row, gets a number from the database, and returns
+a public link; Save & send does that and then opens WhatsApp. A guest opens
+`invoice-view.html` and downloads the same document as a PDF.
+
+### The invoice sheet has ONE definition (2026-09-06)
+
+`css/invoice-sheet.css` and `js/invoice-sheet.js`, loaded by BOTH `index.html` and
+`invoice-view.template.html`. Nothing in either file reads a form input: they take the
+snapshot object `invSnapshot()` produces, which is also exactly what is stored in
+`invoices.doc`. Staff preview, saved row and guest copy are therefore one object rendered by
+one function and cannot disagree.
+
+- The sheet's markup comes from `invSheetMarkup()`, not from either page's HTML.
+- `js/invoice-sheet.js` must NEVER depend on `js/config.js`. The guest page cannot load it
+  (both declare `const SUPABASE_URL`, and the redeclaration kills the page, the same
+  restriction `reserve.html` is written around). That is why there is no `t()` and no
+  `toast()` in there; `invSheetPdf` reports through a `say` callback the caller supplies.
+- The lock flags in the snapshot are why the document is stored whole rather than
+  recomputed. A staff member who typed an agreed total by hand must see that total again.
+
+### The invoice data model
+
+ONE table, `invoices`, extended rather than a second `reservation_invoices` beside it.
+Deposits already write here; splitting them would mean every "what does this booking owe"
+question reads two tables and hopes they agree.
+
+- `doc` jsonb is the document; `invoice_no`, `subtotal`, `deposit_applied`, `amount_due` are
+  the queryable summary, written from that same object in one statement. If they ever
+  disagree, `doc` is right.
+- `kind` is constrained to `deposit` / `settlement` / `general`.
+- `status` stays `draft` / `issued` / `void` and **never gains `paid`**. Paid is derived by
+  `invoice_balances`, for the same reason `reservations` has no deposit status column.
+- `next_invoice_no()` allocates `INV/0001/2026` under an advisory lock. It must NOT use
+  `SELECT ... FOR UPDATE`: Postgres refuses that beside an aggregate, and it throws at RUN
+  time, not at CREATE time, so the definition looks healthy until the first save. Caught on
+  a throwaway Postgres 16 before it reached a database.
+- `reservation_money` adds reservation-attached payments (deposits) and invoice-attached
+  ones without double counting. **Voiding an invoice does not remove its payments from
+  `paid_total`.** An earlier draft excluded them and a part-paid booking reported 3.000.000
+  when 13.000.000 had arrived. Voiding is a billing decision and moves no money, the same as
+  cancelling a paid booking. `paid_on_void_invoices` flags the part that usually means a
+  refund is owed.
+
+### Line endings (2026-09-06)
+
+`.gitattributes` pins `* text=auto eol=lf`. Before it, a Windows editor rewriting a file
+turned a 46-line change into a ~29,000-line diff, because git treats the invisible
+end-of-line marker as content.
+
+**This matters when EDITING.** Several files in the working tree are mixed CRLF and LF, so a
+whole-string `replace()` built with one ending silently matches zero times and the edit
+looks like it worked. Do line-based edits that reuse each line's own ending, or normalise
+first. Tests that read source text must strip `\r\n`; `tests/res-search.test.js` failed on
+every Windows checkout and passed in CI until it did.
+
+---
+
+### Two tests fail, and both predate this work
+
+Do not "fix" them by changing the assertion until somebody decides which side is right.
+
+- `js/invoice.i18n.test.js` "closing line": the invoice footer says "We look forward to
+  welcoming you :)" and the test expects "We look forward to welcome you at Restoran :)".
+  Somebody fixed the grammar and dropped the restaurant name without updating the test.
+  **Rere's call which wording ships.**
+- `js/vouchers.test.js` crashes on a null voucher in the redeem step (`vchStatus` reading
+  `.voided` of null). Reproduced against the committed code, so it came in with the voucher
+  setup commit.
+
+Everything else is green: roughly 1,200 assertions across 35 files. `npm test` stops at the
+crashing voucher file, so run `tests/*.js` directly to see the rest.
+
+### Known-lazy spots worth a pass sometime
+
+- Three duplicate keys in `ID_DICT` (`Spending Tier`, `Remove`, `Average Spend`). A
+  duplicate key in a JS object literal is silently overwritten by the last one.
+- A test that reads source text and finds nothing passes for the wrong reason. This has
+  happened five times here: `brand-tokens.test.js` kept passing after the invoice CSS moved
+  out from under it, examining zero rules. When a check greps for the ABSENCE of something,
+  strip comments first and assert it actually examined something.
 
 ---
 

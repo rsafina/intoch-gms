@@ -307,7 +307,13 @@ function harness(opts) {
     Number(reserveTpl.match(/const WELCOME_MAX = (\d+);/)[1]),
     WELCOME_MAX,
   );
-  ok("notes hide only on an explicit false", /v\.show_notes === false/.test(reserveTpl));
+  // Spelled positively since 2026-09-07 (SHOW_NOTES is now remembered so
+  // large-party mode can put the field back), but it is the same rule: only an
+  // explicit false hides the box, and an unset key changes nothing.
+  ok(
+    "notes hide only on an explicit false",
+    /SHOW_NOTES = v\.show_notes !== false/.test(reserveTpl),
+  );
   ok("company shows only on an explicit true", /v\.show_company === true/.test(reserveTpl));
   ok("capacity shows only on an explicit true", /v\.show_capacity === true/.test(reserveTpl));
 

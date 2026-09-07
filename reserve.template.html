@@ -683,6 +683,13 @@
       .btn-wa:active {
         transform: scale(0.985);
       }
+      /* Large-party mode. The action is a conversation, not a booking, so the
+         button carries the colour the guest already associates with the
+         WhatsApp step rather than the reserve colour. */
+      .btn-submit.btn-wa-submit {
+        background: #1faf5e;
+        color: #fff;
+      }
       /* Quick-link buttons */
       .quick-links {
         display: flex;
@@ -1201,6 +1208,11 @@
       let AVAIL = {};          // area_id -> availability for the chosen date
       let SHOW_CAPACITY = false;
       let SHOW_PAX_REQUEST = false; // the optional tick box under the stepper
+      // What the RESTAURANT switched on. Large-party mode hides the optional
+      // boxes and must put back exactly what was configured when the guest
+      // lowers the number again — not everything the page can show.
+      let SHOW_NOTES = true;
+      let SHOW_COMPANY = false;
       // Above MAX_PAX, hand the guest to WhatsApp instead of taking a booking.
       // BOTH must be true for the gate to close: a restaurant that ticks the
       // box and never fills in the number would otherwise make every large
@@ -1397,22 +1409,30 @@
       // Carries what the guest already typed. Landing in the restaurant's
       // inbox as "Halo" with no details means the whole conversation starts
       // over, and the guest has already filled this form in once.
+      // Carries what the guest already typed. Landing in the restaurant's
+      // inbox as "Halo" with no details means the whole conversation starts
+      // over, and the guest has already filled this form in once. Sent AFTER
+      // the row is saved, so the message and the waitlist entry describe the
+      // same booking.
       function largePartyWaLink() {
         const n = readPaxRaw();
         const name = ($("f-name")?.value || "").trim();
         const date = $("f-date")?.value || "";
         const time = $("f-time")?.value || "";
+        const area = AREAS.find((a) => a.id === AREA_ID)?.name || "";
         const parts = [
           gtf("Hello, I would like to arrange a booking for {n} guests.", { n: n || "" }),
         ];
         // Only when all three are filled. A half-written line ("for  at ") is
-        // worse than no line, and the guest can reach this button before
-        // picking a date.
+        // worse than no line.
         if (name && date && time) {
           parts.push(
             gtf("My name is {name}, for {date} at {time}.", { name, date, time }),
           );
         }
+        // The area is the restaurant's own word for the place, so it is never
+        // translated, only labelled.
+        if (area) parts.push(gtf("Area: {area}.", { area }));
         return (
           "https://wa.me/" +
           LARGE_PARTY_WA_NUMBER +
@@ -1429,35 +1449,71 @@
       // Says, before submitting, that a large party is a request rather than a
       // booking. Told afterwards it reads as a downgrade; told here it is just
       // how it works.
+      // ===== Large-party mode =====
+      // Above the limit this stops being a booking form. The optional boxes
+      // come off, the copy explains that a person will take it from here, and
+      // the button says so. What stays is what the person answering WhatsApp
+      // needs in front of them: who, how to reach them, how many, where, which
+      // day and roughly when.
+      //
+      // The time picker STAYS, and stays required. reservation_time cannot be
+      // empty in the database, and inventing one (opening time, midnight)
+      // would put a made-up hour in the day view that staff cannot tell from a
+      // real one. A rough hour the guest chose is worth more than a precise
+      // hour nobody meant. It is relabelled so nobody reads it as booked.
       function renderPaxNote() {
-        const el = $("pax-note");
-        if (!el) return;
         const n = readPaxRaw();
         const big = n !== null && MAX_PAX > 0 && n > MAX_PAX;
+        // Over the limit with nowhere to send them is NOT large-party mode.
+        // That restaurant keeps the ordinary form and the ordinary request
+        // wording, which is the behaviour it had before any of this existed.
         const gate = largePartyGate();
-        el.textContent = gate
-          ? gtf(
-              "Parties of more than {n} are arranged with us directly. Tap below and we will help you plan it.",
-              { n: MAX_PAX },
-            )
-          : big
-            ? gtf(
-                "Parties of more than {n} are reviewed first, so your booking goes in as a request.",
-                { n: MAX_PAX },
-              )
-            : "";
-        el.style.display = big ? "" : "none";
 
-        // The submit button is not merely hidden: submit() refuses too. A
-        // hidden button is a layout decision, and this form can be submitted
-        // by pressing Enter in any field.
-        const wa = $("pax-wa-btn");
-        if (wa) {
-          wa.style.display = gate ? "" : "none";
-          wa.textContent = gt("Chat with us on WhatsApp");
+        const el = $("pax-note");
+        if (el) {
+          el.textContent = gate
+            ? gt(
+                "For a larger party, please contact our representative directly for a smoother process.",
+              )
+            : big
+              ? gtf(
+                  "Parties of more than {n} are reviewed first, so your booking goes in as a request.",
+                  { n: MAX_PAX },
+                )
+              : "";
+          el.style.display = big ? "" : "none";
         }
+
+        // Restored to what the RESTAURANT configured, never to "shown".
+        const show = (id, on) => {
+          const f = $(id);
+          if (f) f.style.display = on ? "" : "none";
+        };
+        show("notes-field", SHOW_NOTES && !gate);
+        show("company-field", SHOW_COMPANY && !gate);
+        show("pax-request-row", SHOW_PAX_REQUEST && !gate);
+
+        // The label swaps its SOURCE string, not its text, so a later language
+        // switch translates the new sentence instead of putting "Time" back
+        // over it. Same trick the confirmation page uses for its heading.
+        const tl = $("time-label");
+        if (tl) {
+          tl.dataset.i18nEn = gate ? "Preferred time (we will confirm)" : "Time";
+          tl.textContent = gt(tl.dataset.i18nEn);
+        }
+
+        // One button, two jobs, so the guest is never shown two things that
+        // look like Submit. The standalone WhatsApp button from the previous
+        // version is retired: it left the page without saving, and staff had
+        // nothing to chase if the guest never sent the message.
+        const wa = $("pax-wa-btn");
+        if (wa) wa.style.display = "none";
         const submit = $("btn-submit");
-        if (submit) submit.style.display = gate ? "none" : "";
+        if (submit) {
+          submit.dataset.i18nEn = gate ? "Contact us" : "Reserve Now";
+          submit.textContent = gt(submit.dataset.i18nEn);
+          submit.classList.toggle("btn-wa-submit", gate);
+        }
       }
 
       // Build the bookable hours from opening hours; on today's date, drop
@@ -1679,8 +1735,10 @@
           const v = data?.value || {};
           // Default ON for notes, OFF for company: fail towards the form that
           // already exists, so an unset key changes nothing.
-          if (v.show_notes === false) $("notes-field").style.display = "none";
-          if (v.show_company === true) $("company-field").style.display = "";
+          SHOW_NOTES = v.show_notes !== false;
+          SHOW_COMPANY = v.show_company === true;
+          if (!SHOW_NOTES) $("notes-field").style.display = "none";
+          if (SHOW_COMPANY) $("company-field").style.display = "";
           SHOW_CAPACITY = v.show_capacity === true;
           SHOW_PAX_REQUEST = v.pax_request === true;
           LARGE_PARTY_WA = v.large_party_wa === true;
@@ -2052,14 +2110,12 @@
           clampPax(); // restore a visible value so the guest sees what to fix
           return showError(errMsg("invalid_pax"));
         }
-        // Checked here as well as in renderPaxNote, because Enter in any field
-        // submits this form without the button ever being clicked. Nothing is
-        // written: a 60-pax event is a conversation, and a row created "just
-        // in case" is a table held for a booking nobody agreed to.
-        if (largePartyGate()) {
-          openLargePartyWa();
-          return;
-        }
+        // A large party is SAVED and then handed over, not handed over
+        // instead of being saved (decided 2026-09-07). The server marks it
+        // Waitlist / over_max_pax, so it holds no table, and staff have
+        // something to chase if the guest never sends the message. Read
+        // before the await, because the fields are cleared by the redirect.
+        const handoff = largePartyGate() ? largePartyWaLink() : null;
         if (!date || !time) return showError(errMsg("missing_datetime"));
         // Mandatory only once there is something to choose. With no bookable
         // area the picker is not rendered at all and a null area is correct.
@@ -2120,14 +2176,30 @@
                 deposit_expected: data.deposit_expected || null,
               }),
             );
+            // Always written, never merely set: a leftover link from an
+            // earlier large party would send the next ordinary guest to the
+            // events desk with somebody else's message.
+            if (handoff) sessionStorage.setItem("bhPublicResWa", handoff);
+            else sessionStorage.removeItem("bhPublicResWa");
           } catch (_) {}
+          // Opened here, while the tap that submitted the form is still the
+          // reason this code is running, so the browser treats it as the
+          // guest's own action. If it is blocked anyway, nothing is lost: the
+          // next page carries the same link on a button they can tap.
+          if (handoff) {
+            try {
+              window.open(handoff, "_blank", "noopener");
+            } catch (_) {}
+          }
           window.location.href = "reservation-created.html";
         } catch (err) {
           showError(ERR_ID.network);
         } finally {
           submitting = false;
           btn.disabled = false;
-          btn.textContent = "Reserve Now";
+          // Not the hardcoded English label: in large-party mode this button
+          // says something else, and in Indonesian it says it in Indonesian.
+          renderPaxNote();
         }
       });
     </script>
