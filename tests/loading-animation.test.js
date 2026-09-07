@@ -17,16 +17,21 @@ for (const reduced of [false, true]) {
   assert.equal(paths.length, 2, 'both reserve and shared loaders use the ribbon');
   assert.equal(new Set([...w.document.querySelectorAll('linearGradient')].map(el => el.id)).size, 2);
   const circle = paths[0].getAttribute('d');
+  // Taken from the source, not restated here: the cycle length is a design
+  // knob, and a test that hardcodes it fails every time somebody tunes the
+  // speed, which teaches people to edit tests to make them green.
+  const cycle = Number(source.match(/CYCLE_MS = (\d+)/)[1]);
+  assert.ok(cycle >= 1500 && cycle <= 6000, 'cycle stays in a legible range');
   if (reduced) assert.equal(frames.size, 0, 'reduced motion schedules no animation');
   else {
     const tick = time => { const [key, fn] = [...frames][0]; frames.delete(key); fn(time); };
-    tick(0); tick(750);
+    tick(0); tick(cycle * 0.19);
     const loop = paths[0].getAttribute('d');
     assert.notEqual(loop, circle, 'ring morphs rather than merely rotating');
     assert.equal(loop, paths[1].getAttribute('d'));
     assert.ok(!/NaN|Infinity/.test(loop));
-    tick(4000);
-    assert.equal(paths[0].getAttribute('d'), circle, 'four-second cycle joins seamlessly');
+    tick(cycle);
+    assert.equal(paths[0].getAttribute('d'), circle, 'the cycle joins itself seamlessly');
     w.document.documentElement.removeAttribute('data-reserve-loading');
     w.PageLoading.finish();
     assert.equal(frames.size, 0, 'hidden loaders stop requesting animation frames');

@@ -108,6 +108,8 @@ eq(
     activeCount: 0,
     pax: 0,
     excluded: 0,
+    waitingCount: 0,
+    waitingPax: 0,
     unplacedCount: 0,
     unplacedPax: 0,
   })),
@@ -122,6 +124,10 @@ const rows = [
   { reservation_date: DATES[0], pax: 10, status: "Cancelled", assigned_area: null },
   { reservation_date: DATES[0], pax: 5, status: "Cancelled (No Show)", assigned_area: "indoor" },
   { reservation_date: DATES[0], pax: 3, status: "Deleted", assigned_area: null },
+  // A large party the form saved as a request. It must land in its OWN
+  // bucket: counted as a cancellation it reads as a booking that went away,
+  // and counted as active it holds 35 seats nobody has agreed to give it.
+  { reservation_date: DATES[0], pax: 35, status: "Waitlist", assigned_area: null },
   // day 1 — everything still unplaced
   { reservation_date: DATES[1], pax: 9, status: "Reserved", assigned_area: null },
   { reservation_date: DATES[1], pax: 2, status: "Reserved", assigned_area: null },
@@ -131,10 +137,16 @@ const rows = [
 
 const totals = bucketReservationTotals(rows, DATES);
 
-eq("day 0 — tab count includes every row for the date", totals[0].count, 7);
+eq("day 0 — tab count includes every row for the date", totals[0].count, 8);
 eq("day 0 — active count excludes cancelled/no-show/deleted", totals[0].activeCount, 4);
 eq("day 0 — pax includes Incoming, cancelled 10 and no-show 5 excluded", totals[0].pax, 20);
 eq("day 0 — excluded counts cancelled + no-show but NOT deleted", totals[0].excluded, 2);
+eq("day 0 — a waitlisted party is NOT filed under cancelled", totals[0].excluded, 2);
+eq("day 0 — waiting count is its own bucket", totals[0].waitingCount, 1);
+eq("day 0 — waiting pax is reported but kept out of the totals", totals[0].waitingPax, 35);
+eq("day 0 — a waitlisted party holds no seats", totals[0].pax, 20);
+eq("day 0 — nor is it an active reservation", totals[0].activeCount, 4);
+eq("day 0 — and it is not chased as unplaced", totals[0].unplacedCount, 2);
 eq("day 0 — unplaced counts active unassigned rows including Incoming", totals[0].unplacedCount, 2);
 eq("day 0 — unplaced pax ignores the cancelled unassigned party", totals[0].unplacedPax, 6);
 
@@ -143,12 +155,14 @@ eq("day 1 — all unplaced", totals[1], {
   activeCount: 2,
   pax: 11,
   excluded: 0,
+  waitingCount: 0,
+  waitingPax: 0,
   unplacedCount: 2,
   unplacedPax: 11,
 });
 
 eq("day 2 — untouched by out-of-range rows", totals[2].pax, 0);
-eq("out-of-range row never lands in a bucket", totals.reduce((s, b) => s + b.count, 0), 9);
+eq("out-of-range row never lands in a bucket", totals.reduce((s, b) => s + b.count, 0), 10);
 
 // Regression guard for the bug this feature fixes: the visible area cards
 // only count placed reservations, so total pax must be >= their sum and the

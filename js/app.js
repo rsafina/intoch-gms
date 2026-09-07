@@ -2866,6 +2866,12 @@ function bucketReservationTotals(rows, dates) {
     activeCount: 0,
     pax: 0,
     excluded: 0,
+    // Waiting on a human. Counted apart from `excluded` because the two mean
+    // opposite things to the person reading the strip: a cancellation is over,
+    // a waitlisted party is work due today. Lumping a 35-pax request into
+    // "cancelled / no-show" is what made one look lost (2026-09-07).
+    waitingCount: 0,
+    waitingPax: 0,
     unplacedCount: 0,
     unplacedPax: 0,
   }));
@@ -2882,6 +2888,9 @@ function bucketReservationTotals(rows, dates) {
         bucket.unplacedCount += 1;
         bucket.unplacedPax += pax;
       }
+    } else if (r.status === "Waitlist") {
+      bucket.waitingCount += 1;
+      bucket.waitingPax += Number(r.pax) || 0;
     } else if (r.status !== "Deleted") {
       bucket.excluded += 1;
     }
@@ -2944,9 +2953,20 @@ function renderDashboardReservationTotals() {
   const excludedHtml = totals.excluded
     ? `<span class="text-[11px] text-[#a8a29a]">${totals.excluded} ${t("cancelled / no-show, not counted")}</span>`
     : "";
+  // Amber, like the waitlist marker on the rows themselves, and first in the
+  // line: it is the only one of the three notes that asks for a decision.
+  // The pax is spelled out because that is the number a manager needs to
+  // decide with, and it is deliberately NOT in the totals above — a party
+  // nobody has agreed to must never hold seats.
+  const waitingHtml = totals.waitingCount
+    ? `<span class="text-[11px] font-medium" style="color:#B45309">
+         <span class="inline-block w-1.5 h-1.5 rounded-full align-middle mr-1" style="background:#B45309"></span>
+         ${totals.waitingCount} ${t("waiting for a decision")} · ${totals.waitingPax} ${t("pax")} ${t("not counted yet")}
+       </span>`
+    : "";
   const notesHtml =
-    unplacedHtml || excludedHtml
-      ? `<div class="flex flex-wrap gap-x-3 gap-y-0.5 mt-2">${unplacedHtml}${excludedHtml}</div>`
+    waitingHtml || unplacedHtml || excludedHtml
+      ? `<div class="flex flex-wrap gap-x-3 gap-y-0.5 mt-2">${waitingHtml}${unplacedHtml}${excludedHtml}</div>`
       : "";
 
   el.innerHTML = `
@@ -3363,10 +3383,15 @@ function isCancelledRes(status) {
 }
 
 const RES_STATUS_SORT_RANK = {
-  Incoming: 0,
-  Reserved: 1,
-  Confirmed: 1,
-  Waitlist: 2,
+  // Waitlist leads (2026-09-07, Rere's call). It is the only status that is
+  // waiting on staff to do something, and at rank 2 it sat below every
+  // ordinary booking — on a twelve-booking day that is off the bottom of the
+  // screen, which reads as the reservation never arriving. It rejoins normal
+  // time order the moment somebody accepts it.
+  Waitlist: 0,
+  Incoming: 1,
+  Reserved: 2,
+  Confirmed: 2,
   Arrived: 3,
   Completed: 4,
   "Cancelled": 5,

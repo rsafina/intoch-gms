@@ -5,6 +5,10 @@
   let overlay;
   let animationFrame = null;
   let animationStart = null;
+  // One full circle -> infinity -> circle, in milliseconds. The single knob
+  // for how fast the loader reads: lower is busier, higher is calmer. Below
+  // about 1500 the fold stops being legible and just flickers.
+  const CYCLE_MS = 2200;
   let animationId = 0;
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   const root = document.documentElement;
@@ -74,7 +78,7 @@
     if (animationFrame !== null || !window.requestAnimationFrame) return;
     function frame(now) {
       if (animationStart === null) animationStart = now;
-      const phase = (now - animationStart) / 4000 * Math.PI * 2;
+      const phase = ((now - animationStart) / CYCLE_MS) * Math.PI * 2;
       const d = ribbonPath(phase);
       document.querySelectorAll('[data-loading-ribbon]').forEach(path => path.setAttribute('d', d));
       animationFrame = window.requestAnimationFrame(frame);
@@ -89,7 +93,11 @@
     overlay.id = 'page-loading';
     overlay.hidden = !root.hasAttribute('data-page-loading');
     overlay.innerHTML = ribbonMarkup() +
-      '<p role="status" aria-live="polite">Memuat… / Loading…</p>' +
+      // One word, both languages. "Loading" needs no translating for an
+      // Indonesian reader and the doubled line was the widest thing on the
+      // screen; the failure message below still switches, because that one
+      // asks the guest to do something.
+      '<p role="status" aria-live="polite">Loading…</p>' +
       '<button type="button" hidden>Coba lagi / Try again</button>';
     overlay.querySelector('button').onclick = () => location.reload();
     document.body.appendChild(overlay);
@@ -112,7 +120,7 @@
     mount();
     if (overlay) {
       overlay.hidden = false;
-      overlay.querySelector('p').textContent = 'Memuat… / Loading…';
+      overlay.querySelector('p').textContent = 'Loading…';
       overlay.querySelector('button').hidden = true;
     }
     timer = setTimeout(() => fail(token), 15000);

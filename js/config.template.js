@@ -1447,6 +1447,8 @@ const ID_DICT = {
   "Expected Pax": "Perkiraan Pax",
   "cancelled / no-show, not counted":
     "dibatalkan / tidak datang, tidak dihitung",
+  "waiting for a decision": "menunggu keputusan",
+  "not counted yet": "belum dihitung",
   "seats remaining": "kursi tersisa",
   "Next 3 days": "3 hari ke depan",
 };
