@@ -2,6 +2,8 @@
 <html lang="id" data-reserve-loading>
   <head>
     <meta charset="UTF-8" />
+    <link rel="stylesheet" href="css/page-loading.css?v=2" />
+    <script src="js/page-loading.js?v=2"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>__RESTAURANT_NAME__ — Reserve a Table</title>
     <!-- Link preview (WhatsApp / Instagram / Facebook).
@@ -35,17 +37,11 @@
         text-align: center; font: 16px/1.5 system-ui, sans-serif;
       }
       #reserve-loading .loading-ring {
-        width: 32px; height: 32px; border: 3px solid #dce1e8;
-        border-top-color: #667085; border-radius: 50%;
-        animation: reserve-loading-spin 1s linear infinite;
+        width: 112px; height: 112px;
       }
       #reserve-loading button {
         padding: 10px 22px; border: 1px solid #d0d5dd; border-radius: 10px;
         background: white; color: inherit; font: inherit; cursor: pointer;
-      }
-      @keyframes reserve-loading-spin { to { transform: rotate(360deg); } }
-      @media (prefers-reduced-motion: reduce) {
-        #reserve-loading .loading-ring { animation: none; }
       }
     </style>
     <script>
@@ -2251,6 +2247,7 @@
               window.open(handoff, "_blank", "noopener");
             } catch (_) {}
           }
+          PageLoading.begin();
           window.location.href = "reservation-created.html";
         } catch (err) {
           showError(ERR_ID.network);

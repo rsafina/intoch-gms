@@ -1,7 +1,9 @@
 <!doctype html>
-<html lang="id">
+<html lang="id" data-page-loading>
   <head>
     <meta charset="utf-8" />
+    <link rel="stylesheet" href="css/page-loading.css?v=2" />
+    <script src="js/page-loading.js?v=2"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>__RESTAURANT_NAME__ — Invoice</title>
     <!-- Deliberately NOT indexed and NOT share-carded, the same rule as
@@ -203,7 +205,7 @@
       window.addEventListener("resize", () => {
         if (SNAP) invSheetFit($("inv-scaler"));
       });
-      load();
+      PageLoading.ready(load());
     </script>
   </body>
 </html>

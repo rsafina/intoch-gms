@@ -1,7 +1,9 @@
 <!doctype html>
-<html lang="id">
+<html lang="id" data-page-loading>
   <head>
     <meta charset="UTF-8" />
+    <link rel="stylesheet" href="css/page-loading.css?v=2" />
+    <script src="js/page-loading.js?v=2"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>__RESTAURANT_NAME__ — Reservation is Created</title>
     <!-- Link preview (WhatsApp / Instagram / Facebook).
@@ -552,17 +554,17 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/config.js"></script>
     <script>
-      if (typeof initBranding === "function") initBranding();
+      const brandingReady = initBranding();
       // Same backdrop, glass and logo size as the booking page it follows.
       // A guest who books and lands here must not watch the restaurant change
       // colour between two consecutive screens.
-      if (typeof initReserveAppearance === "function") initReserveAppearance();
+      const appearanceReady = initReserveAppearance();
 
       // config.js sets its own CURRENT_LANG from the STAFF browser's key when
       // it loads, which on a guest's phone is simply absent. Re-applying puts
       // t() and the month names back in step with the guest's choice, and
       // then the restaurant's own setting lands on top.
-      (async function guestLanguage() {
+      const languageReady = (async function guestLanguage() {
         applyGuestLanguage(GUEST_LANG);
         try {
           const { data } = await db
@@ -575,6 +577,7 @@
           /* the guest's own choice, or the cached hint, still stands */
         }
       })();
+      PageLoading.ready(Promise.all([brandingReady, appearanceReady, languageReady]));
     </script>
   </body>
 </html>

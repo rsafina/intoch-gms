@@ -121,8 +121,8 @@ ok(
   "Staff should not have to open Update Reservation just to chase a deposit.",
 );
 ok(
-  "Reserved rows choose a paid-deposit label and keep the reservation follow-up action",
-  /res\.status === "Reserved"[\s\S]{0,400}Deposit Follow Up[\s\S]{0,150}waSendFollowUpReservation/.test(wa),
+  "Reserved rows use the regular WA follow-up, including paid deposits",
+  /res\.status === "Reserved"[\s\S]{0,120}waSendFollowUpReservation[\s\S]{0,120}WA Follow Up/.test(wa),
 );
 
 // ── The one blocked transition ────────────────────────────────────────────

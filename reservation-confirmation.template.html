@@ -1,7 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-page-loading>
   <head>
     <meta charset="UTF-8" />
+    <link rel="stylesheet" href="css/page-loading.css?v=2" />
+    <script src="js/page-loading.js?v=2"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>__RESTAURANT_NAME__ — Reservation Confirmed</title>
     <!-- Link preview (WhatsApp / Instagram / Facebook).
@@ -664,7 +666,7 @@
     <script src="js/guest-i18n.js"></script>
     <script>
       // Renders with the bundled logo, then swaps in the client's own.
-      if (typeof initBranding === "function") initBranding();
+      const confirmationBrandingReady = initBranding();
     </script>
     <script>
       let reservation = null;
@@ -1122,14 +1124,14 @@
         if (reservation) renderPage(reservation);
       }
 
-      document.addEventListener("DOMContentLoaded", async () => {
+      document.addEventListener("DOMContentLoaded", () => PageLoading.ready((async () => {
         // The guest's own choice first and synchronously, then the
         // restaurant's setting when it arrives. Loading the reservation does
         // not wait for either: a card that renders in the wrong language for
         // one paint beats a card that waits on two round trips.
         initGuestLanguageSync();
         applyGuestLanguage(GUEST_LANG); // config.js has run by now; keep t() in step
-        loadReservation();
+        const reservationReady = loadReservation();
         try {
           const { data } = await db
             .from("app_settings")
@@ -1140,7 +1142,8 @@
         } catch (_) {
           /* the guest's own choice, or the cached hint, still stands */
         }
-      });
+        await Promise.all([reservationReady, confirmationBrandingReady]);
+      })()));
     </script>
   </body>
 </html>

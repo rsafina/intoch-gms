@@ -27,7 +27,7 @@ const deferred = () => { let resolve; const promise = new Promise(r => resolve =
   const buttons = vm.createContext({ resDepositBalances: { paid: { state: 'paid' } }, WA_BTN_CLASS: '', t: s => s });
   vm.runInContext(lift(wa, 'waReservationBtns'), buttons);
   const row = { id: 'paid', status: 'Reserved', guests: { phone: '123' } };
-  assert.match(buttons.waReservationBtns(row), /Deposit Follow Up/);
+  assert.match(buttons.waReservationBtns(row), /WA Follow Up/);
   assert.match(buttons.waReservationBtns({ ...row, id: 'no-deposit' }), /WA Follow Up/);
 
   const events = [];

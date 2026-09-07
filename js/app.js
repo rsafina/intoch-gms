@@ -772,100 +772,110 @@ function defaultSettingsTab() {
   return "areas"; // every role can see Areas
 }
 
-function navigateTo(page) {
-  // "settings" resolves to the last-used (allowed) settings tab
-  if (page === "settings") page = defaultSettingsTab();
+async function navigateTo(page) {
+  const loadingToken = typeof PageLoading !== "undefined" ? PageLoading.begin() : null;
+  const pendingLoads = [];
+  try {
+    // "settings" resolves to the last-used (allowed) settings tab
+    if (page === "settings") page = defaultSettingsTab();
 
-  // Role enforcement: redirect unauthorized access to dashboard
-  if (!hasAccess(page)) {
-    toast("Access restricted. Contact a manager.", "error");
-    page = "dashboard";
-  }
+    // Role enforcement: redirect unauthorized access to dashboard
+    if (!hasAccess(page)) {
+      toast("Access restricted. Contact a manager.", "error");
+      page = "dashboard";
+    }
 
-  // Admin (owner/head-chef) sees a different dashboard section — everything
-  // else renders exactly like it does for manager/staff.
-  const isAdminDashboard = page === "dashboard" && currentStaffRole() === "admin";
-  // "staff-dashboard" is the owner looking at the front-desk view. It is a
-  // separate nav entry rather than a toggle so the sidebar highlight, the
-  // browser back/forward behaviour and the lastPage restore all keep working
-  // without special cases. It renders the SAME #page-dashboard section staff
-  // see — there is no second copy of that markup to drift out of sync.
-  const isStaffDashboardView = page === "staff-dashboard";
-  const sectionId = isAdminDashboard
-    ? "admin-dashboard"
-    : isStaffDashboardView
-      ? "dashboard"
-      : page;
+    // Admin (owner/head-chef) sees a different dashboard section — everything
+    // else renders exactly like it does for manager/staff.
+    const isAdminDashboard = page === "dashboard" && currentStaffRole() === "admin";
+    // "staff-dashboard" is the owner looking at the front-desk view. It is a
+    // separate nav entry rather than a toggle so the sidebar highlight, the
+    // browser back/forward behaviour and the lastPage restore all keep working
+    // without special cases. It renders the SAME #page-dashboard section staff
+    // see — there is no second copy of that markup to drift out of sync.
+    const isStaffDashboardView = page === "staff-dashboard";
+    const sectionId = isAdminDashboard
+      ? "admin-dashboard"
+      : isStaffDashboardView
+        ? "dashboard"
+        : page;
 
-  document
-    .querySelectorAll(".page-section")
-    .forEach((s) => s.classList.remove("active"));
-  const el = document.getElementById(`page-${sectionId}`);
-  if (el) el.classList.add("active");
+    document
+      .querySelectorAll(".page-section")
+      .forEach((s) => s.classList.remove("active"));
+    const el = document.getElementById(`page-${sectionId}`);
+    if (el) el.classList.add("active");
 
-  // Settings subpages highlight the single "Settings" sidebar entry
-  const inSettings = SETTINGS_SUBPAGES.includes(page);
-  const navKey = inSettings ? "settings" : page;
-  document.querySelectorAll("[data-nav]").forEach((btn) => {
-    btn.classList.toggle("nav-active", btn.dataset.nav === navKey);
-  });
-  if (inSettings) {
-    localStorage.setItem("lastSettingsTab", page);
-    renderSettingsTabs(page);
-  }
+    // Settings subpages highlight the single "Settings" sidebar entry
+    const inSettings = SETTINGS_SUBPAGES.includes(page);
+    const navKey = inSettings ? "settings" : page;
+    document.querySelectorAll("[data-nav]").forEach((btn) => {
+      btn.classList.toggle("nav-active", btn.dataset.nav === navKey);
+    });
+    if (inSettings) {
+      localStorage.setItem("lastSettingsTab", page);
+      renderSettingsTabs(page);
+    }
 
-  currentPage = page;
-  localStorage.setItem("lastPage", page);
+    currentPage = page;
+    localStorage.setItem("lastPage", page);
 
-  if (page === "guests") {
-    guestPage = 1;
-    loadGuests();
-  }
-  if (page === "reservations") {
-    // Leaving and re-entering the page is a fresh start — a stale search
-    // silently hiding the day's list is the worst failure mode here.
-    clearResSearch(true);
-    loadReservations();
-  }
-  if (page === "walkins") loadWalkIns();
-  if (page === "areas") renderAreas();
-  if (page === "reports") {
-    loadReports();
-    loadOperationsReports();
-    initBirthdayView();
-  }
-  if (page === "prizes") loadPrizeAdmin();
-  // Invoice is a self-contained document generator: no data load, but the
-  // preview must be re-fitted every time the section becomes visible —
-  // a hidden section has zero width, so the first fit would scale to 0.
-  if (page === "invoice") initInvoice();
-  // Unlike Invoice, this page reads from the database every time it is
-  // opened: a voucher may have been redeemed at another till a minute
-  // ago, and a stale list here is how one gets redeemed twice.
-  if (page === "vouchers") initVouchers();
-  if (page === "settings-menu") {
-    loadFeaturedDishes();
-    renderFullMenuLink();
-    renderReserveAppearanceSettings();
-    renderReservationFormFields();
-  }
-  if (page === "settings-thresholds") renderThresholdSettings();
-  if (page === "settings-branding") renderBrandingSettings();
-  // Always re-read from the database rather than trusting a cached list:
-  // this screen is the one place where "who can log in" is decided, and a
-  // stale list is how two people end up editing the same account.
-  if (page === "settings-staff") loadStaffUsers();
-  if (page === "membership") loadMembership();
-  if (page === "broadcast") loadBroadcast();
-  if (isAdminDashboard) loadAdminDashboard();
-  if (isStaffDashboardView) {
-    loadDashboard();
-    setStaffDashboardDateLabel();
-    // Banner is injected here rather than living in index.html because
-    // #page-dashboard is shared with staff, who must never see it.
-    renderStaffViewBanner();
-  } else {
-    document.getElementById("staff-view-banner")?.remove();
+    if (page === "guests") {
+      guestPage = 1;
+      pendingLoads.push(loadGuests());
+    }
+    if (page === "reservations") {
+      // Leaving and re-entering the page is a fresh start — a stale search
+      // silently hiding the day's list is the worst failure mode here.
+      clearResSearch(true);
+      pendingLoads.push(loadReservations());
+    }
+    if (page === "walkins") pendingLoads.push(loadWalkIns());
+    if (page === "areas") pendingLoads.push(renderAreas());
+    if (page === "reports") {
+      pendingLoads.push(loadReports());
+      pendingLoads.push(loadOperationsReports());
+      pendingLoads.push(initBirthdayView());
+    }
+    if (page === "prizes") pendingLoads.push(loadPrizeAdmin());
+    // Invoice is a self-contained document generator: no data load, but the
+    // preview must be re-fitted every time the section becomes visible —
+    // a hidden section has zero width, so the first fit would scale to 0.
+    if (page === "invoice") initInvoice();
+    // Unlike Invoice, this page reads from the database every time it is
+    // opened: a voucher may have been redeemed at another till a minute
+    // ago, and a stale list here is how one gets redeemed twice.
+    if (page === "vouchers") pendingLoads.push(initVouchers());
+    if (page === "settings-menu") {
+      pendingLoads.push(loadFeaturedDishes());
+      pendingLoads.push(renderFullMenuLink());
+      pendingLoads.push(renderReserveAppearanceSettings());
+      pendingLoads.push(renderReservationFormFields());
+    }
+    if (page === "settings-thresholds") pendingLoads.push(renderThresholdSettings());
+    if (page === "settings-branding") pendingLoads.push(renderBrandingSettings());
+    // Always re-read from the database rather than trusting a cached list:
+    // this screen is the one place where "who can log in" is decided, and a
+    // stale list is how two people end up editing the same account.
+    if (page === "settings-staff") pendingLoads.push(loadStaffUsers());
+    if (page === "membership") pendingLoads.push(loadMembership());
+    if (page === "broadcast") pendingLoads.push(loadBroadcast());
+    if (page === "dashboard" && !isAdminDashboard) pendingLoads.push(loadDashboard());
+    if (isAdminDashboard) pendingLoads.push(loadAdminDashboard());
+    if (isStaffDashboardView) {
+      pendingLoads.push(loadDashboard());
+      setStaffDashboardDateLabel();
+      // Banner is injected here rather than living in index.html because
+      // #page-dashboard is shared with staff, who must never see it.
+      renderStaffViewBanner();
+    } else {
+      document.getElementById("staff-view-banner")?.remove();
+    }
+    await Promise.all(pendingLoads);
+    if (loadingToken !== null) PageLoading.finish(loadingToken);
+  } catch (error) {
+    console.error("Page navigation failed", error);
+    if (loadingToken !== null) PageLoading.fail(loadingToken);
   }
 }
 

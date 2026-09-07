@@ -1,0 +1,18 @@
+html[data-page-loading] { background: #f5f6f8; }
+html[data-page-loading] body { overflow: hidden !important; }
+html[data-page-loading] body > :not(#page-loading):not(script) { visibility: hidden !important; }
+#page-loading {
+  position: fixed; inset: 0; z-index: 2147483647;
+  display: grid; place-content: center; justify-items: center; gap: 20px;
+  padding: 24px; background: #f5f6f8; color: #344054;
+  text-align: center; font: 16px/1.5 system-ui, sans-serif;
+}
+#page-loading[hidden] { display: none !important; }
+.loading-ribbon {
+  display: block; width: 112px; height: 112px;
+  overflow: visible;
+}
+#page-loading button {
+  padding: 10px 22px; border: 1px solid #d0d5dd; border-radius: 10px;
+  background: white; color: inherit; font: inherit; cursor: pointer;
+}

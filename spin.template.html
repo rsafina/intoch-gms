@@ -1,7 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-page-loading>
   <head>
     <meta charset="UTF-8" />
+    <link rel="stylesheet" href="css/page-loading.css?v=2" />
+    <script src="js/page-loading.js?v=2"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>__RESTAURANT_NAME__ — Spin & Win</title>
     <!-- Link preview (WhatsApp / Instagram / Facebook).
@@ -592,7 +594,7 @@
     <script src="js/config.js"></script>
     <script src="js/guest-i18n.js"></script>
     <script>
-      if (typeof initBranding === "function") initBranding();
+      const spinBrandingReady = initBranding();
     </script>
     <script>
       // ── State ──────────────────────────────────────────────────
@@ -610,13 +612,13 @@
         "https://maps.google.com/";
 
       // ── Init ──────────────────────────────────────────────────
-      document.addEventListener("DOMContentLoaded", async () => {
+      document.addEventListener("DOMContentLoaded", () => PageLoading.ready((async () => {
         // Language before anything is drawn, and before the already-played
         // guard below returns early — a guest who has already spun still reads
         // the page they land on.
         initGuestLanguageSync();
         applyGuestLanguage(GUEST_LANG); // config.js has run; keep t() in step
-        guestLanguageSetting(); // not awaited, it only ever refines the guess
+        await Promise.all([spinBrandingReady, guestLanguageSetting()]);
 
         // Option 2: localStorage guard — check if already played today
         const existing = getStoredSession();
@@ -632,7 +634,7 @@
           .order("name");
         prizes = data || [];
         if (prizes.length) drawWheel(prizes);
-      });
+      })()));
 
       // The restaurant's own choice of language, which overrides the phone's
       // but never the guest's own tap on the switch.
