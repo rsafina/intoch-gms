@@ -54,6 +54,37 @@ const WA_DEFAULT_TEMPLATES = {
       "Tanggal: {tanggal}\nJam: {jam}\nJumlah: {pax} orang\n\n" +
       "Kami nantikan kehadiran dari anda di {resto}. Terima kasih!",
   },
+  // The large-party opener. NOT follow_up: that template confirms a booking
+  // ("kami ingin mengonfirmasi reservasi"), and sending it to a party of 35
+  // that nobody has agreed to yet promises a table the restaurant may not be
+  // able to give. This one opens a conversation instead, which is the whole
+  // point of holding the booking as a request.
+  large_party: {
+    label: "Rombongan Besar (buka percakapan)",
+    is_broadcast: false,
+    body:
+      "Halo {nama}!\n\n" +
+      "Terima kasih sudah mengirim permintaan reservasi rombongan di {resto}:\n\n" +
+      "Tanggal: {tanggal}\nJam: {jam}\nJumlah: {pax} orang\n\n" +
+      "Untuk rombongan sebesar ini kami atur langsung ya. Boleh kami tahu " +
+      "rencana acaranya, menu atau pre-order yang diinginkan? Nanti kami " +
+      "kabari ketersediaan dan biayanya. Terima kasih!",
+  },
+  // The other two reasons a booking waits for a human: it did not fit the area
+  // it chose (over_capacity), or it was below that area's minimum
+  // (below_min_pax). Neither is a big group, and sending the rombongan opener
+  // to a party of two in a room with a six-person minimum reads as a form
+  // letter. Same job, no assumption about the size.
+  waitlist_review: {
+    label: "Waitlist (perlu dicek dulu)",
+    is_broadcast: false,
+    body:
+      "Halo {nama}!\n\n" +
+      "Terima kasih sudah mengirim permintaan reservasi di {resto}:\n\n" +
+      "Tanggal: {tanggal}\nJam: {jam}\nJumlah: {pax} orang\n\n" +
+      "Permintaan ini kami cek dulu ya, karena ada beberapa hal yang perlu " +
+      "kami sesuaikan. Kami kabari secepatnya. Terima kasih!",
+  },
   // The deposit chase. Editable like every other template, because the wording
   // of a message asking someone for money is exactly the thing a restaurant
   // will want to say in its own voice.
@@ -421,6 +452,22 @@ function waFollowUpMessage(guestName, resDate, resTime, pax) {
   });
 }
 
+// The reason picks the template. `over_max_pax` is the negotiated event;
+// everything else is a request that simply needs checking.
+function waWaitlistTemplateKey(reason) {
+  return reason === "over_max_pax" ? "large_party" : "waitlist_review";
+}
+
+function waLargePartyMessage(guestName, resDate, resTime, pax, reason) {
+  return waRenderTemplate(waTemplateBody(waWaitlistTemplateKey(reason)), {
+    nama: waGreetName(guestName),
+    resto: WA_RESTAURANT_NAME,
+    tanggal: waFormatDateId(resDate),
+    jam: resTime ? resTime.slice(0, 5).replace(":", ".") : "-",
+    pax: pax || "-",
+  });
+}
+
 // The deposit chase. `link` is the invoice preview URL and `dp` an already
 // formatted Rupiah string, because the caller has the balance and this file
 // has no opinion about currency.
@@ -581,6 +628,46 @@ async function waSendFollowUpReservation(resId) {
   if (opened) waLogSend(data.guest_id, "follow_up", false);
 }
 
+// The first contact on a large party. Guarded on Waitlist for the same reason
+// the ordinary follow-up is guarded on Reserved: this list can sit open on a
+// front-desk PC all day, and a booking somebody already accepted or cancelled
+// must not receive an opener asking what they would like to arrange.
+async function waSendLargePartyFollowUp(resId) {
+  await waLoadTemplates();
+  const { data, error } = await supabaseQuery(
+    () =>
+      db
+        .from("reservations")
+        .select(
+          "id, guest_id, reservation_date, reservation_time, pax, status, waitlist_reason, guests(name, phone)",
+        )
+        .eq("id", resId)
+        .single(),
+    "Gagal memuat data reservasi",
+  );
+  if (error || !data) return;
+  if (data.status !== "Waitlist") {
+    toast(
+      `Reservasi ini statusnya sudah "${data.status}" — follow up tidak dikirim`,
+      "error",
+    );
+    return;
+  }
+  const opened = waOpenChat(
+    data.guests?.phone,
+    waLargePartyMessage(
+      data.guests?.name,
+      data.reservation_date,
+      data.reservation_time,
+      data.pax,
+      data.waitlist_reason,
+    ),
+  );
+  // Logged under the template that was actually sent, or the log says a party
+  // of two was pitched a group booking.
+  if (opened) waLogSend(data.guest_id, waWaitlistTemplateKey(data.waitlist_reason), false);
+}
+
 // ── Button HTML helpers (used by app.js renderers) ───────────
 const WA_BTN_CLASS = "text-xs text-[#1FAF5E] hover:underline whitespace-nowrap";
 
@@ -592,6 +679,15 @@ function waThankYouVisitBtn(visit) {
 
 function waReservationBtns(res) {
   if (!res.guests?.phone) return "";
+  // A large party that has already agreed a figure needs the invoice, not
+  // another opener. Same row, different stage of the same conversation.
+  if (res.status === "Waitlist") {
+    return res.deposit_required && Number(res.deposit_expected) > 0
+      ? `<button onclick="openDepositInvoice('${res.id}')" class="${WA_BTN_CLASS}">Invoice Followup</button>`
+      : `<button onclick="waSendLargePartyFollowUp('${res.id}')" class="${WA_BTN_CLASS}">${
+          res.waitlist_reason === "over_max_pax" ? "Pax Follow Up" : "Waitlist Follow Up"
+        }</button>`;
+  }
   if (res.status === "Incoming" && res.deposit_required && Number(res.deposit_expected) > 0) {
     return `<button onclick="openDepositInvoice('${res.id}')" class="${WA_BTN_CLASS}">Invoice Followup</button>`;
   }

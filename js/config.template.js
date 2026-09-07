@@ -1448,6 +1448,23 @@ const ID_DICT = {
   "cancelled / no-show, not counted":
     "dibatalkan / tidak datang, tidak dihitung",
   "waiting for a decision": "menunggu keputusan",
+  "Talk to the guest first, then enter what was agreed. The invoice and the payment steps appear once there is a figure.":
+    "Hubungi tamu dulu, lalu isi nominal yang disepakati. Invoice dan pencatatan pembayaran muncul setelah ada angkanya.",
+  "Agreed amount": "Nominal disepakati",
+  "Save amount": "Simpan nominal",
+  "Enter the amount you agreed with the guest": "Isi nominal yang disepakati dengan tamu",
+  "Could not save the amount": "Nominal gagal disimpan",
+  "Amount saved. You can issue the invoice now": "Nominal tersimpan. Invoice sudah bisa dibuat",
+  "Record another payment": "Catat pembayaran lain",
+  "Waiting for a decision": "Menunggu keputusan",
+  "This party does not fit the area as it stands.": "Rombongan ini belum muat di area tersebut.",
+  "seats left": "kursi tersisa",
+  "this booking needs": "reservasi ini butuh",
+  "Continue anyway, or cancel and move it to another area first?":
+    "Tetap lanjutkan, atau batalkan dan pindahkan ke area lain dulu?",
+  of: "dari",
+  "This booking becomes Reserved when the payment is recorded. Nothing expires on its own, so cancel it by hand if the guest backs out.":
+    "Reservasi ini menjadi Reserved setelah pembayaran dicatat. Tidak ada yang kedaluwarsa otomatis, jadi batalkan manual bila tamu mundur.",
   "not counted yet": "belum dihitung",
   "seats remaining": "kursi tersisa",
   "Next 3 days": "3 hari ke depan",

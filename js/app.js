@@ -6760,6 +6760,7 @@ async function renderReservationsTable(data) {
         '<td class="px-5 py-3.5">' +
         statusBadge(r.status) +
         depositRowBadge(r) +
+        waitlistReasonLine(r) +
         "</td>" +
         '<td class="px-5 py-3.5"><div class="flex items-center gap-3"><a href="reservation-confirmation.html?id=' +
         r.id +
@@ -6818,6 +6819,7 @@ async function openResActions(resId) {
       <p class="text-xs text-[#999]">${fmt.time(res.reservation_time)} · ${fmt.pax(res.pax)}</p>
       ${res.reservation_source ? `<p class="text-xs text-[#999] mt-1">Source: ${escapeHtml(res.reservation_source)}</p>` : ""}
     </div>
+    ${largePartyAgreePanel(res)}
     ${depositActionsPanel(res, bal)}
     <p class="text-xs text-[#999] uppercase tracking-wider mb-3 font-medium">Update Status</p>
     <div class="grid grid-cols-2 gap-2 mb-4">
@@ -7003,7 +7005,63 @@ async function saveResActionTable(resId) {
   if (isViewingStaffDashboard()) loadDashboard();
 }
 
+// A waitlisted booking holds no seats. Promoting it is the moment it starts
+// to, and for `over_capacity` that is precisely the thing the waitlist was
+// protecting: the party did not fit when it booked, and nothing has re-checked
+// since. So this asks, with the real numbers, and then does as it is told.
+// Rere's rule stands — staff decide — but they decide knowing.
+//
+// Returns TRUE to carry on. Anything it cannot determine (no area assigned, a
+// failed lookup) carries on too: a promotion blocked by a network hiccup is a
+// worse failure than an overbooking somebody chose.
+async function confirmWaitlistOverflow(resId) {
+  const { data: res } = await supabaseQuery(
+    () =>
+      db
+        .from("reservations")
+        .select("id, status, pax, assigned_area, reservation_date, areas(name)")
+        .eq("id", resId)
+        .single(),
+    "Failed to check the area's capacity",
+  );
+  if (!res || res.status !== "Waitlist" || !res.assigned_area) return true;
+
+  const { data: avail } = await supabaseQuery(
+    () => db.rpc("area_availability", { p_date: res.reservation_date }),
+    "Failed to check the area's capacity",
+  );
+  const area = (avail || []).find((a) => a.area_id === res.assigned_area);
+  if (!area || !(Number(area.capacity) > 0)) return true;
+
+  const left = Number(area.capacity) - Number(area.reserved_pax || 0);
+  const pax = Number(res.pax) || 0;
+  if (pax <= left) return true;
+
+  return confirm(
+    t("This party does not fit the area as it stands.") +
+      "\n\n" +
+      (res.areas?.name || t("Area")) +
+      ": " +
+      left +
+      " " +
+      t("of") +
+      " " +
+      area.capacity +
+      " " +
+      t("seats left") +
+      ", " +
+      t("this booking needs") +
+      " " +
+      pax +
+      ".\n\n" +
+      t("Continue anyway, or cancel and move it to another area first?"),
+  );
+}
+
 async function updateResStatus(resId, status) {
+  // Only on the way INTO Reserved. Arrived and Cancelled on a waitlisted row
+  // are staff recording what happened, not claiming a seat.
+  if (status === "Reserved" && !(await confirmWaitlistOverflow(resId))) return;
   // No Show is stored as Cancelled (No Show) — auto-convert
   const dbStatus = status === "No Show" ? "Cancelled (No Show)" : status;
   loader(true);
@@ -7662,6 +7720,10 @@ async function submitDepositPayment() {
     toast(t("Enter the amount that was paid"), "error");
     return;
   }
+  // Asked BEFORE the payment, because the payment is what promotes the row and
+  // there is no undo on the far side: the money is recorded and the booking is
+  // Reserved in one transaction.
+  if (!(await confirmWaitlistOverflow(resId))) return;
   loader(true);
   // One RPC, not two calls. Recording the money and locking the booking happen
   // in the same transaction so the pair can never be half-done, which is the
@@ -7726,6 +7788,7 @@ async function submitWaiveDeposit() {
     toast(t("A reason is required to waive a deposit"), "error");
     return;
   }
+  if (!(await confirmWaitlistOverflow(resId))) return;
   loader(true);
   const { data, error } = await supabaseQuery(
     () => db.rpc("waive_deposit", { p_reservation_id: resId, p_reason: reason, p_staff_id: currentStaffId() }),
@@ -7828,6 +7891,104 @@ async function submitDepositRefundAck() {
 // Built as a string so it drops into the existing modal template. Returns ""
 // for every booking with no deposit, which is most of them: an area that asks
 // for nothing must look exactly as it did before this feature existed.
+// ── Large party: agreeing the figure ──────────────────────────────────────
+// A waitlisted large party arrives with NO amount on it. There is nothing to
+// quote automatically: 35 people is a buffet, a pre-order and a negotiation,
+// which is why the booking waits for a human in the first place.
+//
+// So this is the missing first step of the deposit flow, and the only one this
+// flow needed: staff type what was agreed on WhatsApp, and from that moment the
+// booking behaves exactly like any other deposit booking — invoice, payment,
+// waive, promote. No second payment system.
+//
+// deposit_due_at is deliberately left NULL. expire_unpaid_deposits() only ever
+// touches 'Incoming', so a large party is never auto-cancelled, but a deadline
+// written here would still show the guest and staff a countdown that nothing
+// enforces. Rere, 2026-09-07: nothing automatic, staff decide.
+function largePartyAgreePanel(res) {
+  if (!res || res.status !== "Waitlist") return "";
+  if (res.deposit_required && Number(res.deposit_expected) > 0) return ""; // agreed already; the deposit panel has it
+  return (
+    '<div class="mb-4 p-3 rounded-10 border border-amber-200 bg-amber-50">' +
+    '<p class="text-xs uppercase tracking-wider font-medium text-[#B45309]">' +
+    escapeHtml(t("waiting for a decision")) +
+    "</p>" +
+    '<p class="text-xs text-[#666] mt-1 leading-snug">' +
+    escapeHtml(
+      t(
+        "Talk to the guest first, then enter what was agreed. The invoice and the payment steps appear once there is a figure.",
+      ),
+    ) +
+    "</p>" +
+    '<div class="flex gap-2 mt-3">' +
+    '<input id="lp-agreed-amount" type="number" inputmode="numeric" min="1" class="form-input text-sm flex-1" placeholder="' +
+    escapeHtml(t("Agreed amount")) +
+    '" />' +
+    '<button onclick="saveLargePartyAmount(\'' +
+    res.id +
+    '\')" class="btn-primary text-xs px-3 py-1.5 whitespace-nowrap">' +
+    escapeHtml(t("Save amount")) +
+    "</button>" +
+    "</div>" +
+    "</div>"
+  );
+}
+
+// Writes the figure and nothing else. No status change: the booking is still
+// waiting, and it is the money arriving that promotes it, exactly as for an
+// ordinary deposit booking.
+async function saveLargePartyAmount(resId) {
+  const raw = document.getElementById("lp-agreed-amount")?.value;
+  const amount = Math.round(Number(raw));
+  if (!Number.isFinite(amount) || amount <= 0) {
+    toast(t("Enter the amount you agreed with the guest"), "error");
+    return;
+  }
+  loader(true);
+  const { data, error } = await supabaseQuery(
+    () =>
+      db
+        .from("reservations")
+        .update({
+          deposit_required: true,
+          deposit_expected: amount,
+          deposit_asked_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", resId)
+        .select("id"),
+    "Failed to save the agreed amount",
+  );
+  loader(false);
+  // PostgREST answers 204 for an update that matched nothing, which looks
+  // exactly like success. An empty result is a failure, always.
+  if (error || !data || !data.length) {
+    toast(t("Could not save the amount"), "error");
+    return;
+  }
+  reservationDataRevision++;
+  toast(t("Amount saved. You can issue the invoice now"));
+  await openResActions(resId); // reopen so the deposit panel replaces this one
+  await loadReservations();
+}
+
+// One line, same wording as the dashboard card, so a row means the same thing
+// wherever staff read it. Reasons are stored as codes and staff should never
+// have to read one, so it goes through t() like every other label.
+function waitlistReasonLine(r) {
+  if (!r || r.status !== "Waitlist") return "";
+  return (
+    '<p class="text-[11px] text-[#B45309] mt-1 font-medium">⏳ ' +
+    // Written in English and translated like every other label. The dashboard
+    // card next door hardcodes the Indonesian, which is why that one silently
+    // stays Indonesian for a guest-facing English switch; not fixing that here,
+    // but not copying it either.
+    escapeHtml(t("Waiting for a decision")) +
+    (r.waitlist_reason ? " · " + escapeHtml(t(r.waitlist_reason)) : "") +
+    "</p>"
+  );
+}
+
 function depositActionsPanel(res, bal) {
   if (!res || !res.deposit_required || !(Number(res.deposit_expected) > 0)) return "";
   const owed = bal ? Number(bal.outstanding || 0) : Number(res.deposit_expected);
@@ -7892,6 +8053,26 @@ function depositActionsPanel(res, bal) {
         escapeHtml(t("Waive")) +
         "</button>") +
     "</div>" +
+    // Optional, and only once the deposit itself is settled: the rest of a
+    // large party's bill often arrives later. Same modal, same ledger — a
+    // settlement is just another payment row, so nothing new is needed to
+    // record one.
+    (settled
+      ? '<div class="flex flex-wrap gap-2 mt-3"><button onclick="openRecordDepositPayment(\'' +
+        res.id +
+        '\')" class="btn-ghost text-xs px-3 py-1.5">' +
+        escapeHtml(t("Record another payment")) +
+        "</button></div>"
+      : "") +
+    (res.status === "Waitlist"
+      ? '<p class="text-[11px] text-[#666] mt-2 leading-snug">' +
+        escapeHtml(
+          t(
+            "This booking becomes Reserved when the payment is recorded. Nothing expires on its own, so cancel it by hand if the guest backs out.",
+          ),
+        ) +
+        "</p>"
+      : "") +
     (res.status === "Incoming"
       ? '<p class="text-[11px] text-[#666] mt-2 leading-snug">' +
         escapeHtml(

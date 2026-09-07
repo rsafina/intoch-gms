@@ -62,9 +62,34 @@ ok(
 // or the CHECK constraint that enumerates every status there is. Told apart by
 // a rule rather than by position in the file: a list of statuses that hold a
 // seat can never contain a cancelled or deleted booking.
+// Waitlist joining a list is the OTHER kind of status list (2026-09-07): the
+// statuses a payment or a waiver PROMOTES FROM. Those are the opposite of
+// seat-holding — a booking in one of them holds nothing, which is exactly why
+// paying moves it. Told apart by the same kind of rule as above: a
+// seat-holding list can never contain Waitlist, because a party nobody has
+// agreed to must not block the bookings behind it.
 const sqlStatusLists = [...sql.matchAll(/status in \(([^)]*'Incoming'[^)]*)\)/g)]
   .map((m) => m[1].split(",").map((s) => s.trim().replace(/^'|'$/g, "")))
-  .filter((list) => !list.some((s) => /^(Cancelled|Deleted)/.test(s)));
+  .filter((list) => !list.some((s) => /^(Cancelled|Deleted)/.test(s)))
+  .filter((list) => !list.includes("Waitlist"));
+// Both promote paths must accept a large party, or an agreed-and-paid party
+// of 35 stays a request for ever and staff have to force the status by hand.
+ok(
+  "payment promotes a Waitlist booking, not only an Incoming one",
+  /if v_res\.status in \('Incoming', 'Waitlist'\)/.test(sql),
+  "record_deposit_payment is where money turns a request into a booking.",
+);
+ok(
+  "waiving promotes a Waitlist booking too",
+  /case when status in \('Incoming', 'Waitlist'\)/.test(sql),
+  "A comped large party is still a large party that must end up Reserved.",
+);
+ok(
+  "the sweep still only ever touches Incoming",
+  /where r\.status = 'Incoming'/.test(sql),
+  "Auto-cancelling a negotiated large party is precisely what Rere ruled out: " +
+    "nothing expires on its own, staff decide.",
+);
 ok(
   "the SQL spells out a seat-holding list including Incoming at least twice",
   sqlStatusLists.length >= 2,
@@ -103,8 +128,29 @@ ok(
 );
 ok(
   "Incoming rows are sorted above ordinary reservations",
-  /Incoming:\s*0/.test(app) && /resStatusSortRank\(a\.status\)/.test(app),
+  // Asserted as an ordering, not as "Incoming: 0". Waitlist took rank 0 on
+  // 2026-09-07 because it is the only status waiting on a decision; Incoming
+  // is still a queue that must sit above ordinary bookings, and pinning the
+  // literal number made a correct change look like a regression.
+  (() => {
+    const rank = (st) => {
+      const m = app.match(new RegExp('"?' + st + '"?:\\s*(\\d+)'));
+      return m ? Number(m[1]) : NaN;
+    };
+    return rank("Incoming") < rank("Reserved") && /resStatusSortRank\(a\.status\)/.test(app);
+  })(),
   "The deposit queue should not sit below later ordinary bookings.",
+);
+ok(
+  "a large party waiting on a decision sits above even the deposit queue",
+  (() => {
+    const rank = (st) => {
+      const m = app.match(new RegExp('"?' + st + '"?:\\s*(\\d+)'));
+      return m ? Number(m[1]) : NaN;
+    };
+    return rank("Waitlist") < rank("Incoming");
+  })(),
+  "It is the only row nobody has answered yet.",
 );
 ok(
   "the dashboard query carries deposit fields",
@@ -321,7 +367,20 @@ ok(
 
 // ── Every element the module reads exists in the page ─────────────────────
 console.log("\nEvery element the module touches exists in index.html");
-const ids = [...new Set([...mod.matchAll(/getElementById\("([^"]+)"\)/g)].map((m) => m[1]))];
+// Ids the module RENDERS itself, rather than reading from the page. They
+// cannot be in index.html by definition, and requiring them there would mean
+// writing a dead input into the markup just to satisfy a test.
+const RENDERED_IDS = new Set(["lp-agreed-amount"]);
+const ids = [...new Set([...mod.matchAll(/getElementById\("([^"]+)"\)/g)].map((m) => m[1]))]
+  .filter((id) => !RENDERED_IDS.has(id));
+for (const id of RENDERED_IDS) {
+  ok(
+    `#${id} is rendered by the module that reads it`,
+    new RegExp(`id="${id}"`).test(mod),
+    "Exempted from the index.html check, so the markup that creates it must " +
+      "live in the same module or the field silently never exists.",
+  );
+}
 ok("the module reads at least one element", ids.length > 0);
 for (const id of ids.sort()) {
   ok(`#${id} exists in index.html`, new RegExp(`id="${id}"`).test(html),

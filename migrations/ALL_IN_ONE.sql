@@ -5466,7 +5466,14 @@ as $function$
     -- cannot be a forgotten second click. A PARTIAL payment leaves it Incoming
     -- and does NOT move the deadline: otherwise a guest holds a table forever
     -- by sending Rp 1.000 a day.
-    if v_res.status = 'Incoming' and v_paid >= v_expected and v_expected > 0 then
+    -- 'Waitlist' joins 'Incoming' here (2026-09-07). A large party agrees a
+    -- figure with staff over WhatsApp and pays it; the money arriving is the
+    -- same event in both flows, so it ends the same way. The difference is
+    -- only how the booking got here: Incoming was auto-quoted at booking,
+    -- Waitlist was negotiated. Nothing else about Waitlist changes — no
+    -- deadline, no sweep, and staff can still cancel it by hand.
+    if v_res.status in ('Incoming', 'Waitlist')
+       and v_paid >= v_expected and v_expected > 0 then
       update reservations
          set status = 'Reserved', updated_at = now()
        where id = p_reservation_id;
@@ -5479,6 +5486,12 @@ as $function$
       'locked', false);
   end;
   $function$;
+
+-- A waitlisted booking is NEVER swept. expire_unpaid_deposits() only looks at
+-- 'Incoming', which is deliberate: a large party that goes quiet is a
+-- conversation staff are having, not a lapsed hold on a table. Rere,
+-- 2026-09-07: "we are not gonna do anything in the system anyway, just let the
+-- staff decide."
 
 -- 2. Waive the deposit. ANY staff member may, and the reason is REQUIRED.
 -- deposit_rule_note is what makes a waived deposit distinguishable from one
@@ -5514,7 +5527,8 @@ as $function$
     -- Payment rows are NOT deleted. Money that arrived is a fact; the waiver
     -- only changes what is still owed.
     update reservations
-       set status            = case when status = 'Incoming' then 'Reserved' else status end,
+       set status            = case when status in ('Incoming', 'Waitlist')
+                                   then 'Reserved' else status end,
            deposit_required  = false,
            deposit_due_at    = null,
            deposit_rule_note = format('Waived by %s on %s: %s',
