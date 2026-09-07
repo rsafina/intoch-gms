@@ -6065,3 +6065,145 @@ select 'the expiry job is scheduled',
 --   alter table public.reservations drop column if exists deposit_required,
 --     drop column if exists deposit_expected, drop column if exists deposit_rule_note;
 --   -- and re-run the previous definition of create_public_reservation.
+
+-- ============================================================
+-- MULTIPLE TABLES PER RESERVATION / VISIT (2026-09-07)
+-- Run this section before deploying the matching staff app.
+-- table_ids holds all tables; table_id remains the first for existing joins.
+-- One party still belongs to one area and counts its pax only once.
+-- ============================================================
+begin;
+
+alter table public.reservations add column if not exists table_ids uuid[] not null default '{}';
+alter table public.visits add column if not exists table_ids uuid[] not null default '{}';
+
+update public.reservations set table_ids = array[table_id]
+where table_id is not null and cardinality(table_ids) = 0;
+update public.visits set table_ids = array[table_id]
+where table_id is not null and cardinality(table_ids) = 0;
+
+create index if not exists idx_reservations_table_ids on public.reservations using gin(table_ids);
+create index if not exists idx_visits_table_ids on public.visits using gin(table_ids);
+
+create or replace function public.normalize_table_assignment()
+returns trigger language plpgsql set search_path = public, pg_temp as $$
+declare
+  chosen uuid[];
+  previous uuid[] := '{}';
+  item record;
+  chosen_area uuid;
+  found_count integer := 0;
+begin
+  if tg_op = 'INSERT' then
+    chosen := case when cardinality(new.table_ids) > 0 then new.table_ids
+      when new.table_id is not null then array[new.table_id] else '{}'::uuid[] end;
+    if tg_table_name = 'visits' and cardinality(chosen) = 0 then
+      select r.table_ids, r.assigned_area into chosen, chosen_area
+      from public.reservations r where r.id = new.reservation_id;
+      chosen := coalesce(chosen, '{}'::uuid[]);
+      if cardinality(chosen) > 0 then new.assigned_area := chosen_area; end if;
+    end if;
+  else
+    previous := old.table_ids;
+    if new.table_ids is distinct from old.table_ids then
+      chosen := coalesce(new.table_ids, '{}'::uuid[]);
+    elsif new.table_id is distinct from old.table_id then
+      chosen := case when new.table_id is null then '{}'::uuid[] else array[new.table_id] end;
+    else
+      chosen := new.table_ids;
+    end if;
+  end if;
+
+  -- Deduplicate without changing the primary-table order.
+  select coalesce(array_agg(id order by first_position), '{}'::uuid[]) into chosen
+  from (select id, min(position) as first_position
+        from unnest(chosen) with ordinality as u(id, position)
+        where id is not null group by id) unique_ids;
+  chosen_area := null;
+  -- Lock referenced rows while saving; an assignment cannot race a table deletion.
+  -- FOR SHARE also blocks a concurrent move of a table to a different area.
+  for item in select id, area_id, is_active from public.tables
+    where id = any(chosen) order by id for share
+  loop
+    found_count := found_count + 1;
+    if not item.is_active and not (item.id = any(previous)) then
+      raise exception 'Archived tables cannot be newly assigned.';
+    end if;
+    if chosen_area is not null and chosen_area <> item.area_id then
+      raise exception 'All selected tables must belong to the same area.';
+    end if;
+    chosen_area := item.area_id;
+  end loop;
+  if found_count <> cardinality(chosen) then
+    raise exception 'One or more selected tables no longer exist.';
+  end if;
+  if cardinality(chosen) > 0 then
+    if new.assigned_area is not null and new.assigned_area <> chosen_area then
+      raise exception 'Selected tables do not belong to the assigned area.';
+    end if;
+    new.assigned_area := chosen_area;
+  end if;
+  new.table_ids := chosen;
+  new.table_id := chosen[1];
+  return new;
+end $$;
+
+drop trigger if exists reservations_normalize_tables on public.reservations;
+create trigger reservations_normalize_tables before insert or update of table_id, table_ids, assigned_area
+on public.reservations for each row execute function public.normalize_table_assignment();
+drop trigger if exists visits_normalize_tables on public.visits;
+create trigger visits_normalize_tables before insert or update of table_id, table_ids, assigned_area
+on public.visits for each row execute function public.normalize_table_assignment();
+
+-- Move the live seating and booking together, in the same transaction.
+-- Completed/voided visits keep their historical seating.
+create or replace function public.sync_live_table_assignment()
+returns trigger language plpgsql set search_path = public, pg_temp as $$
+begin
+  if pg_trigger_depth() > 1 then return new; end if;
+  if new.table_ids is not distinct from old.table_ids
+     and new.assigned_area is not distinct from old.assigned_area then return new; end if;
+  if tg_table_name = 'reservations' then
+    update public.visits set table_ids = new.table_ids, table_id = new.table_id,
+      assigned_area = new.assigned_area
+    where reservation_id = new.id and status = 'Active' and voided_at is null
+      and (table_ids is distinct from new.table_ids or assigned_area is distinct from new.assigned_area);
+  elsif new.reservation_id is not null and new.status = 'Active' and new.voided_at is null then
+    update public.reservations set table_ids = new.table_ids, table_id = new.table_id,
+      assigned_area = new.assigned_area
+    where id = new.reservation_id
+      and (table_ids is distinct from new.table_ids or assigned_area is distinct from new.assigned_area);
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists reservations_sync_live_tables on public.reservations;
+create trigger reservations_sync_live_tables after update of table_id, table_ids, assigned_area
+on public.reservations for each row execute function public.sync_live_table_assignment();
+drop trigger if exists visits_sync_live_tables on public.visits;
+create trigger visits_sync_live_tables after update of table_id, table_ids, assigned_area
+on public.visits for each row execute function public.sync_live_table_assignment();
+
+-- table_id's existing foreign key protects the primary; protect every other
+-- selected table too. Archive used tables instead of deleting/moving them.
+create or replace function public.guard_assigned_table()
+returns trigger language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  if tg_op = 'UPDATE' then
+    if new.area_id is not distinct from old.area_id then return new; end if;
+  end if;
+  if exists (select 1 from public.reservations where table_ids @> array[old.id])
+     or exists (select 1 from public.visits where table_ids @> array[old.id]) then
+    raise exception 'This table is assigned to a reservation or visit. Archive it instead of deleting or moving it.';
+  end if;
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
+end $$;
+
+drop trigger if exists tables_guard_assignments on public.tables;
+create trigger tables_guard_assignments before delete or update of area_id
+on public.tables for each row execute function public.guard_assigned_table();
+
+notify pgrst, 'reload schema';
+
+commit;

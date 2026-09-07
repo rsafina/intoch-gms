@@ -39,7 +39,7 @@ if (a < 0 || b <= a) {
   console.error("FAIL: could not slice confirmCompleteVisit out of app.js");
   process.exit(1);
 }
-const block = src.slice(a, b);
+const block = src.match(/^function assignedTableIds\(row\) \{[\s\S]*?^}/m)[0] + "\n" + src.slice(a, b);
 
 const RES_ID = "res-1";
 

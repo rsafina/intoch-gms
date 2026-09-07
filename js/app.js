@@ -2154,16 +2154,37 @@ function getTableById(id) {
   return allTables.find((t) => t.id === id) || null;
 }
 
+// table_id remains the primary table for older integrations; table_ids is the full assignment.
+function assignedTableIds(row) {
+  if (!row) return [];
+  return Array.isArray(row.table_ids) ? [...new Set(row.table_ids.filter(Boolean))]
+    : row.table_id ? [row.table_id] : [];
+}
+
+function tableSelectionIds(value) {
+  return [...new Set((Array.isArray(value) ? value : String(value || "").split(",")).filter(Boolean))];
+}
+
+function selectedTableIdsFor(prefix) {
+  return tableSelectionIds(document.getElementById(`${prefix}-table-id`)?.value);
+}
+
+function assignedTableNames(row) {
+  const names = assignedTableIds(row).map(id => getTableById(id)?.name ||
+    (id === row.table_id ? row.tables?.name : null) || t("Unknown table"));
+  return names.length ? names.join(", ") : row?.tables?.name || "";
+}
+
 // Fetch currently occupied table IDs for today (active visits + arrived reservations).
 // Excludes the record being edited (selfId) so its own table doesn't show as occupied.
-async function fetchOccupiedTableIds(selfId = null, selfType = "visit") {
+async function fetchOccupiedTableIds(selfId = null, selfType = "visit", selfReservationId = null) {
   const occupiedIds = new Set();
 
   const { data: activeVisits } = await supabaseQuery(
     () =>
       db
         .from("visits")
-        .select("id, table_id")
+        .select("id, table_id, table_ids, reservation_id")
         .eq("visit_date", TODAY)
         .neq("status", "Done")
         .not("table_id", "is", null)
@@ -2171,8 +2192,8 @@ async function fetchOccupiedTableIds(selfId = null, selfType = "visit") {
     "Failed to fetch occupied tables",
   );
   (activeVisits || []).forEach((v) => {
-    if (v.table_id && !(selfType === "visit" && v.id === selfId)) {
-      occupiedIds.add(v.table_id);
+    if (!(selfType === "visit" && v.id === selfId) && !(selfType === "reservation" && v.reservation_id === selfId)) {
+      assignedTableIds(v).forEach(id => occupiedIds.add(id));
     }
   });
 
@@ -2180,15 +2201,15 @@ async function fetchOccupiedTableIds(selfId = null, selfType = "visit") {
     () =>
       db
         .from("reservations")
-        .select("id, table_id")
+        .select("id, table_id, table_ids")
         .eq("reservation_date", TODAY)
         .eq("status", "Arrived")
         .not("table_id", "is", null),
     "Failed to fetch arrived reservations",
   );
   (arrivedRes || []).forEach((r) => {
-    if (r.table_id && !(selfType === "reservation" && r.id === selfId)) {
-      occupiedIds.add(r.table_id);
+    if (!(selfType === "reservation" && r.id === selfId) && r.id !== selfReservationId) {
+      assignedTableIds(r).forEach(id => occupiedIds.add(id));
     }
   });
 
@@ -2220,109 +2241,72 @@ async function refreshResTableOccupancy() {
   updateResVipTimeRange();
 }
 
-function renderTableSelection(prefix, selectedId = "") {
+function renderTableSelection(prefix, selected = null) {
   const container = document.getElementById(`${prefix}-table-picker`);
-  const hiddenInput = document.getElementById(`${prefix}-table-id`);
-  const areaSelect = document.getElementById(`${prefix}-area`);
-  if (!container || !hiddenInput || !areaSelect) return;
-
-  selectedId = selectedId || hiddenInput.value || "";
-
-  // Read occupancy context stored for this prefix
+  const hidden = document.getElementById(`${prefix}-table-id`);
+  const area = document.getElementById(`${prefix}-area`);
+  if (!container || !hidden || !area) return;
+  const ids = selected === null ? selectedTableIdsFor(prefix) : tableSelectionIds(selected);
+  hidden.value = ids.join(",");
+  const selectedArea = getTableById(ids[0])?.area_id;
+  if (selectedArea) area.value = selectedArea;
+  area.disabled = ids.length > 0;
   const ctx = tablePickerContext[prefix] || {};
-  const occupiedIds = ctx.occupiedIds || new Set();
-  const skipOccupancy = ctx.skipOccupancy || false;
-
-  const tablesToShow = allTables.filter(
-    (t) => t.is_active || t.id === selectedId,
-  );
-  const rows = allAreas
-    .map((area) => {
-      const groupTables = tablesToShow.filter((t) => t.area_id === area.id);
-      if (!groupTables.length) return "";
-
-      return `
-      <div class="mb-4">
-        <p class="text-xs text-[#555] font-semibold mb-2">${escapeHtml(area.name)}</p>
-        <div class="flex flex-wrap gap-2">
-          ${groupTables
-            .map((table) => {
-              const isSelected = table.id === selectedId;
-              const inactive = !table.is_active;
-              const isOccupied =
-                !skipOccupancy && !isSelected && occupiedIds.has(table.id);
-              const btnClass = isSelected
-                ? "bg-[color:var(--brand-ink)] text-white border border-[color:var(--brand-ink)]"
-                : inactive
-                  ? "bg-[#F5F3F0] text-[#999] border border-[#E2DFDA] cursor-not-allowed"
-                  : isOccupied
-                    ? "bg-[#FEE2E2] text-[#991B1B] border border-[#FECACA] cursor-not-allowed"
-                    : "bg-[#F8F6F2] text-[#555] border border-[#E6E2DC] hover:bg-[#EEF3F7]";
-              const label = inactive ? " (Archived)" : "";
-              return {
-                isOccupied,
-                html: `
-            <button type="button" data-table-id="${table.id}" onclick="selectTable('${prefix}','${table.id}')" class="px-3 py-2 rounded-full text-xs font-semibold transition ${btnClass}" ${(inactive || isOccupied) && !isSelected ? "disabled" : ""}>
-              ${escapeHtml(table.name)}${table.capacity ? ` • ${table.capacity}` : ""}${label}
-            </button>`,
-              };
-            })
-            .sort((a, b) => a.isOccupied - b.isOccupied)
-            .map((t) => t.html)
-            .join("")}
-        </div>
-      </div>
-    `;
-    })
-    .join("");
-
-  container.innerHTML = `
-    <div class="mb-3 flex items-center justify-between gap-3">
-      <label class="block text-xs font-medium text-[#555]">Table</label>
-      ${selectedId ? '<button type="button" onclick="clearTableSelection(\'' + prefix + '\')" class="text-xs text-[color:var(--accent-strong)] hover:underline">Clear selection</button>' : ""}
-    </div>
-    ${rows || '<p class="text-xs text-[#999]">No active tables configured for the selected areas.</p>'}
-  `;
-
-  hiddenInput.value = selectedId;
-
-  const selectedTable = getTableById(selectedId);
-  if (selectedTable) {
-    areaSelect.value = selectedTable.area_id || "";
-    areaSelect.disabled = true;
-  } else {
-    areaSelect.disabled = false;
-  }
+  container.innerHTML = `<div class="mb-3 flex justify-between gap-3">
+    <label class="text-xs font-medium">${t("Tables")}</label>
+    <button type="button" onclick="clearTableSelection('${prefix}')" class="text-xs underline">${t("Clear selection")}</button>
+    </div><p class="text-xs text-[#777] mb-3">${t("Select one or more tables in the same area.")}</p>` + allAreas.map(group => {
+      const tables = allTables.filter(tb => tb.area_id === group.id && (tb.is_active || ids.includes(tb.id)));
+      if (!tables.length) return "";
+      return `<div class="mb-4"><div class="flex justify-between mb-2 gap-2">
+        <p class="text-xs font-semibold">${escapeHtml(group.name)}</p>
+        <button type="button" onclick="selectAllAreaTables('${prefix}','${group.id}')" class="text-xs underline">${t("Select all tables")}</button>
+        </div><div class="flex flex-wrap gap-2">` + tables.map(tb => {
+          const checked = ids.includes(tb.id);
+          const occupied = !ctx.skipOccupancy && ctx.occupiedIds?.has(tb.id) && !checked;
+          const disabled = !checked && (!tb.is_active || occupied);
+          return `<button type="button" data-table-id="${tb.id}" aria-pressed="${checked}"
+            onclick="selectTable('${prefix}','${tb.id}')" ${disabled ? "disabled" : ""}
+            class="px-3 py-2 rounded-full text-xs font-semibold border transition ${checked ? "bg-[color:var(--brand-ink)] text-white" : occupied ? "bg-red-100 text-red-700" : "bg-[#F8F6F2] text-[#555]"} disabled:opacity-50">
+            ${checked ? "&#10003; " : ""}${escapeHtml(tb.name)}${!tb.is_active ? " (" + t("Archived") + ")" : ""}${tb.capacity ? " ? " + tb.capacity : ""}
+          </button>`;
+        }).join("") + '</div></div>';
+    }).join("");
 }
 
 function selectTable(prefix, tableId) {
-  const hiddenInput = document.getElementById(`${prefix}-table-id`);
-  const areaSelect = document.getElementById(`${prefix}-area`);
-  if (!hiddenInput || !areaSelect) return;
-
+  const ids = selectedTableIdsFor(prefix);
   const table = getTableById(tableId);
-  if (!table || (!table.is_active && hiddenInput.value !== tableId)) return;
+  if (!table) return;
+  if (ids.includes(tableId)) {
+    renderTableSelection(prefix, ids.filter(id => id !== tableId));
+  } else {
+    const ctx = tablePickerContext[prefix] || {};
+    if (!table.is_active || (!ctx.skipOccupancy && ctx.occupiedIds?.has(tableId))) return;
+    if (ids.length && getTableById(ids[0])?.area_id !== table.area_id) {
+      toast(t("Clear the selection before choosing another area."), "error");
+      return;
+    }
+    renderTableSelection(prefix, [...ids, tableId]);
+  }
+  if (prefix === "res") updateResVipTimeRange();
+}
 
-  if (hiddenInput.value === tableId) {
-    clearTableSelection(prefix);
+function selectAllAreaTables(prefix, areaId) {
+  const ids = selectedTableIdsFor(prefix);
+  if (ids.length && getTableById(ids[0])?.area_id !== areaId) {
+    toast(t("Clear the selection before choosing another area."), "error");
     return;
   }
-
-  hiddenInput.value = table.id;
-  areaSelect.value = table.area_id || "";
-  areaSelect.disabled = true;
-  renderTableSelection(prefix, table.id);
+  const ctx = tablePickerContext[prefix] || {};
+  const available = allTables.filter(tb => tb.area_id === areaId && tb.is_active &&
+    (ctx.skipOccupancy || !ctx.occupiedIds?.has(tb.id) || ids.includes(tb.id)));
+  renderTableSelection(prefix, [...ids, ...available.map(tb => tb.id)]);
   if (prefix === "res") updateResVipTimeRange();
 }
 
 function clearTableSelection(prefix) {
-  const hiddenInput = document.getElementById(`${prefix}-table-id`);
-  const areaSelect = document.getElementById(`${prefix}-area`);
-  if (!hiddenInput || !areaSelect) return;
-
-  hiddenInput.value = "";
-  areaSelect.disabled = false;
-  renderTableSelection(prefix, "");
+  renderTableSelection(prefix, []);
   if (prefix === "res") updateResVipTimeRange();
 }
 
@@ -2351,8 +2335,7 @@ function updateResVipTimeRange() {
   const wrap = document.getElementById("res-endtime-wrap");
   if (!wrap) return;
 
-  const tableId = document.getElementById("res-table-id")?.value || "";
-  const isVip = tableId && isVipTableId(tableId);
+  const isVip = selectedTableIdsFor("res").some(isVipTableId);
   wrap.classList.toggle("hidden", !isVip);
   if (!isVip) return;
 
@@ -2405,7 +2388,7 @@ async function findVipTimeConflict(tableId, date, startTime, endTime, excludeRes
   let q = db
     .from("reservations")
     .select("id, reservation_time, end_time, guests(name)")
-    .eq("table_id", tableId)
+    .contains("table_ids", [tableId])
     .eq("reservation_date", date)
     .in("status", RES_HOLDS_SEAT_STATUSES);
   if (excludeResId) q = q.neq("id", excludeResId);
@@ -2769,7 +2752,7 @@ async function loadDashboard() {
           db
             .from("visits")
             .select(
-              "id, guest_id, pax, assigned_area, table_id, visit_time, spend_amount, status, completed_at, notes, guests(name, phone, booking_alias, spending_tier, tag, food_allergy, notes, favorite_menu), areas(name), tables(name)",
+              "id, guest_id, pax, assigned_area, table_id, table_ids, visit_time, spend_amount, status, completed_at, notes, guests(name, phone, booking_alias, spending_tier, tag, food_allergy, notes, favorite_menu), areas(name), tables(name)",
             )
             .eq("visit_date", TODAY)
             .eq("visit_type", "Walk-In")
@@ -2782,7 +2765,7 @@ async function loadDashboard() {
           db
             .from("reservations")
             .select(
-              "id, pax, status, guest_id, reservation_time, occasion, reservation_source, assigned_area, table_id, notes, deposit_required, deposit_expected, deposit_due_at, guests(name,phone,booking_alias,spending_tier,tag,food_allergy,notes,favorite_menu), tables(name)",
+              "id, pax, status, guest_id, reservation_time, occasion, reservation_source, assigned_area, table_id, table_ids, notes, deposit_required, deposit_expected, deposit_due_at, guests(name,phone,booking_alias,spending_tier,tag,food_allergy,notes,favorite_menu), tables(name)",
             )
             .eq("reservation_date", TODAY)
             .order("reservation_time"),
@@ -3048,7 +3031,7 @@ async function loadDashboardReservations(offset = 0, initialData = null) {
         db
           .from("reservations")
           .select(
-            "id, pax, status, guest_id, reservation_time, occasion, reservation_source, assigned_area, notes, deposit_required, deposit_expected, deposit_due_at, guests(name,phone,booking_alias,spending_tier,tag,food_allergy,notes,favorite_menu,last_order), areas(name), tables(name)",
+            "id, pax, status, guest_id, reservation_time, occasion, reservation_source, assigned_area, table_id, table_ids, notes, deposit_required, deposit_expected, deposit_due_at, guests(name,phone,booking_alias,spending_tier,tag,food_allergy,notes,favorite_menu,last_order), areas(name), tables(name)",
           )
           .eq("reservation_date", date)
           .order("reservation_time"),
@@ -3463,7 +3446,7 @@ function renderDashboardReservations(data) {
         r.areas?.name ||
         allAreas.find((a) => a.id === r.assigned_area)?.name ||
         "—";
-      const tableName = r.tables?.name || "—";
+      const tableName = escapeHtml(assignedTableNames(r) || "—");
       const notesDisplay = r.notes ? truncateNotes(r.notes) : "";
       return `
       <div class="py-3 border-b border-[#F0EDE8] last:border-0">
@@ -3578,7 +3561,7 @@ function renderDashboardWalkIns(data) {
         v.areas?.name ||
         allAreas.find((a) => a.id === v.assigned_area)?.name ||
         "—";
-      const tableName = v.tables?.name || "—";
+      const tableName = escapeHtml(assignedTableNames(v) || "—");
       const isCompleted = v.status === "Done" || !!v.completed_at;
       const notesDisplay = v.notes ? truncateNotes(v.notes) : "";
       return `
@@ -5283,18 +5266,18 @@ async function openWalkInModal(visit = null) {
   }
   populateAreaSelects();
   document.getElementById("wi-area").value = visit?.assigned_area || "";
-  document.getElementById("wi-table-id").value = visit?.table_id || "";
+  document.getElementById("wi-table-id").value = assignedTableIds(visit).join(",");
 
   // Completed walk-ins: skip occupancy (historical edit, tables status unknown)
   // Active or new: fetch today's occupied tables, exclude self
   const wiIsCompleted = visit?.status === "Done" || !!visit?.completed_at;
   if (wiIsCompleted) {
     tablePickerContext["wi"] = { skipOccupancy: true, occupiedIds: new Set() };
-    renderTableSelection("wi", visit?.table_id || "");
+    renderTableSelection("wi", assignedTableIds(visit).join(","));
   } else {
     tablePickerContext["wi"] = { skipOccupancy: false, occupiedIds: new Set() };
-    renderTableSelection("wi", visit?.table_id || "");
-    fetchOccupiedTableIds(visit?.id || null, "visit").then((ids) => {
+    renderTableSelection("wi", assignedTableIds(visit).join(","));
+    fetchOccupiedTableIds(visit?.id || null, "visit", visit?.reservation_id || null).then((ids) => {
       tablePickerContext["wi"] = { skipOccupancy: false, occupiedIds: ids };
       renderTableSelection("wi", document.getElementById("wi-table-id").value);
     });
@@ -5350,7 +5333,8 @@ async function saveWalkIn() {
   }
 
   const pax = parseInt(document.getElementById("wi-pax").value, 10) || 1;
-  const selectedTableId = document.getElementById("wi-table-id")?.value || null;
+  const selectedTableIds = selectedTableIdsFor("wi");
+  const selectedTableId = selectedTableIds[0] || null;
   const selectedTable = selectedTableId ? getTableById(selectedTableId) : null;
   const area =
     selectedTable?.area_id || document.getElementById("wi-area").value || null;
@@ -5448,6 +5432,7 @@ async function saveWalkIn() {
       pax,
       assigned_area: area || null,
       table_id: selectedTableId,
+    table_ids: selectedTableIds,
       notes,
       updated_at: new Date().toISOString(),
     };
@@ -5506,6 +5491,7 @@ async function saveWalkIn() {
           pax,
           assigned_area: area || null,
           table_id: selectedTableId,
+          table_ids: selectedTableIds,
           spend_amount: spendAmount ?? null,
           notes,
           created_by: currentStaffId(),
@@ -5616,7 +5602,7 @@ async function loadWalkIns() {
           ${isVoided ? `<p class="text-xs text-red-400 italic mt-1">Voided${v.void_reason ? `: ${escapeHtml(v.void_reason)}` : ""}</p>` : ""}
         </td>
         <td class="px-5 py-3.5 text-sm text-[#555]">${fmt.pax(v.pax)}</td>
-        <td class="px-5 py-3.5 text-sm text-[#555] hidden md:table-cell">${v.tables?.name || "—"}</td>
+        <td class="px-5 py-3.5 text-sm text-[#555] hidden md:table-cell">${escapeHtml(assignedTableNames(v) || "—")}</td>
         <td class="px-5 py-3.5 text-sm text-[#555] hidden md:table-cell">${v.areas?.name || "—"}</td>
         <td class="px-5 py-3.5 text-sm text-[#555] hidden md:table-cell">${fmt.currency(v.spend_amount)}</td>
         <td class="px-5 py-3.5 text-sm text-[#555] hidden md:table-cell">${visitCount > 0 ? visitCount : "—"}</td>
@@ -5795,7 +5781,7 @@ function openReservationModal(res = null) {
   document.getElementById("res-notes").value = res?.notes || "";
 
   populateAreaSelects();
-  document.getElementById("res-table-id").value = res?.table_id || "";
+  document.getElementById("res-table-id").value = assignedTableIds(res).join(",");
   const endTimeEl = document.getElementById("res-end-time");
   if (endTimeEl) endTimeEl.value = res?.end_time?.slice(0, 5) || "";
   if (res?.assigned_area)
@@ -5808,7 +5794,7 @@ function openReservationModal(res = null) {
   const resIsCompleted = res?.status === "Completed";
   if (resIsCompleted) {
     tablePickerContext["res"] = { skipOccupancy: true, occupiedIds: new Set() };
-    renderTableSelection("res", res?.table_id || "");
+    renderTableSelection("res", assignedTableIds(res).join(","));
   } else {
     refreshResTableOccupancy();
   }
@@ -5893,8 +5879,8 @@ async function saveReservation() {
     return;
   }
 
-  const selectedTableId =
-    document.getElementById("res-table-id")?.value || null;
+  const selectedTableIds = selectedTableIdsFor("res");
+  const selectedTableId = selectedTableIds[0] || null;
   const selectedTable = selectedTableId ? getTableById(selectedTableId) : null;
   const assignedArea =
     selectedTable?.area_id || document.getElementById("res-area").value || null;
@@ -5917,7 +5903,7 @@ async function saveReservation() {
     vipErrEl.classList.add("hidden");
     vipErrEl.textContent = "";
   }
-  if (selectedTableId && isVipTableId(selectedTableId)) {
+  for (const vipId of selectedTableIds.filter(isVipTableId)) {
     endTime = document.getElementById("res-end-time")?.value || null;
     if (endTime && timeToMinutes(endTime) <= timeToMinutes(time)) {
       showVipError("Jam selesai harus setelah jam mulai.");
@@ -5927,7 +5913,7 @@ async function saveReservation() {
       (endTime ? timeToMinutes(endTime) : timeToMinutes(time) + LEGACY_BOOKING_HOURS * 60) % 1440;
     const effEnd = `${String(Math.floor(effEndMins / 60)).padStart(2, "0")}:${String(effEndMins % 60).padStart(2, "0")}`;
     const conflict = await findVipTimeConflict(
-      selectedTableId, date, time, effEnd, editIdForCheck,
+      vipId, date, time, effEnd, editIdForCheck,
     );
     if (conflict === "could-not-check") {
       showVipError("Tidak bisa cek ketersediaan VIP. Coba lagi.");
@@ -5948,6 +5934,7 @@ async function saveReservation() {
     reservation_source: readResSourceValue(),
     assigned_area: assignedArea,
     table_id: selectedTableId,
+    table_ids: selectedTableIds,
     end_time: endTime,
     status: document.getElementById("res-status").value,
     notes: document.getElementById("res-notes").value.trim() || null,
@@ -6492,7 +6479,7 @@ async function renderResOccupancySummary(date) {
     () =>
       db
         .from("reservations")
-        .select("id, pax, reservation_time, end_time, table_id, assigned_area, guests(name)")
+        .select("id, pax, reservation_time, end_time, table_id, table_ids, assigned_area, guests(name)")
         .eq("reservation_date", date)
         .in("status", RES_OCCUPANCY_STATUSES),
     "Failed to load occupancy summary",
@@ -6581,7 +6568,7 @@ function renderVipTableTimeline(table, rows) {
   const areaName =
     allAreas.find((a) => a.id === table.area_id)?.name || "";
   const bookingsRaw = rows
-    .filter((r) => r.table_id === table.id)
+    .filter((r) => assignedTableIds(r).includes(table.id))
     .map((r) => {
       const start = timeToMinutes(r.reservation_time);
       const end = r.end_time
@@ -6725,7 +6712,7 @@ async function renderReservationsTable(data) {
         fmt.pax(r.pax) +
         "</td>" +
         '<td class="px-5 py-3.5 text-sm text-[#555] hidden md:table-cell">' +
-        (r.tables?.name || "—") +
+        escapeHtml(assignedTableNames(r) || "—") +
         "</td>" +
         // Area column removed 2026-07-17 — freed horizontal space so the
         // WA action buttons stay visible without scrolling.
@@ -6882,7 +6869,12 @@ async function openResActions(resId) {
   applyManagerOnlyUI();
 
   // Render initial table grid for current area
-  renderResActionTableGrid(res.assigned_area, res.table_id);
+  _resActionReservation = res;
+  tablePickerContext.actions = { skipOccupancy: res.reservation_date !== TODAY || res.status === "Completed", occupiedIds: new Set() };
+  if (!tablePickerContext.actions.skipOccupancy) {
+    tablePickerContext.actions.occupiedIds = await fetchOccupiedTableIds(res.id, "reservation");
+  }
+  renderResActionTableGrid(res.assigned_area, assignedTableIds(res));
 }
 
 // ── Delete Reservation (manager-only, soft-delete) ──────────────────────
@@ -6943,71 +6935,78 @@ async function openDeleteReservation(resId) {
   showModal("modal-void-reason");
 }
 
-let _resActionSelectedTable = null;
+let _resActionSelectedTables = [];
+let _resActionReservation = null;
 
-function renderResActionTableGrid(areaId, currentTableId) {
-  _resActionSelectedTable = currentTableId || null;
+function renderResActionTableGrid(areaId, currentTableIds) {
+  _resActionSelectedTables = tableSelectionIds(currentTableIds);
   const wrap = document.getElementById("res-action-table-wrap");
   if (!wrap) return;
-  const tables = allTables.filter((t) => t.area_id === areaId);
-  if (!tables.length) {
-    wrap.innerHTML =
-      '<p class="text-xs text-[#bbb] col-span-3">No tables in this area</p>';
-    return;
-  }
-  wrap.innerHTML = tables
-    .map((t) => {
-      const isSelected = t.id === _resActionSelectedTable;
-      return `<button onclick="selectResActionTable('${t.id}')"
-      id="res-action-tbl-${t.id}"
-      class="text-xs py-2 px-2 rounded-lg border transition-all font-medium text-center
-        ${isSelected ? "border-[color:var(--brand)] bg-[#EEF3F7] text-[color:var(--brand)]" : "border-[#E0DDD7] text-[#555] hover:border-[color:var(--brand)]"}">
-      ${escapeHtml(t.name)}
-    </button>`;
-    })
-    .join("");
+  const tables = allTables.filter(tb => tb.area_id === areaId &&
+    (tb.is_active || _resActionSelectedTables.includes(tb.id)));
+  const ctx = tablePickerContext.actions || {};
+  wrap.innerHTML = `<div class="col-span-3 flex gap-3 mb-2 text-xs">
+    <button type="button" onclick="selectAllResActionTables()" class="underline">${t("Select all tables")}</button>
+    <button type="button" onclick="renderResActionTableGrid(document.getElementById('res-action-area').value, [])" class="underline">${t("Clear selection")}</button>
+    </div>` + tables.map(tb => {
+      const checked = _resActionSelectedTables.includes(tb.id);
+      const occupied = !ctx.skipOccupancy && ctx.occupiedIds?.has(tb.id) && !checked;
+      return `<button type="button" onclick="selectResActionTable('${tb.id}')" aria-pressed="${checked}"
+        ${!checked && (!tb.is_active || occupied) ? "disabled" : ""}
+        class="text-xs py-2 px-2 rounded-lg border disabled:opacity-50 ${checked ? "bg-[color:var(--brand-ink)] text-white" : occupied ? "bg-red-100 text-red-700" : "bg-white"}">
+        ${checked ? "&#10003; " : ""}${escapeHtml(tb.name)}${!tb.is_active ? " (" + t("Archived") + ")" : ""}${tb.capacity ? " ? " + tb.capacity : ""}</button>`;
+    }).join("");
 }
 
 function selectResActionTable(tableId) {
-  _resActionSelectedTable =
-    _resActionSelectedTable === tableId ? null : tableId;
-  // Re-highlight buttons
-  const wrap = document.getElementById("res-action-table-wrap");
-  if (!wrap) return;
-  wrap.querySelectorAll("button").forEach((btn) => {
-    const tid = btn.id.replace("res-action-tbl-", "");
-    const active = tid === _resActionSelectedTable;
-    btn.className = `text-xs py-2 px-2 rounded-lg border transition-all font-medium text-center ${active ? "border-[color:var(--brand)] bg-[#EEF3F7] text-[color:var(--brand)]" : "border-[#E0DDD7] text-[#555] hover:border-[color:var(--brand)]"}`;
-  });
+  const areaId = document.getElementById("res-action-area")?.value;
+  const table = getTableById(tableId);
+  if (!table || table.area_id !== areaId) return;
+  const selected = _resActionSelectedTables.includes(tableId);
+  const ctx = tablePickerContext.actions || {};
+  if (!selected && (!table.is_active || (!ctx.skipOccupancy && ctx.occupiedIds?.has(tableId)))) return;
+  renderResActionTableGrid(areaId, selected ? _resActionSelectedTables.filter(id => id !== tableId)
+    : [..._resActionSelectedTables, tableId]);
+}
+
+function selectAllResActionTables() {
+  const areaId = document.getElementById("res-action-area")?.value;
+  const ctx = tablePickerContext.actions || {};
+  const ids = allTables.filter(tb => tb.area_id === areaId && tb.is_active &&
+    (ctx.skipOccupancy || !ctx.occupiedIds?.has(tb.id) || _resActionSelectedTables.includes(tb.id))).map(tb => tb.id);
+  renderResActionTableGrid(areaId, [..._resActionSelectedTables, ...ids]);
 }
 
 function onResActionAreaChange(resId) {
-  const areaId = document.getElementById("res-action-area")?.value || null;
-  _resActionSelectedTable = null;
-  renderResActionTableGrid(areaId, null);
+  renderResActionTableGrid(document.getElementById("res-action-area")?.value, []);
 }
 
 async function saveResActionTable(resId) {
   const areaId = document.getElementById("res-action-area")?.value || null;
-  const tableId = _resActionSelectedTable || null;
+  const ids = [..._resActionSelectedTables];
+  const res = _resActionReservation;
+  if (!res || res.id !== resId) return;
+  for (const id of ids.filter(isVipTableId)) {
+    const start = timeToMinutes(res.reservation_time);
+    const end = res.end_time || `${String(Math.floor(((start + LEGACY_BOOKING_HOURS * 60) % 1440) / 60)).padStart(2, "0")}:${String(start % 60).padStart(2, "0")}`;
+    const conflict = await findVipTimeConflict(id, res.reservation_date, res.reservation_time, end, resId);
+    if (conflict) {
+      toast(conflict === "could-not-check" ? t("Could not check table availability. Please try again.") : t("Table is already booked at this time.") + " " + conflict, "error");
+      return;
+    }
+  }
   loader(true);
-  const { error } = await supabaseQuery(
-    () =>
-      db
-        .from("reservations")
-        .update({
-          assigned_area: areaId || null,
-          table_id: tableId || null,
-        })
-        .eq("id", resId),
+  const { data, error } = await supabaseQuery(
+    () => db.from("reservations").update({ assigned_area: areaId, table_id: ids[0] || null, table_ids: ids })
+      .eq("id", resId).select("id"),
     "Failed to assign table",
   );
   loader(false);
-  if (error) {
-    toast(error.message || "Failed to assign table", "error");
+  if (error || !data?.length) {
+    toast(error?.message || t("Failed to assign table"), "error");
     return;
   }
-  toast("Table assigned successfully");
+  toast(t("Tables assigned successfully"));
   hideModal("modal-res-actions");
   loadReservations();
   if (isViewingStaffDashboard()) loadDashboard();
@@ -7106,6 +7105,7 @@ async function updateResStatus(resId, status) {
             pax: res.pax,
             assigned_area: res.assigned_area,
             table_id: res.table_id || null,
+            table_ids: assignedTableIds(res),
             created_by: currentStaffId(),
           }),
         "Failed to record arrival visit",
@@ -7500,7 +7500,7 @@ async function openDepositInvoice(resId) {
       db
         .from("reservations")
         .select(
-          "id, status, pax, booking_name, reservation_date, reservation_time, deposit_required, deposit_expected, deposit_due_at, guest_id, guests(name, phone), tables(name)",
+          "id, status, pax, booking_name, reservation_date, reservation_time, deposit_required, deposit_expected, deposit_due_at, guest_id, table_id, table_ids, guests(name, phone), tables(name)",
         )
         .eq("id", resId)
         .single(),
@@ -8408,7 +8408,7 @@ async function confirmCompleteVisit() {
         () =>
           db
             .from("reservations")
-            .select("guest_id, reservation_date, pax, assigned_area, table_id")
+            .select("guest_id, reservation_date, pax, assigned_area, table_id, table_ids")
             .eq("id", id)
             .single(),
         "Failed to load reservation for visit",
@@ -8427,6 +8427,7 @@ async function confirmCompleteVisit() {
                 pax: resRow.pax,
                 assigned_area: resRow.assigned_area,
                 table_id: resRow.table_id || null,
+                table_ids: assignedTableIds(resRow),
                 created_by: currentStaffId(),
               })
               .select("id, guest_id")

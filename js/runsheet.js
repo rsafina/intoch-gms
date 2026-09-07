@@ -130,7 +130,7 @@ function runSheetRow(r) {
   const area =
     (r.areas && r.areas.name) ||
     (r.assigned_area ? "—" : `<span class="rs-muted">${t("Not yet placed")}</span>`);
-  const table = (r.tables && r.tables.name) || "";
+  const table = typeof assignedTableNames === "function" ? assignedTableNames(r) : (r.tables && r.tables.name) || "";
   return `<tr>
     <td class="rs-time">${runSheetEscape(String(r.reservation_time || "").slice(0, 5))}</td>
     <td class="rs-name">${runSheetEscape(name)}</td>
@@ -146,13 +146,14 @@ async function openRunSheet() {
   const date = resSelectedDate || TODAY;
 
   if (!allAreas || !allAreas.length) await loadAreas();
+  await loadTables();
 
   const { data, error } = await supabaseQuery(
     () =>
       db
         .from("reservations")
         .select(
-          "id, reservation_time, pax, notes, assigned_area, status, deposit_required, deposit_expected, guests(name, booking_alias), areas(name), tables(name)",
+          "id, table_id, table_ids, reservation_time, pax, notes, assigned_area, status, deposit_required, deposit_expected, guests(name, booking_alias), areas(name), tables(name)",
         )
         .eq("reservation_date", date)
         .in("status", RES_OCCUPANCY_STATUSES)

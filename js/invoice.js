@@ -1263,7 +1263,7 @@ async function invOpenReservation(res, invoiceId = null) {
   await navigateTo("invoice");
   const name = res.booking_name || res.guests?.name || "";
   invApplySnapshot(invoice?.doc ? invoice.doc : {
-    name, pax: String(res.pax || ""), table: res.tables?.name || "",
+    name, pax: String(res.pax || ""), table: typeof assignedTableNames === "function" ? assignedTableNames(res) : res.tables?.name || "",
     eventdate: res.reservation_date, paydate: invToday(),
     svcOn: false, taxOn: false, dpOn: false, settleOn: false,
     // Start with the agreed deposit; staff can replace it with detailed items.
