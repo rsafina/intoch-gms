@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="id">
+<html lang="id" data-reserve-loading>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -23,6 +23,48 @@
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="assets/small-logo.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="assets/small-logo.png" />
+    <style>
+      html[data-reserve-loading] body { overflow: hidden; }
+      html[data-reserve-loading] body > :not(#reserve-loading):not(script):not(noscript) {
+        visibility: hidden !important;
+      }
+      #reserve-loading {
+        position: fixed; inset: 0; z-index: 10000;
+        display: grid; place-content: center; justify-items: center; gap: 20px;
+        padding: 24px; background: #f5f6f8; color: #344054;
+        text-align: center; font: 16px/1.5 system-ui, sans-serif;
+      }
+      #reserve-loading .loading-ring {
+        width: 32px; height: 32px; border: 3px solid #dce1e8;
+        border-top-color: #667085; border-radius: 50%;
+        animation: reserve-loading-spin 1s linear infinite;
+      }
+      #reserve-loading button {
+        padding: 10px 22px; border: 1px solid #d0d5dd; border-radius: 10px;
+        background: white; color: inherit; font: inherit; cursor: pointer;
+      }
+      @keyframes reserve-loading-spin { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) {
+        #reserve-loading .loading-ring { animation: none; }
+      }
+    </style>
+    <script>
+      // Installed before dependencies so a failed script cannot leave an endless spinner.
+      function reserveLoadingFailed() {
+        const label = document.getElementById("reserve-loading-label");
+        const retry = document.getElementById("reserve-loading-retry");
+        if (label) label.textContent = document.documentElement.lang === "en"
+          ? "Loading is taking longer than expected. Please try again."
+          : "Halaman belum selesai dimuat. Silakan coba lagi.";
+        if (retry) retry.hidden = false;
+      }
+      const reserveLoadingTimer = setTimeout(reserveLoadingFailed, 15000);
+      function finishReserveLoading() {
+        clearTimeout(reserveLoadingTimer);
+        document.documentElement.removeAttribute("data-reserve-loading");
+        document.getElementById("reserve-loading")?.remove();
+      }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
@@ -865,6 +907,12 @@
     </style>
   </head>
   <body>
+    <div id="reserve-loading">
+      <span class="loading-ring" aria-hidden="true"></span>
+      <p id="reserve-loading-label" role="status" aria-live="polite">Memuat… / Loading…</p>
+      <button id="reserve-loading-retry" type="button" hidden onclick="location.reload()">Coba lagi / Try again</button>
+      <noscript>Aktifkan JavaScript untuk reservasi. / Enable JavaScript to book a table.</noscript>
+    </div>
     <div class="bg-photo"></div>
     <div class="bg-tint"></div>
 
@@ -1644,65 +1692,80 @@
         // chosen for themselves.
         initGuestLanguageSync();
 
-        const dateEl = $("f-date");
-
-        // Opening hours, lead time, pause and the weekly grid all live in one
-        // settings row, so this is still a single fetch. The fallback stays
-        // if it fails — the DB function is the real gate either way.
+        // Fetch presentation immediately, independently of opening hours and branding.
+        // allSettled handles early failures while the rest of the form initializes.
+        const presentationReady = Promise.allSettled([
+          loadReserveAppearance().then(applyReserveAppearance),
+          loadBrandLogo(),
+          loadFormFields(),
+        ]);
         try {
-          const { data } = await db
-            .from("app_settings")
-            .select("value")
-            .eq("key", "reservation_hours")
-            .maybeSingle();
-          if (data?.value?.open && data?.value?.close) HOURS = data.value;
-          if (Number.isFinite(+data?.value?.min_lead_days))
-            MIN_LEAD_DAYS = Math.max(0, +data.value.min_lead_days);
-          if (Number.isFinite(+data?.value?.max_pax))
-            MAX_PAX = Math.max(1, +data.value.max_pax);
-          if (data?.value?.online_paused) {
-            // Say so before anything is typed, rather than after Book.
-            showError(
-              (data.value.pause_message || "").trim() || ERR_ID.paused,
-            );
-            $("btn-submit").disabled = true;
-            return;
+
+          const dateEl = $("f-date");
+
+          // Opening hours, lead time, pause and the weekly grid all live in one
+          // settings row, so this is still a single fetch. The fallback stays
+          // if it fails — the DB function is the real gate either way.
+          try {
+            const { data } = await db
+              .from("app_settings")
+              .select("value")
+              .eq("key", "reservation_hours")
+              .maybeSingle();
+            if (data?.value?.open && data?.value?.close) HOURS = data.value;
+            if (Number.isFinite(+data?.value?.min_lead_days))
+              MIN_LEAD_DAYS = Math.max(0, +data.value.min_lead_days);
+            if (Number.isFinite(+data?.value?.max_pax))
+              MAX_PAX = Math.max(1, +data.value.max_pax);
+            if (data?.value?.online_paused) {
+              await presentationReady; // language setup can clear errors; finish it first
+              // Say so before anything is typed, rather than after Book.
+              showError(
+                (data.value.pause_message || "").trim() || ERR_ID.paused,
+              );
+              $("btn-submit").disabled = true;
+              return;
+            }
+          } catch (_) {
+            /* keep fallback */
           }
-        } catch (_) {
-          /* keep fallback */
-        }
 
-        // Dated closures, so a shut date is unselectable rather than refused
-        // on submit. Only dates from today onwards: past ones cannot affect a
-        // booking and would just make the payload bigger.
-        try {
-          const { data } = await db
-            .from("reservation_exceptions")
-            .select("exception_date, closed_all_day, open_time, close_time, reason")
-            .gte("exception_date", todayLocal())
-            .order("exception_date");
-          for (const e of data || []) DATE_EXCEPTIONS[e.exception_date] = e;
-        } catch (_) {
-          /* the database still refuses a closed date on submit */
-        }
+          // Dated closures, so a shut date is unselectable rather than refused
+          // on submit. Only dates from today onwards: past ones cannot affect a
+          // booking and would just make the payload bigger.
+          try {
+            const { data } = await db
+              .from("reservation_exceptions")
+              .select("exception_date, closed_all_day, open_time, close_time, reason")
+              .gte("exception_date", todayLocal())
+              .order("exception_date");
+            for (const e of data || []) DATE_EXCEPTIONS[e.exception_date] = e;
+          } catch (_) {
+            /* the database still refuses a closed date on submit */
+          }
 
-        dateEl.min = earliestDate();
-        dateEl.max = addDays(todayLocal(), MAX_DAYS_AHEAD);
-        dateEl.value = nextOpenDate(earliestDate());
-        dateEl.addEventListener("change", () => {
+          dateEl.min = earliestDate();
+          dateEl.max = addDays(todayLocal(), MAX_DAYS_AHEAD);
+          dateEl.value = nextOpenDate(earliestDate());
+          dateEl.addEventListener("change", () => {
+            buildTimeSlots();
+            loadAvailability(); // how full an area is depends on the date
+          });
+
           buildTimeSlots();
-          loadAvailability(); // how full an area is depends on the date
-        });
-
-        buildTimeSlots();
-        renderPaxNote();
-        await loadFormFields(); // which optional fields show, before areas render
-        await loadAreas();
-        loadAvailability(); // not awaited — the conditions render without it
-        loadFeaturedDishes(); // not awaited — the sheet is below the fold
-        loadFullMenuLink(); // not awaited — hardcoded href works until this resolves
-        loadBrandLogo(); // not awaited — the bundled logo is already on screen
-      })();
+          renderPaxNote();
+          await presentationReady; // optional fields must be set before areas render
+          await loadAreas();
+          loadAvailability(); // not awaited — the conditions render without it
+          loadFeaturedDishes(); // not awaited — the sheet is below the fold
+          loadFullMenuLink(); // not awaited — hardcoded href works until this resolves
+        } finally {
+          // Also runs for paused bookings: reveal their message in the saved design.
+          const results = await presentationReady;
+          const failed = results.find((result) => result.status === "rejected");
+          if (failed) throw failed.reason;
+        }
+      })().then(finishReserveLoading).catch(reserveLoadingFailed);
 
       // Called by setGuestLanguage(). The static labels are handled by the
       // dictionary walker; everything here is built in JavaScript and would
@@ -1790,10 +1853,10 @@
       }
 
       // ---- Logo (managed in staff app Settings > Branding) ----
-      // The bundled assets/full-logo.png renders first and is REPLACED only
+      // The bundled assets/full-logo.png is REPLACED before reveal only
       // if the fetch returns a usable absolute URL. So a fresh client, a
       // storage outage or a half-saved setting all show a logo rather than a
-      // gap, and the page never waits on this to become usable.
+      // gap. Branding and appearance are fetched independently.
       //
       // The og:image share card is NOT swapped here on purpose: WhatsApp's
       // crawler does not run JavaScript, so that tag has to stay a real file.
@@ -1804,7 +1867,6 @@
             .select("value")
             .eq("key", "branding")
             .maybeSingle();
-          applyReserveAppearance(await loadReserveAppearance());
           const logo = data?.value?.logo_url;
           if (typeof logo === "string" && /^https?:\/\/\S+$/i.test(logo.trim()))
             $("brand-logo").src = logo.trim();
@@ -1841,16 +1903,14 @@
       // page. Fifteen lines duplicated beats a booking form that white-screens.
       // If you change one, change the other.
       async function loadReserveAppearance() {
-        try {
-          const { data } = await db
-            .from("app_settings")
-            .select("value")
-            .eq("key", "reserve_appearance")
-            .maybeSingle();
-          return data?.value || {};
-        } catch (_) {
-          return {};
-        }
+        const { data, error } = await db
+          .from("app_settings")
+          .select("value")
+          .eq("key", "reserve_appearance")
+          .maybeSingle();
+        // An unset setting uses defaults; a failed lookup must not reveal the wrong theme.
+        if (error) throw error;
+        return data?.value || {};
       }
 
       function applyReserveAppearance(cfg) {
