@@ -57,6 +57,9 @@ function run({ open, close, closed, reason, date, today, nowHM, prevTime, lang }
   const src = [
     "const SLOT_MINUTES = 60;",
     "let TIME_SLOTS = [];",
+    "let AREA_BLOCK_DATE = '', AREA_SLOTS = [], AREA_ID = null;",
+    lift(reserve, "areaTimeBlocked"),
+    lift(reserve, "areaSlot"),
     "let TIMES_EXPANDED = false;",
     dict,
     'GUEST_LANG = "' + (lang || "id") + '";',
@@ -72,6 +75,7 @@ function run({ open, close, closed, reason, date, today, nowHM, prevTime, lang }
   const ctx = {
     console,
     $: (id) => els[id] || null,
+    renderAreaCond: () => {},
     todayLocal: () => today,
     hoursForDate: () => ({ closed: !!closed, open, close, reason }),
     SAME_DAY_LEAD_MIN: 60,
@@ -90,6 +94,7 @@ function run({ open, close, closed, reason, date, today, nowHM, prevTime, lang }
         className: "",
         textContent: "",
         attrs: {},
+        style: {},
         setAttribute(k, v) { this.attrs[k] = v; },
       }),
     },

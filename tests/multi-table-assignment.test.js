@@ -18,7 +18,7 @@ w.hideModal = ()=>{};
 w.loadReservations = ()=>{};
 w.isViewingStaffDashboard = ()=>false;
 w.TODAY = '2026-09-07';
-const names = ['getTableById','assignedTableIds','tableSelectionIds','selectedTableIdsFor','assignedTableNames','renderTableSelection','selectTable','selectAllAreaTables','clearTableSelection','fetchOccupiedTableIds','renderResActionTableGrid','selectResActionTable','selectAllResActionTables','onResActionAreaChange','saveResActionTable'];
+const names = ['readAreaBlock','getTableById','assignedTableIds','tableSelectionIds','selectedTableIdsFor','assignedTableNames','renderTableSelection','selectTable','selectAllAreaTables','clearTableSelection','fetchOccupiedTableIds','renderResActionTableGrid','selectResActionTable','selectAllResActionTables','onResActionAreaChange','saveResActionTable'];
 w.eval('let _resActionSelectedTables = []; let _resActionReservation = {id:"r1"};\n' + names.map(name => app.match(new RegExp('^(?:async )?function '+name+'\\([^]*?^}', 'm'))[0]).join('\n'));
 const ids = () => Array.from(w.selectedTableIdsFor('res'));
 (async () => {

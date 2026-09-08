@@ -26,12 +26,13 @@ const writes = [];
 w.db = {
   rpc: async () => ({ data: 'INV/' + (next + 1), error: null }),
   from(table) {
-    assert.ok(['invoices', 'reservations'].includes(table));
+    assert.ok(['invoices', 'reservations', 'reservation_money'].includes(table));
     const filters = []; let op = 'select', payload;
     const q = {
-      select() { return q; }, eq(k, v) { filters.push([k,v]); return q; }, order() { return q; },
+      single() { return q; }, select() { return q; }, eq(k, v) { filters.push([k,v]); return q; }, order() { return q; },
       insert(p) { op = 'insert'; payload = p; return q; }, update(p) { op = 'update'; payload = p; return q; },
       then(resolve) {
+        if (table === 'reservation_money') return Promise.resolve(resolve({data: {paid_direct:1000000},error:null}));
         if (table === 'reservations') return Promise.resolve(resolve({data: [{id: res.id}], error: null}));
         const found = rows.filter(row => filters.every(([k,v]) => row[k] === v));
         if (op !== 'select') {
@@ -100,5 +101,22 @@ const res = { id: 'reservation-1', guest_id: 'guest-1', booking_name: 'Event org
   assert.equal(rows[0].token, 'old-token');
   assert.ok(rows[0].doc && rows[0].invoice_no);
   assert.equal(rows[0].guest_id, res.guest_id);
+  // A settlement copies the detailed bill, deducts the actual deposit once,
+  // and saves as its own invoice with its own remaining-payment balance.
+  rows[0].doc.items[0].price = '3500000';
+  rows[0].doc.total = rows[0].doc.subtotal = '3500000';
+  await w.invOpenReservation(res, null, 'settlement');
+  assert.equal(w.document.getElementById('inv-total').value.replace(/\D/g,''), '3500000');
+  assert.equal(w.document.getElementById('inv-settle').value.replace(/\D/g,''), '2500000');
+  await w.invSaveInvoice(false);
+  const finalInvoice = rows.find(row => row.kind === 'settlement');
+  assert.equal(finalInvoice.total,3500000);
+  assert.equal(finalInvoice.deposit_applied,1000000);
+  assert.equal(finalInvoice.amount_due,2500000);
+  assert.equal(w.document.getElementById('inv-record-payment-btn').classList.contains('hidden'),false);
+  assert.match(w.reservationInvoicesPanel([finalInvoice],null,[{invoice_id:finalInvoice.id,paid:2500000,outstanding:0}]),/openRecordInvoicePayment/);
+  await w.invOpenReservation(res,null,'settlement');
+  await w.invSaveInvoice(false);
+  assert.equal(rows.filter(row=>row.kind==='settlement').length,1,'reopening preserves the final invoice');
   console.log('Reservation invoice flow: prefill, save/send, reopen/edit, persisted preview, failure, context isolation and double-save passed');
 })().catch(e => { console.error(e); process.exitCode = 1; }).finally(() => dom.window.close());

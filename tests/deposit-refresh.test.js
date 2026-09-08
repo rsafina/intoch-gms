@@ -11,7 +11,7 @@ const extract = (name) => app.match(new RegExp(`^async function ${name}\\([\\s\\
       for (const dashboard of [true, false]) {
         const calls = [];
         const ctx = vm.createContext({
-          depositActionResId: 'booking', TODAY: '2026-09-07',
+          invoicePaymentContext: null, confirmWaitlistOverflow: async () => true, depositActionResId: 'booking', TODAY: '2026-09-07',
           reservationDataRevision: 0,
           document: { getElementById: () => ({ value: '50000' }) },
           loader() {}, toast() {}, hideModal() {
@@ -37,7 +37,7 @@ const extract = (name) => app.match(new RegExp(`^async function ${name}\\([\\s\\
   const root = { innerHTML: '', classList: { remove() {} } };
   const ctx = vm.createContext({
     resSelectedDate: '2026-09-07', TODAY: '2026-09-07', CURRENT_LANG: 'en',
-    allAreas: [], loadAreas: async () => {}, RES_OCCUPANCY_STATUSES: ['Incoming', 'Reserved'],
+    allAreas: [], loadAreas: async () => {}, loadTables: async () => {}, RES_OCCUPANCY_STATUSES: ['Incoming', 'Reserved'],
     t: s => s, formatGuestName: g => g.name, restaurantName: () => 'Restaurant',
     toast() {}, document: { getElementById: () => root, body: { classList: { add() {} } } },
     supabaseQuery: fn => fn(),

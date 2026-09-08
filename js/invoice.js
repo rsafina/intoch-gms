@@ -361,6 +361,8 @@ function invPublicLink(token) {
 function invShowSavedLine() {
   const line = invEl("inv-saved-line");
   const no = invEl("inv-saved-no");
+  const paymentButton = invEl("inv-record-payment-btn");
+  if (paymentButton) paymentButton.classList.toggle("hidden", !invSavedId || invReservationContext?.kind !== "settlement");
   if (!line || !no) return;
   if (!invSavedToken) {
     line.classList.add("hidden");
@@ -450,6 +452,10 @@ async function invSaveInvoice(send) {
   }
   try {
     const sums = invSummaryFrom(snap);
+    if (context?.kind === "settlement" && !(sums.total > 0)) {
+      toast(t("Enter the full final bill amount before saving."), "error");
+      return;
+    }
     const payload = {
       kind: context ? context.kind : "general",
       reservation_id: context ? context.id : null,
@@ -526,7 +532,7 @@ async function invSaveInvoice(send) {
 
     if (!send) {
       toast(t("Invoice saved as") + " " + invSavedNo);
-      return;
+      return true;
     }
 
     await waLoadTemplates();
@@ -540,7 +546,7 @@ async function invSaveInvoice(send) {
         link,
       }),
     );
-    if (opened && context) {
+    if (opened && context && context.kind === "deposit") {
       const { data: asked, error: askedError } = await supabaseQuery(
         () => db.from("reservations").update({ deposit_asked_at: new Date().toISOString() })
           .eq("id", context.id).select("id"),
@@ -1244,11 +1250,11 @@ async function invReturnToReservation() {
   await openResActions(id);
 }
 
-async function invOpenReservation(res, invoiceId = null) {
+async function invOpenReservation(res, invoiceId = null, kind = "deposit") {
   if (invSaving || !isManagerOrAdmin()) return;
   let query = db.from("invoices").select("*").eq("reservation_id", res.id);
   if (invoiceId) query = query.eq("id", invoiceId);
-  else query = query.eq("kind", "deposit").eq("status", "issued");
+  else query = query.eq("kind", kind).eq("status", "issued");
   const { data, error } = await supabaseQuery(
     () => query.order("created_at", { ascending: false }),
     "Failed to load reservation invoices",
@@ -1259,21 +1265,51 @@ async function invOpenReservation(res, invoiceId = null) {
     toast(t("This invoice is no longer available to edit."), "error");
     return;
   }
+  let settlementSource = null;
+  let paidDirect = 0;
+  if (!invoice && kind === "settlement") {
+    const { data: money, error: moneyError } = await supabaseQuery(
+      () => db.from("reservation_money").select("paid_direct").eq("reservation_id", res.id).single(),
+      "Failed to load recorded payments",
+    );
+    if (moneyError || !money) return;
+    paidDirect = Math.max(0, Number(money.paid_direct || 0));
+    const { data: deposits, error: depositsError } = await supabaseQuery(
+      () => db.from("invoices").select("doc").eq("reservation_id", res.id)
+        .eq("kind", "deposit").eq("status", "issued").order("created_at", { ascending: false }),
+      "Failed to load the deposit invoice",
+    );
+    if (depositsError) return;
+    settlementSource = (deposits || []).find(row => row.doc)?.doc || null;
+    // A deposit-only document is not a full final bill. Ask staff to enter
+    // the final amount rather than silently treating the deposit as the total.
+    if (settlementSource && (invParseNum(settlementSource.total) || 0) <= Number(res.deposit_expected || 0)) {
+      settlementSource = null;
+    }
+  }
   hideModal("modal-res-actions");
   await navigateTo("invoice");
   const name = res.booking_name || res.guests?.name || "";
-  invApplySnapshot(invoice?.doc ? invoice.doc : {
+  invApplySnapshot(invoice?.doc ? invoice.doc : settlementSource || {
     name, pax: String(res.pax || ""), table: typeof assignedTableNames === "function" ? assignedTableNames(res) : res.tables?.name || "",
     eventdate: res.reservation_date, paydate: invToday(),
     svcOn: false, taxOn: false, dpOn: false, settleOn: false,
     // Start with the agreed deposit; staff can replace it with detailed items.
-    items: [{ name: t("Deposit"), qty: "1", price: String(res.deposit_expected || ""),
+    items: [{ name: kind === "settlement" ? t("Final bill") : t("Deposit"), qty: "1", price: kind === "settlement" ? "" : String(res.deposit_expected || ""),
       unit: "", amount: "", amountLocked: false }],
     note: String(reservationFormSettings().bank_details || ""),
     locked: { subtotal: false, svc: false, tax: false, total: false, dp: false, settle: false },
   });
+  if (!invoice && kind === "settlement") {
+    invEl("inv-dp-on").checked = true;
+    invEl("inv-settle-on").checked = true;
+    invEl("inv-dp").value = String(paidDirect);
+    invLocked.dp = true;
+    invLocked.settle = false;
+    invRecalc();
+  }
   invReservationContext = {
-    id: res.id, guestId: res.guest_id, kind: invoice ? invoice.kind : "deposit",
+    id: res.id, guestId: res.guest_id, kind: invoice ? invoice.kind : kind,
     name, date: res.reservation_date,
   };
   invEl("inv-wa").value = res.guests?.phone || "";
@@ -1303,7 +1339,7 @@ async function invEditReservationInvoice(invoiceId) {
   if (!resError && res) await invOpenReservation(res, invoiceId);
 }
 
-function reservationInvoicesPanel(invoices, error) {
+function reservationInvoicesPanel(invoices, error, balances = []) {
   const title = '<p class="text-xs uppercase tracking-wider mb-2">' + escapeHtml(t("Saved invoices")) + '</p>';
   if (error) return '<div class="mb-4">' + title + '<p class="text-sm text-red-600">' +
     escapeHtml(t("Could not load invoices. Reopen the reservation to retry.")) + '</p></div>';
@@ -1311,13 +1347,18 @@ function reservationInvoicesPanel(invoices, error) {
   return '<div class="mb-4 p-3 border rounded-xl">' + title + invoices.map(row => {
     const url = row.doc ? invPublicLink(row.token) : depositInvoiceUrl(row.token);
     const issued = row.status === "issued";
+    const balance = balances?.find(b => b.invoice_id === row.id);
+    const balanceLine = row.kind === "settlement" ? '<p class="text-xs mt-1">' + escapeHtml(balance
+      ? t("Paid") + " " + invRupiah(balance.paid) + " - " + t("Outstanding") + " " + invRupiah(Math.max(0, Number(balance.outstanding)))
+      : t("Payment balance unavailable. Open Record payment to retry.")) + '</p>' : '';
     return '<div class="py-2 border-b last:border-0"><p class="text-sm font-medium">' +
       escapeHtml(row.invoice_no || t("Invoice")) + ' · ' + escapeHtml(invRupiah(row.total)) +
-      ' · ' + escapeHtml(t(row.status)) + '</p>' + (issued ?
+      ' · ' + escapeHtml(t(row.status)) + '</p>' + balanceLine + (issued ?
       '<div class="flex flex-wrap gap-3 mt-2 text-xs"><a class="underline" target="_blank" rel="noopener" href="' +
       escapeHtml(url) + '">' + escapeHtml(t("Preview guest invoice")) + '</a>' +
       '<button class="underline" data-invoice-url="' + escapeHtml(url) + '" onclick="invCopyReservationLink(this.dataset.invoiceUrl)">' +
       escapeHtml(t("Copy guest link")) + '</button>' +
+      (row.kind === "settlement" ? '<button class="underline" onclick="openRecordInvoicePayment(\'' + escapeHtml(row.id) + '\')">' + escapeHtml(t("Record payment")) + '</button>' : '') +
       (row.doc && isManagerOrAdmin() ? '<button class="underline" onclick="invEditReservationInvoice(\'' +
         escapeHtml(row.id) + '\')">' + escapeHtml(t("Edit invoice")) + '</button>' : '') + '</div>' : '') + '</div>';
   }).join('') + '</div>';
@@ -1328,4 +1369,9 @@ function invCopyReservationLink(url) {
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard.writeText(url).then(() => toast(t("Link copied")), fallback);
   } else fallback();
+}
+
+async function invRecordSavedPayment() {
+  if (invSaving || !invSavedId || invReservationContext?.kind !== "settlement") return;
+  if (await invSaveInvoice(false)) await openRecordInvoicePayment(invSavedId);
 }

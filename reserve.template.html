@@ -1254,6 +1254,7 @@
           "Sorry, a party that size is larger than our whole restaurant. Please contact us on WhatsApp for a large event.",
         area_unavailable:
           "That area cannot be booked online at the moment. Please choose another one.",
+        time_full: "There is not enough room for your party during this visit. Please choose another time or area.",
         date_full:
           "That area is full on that date. Please pick another date or area, or contact us on WhatsApp to go on the waiting list.",
         missing_datetime: "Please pick a date and a time.",
@@ -1461,6 +1462,8 @@
       // real one. A rough hour the guest chose is worth more than a precise
       // hour nobody meant. It is relabelled so nobody reads it as booked.
       function renderPaxNote() {
+        refreshBlockedTimes();
+        renderAreaCond();
         const n = readPaxRaw();
         const big = n !== null && MAX_PAX > 0 && n > MAX_PAX;
         // Over the limit with nowhere to send them is NOT large-party mode.
@@ -1514,6 +1517,25 @@
       // change, so a time the new date does not offer is cleared rather than
       // carried across: the guest re-picks instead of submitting an hour the
       // server will refuse.
+      let AREA_SLOTS = [];
+      let AREA_BLOCK_DATE = "";
+      let availabilityRequest = 0;
+      function areaSlot(time) {
+        if (AREA_BLOCK_DATE !== $("f-date").value) return null;
+        return AREA_SLOTS.find(b => b.area_id === AREA_ID && b.slot_time.slice(0, 5) === time.slice(0, 5)) || null;
+      }
+      function areaTimeBlocked(time) {
+        const slot = areaSlot(time);
+        if (!slot) return false;
+        if (slot.exclusive_block || slot.available_pax === 0) return true;
+        // Oversized requests may still be reviewed when the area is empty.
+        const pax = Math.max(1, readPaxRaw() || 1);
+        return slot.available_pax != null && Math.min(pax, slot.total_capacity) > slot.available_pax;
+      }
+      function refreshBlockedTimes() {
+        if (areaTimeBlocked($("f-time").value)) setTime("");
+        renderTimePills();
+      }
       function buildTimeSlots() {
         const prev = $("f-time").value;
         TIME_SLOTS = [];
@@ -1591,13 +1613,20 @@
           b.type = "button";
           b.className = "pill";
           b.setAttribute("aria-pressed", String(label === chosen));
-          b.textContent = label;
+          const blocked = areaTimeBlocked(label);
+          b.disabled = blocked;
+          b.style.opacity = blocked ? "0.45" : "";
+          b.style.cursor = blocked ? "not-allowed" : "";
+          const slot = areaSlot(label);
+          b.textContent = label + (blocked ? " - " + gt(slot?.available_pax === 0 || slot?.exclusive_block ? "Full" : "Not enough seats") : "");
           b.onclick = () => {
             // Tapping the chosen hour again clears it, exactly like the area
             // pills. Two pickers next to each other that behave differently is
             // worse than either rule on its own.
+            if (areaTimeBlocked(label)) return;
             setTime(chosen === label ? "" : label);
             renderTimePills();
+            renderAreaCond();
           };
           box.appendChild(b);
         }
@@ -1981,6 +2010,7 @@
           b.textContent = a.name;
           b.onclick = () => {
             AREA_ID = AREA_ID === a.id ? null : a.id;
+            refreshBlockedTimes();
             renderAreaPills();
             renderAreaCond();
           };
@@ -2007,15 +2037,13 @@
           rows.push(row(gt("Deposit (DP)"), rupiah(a.deposit_amount), "dp"));
         if (!rows.length) rows.push(row(gt("No special conditions"), ""));
 
-        // Availability is an ESTIMATE and says so. Online bookings never get a
-        // table assigned, so a literal free-table count would keep reporting
-        // the same number while the area filled up.
-        const av = AVAIL[a.id];
+        const av = areaSlot($("f-time").value);
         let extra = "";
-        if (SHOW_CAPACITY && av) {
-          const bits = [gtf("{pct}% booked", { pct: av.pct_full })];
-          if (av.est_tables != null)
-            bits.push(gtf("around {n} tables free", { n: av.est_tables }));
+        if (av) {
+          const bits = [];
+          if (SHOW_CAPACITY && av.available_pax != null)
+            bits.push(gtf("Up to {n} seats available during this visit", { n: av.available_pax }));
+          bits.push(gtf("Availability checked for a {n}-minute visit", { n: av.duration_minutes }));
           extra = '<div class="avail">' + bits.join(" &middot; ") + "</div>";
         }
         el.innerHTML = rows.join("") + extra;
@@ -2049,14 +2077,23 @@
       // this: that would have a public page read every guest's booking to
       // render a percentage.
       async function loadAvailability() {
+        const request = ++availabilityRequest;
         AVAIL = {};
+        AREA_SLOTS = [];
+        AREA_BLOCK_DATE = "";
+        refreshBlockedTimes();
         const date = $("f-date")?.value;
-        if (!SHOW_CAPACITY || !date) return renderAreaCond();
+        if (!date) return renderAreaCond();
         try {
-          const { data } = await db.rpc("area_availability", { p_date: date });
-          for (const r of data || []) AVAIL[r.area_id] = r;
+          const { data, error } = await db.rpc("area_slot_availability", { p_date: date });
+          if (request !== availabilityRequest || date !== $("f-date").value) return;
+          if (error) throw error;
+          AREA_SLOTS = data || [];
+          AREA_BLOCK_DATE = date;
+          refreshBlockedTimes();
         } catch (_) {
-          /* the conditions still render, just without the availability line */
+          if (request !== availabilityRequest) return;
+          showError(gt("Could not load area availability. Please select the date again to retry."));
         }
         renderAreaCond();
       }
@@ -2142,6 +2179,7 @@
           });
           if (error) throw error;
           if (!data?.ok) {
+            if (data?.code === "time_full") await loadAvailability();
             // For a closed date and for a pause, the server's own message is
             // what STAFF wrote for this specific closure ("Tutup untuk Idul
             // Fitri"), and it beats any generic wording kept here. Everything

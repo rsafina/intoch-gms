@@ -49,6 +49,15 @@ const GUEST_KEEP_ENGLISH = new Set([
 // fragments matches no dictionary key once it is concatenated, which is the
 // trap the prototype fell into.
 const GUEST_DICT = {
+  "Not enough seats": "Kursi tidak cukup",
+  "Up to {n} seats available during this visit": "Tersedia hingga {n} kursi selama kunjungan ini",
+  "Availability checked for a {n}-minute visit": "Ketersediaan diperiksa untuk kunjungan selama {n} menit",
+  "There is not enough room for your party during this visit. Please choose another time or area.": "Tempat tidak cukup untuk rombongan Anda selama kunjungan ini. Silakan pilih jam atau area lain.",
+
+  "Full": "Penuh",
+  "That area is full at this time. Please choose another time or area.": "Area tersebut penuh pada jam ini. Silakan pilih jam atau area lain.",
+  "Could not load area availability. Please select the date again to retry.": "Tidak dapat memuat ketersediaan area. Silakan pilih tanggal lagi untuk mencoba ulang.",
+
   // ── Booking form: the form itself ──
   "Book a Table": "Reservasi Meja",
   "It only takes a minute. Book now, and see you soon!":

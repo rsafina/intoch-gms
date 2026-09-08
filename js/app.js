@@ -2331,13 +2331,33 @@ function timeToMinutes(t) {
   return parseInt(h) * 60 + parseInt(m || 0);
 }
 
+// Explicit room holds are independent of party size and table count.
+function readAreaBlock(prefix, areaId, startTime) {
+  const exclusive = !!document.getElementById(`${prefix}-exclusive-area`)?.checked;
+  const end = document.getElementById(`${prefix}-end-time`)?.value || null;
+  const buffer = Number(document.getElementById(`${prefix}-block-buffer`)?.value || 0);
+  const duration = Number(document.getElementById(`${prefix}-duration`)?.value || 180);
+  if (end && timeToMinutes(end) <= timeToMinutes(startTime)) {
+    toast(t("End time must be after start time."), "error");
+    return null;
+  }
+  if ((exclusive && (!areaId || !end)) ||
+      !Number.isInteger(buffer) || buffer < 0 || buffer > timeToMinutes(startTime)) {
+    toast(t("Choose an area, an end time after the start, and a buffer within the same day."), "error");
+    return null;
+  }
+  if (!Number.isInteger(duration) || duration < 15 || duration > 1440) {
+    toast(t("Duration must be a whole number between 15 and 1440 minutes."), "error");
+    return null;
+  }
+  return { exclusive_area: exclusive, end_time: end, block_buffer_minutes: buffer, booking_duration_minutes: duration };
+}
+
 function updateResVipTimeRange() {
   const wrap = document.getElementById("res-endtime-wrap");
   if (!wrap) return;
 
-  const isVip = selectedTableIdsFor("res").some(isVipTableId);
-  wrap.classList.toggle("hidden", !isVip);
-  if (!isVip) return;
+  wrap.classList.remove("hidden");
 
   // "from" mirrors the main reservation time; "to" starts EMPTY —
   // it's optional and staff can fill it in later by editing.
@@ -5782,6 +5802,9 @@ function openReservationModal(res = null) {
 
   populateAreaSelects();
   document.getElementById("res-table-id").value = assignedTableIds(res).join(",");
+  document.getElementById("res-exclusive-area").checked = !!res?.exclusive_area;
+  document.getElementById("res-block-buffer").value = res?.block_buffer_minutes || 0;
+  document.getElementById("res-duration").value = res?.booking_duration_minutes || APP_SETTINGS.reservation_hours?.default_duration_minutes || 180;
   const endTimeEl = document.getElementById("res-end-time");
   if (endTimeEl) endTimeEl.value = res?.end_time?.slice(0, 5) || "";
   if (res?.assigned_area)
@@ -5885,45 +5908,10 @@ async function saveReservation() {
   const assignedArea =
     selectedTable?.area_id || document.getElementById("res-area").value || null;
 
-  // VIP hour-range: end time is OPTIONAL (staff can add it later by
-  // editing the reservation). Overlaps are still checked — bookings
-  // without an end time are assumed to last LEGACY_BOOKING_HOURS.
-  let endTime = null;
-  const editIdForCheck = document.getElementById("res-edit-id").value || null;
-  const vipErrEl = document.getElementById("res-vip-conflict");
-  const showVipError = (msg) => {
-    if (vipErrEl) {
-      vipErrEl.textContent = msg;
-      vipErrEl.classList.remove("hidden");
-    } else {
-      toast(msg, "error");
-    }
-  };
-  if (vipErrEl) {
-    vipErrEl.classList.add("hidden");
-    vipErrEl.textContent = "";
-  }
-  for (const vipId of selectedTableIds.filter(isVipTableId)) {
-    endTime = document.getElementById("res-end-time")?.value || null;
-    if (endTime && timeToMinutes(endTime) <= timeToMinutes(time)) {
-      showVipError("Jam selesai harus setelah jam mulai.");
-      return;
-    }
-    const effEndMins =
-      (endTime ? timeToMinutes(endTime) : timeToMinutes(time) + LEGACY_BOOKING_HOURS * 60) % 1440;
-    const effEnd = `${String(Math.floor(effEndMins / 60)).padStart(2, "0")}:${String(effEndMins % 60).padStart(2, "0")}`;
-    const conflict = await findVipTimeConflict(
-      vipId, date, time, effEnd, editIdForCheck,
-    );
-    if (conflict === "could-not-check") {
-      showVipError("Tidak bisa cek ketersediaan VIP. Coba lagi.");
-      return;
-    }
-    if (conflict) {
-      showVipError(`Bentrok: VIP sudah dibooking jam ${conflict}. Pilih jam lain.`);
-      return;
-    }
-  }
+  // The database checks every table and capacity over the full visit,
+  // including preparation buffers and bookings on an adjacent date.
+  const block = readAreaBlock("res", assignedArea, time);
+  if (!block) return;
 
   const payload = {
     guest_id: guestId,
@@ -5935,7 +5923,7 @@ async function saveReservation() {
     assigned_area: assignedArea,
     table_id: selectedTableId,
     table_ids: selectedTableIds,
-    end_time: endTime,
+    ...block,
     status: document.getElementById("res-status").value,
     notes: document.getElementById("res-notes").value.trim() || null,
   };
@@ -6794,6 +6782,11 @@ async function openResActions(resId) {
   );
 
 
+  const { data: invoiceBalances, error: balancesError } = await supabaseQuery(
+    () => db.from("invoice_balances").select("invoice_id, paid, outstanding, state")
+      .eq("reservation_id", resId), "Failed to load invoice balances",
+  );
+
   const STATUSES = [
     // Only listed when the booking is actually in it. Incoming is not a
     // status anyone sets; it is one the booking arrives in and leaves by
@@ -6815,7 +6808,7 @@ async function openResActions(resId) {
     </div>
     ${largePartyAgreePanel(res)}
     ${depositActionsPanel(res, bal)}
-    ${reservationInvoicesPanel(invoices, invoiceError)}
+    ${reservationInvoicesPanel(invoices, invoiceError, balancesError ? null : invoiceBalances)}
     <p class="text-xs text-[#999] uppercase tracking-wider mb-3 font-medium">Update Status</p>
     <div class="grid grid-cols-2 gap-2 mb-4">
       ${STATUSES.map(
@@ -6847,7 +6840,16 @@ async function openResActions(resId) {
       </select>
       <div id="res-action-table-wrap" class="grid grid-cols-3 gap-1.5"></div>
     </div>
-    <button onclick="saveResActionTable('${res.id}')" class="btn-primary w-full justify-center text-sm mb-2">Save Table Assignment</button>
+    <div class="rounded-xl border border-[#E0DDD7] p-3 mb-3 space-y-2">
+      <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="res-action-exclusive-area" ${res.exclusive_area ? "checked" : ""}> ${t("Reserve entire area")}</label>
+      <p class="text-xs text-[#777]">${t("Selected tables are held for the visit and preparation buffer. Reserve the entire area only for exclusive use. Waitlisted bookings do not hold capacity.")}</p>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="text-xs">${t("End time")}<input id="res-action-end-time" type="time" class="form-input mt-1" value="${escapeHtml((res.end_time || "").slice(0,5))}"></label>
+        <label class="text-xs">${t("Buffer before event (minutes)")}<input id="res-action-block-buffer" type="number" min="0" step="1" class="form-input mt-1" value="${Number(res.block_buffer_minutes) || 0}"></label>
+      </div>
+      <label class="block text-xs">${t("Expected duration if no end time (minutes)")}<input id="res-action-duration" type="number" min="15" max="1440" step="1" class="form-input mt-1" value="${Number(res.booking_duration_minutes) || 180}"></label>
+    </div>
+    <button onclick="saveResActionTable('${res.id}')" class="btn-primary w-full justify-center text-sm mb-2">Save tables and availability</button>
     <div class="divider my-3"></div>
     <div class="space-y-2">
       <button onclick="editReservation('${res.id}')" class="btn-ghost text-xs w-full justify-center">Edit Full Details</button>
@@ -6986,18 +6988,11 @@ async function saveResActionTable(resId) {
   const ids = [..._resActionSelectedTables];
   const res = _resActionReservation;
   if (!res || res.id !== resId) return;
-  for (const id of ids.filter(isVipTableId)) {
-    const start = timeToMinutes(res.reservation_time);
-    const end = res.end_time || `${String(Math.floor(((start + LEGACY_BOOKING_HOURS * 60) % 1440) / 60)).padStart(2, "0")}:${String(start % 60).padStart(2, "0")}`;
-    const conflict = await findVipTimeConflict(id, res.reservation_date, res.reservation_time, end, resId);
-    if (conflict) {
-      toast(conflict === "could-not-check" ? t("Could not check table availability. Please try again.") : t("Table is already booked at this time.") + " " + conflict, "error");
-      return;
-    }
-  }
+  const block = readAreaBlock("res-action", areaId, res.reservation_time);
+  if (!block) return;
   loader(true);
   const { data, error } = await supabaseQuery(
-    () => db.from("reservations").update({ assigned_area: areaId, table_id: ids[0] || null, table_ids: ids })
+    () => db.from("reservations").update({ assigned_area: areaId, table_id: ids[0] || null, table_ids: ids, ...block })
       .eq("id", resId).select("id"),
     "Failed to assign table",
   );
@@ -7645,7 +7640,93 @@ async function submitDepositInvoice() {
 }
 
 // ── 2. Record a payment ───────────────────────────────────────────────────
+let invoicePaymentContext = null;
+let invoicePaymentSaving = false;
+
+async function openSettlementInvoice(resId) {
+  if (!isManagerOrAdmin()) {
+    toast(t("Only a manager can issue an invoice"), "error");
+    return;
+  }
+  const { data: res, error } = await supabaseQuery(
+    () => db.from("reservations").select("*, guests(name, phone), tables(name)").eq("id", resId).single(),
+    "Failed to load the booking",
+  );
+  if (error || !res) return;
+  await invOpenReservation(res, null, "settlement");
+}
+
+async function openRecordInvoicePayment(invoiceId) {
+  if (invoicePaymentSaving) return;
+  const { data: invoice, error } = await supabaseQuery(
+    () => db.from("invoices").select("id, reservation_id, invoice_no, bill_to_name, status, kind")
+      .eq("id", invoiceId).single(), "Failed to load the invoice",
+  );
+  if (error || !invoice || invoice.status !== "issued" || invoice.kind !== "settlement") {
+    toast(t("This invoice is not available for payment."), "error");
+    return;
+  }
+  const { data: balance, error: balanceError } = await supabaseQuery(
+    () => db.from("invoice_balances").select("due, paid, outstanding").eq("invoice_id", invoiceId).single(),
+    "Failed to load invoice balances",
+  );
+  if (balanceError || !balance) return;
+  invoicePaymentContext = { invoiceId, resId: invoice.reservation_id, paymentId: crypto.randomUUID() };
+  const el = id => document.getElementById(id);
+  el("dep-pay-summary").innerHTML = '<p class="font-medium">' + escapeHtml(invoice.invoice_no || t("Final bill")) +
+    ' - ' + escapeHtml(invoice.bill_to_name || "") + '</p><p class="text-xs mt-1">' +
+    escapeHtml(t("Paid") + " " + depositRupiah(balance.paid) + " - " + t("Outstanding") + " " + depositRupiah(Math.max(0, Number(balance.outstanding)))) + '</p>';
+  el("dep-pay-amount").value = Math.max(0, Number(balance.outstanding)) || "";
+  el("dep-pay-date").value = TODAY;
+  ["dep-pay-method", "dep-pay-ref", "dep-pay-note"].forEach(id => { el(id).value = ""; });
+  hideModal("modal-res-actions");
+  showModal("modal-deposit-payment");
+}
+
+async function submitInvoicePayment() {
+  const context = invoicePaymentContext;
+  if (!context || invoicePaymentSaving) return;
+  const el = id => document.getElementById(id);
+  const raw = String(el("dep-pay-amount")?.value || "").trim();
+  const amount = Number(raw);
+  if (!Number.isFinite(amount) || amount === 0) {
+    toast(t("Enter the amount that was paid"), "error");
+    return;
+  }
+  invoicePaymentSaving = true;
+  const button = el("dep-pay-save-btn");
+  if (button) button.disabled = true;
+  try {
+    const { data, error } = await supabaseQuery(
+      () => db.rpc("record_invoice_payment", {
+        p_invoice_id: context.invoiceId, p_payment_id: context.paymentId,
+        p_amount: amount, p_paid_on: el("dep-pay-date")?.value || TODAY,
+        p_method: el("dep-pay-method")?.value || null,
+        p_reference: el("dep-pay-ref")?.value || null,
+        p_note: el("dep-pay-note")?.value || null, p_staff_id: currentStaffId(),
+      }), "Failed to record the payment",
+    );
+    if (error || !data?.ok) {
+      toast(data?.message || t("Could not record the payment"), "error");
+      return;
+    }
+    // Keep the same payment ID on a failed request so a retry cannot charge twice.
+    invoicePaymentContext = null;
+    hideModal("modal-deposit-payment");
+    reservationDataRevision++;
+    await loadReservations();
+    if (isViewingStaffDashboard()) await loadDashboard();
+    toast(t("Payment recorded") + " - " + t("Outstanding") + " " + depositRupiah(Math.max(0, Number(data.outstanding))));
+    if (currentPage === "reservations") await openResActions(context.resId);
+  } finally {
+    invoicePaymentSaving = false;
+    if (button) button.disabled = false;
+  }
+}
+
 async function openRecordDepositPayment(resId) {
+  if (invoicePaymentSaving) return;
+  invoicePaymentContext = null;
   const { data: res, error } = await supabaseQuery(
     () =>
       db
@@ -7690,6 +7771,7 @@ async function openRecordDepositPayment(resId) {
 }
 
 async function submitDepositPayment() {
+  if (invoicePaymentContext) return submitInvoicePayment();
   const resId = depositActionResId;
   if (!resId) return;
   const raw = String(document.getElementById("dep-pay-amount")?.value || "").replace(/[^\d-]/g, "");
@@ -7795,7 +7877,7 @@ async function submitWaiveDeposit() {
 // FALSE when this has taken over and will finish the job itself.
 async function depositRefundGate(resId) {
   const { data: pays, error } = await supabaseQuery(
-    () => db.from("invoice_payments").select("amount").eq("reservation_id", resId),
+    () => db.from("reservation_money").select("paid_total").eq("reservation_id", resId),
     "Failed to check for payments",
   );
   // If we cannot tell whether money arrived, do NOT quietly fall through to a
@@ -7805,7 +7887,7 @@ async function depositRefundGate(resId) {
     toast(t("Could not check for payments — try again"), "error");
     return false;
   }
-  const total = (pays || []).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const total = (pays || []).reduce((sum, p) => sum + Number(p.paid_total || 0), 0);
   if (total <= 0) return true;
 
   depositActionResId = resId;
@@ -8031,14 +8113,12 @@ function depositActionsPanel(res, bal) {
         escapeHtml(t("Waive")) +
         "</button>") +
     "</div>" +
-    // Optional, and only once the deposit itself is settled: the rest of a
-    // large party's bill often arrives later. Same modal, same ledger — a
-    // settlement is just another payment row, so nothing new is needed to
-    // record one.
+    // The remaining bill gets its own saved settlement invoice. Recording
+    // its payment happens against that invoice after staff review the detail.
     (settled
-      ? '<div class="flex flex-wrap gap-2 mt-3"><button onclick="openRecordDepositPayment(\'' +
+      ? '<div class="flex flex-wrap gap-2 mt-3"><button onclick="openSettlementInvoice(\'' +
         res.id +
-        '\')" class="btn-ghost text-xs px-3 py-1.5">' +
+        '\')" class="manager-only-ui btn-ghost text-xs px-3 py-1.5">' +
         escapeHtml(t("Record another payment")) +
         "</button></div>"
       : "") +
@@ -8119,7 +8199,67 @@ function exportReservationSources() {
 // The arrival question belongs to reservations only, and only when there is
 // no visit row. Both open* functions reset it, so it can never be left over
 // from a previous open.
+let completeBilling = null;
+
+async function fetchCompletionBilling(type, id) {
+  let q = db.from("visits").select("reservation_id, spend_amount, extra_spend_amount, status");
+  q = type === "reservation" ? q.eq("reservation_id", id) : q.eq("id", id);
+  const { data: visit, error: visitError } = await supabaseQuery(() => q.maybeSingle(), "Failed to load visit spending");
+  if (visitError) throw new Error(t("Could not load recorded spending. Reopen this window to retry."));
+  const resId = type === "reservation" ? id : visit?.reservation_id;
+  if (!resId) return { key: type + ":" + id, hasBilling: false, visit };
+  const { data: money, error } = await supabaseQuery(
+    () => db.from("reservation_money").select("paid_total, settlement_total")
+      .eq("reservation_id", resId).single(), "Failed to load recorded payments",
+  );
+  if (error || !money) throw new Error(t("Could not load recorded spending. Reopen this window to retry."));
+  const paid = Math.max(0, Number(money.paid_total || 0));
+  const base = Math.max(0, Number(money.settlement_total ?? paid));
+  return { key: type + ":" + id, hasBilling: base > 0, base, paid, resId, visit,
+    source: money.settlement_total != null ? "Final invoice total" : "Recorded payments" };
+}
+
+async function prepareCompleteBilling(type, id) {
+  const key = type + ":" + id;
+  completeBilling = { key, loading: true };
+  try {
+    const state = await fetchCompletionBilling(type, id);
+    if (completeBilling?.key !== key) return;
+    completeBilling = state;
+    if (state.hasBilling) {
+      const extra = state.visit?.extra_spend_amount ?? Math.max(0, Number(state.visit?.spend_amount || 0) - state.base);
+      document.getElementById("complete-spend").value = extra || "";
+      const label = document.getElementById("complete-spend-label");
+      if (label) label.textContent = t("Additional spending (Rp, optional)");
+    }
+    const button = document.getElementById("complete-submit-btn");
+    if (button) button.disabled = false;
+    updateCompleteSpendingPreview();
+  } catch (error) {
+    if (completeBilling?.key === key) toast(error.message, "error");
+  }
+}
+
+function updateCompleteSpendingPreview() {
+  const line = document.getElementById("complete-billing-summary");
+  if (!line) return;
+  const billed = completeBilling?.hasBilling;
+  line.classList.toggle("hidden", !billed);
+  if (!billed) return;
+  const extra = Number(cleanNumericInput(document.getElementById("complete-spend")?.value || "")) || 0;
+  line.textContent = t(completeBilling.source) + ": " + depositRupiah(completeBilling.base) +
+    " - " + t("Paid") + ": " + depositRupiah(completeBilling.paid) +
+    " - " + t("Total spending") + ": " + depositRupiah(completeBilling.base + extra) +
+    ". " + t("Leave blank if there is no additional spending.");
+}
+
 function resetCompleteArrivedAsk() {
+  completeBilling = null;
+  const label = document.getElementById("complete-spend-label");
+  if (label) label.textContent = t("Spend Amount (Rp)") + " *";
+  document.getElementById("complete-billing-summary")?.classList.add("hidden");
+  const submit = document.getElementById("complete-submit-btn");
+  if (submit) submit.disabled = true;
   const ask = document.getElementById("complete-arrived-ask");
   if (ask) ask.classList.add("hidden");
   const yes = document.getElementById("complete-arrived-yes");
@@ -8177,6 +8317,7 @@ async function openCompleteVisit(id, type) {
     document.getElementById("complete-notes").value = existing.notes;
   }
   fillCompleteOrderFields(existing?.guests);
+  await prepareCompleteBilling(type, id);
 }
 
 async function openCompleteReservation(resId) {
@@ -8216,6 +8357,7 @@ async function openCompleteReservation(resId) {
     document.getElementById("complete-notes").value = linkedVisit.notes;
   }
   fillCompleteOrderFields(linkedVisit?.guests);
+  await prepareCompleteBilling("reservation", resId);
 }
 
 // The box starts EMPTY, not pre-filled with the last order. Pre-filling means
@@ -8246,7 +8388,7 @@ async function confirmCompleteVisit() {
   const spend = cleanNumericInput(
     document.getElementById("complete-spend").value,
   );
-  const spendAmount = spend === "" ? null : parseFloat(spend);
+  let spendAmount = spend === "" ? null : parseFloat(spend);
   const notes = document.getElementById("complete-notes").value.trim() || null;
   const lastOrderInput = document
     .getElementById("complete-last-order")
@@ -8301,8 +8443,18 @@ async function confirmCompleteVisit() {
     }
   }
 
+  if (completeBilling?.loading) return;
+  let billing;
+  try {
+    billing = completeBilling?.key === type + ":" + id ? completeBilling : await fetchCompletionBilling(type, id);
+  } catch (error) {
+    toast(error.message, "error");
+    return;
+  }
+  const extraSpend = spendAmount ?? 0;
+  if (billing.hasBilling && spendAmount === null) spendAmount = 0;
   // Spend is mandatory — show inline error and abort if missing
-  if (spendAmount === null || isNaN(spendAmount)) {
+  if (spendAmount === null || !Number.isFinite(spendAmount) || spendAmount < 0) {
     const errEl = document.getElementById("complete-spend-error");
     if (errEl) errEl.classList.remove("hidden");
     document.getElementById("complete-spend")?.focus();
@@ -8315,7 +8467,22 @@ async function confirmCompleteVisit() {
   let guestIdForTier = null;
   let visitIdForMembership = null;
 
-  if (type === "visit") {
+  if (billing.hasBilling) {
+    const { data, error } = await supabaseQuery(
+      () => db.rpc("complete_billed_reservation", {
+        p_reservation_id: billing.resId, p_extra_spend: extraSpend,
+        p_expected_base: billing.base, p_notes: notes, p_staff_id: currentStaffId(),
+      }), "Failed to complete the prepaid reservation",
+    );
+    loader(false);
+    if (error || !data?.ok) {
+      toast(data?.message || t("Could not complete the reservation. Please try again."), "error");
+      return;
+    }
+    spendAmount = Number(data.spend_amount);
+    guestIdForTier = data.guest_id;
+    visitIdForMembership = data.visit_id;
+  } else if (type === "visit") {
     completePayload.spend_amount = spendAmount;
     completePayload.completed_at = new Date().toISOString();
     completePayload.status = "Done";
@@ -13093,6 +13260,8 @@ function renderReservationAvailability(rh) {
   // Defaults match the numbers that were hardcoded in
   // create_public_reservation before 2026-09-04, so a database that has not
   // been migrated yet still shows the truth rather than a blank box.
+  const durationEl = document.getElementById("set-res-duration");
+  if (durationEl) durationEl.value = cfg.default_duration_minutes || 180;
   const maxPaxEl = document.getElementById("set-res-max-pax");
   if (maxPaxEl) maxPaxEl.value = Number.isFinite(+cfg.max_pax) ? +cfg.max_pax : 20;
   const maxDaysEl = document.getElementById("set-res-max-days");
@@ -13376,6 +13545,11 @@ async function saveThresholdSettings() {
   // has to bail before it writes anything.
   const resWeek = readReservationWeek();
   if (!resWeek) return;
+  const resDuration = Number(document.getElementById("set-res-duration")?.value || 180);
+  if (!Number.isInteger(resDuration) || resDuration < 15 || resDuration > 1440) {
+    toast(t("Duration must be a whole number between 15 and 1440 minutes."), "error");
+    return;
+  }
   const resLead = Math.max(0, Math.min(90, parseInt(document.getElementById("set-res-lead-days")?.value, 10) || 0));
   // Clamped, and falling back to the old hardcoded values rather than to 0.
   // A cleared box meaning "no party may be larger than nobody" would take
@@ -13470,6 +13644,7 @@ async function saveThresholdSettings() {
         weekly: resWeek.weekly,
         min_lead_days: resLead,
         max_pax: resMaxPax,
+        default_duration_minutes: resDuration,
         max_days_ahead: resMaxDays,
         online_paused: resPaused,
         pause_message: resPauseMsg,

@@ -39,7 +39,8 @@ if (a < 0 || b <= a) {
   console.error("FAIL: could not slice confirmCompleteVisit out of app.js");
   process.exit(1);
 }
-const block = src.match(/^function assignedTableIds\(row\) \{[\s\S]*?^}/m)[0] + "\n" + src.slice(a, b);
+const billingHelpers = "let completeBilling = null;\n" + src.match(/^async function fetchCompletionBilling\([\s\S]*?^}/m)[0] + "\n";
+const block = billingHelpers + src.match(/^function assignedTableIds\(row\) \{[\s\S]*?^}/m)[0] + "\n" + src.slice(a, b);
 
 const RES_ID = "res-1";
 
@@ -105,6 +106,7 @@ function makeDb(state) {
         if (name === "reservations") {
           return Promise.resolve({ data: state.reservation, error: null });
         }
+        if (name === "reservation_money") return Promise.resolve({data: state.money || {paid_total:0,settlement_total:null},error:state.moneyError || null});
         if (name === "guests") {
           return Promise.resolve({ data: null, error: null });
         }
@@ -117,7 +119,15 @@ function makeDb(state) {
     };
     return q;
   };
-  return { from: table, _calls: calls };
+  return { from: table, _calls: calls, rpc: async (name, args) => {
+    calls.push({rpc:name,args});
+    if (state.billingError) return {data:{ok:false,message:'Changed billing'},error:null};
+    const base = state.money.settlement_total ?? state.money.paid_total;
+    state.visit = {...(state.visit || {}), id:state.visit?.id || 'billed-visit', guest_id:'guest-1',
+      spend_amount:base+args.p_extra_spend, extra_spend_amount:args.p_extra_spend, status:'Done'};
+    state.reservation.status='Completed';
+    return {data:{ok:true,visit_id:state.visit.id,guest_id:'guest-1',spend_amount:state.visit.spend_amount},error:null};
+  }};
 }
 
 // arrived: "yes" | "no" | null (asked, nothing picked) | undefined (not asked)
@@ -159,6 +169,7 @@ function makeCtx(state, arrived) {
   const db = makeDb(state);
   const ctx = {
     console,
+    t: s => s,
     document: { getElementById: (id) => fields[id] || null },
     db,
     _toasts: toasts,
@@ -355,6 +366,34 @@ function ok(label, cond, extra) {
     ok("reservation Completed", state.reservation.status === "Completed");
   }
 
+  console.log("\n[7] Prepaid/final-invoice spending and optional extras");
+  for (const extra of ['', '500000']) {
+    const state = {reservation:{id:RES_ID,status:'Arrived'},
+      visit:{id:'visit-existing',guest_id:'guest-1',reservation_id:RES_ID},
+      money:{paid_total:3500000,settlement_total:3500000}};
+    const ctx=makeCtx(state);
+    ctx.document.getElementById('complete-spend').value=extra;
+    await ctx.__run();
+    ok('full bill plus only extras is saved',state.visit.spend_amount===3500000+Number(extra));
+    ok('membership sees the full spend',state.stickerArgs?.[1]===3500000+Number(extra));
+    await ctx.__run();
+    ok('repeated completion does not add prepayment twice',state.visit.spend_amount===3500000+Number(extra));
+  }
+  {
+    const state={reservation:{id:RES_ID,status:'Arrived'},visit:{id:'v',reservation_id:RES_ID},money:{paid_total:3500000,settlement_total:null}};
+    const ctx=makeCtx(state);ctx.document.getElementById('complete-spend').value='';
+    await ctx.__run();ok('recorded payments are used when there is no final invoice',state.visit.spend_amount===3500000);
+  }
+  {
+    const state={reservation:{id:RES_ID,status:'Arrived'},visit:{id:'v',reservation_id:RES_ID},moneyError:{message:'offline'}};
+    const ctx=makeCtx(state);await ctx.__run();
+    ok('billing lookup failure cannot overwrite prepaid spending',state.reservation.status==='Arrived' && !state.visit.spend_amount);
+  }
+  {
+    const state={reservation:{id:RES_ID,status:'Arrived'},visit:{id:'v',reservation_id:RES_ID},money:{paid_total:1000000,settlement_total:3500000},billingError:true};
+    const ctx=makeCtx(state);await ctx.__run();
+    ok('server refusal does not complete the reservation',state.reservation.status==='Arrived');
+  }
   console.log("\n" + pass + " passed, " + fail + " failed\n");
   process.exit(fail ? 1 : 0);
 })();

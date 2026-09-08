@@ -112,6 +112,40 @@ const I18N_EXCEPTION_TERMS = new Set([
 
 // Indonesian translations, keyed by the English source string.
 const ID_DICT = {
+  "Selected tables are held for the visit and preparation buffer. Reserve the entire area only for exclusive use. Waitlisted bookings do not hold capacity.": "Meja yang dipilih ditahan selama kunjungan dan jeda persiapan. Pesan seluruh area hanya untuk penggunaan eksklusif. Daftar tunggu tidak menahan kapasitas.",
+  "Expected duration if no end time (minutes)": "Perkiraan durasi jika jam selesai kosong (menit)",
+  "Default reservation duration (minutes)": "Durasi reservasi standar (menit)",
+  "Used for new bookings without an end time. Existing bookings keep their duration.": "Digunakan untuk reservasi baru tanpa jam selesai. Durasi reservasi yang sudah ada tetap sama.",
+  "Duration must be a whole number between 15 and 1440 minutes.": "Durasi harus berupa bilangan bulat antara 15 dan 1440 menit.",
+
+  "Save tables and availability": "Simpan meja dan ketersediaan",
+  "Required when reserving the entire area.": "Wajib diisi saat memesan seluruh area.",
+
+  "Reserve entire area": "Reservasi seluruh area",
+  "Reservation hours": "Jam reservasi",
+  "End time": "Jam selesai",
+  "Buffer before event (minutes)": "Jeda sebelum acara (menit)",
+  "Blocks online arrivals from the reservation time, minus the buffer, until the end time. Waitlisted bookings do not hold the area.": "Memblokir jam kedatangan online dari waktu reservasi dikurangi jeda hingga jam selesai. Reservasi daftar tunggu tidak menahan area.",
+  "Choose an area, an end time after the start, and a buffer within the same day.": "Pilih area, jam selesai setelah jam mulai, dan jeda pada hari yang sama.",
+  "End time must be after start time.": "Jam selesai harus setelah jam mulai.",
+  "Full": "Penuh",
+  "That area is full at this time. Please choose another time or area.": "Area tersebut penuh pada jam ini. Silakan pilih jam atau area lain.",
+  "Could not load area availability. Please select the date again to retry.": "Tidak dapat memuat ketersediaan area. Silakan pilih tanggal lagi untuk mencoba ulang.",
+
+  "Final bill": "Tagihan akhir",
+  "Final invoice total": "Total invoice akhir",
+  "Recorded payments": "Pembayaran tercatat",
+  "Total spending": "Total pengeluaran",
+  "Paid": "Dibayar",
+  "Outstanding": "Sisa tagihan",
+  "Additional spending (Rp, optional)": "Pengeluaran tambahan (Rp, opsional)",
+  "Leave blank if there is no additional spending.": "Kosongkan jika tidak ada pengeluaran tambahan.",
+  "Could not load recorded spending. Reopen this window to retry.": "Tidak dapat memuat pengeluaran tercatat. Buka kembali jendela ini untuk mencoba lagi.",
+  "Could not complete the reservation. Please try again.": "Tidak dapat menyelesaikan reservasi. Silakan coba lagi.",
+  "This invoice is not available for payment.": "Invoice ini tidak tersedia untuk pembayaran.",
+  "Payment balance unavailable. Open Record payment to retry.": "Saldo pembayaran tidak tersedia. Buka Catat pembayaran untuk mencoba lagi.",
+  "Enter the full final bill amount before saving.": "Masukkan total tagihan akhir sebelum menyimpan.",
+
   "Tables": "Meja",
   "Select all tables": "Pilih semua meja",
   "Clear selection": "Hapus pilihan",

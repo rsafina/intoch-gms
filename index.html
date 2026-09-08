@@ -3573,6 +3573,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                     >
                       Copy guest link
                     </button>
+                    <button id="inv-record-payment-btn" onclick="invRecordSavedPayment()" class="hidden ml-2 underline" data-i18n>Record payment</button>
                   </p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -7059,6 +7060,12 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               </p>
             </div>
 
+            <div class="mb-5">
+              <label class="block text-xs font-medium mb-2" data-i18n>Default reservation duration (minutes)</label>
+              <input id="set-res-duration" type="number" min="15" max="1440" step="1" value="180" class="form-input" />
+              <p class="text-xs text-[#999] mt-2" data-i18n>Used for new bookings without an end time. Existing bookings keep their duration.</p>
+            </div>
+
             <!-- 3. Weekly hours. Rows are rendered by renderReservationWeek()
                  rather than written out seven times here, so the day keys and
                  the input ids can only be wrong in one place. -->
@@ -8020,16 +8027,21 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           </div>
           <input type="hidden" id="res-table-id" />
           <div id="res-table-picker" class="mb-4"></div>
-          <!-- VIP hour-range: appears right under the table picker when a
-               VIP table is selected. "from" mirrors the main Time field. -->
-          <div id="res-endtime-wrap" class="hidden mb-4 -mt-2">
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold text-[color:var(--accent-strong)] uppercase tracking-wide mr-1">VIP hours</span>
+          <div class="border border-[#E0DDD7] rounded-xl p-3 mb-4 space-y-2">
+            <label class="flex items-center gap-2 text-sm"><input id="res-exclusive-area" type="checkbox" onchange="updateResVipTimeRange()" /> Reserve entire area</label>
+            <p class="text-xs text-[#777]">Selected tables are held for the visit and preparation buffer. Reserve the entire area only for exclusive use. Waitlisted bookings do not hold capacity.</p>
+            <label class="block text-xs">Buffer before event (minutes)<input id="res-block-buffer" type="number" min="0" step="1" value="0" class="form-input mt-1" /></label>
+          </div>
+          <label class="block text-xs mb-3">Expected duration if no end time (minutes)<input id="res-duration" type="number" min="15" max="1440" step="1" value="180" class="form-input mt-1" /></label>
+          <!-- End time overrides the expected duration for this reservation. -->
+          <div id="res-endtime-wrap" class="mb-4 -mt-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs font-semibold text-[color:var(--accent-strong)] uppercase tracking-wide mr-1">Reservation hours</span>
               <span class="text-sm text-[#555]">from</span>
               <input id="res-vip-from" type="time" class="form-input" style="width:auto" oninput="syncVipFromTime()" onchange="syncVipFromTime()" />
               <span class="text-sm text-[#555]">to</span>
               <input id="res-end-time" type="time" class="form-input" style="width:auto" />
-              <span class="text-[11px] text-[#999]">(optional — bisa diisi nanti)</span>
+              <span class="text-[11px] text-[#999]">Required when reserving the entire area.</span>
             </div>
             <p id="res-vip-conflict" class="hidden text-xs text-red-500 mt-1.5"></p>
           </div>
@@ -8691,7 +8703,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           Note (optional)
         </label>
         <input id="dep-pay-note" type="text" class="form-input text-sm w-full mb-4" />
-        <button onclick="submitDepositPayment()" class="btn-primary w-full justify-center text-sm mb-2">
+        <button id="dep-pay-save-btn" onclick="submitDepositPayment()" class="btn-primary w-full justify-center text-sm mb-2">
           Save payment
         </button>
         <button onclick="hideModal('modal-deposit-payment')" class="btn-ghost w-full justify-center text-xs">
@@ -8918,26 +8930,11 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           </p>
         </div>
         <div class="mb-4" id="complete-spend-block">
-          <label class="block text-xs font-medium text-[#555] mb-1.5"
-            >Spend Amount (Rp) <span class="text-red-500">*</span></label
-          >
-          <input
-            id="complete-spend"
-            type="text"
-            inputmode="numeric"
-            oninput="formatAmountInput(this)"
-            placeholder="e.g. 450.000"
-            class="form-input text-lg"
-            oninput="
-              formatSpendInput(this);
-              document
-                .getElementById('complete-spend-error')
-                .classList.add('hidden');
-            "
-          />
-          <p id="complete-spend-error" class="hidden text-xs text-red-500 mt-1">
-            Spend amount is required before completing.
-          </p>
+          <label id="complete-spend-label" class="block text-xs font-medium text-[#555] mb-1.5">Spend Amount (Rp) <span class="text-red-500">*</span></label>
+          <p id="complete-billing-summary" class="hidden text-sm p-3 mb-3 rounded-xl bg-green-50 text-green-800"></p>
+          <input id="complete-spend" type="text" inputmode="numeric" placeholder="e.g. 450.000" class="form-input text-lg"
+            oninput="formatSpendInput(this); document.getElementById('complete-spend-error').classList.add('hidden'); updateCompleteSpendingPreview();" />
+          <p id="complete-spend-error" class="hidden text-xs text-red-500 mt-1">Spend amount is required before completing.</p>
         </div>
         <!-- What they ate goes to guests.last_order, ALWAYS. It only becomes
              their favorite if the box below is ticked. Before 2026-09-02 this
