@@ -16,11 +16,12 @@ alter table public.reservations drop constraint if exists reservations_area_bloc
 alter table public.reservations add constraint reservations_area_block_valid check (
   booking_duration_minutes between 15 and 1440 and
   block_buffer_minutes >= 0 and block_buffer_minutes <= extract(epoch from reservation_time)::integer / 60 and
-  (end_time is null or end_time > reservation_time) and
-  (not exclusive_area or (assigned_area is not null and end_time is not null))
-) not valid;
--- NOT VALID preserves legacy rows with invalid hour ranges; every new write
--- still has to satisfy the constraint. Review old ranges before validating.
+  (not exclusive_area or (assigned_area is not null and end_time is not null and end_time > reservation_time))
+);
+
+create index if not exists reservations_held_area_date_idx
+  on public.reservations(assigned_area, reservation_date)
+  where deleted_at is null and status in ('Reserved','Confirmed','Incoming','Arrived');
 
 create or replace function public.reservation_hold_window(
   p_date date, p_time time, p_end time, p_duration integer, p_buffer integer)
@@ -320,7 +321,8 @@ as $function$
       -- booking worth having, not an error.
       if v_area.min_pax is not null and p_pax < v_area.min_pax then
         v_status := 'Waitlist'; v_wl_why := 'below_min_pax';
-      elsif coalesce(v_area.capacity, 0) > 0 and p_pax > v_area.capacity then
+      elsif coalesce(v_avail.total_capacity, v_area.capacity, 0) > 0
+        and p_pax > coalesce(v_avail.total_capacity, v_area.capacity) then
         -- capacity 0 means "not recorded", not "seats nobody".
         v_status := 'Waitlist'; v_wl_why := 'over_capacity';
       end if;

@@ -65,10 +65,10 @@ ok("the area and company reach the RPC",
 
 console.log("\nAvailability never reads the reservations table");
 // A public page must not select every guest's booking to draw a percentage.
-ok("availability comes from the RPC", /db\.rpc\("area_availability"/.test(form));
+ok("availability comes from the RPC", /db\.rpc\("area_slot_availability"/.test(form));
 ok("the form never selects from reservations", !/from\("reservations"\)/.test(form));
 ok("the RPC is SECURITY DEFINER and returns no guest data", (() => {
-  const i = sql.indexOf("create or replace function public.area_availability");
+  const i = sql.lastIndexOf("create or replace function public.area_slot_availability");
   const body = sql.slice(i, sql.indexOf("$function$;", i));
   return /security definer/i.test(body) && !/guests/i.test(body);
 })());
@@ -108,7 +108,7 @@ console.log("\nWaitlist holds no seat");
 ok("the date-full check counts held statuses", /status in \('Reserved',/.test(fn));
 ok("Waitlist is not in that list", !/status in \([^)]*Waitlist/.test(fn));
 ok("the availability function excludes it too", (() => {
-  const i = sql.indexOf("create or replace function public.area_availability");
+  const i = sql.lastIndexOf("create or replace function public.reservation_capacity");
   const body = sql.slice(i, sql.indexOf("$function$;", i));
   return /status in \('Reserved',/.test(body) && !/status in \([^)]*Waitlist/.test(body);
 })());

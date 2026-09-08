@@ -55,7 +55,7 @@ ok("every one of them allows Incoming",
    `${constraints.filter((c) => !c[1].includes("Incoming")).length} definition(s) missing it.`);
 
 console.log("\nIncoming holds a seat, Waitlist does not");
-for (const [label, body] of [["the booking gate", booking], ["area_availability", avail]]) {
+for (const [label, body] of [["the booking gate capacity calculator", fnBody("reservation_capacity")], ["area_availability", avail]]) {
   ok(`${label} counts Incoming as held`, /'Reserved','Confirmed','Incoming','Arrived'/.test(body));
   ok(`${label} does not count Waitlist`, !/status in \([^)]*Waitlist/i.test(body));
 }
@@ -68,7 +68,7 @@ ok("no grace-period setting crept back in", !/deposit_grace_hours/.test(sql),
    "something less obvious than 'pay before you eat'.");
 ok("Waitlist beats Incoming", /if v_status = 'Reserved' and v_dep_req then/.test(booking),
    "A booking nobody has agreed to must not start a deposit clock.");
-ok("the deadline is stored on the row", /deposit_due_at\)/.test(booking) && /v_due_at\)/.test(booking));
+ok("the deadline is stored on the row", /deposit_due_at, booking_duration_minutes\)/.test(booking) && /v_due_at, v_duration\)/.test(booking));
 
 console.log("\nRecording a payment and locking the booking are one transaction");
 const rec = fnBody("record_deposit_payment");

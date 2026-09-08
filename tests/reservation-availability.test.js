@@ -118,12 +118,12 @@ console.log("\nSaving must not wipe fields it does not know about");
 check("the reservation_hours write spreads the existing value first", () => {
   const i = app.indexOf('key: "reservation_hours"');
   assert.ok(i > -1, "reservation_hours is no longer written");
-  const body = app.slice(i, i + 700);
+  const body = app.slice(i, app.indexOf("updated_at:", i));
   assert.ok(
     body.includes("...(APP_SETTINGS.reservation_hours || {})"),
     "writes a fresh object, so any future field added to this key is wiped on every save",
   );
-  for (const f of ["weekly", "min_lead_days", "online_paused", "pause_message"]) {
+  for (const f of ["weekly", "min_lead_days", "online_paused", "pause_message", "default_duration_minutes"]) {
     assert.ok(body.includes(f), "save drops " + f);
   }
 });
