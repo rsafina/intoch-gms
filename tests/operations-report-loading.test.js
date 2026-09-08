@@ -1,0 +1,37 @@
+const fs = require('node:fs');
+const assert = require('node:assert/strict');
+const { JSDOM } = require('jsdom');
+const app = fs.readFileSync('js/app.js','utf8').replace(/\r\n/g,'\n');
+const dom = new JSDOM(fs.readFileSync('index.html','utf8'),{runScripts:'outside-only',url:'https://example.test/'});
+const w = dom.window;
+const names=['navigateTo','setOpsReportRange','getOpsReportDateRange','updateOpsReportDateRange','loadOperationsReports'];
+if (app.includes('function renderOpsReportRange(')) names.push('renderOpsReportRange');
+const functions=names.map(name=>app.match(new RegExp('^(?:async )?function '+name+'\\([^]*?^}', 'm'))[0]).join('\n');
+w.eval(fs.readFileSync('js/page-loading.js','utf8'));
+w.eval('let currentOpsReportRange="today";\n'+functions);
+w.TODAY='2026-09-08'; w.allAreas=[{id:'outdoor'}]; w.SETTINGS_SUBPAGES=[];
+w.hasAccess=()=>true; w.currentStaffRole=()=> 'admin'; w.t=s=>s;
+w.fmt={date:s=>s}; w.getPeakDateWindow=()=>({from:w.TODAY,to:w.TODAY});
+for(const n of ['loadReports','initBirthdayView','loadOpsOnlineFormReport','loadOpsRepeatGuests','loadOpsForecast']) w[n]=async()=>{};
+for(const n of ['renderOpsReservationSources','renderOpsPeakTraffic','startPeakTrafficAutoRefresh','toast']) w[n]=()=>{};
+w.aggregateReservationSources=()=>[];
+let queries=0;
+w.db={from(){queries++; if(queries>5)throw new Error('Recursive report fetch detected'); return new Proxy({}, {get(_,key){if(key==='then')return resolve=>resolve({data:[],error:null});return ()=>w.query;}});}};
+// One reusable thenable query builder; each from() counts a real request.
+w.query=new Proxy({}, {get(_,key){if(key==='then')return resolve=>resolve({data:[],error:null});return ()=>w.query;}});
+w.supabaseQuery=fn=>fn();
+(async()=>{
+ await w.navigateTo('reports');
+ assert.equal(queries,5,'opening reports performs one batch, without recursively loading again');
+ assert.equal(w.document.documentElement.hasAttribute('data-page-loading'),false,'navigation completes and uncovers the page');
+ queries=0; await w.setOpsReportRange('month');
+ assert.equal(queries,5,'changing the range performs exactly one new batch');
+ assert.ok(w.document.getElementById('ops-report-range-month').classList.contains('font-semibold'));
+ const from=w.document.getElementById('ops-report-from-date');
+ const to=w.document.getElementById('ops-report-to-date');
+ from.value='2026-08-01';to.value='2026-08-12';
+ queries=0;await w.setOpsReportRange('custom');
+ assert.equal(queries,5);assert.equal(from.value,'2026-08-01');assert.equal(to.value,'2026-08-12');
+ assert.equal(w.document.getElementById('ops-custom-dates').classList.contains('hidden'),false);
+ console.log('Operations report navigation: one fetch batch, loader finishes, range changes and custom dates passed');
+})().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>w.close());

@@ -8808,6 +8808,14 @@ function setReportsTab(tab) {
 
 async function setOpsReportRange(range) {
   currentOpsReportRange = range;
+  await loadOperationsReports();
+}
+
+// Rendering range controls must not start another report request. Navigation
+// waits for loadOperationsReports(), so calling its range-change handler from
+// that loader creates an endless fetch loop and never reveals the page.
+async function renderOpsReportRange() {
+  const range = currentOpsReportRange;
   const fromInput = document.getElementById("ops-report-from-date");
   const toInput = document.getElementById("ops-report-to-date");
   const customDatesDiv = document.getElementById("ops-custom-dates");
@@ -8833,9 +8841,6 @@ async function setOpsReportRange(range) {
   }
 
   await updateOpsReportDateRange();
-
-  // Re-load the In Period report sections with the new date range
-  await loadOperationsReports();
 }
 
 function getOpsReportDateRange(value = currentOpsReportRange) {
@@ -10741,6 +10746,7 @@ function renderMktReviewPerformance(submissions) {
 }
 
 async function loadOperationsReports() {
+  await renderOpsReportRange();
   if (!allAreas.length) await loadAreas();
 
   const { from, to } = getOpsReportDateRange();
@@ -10903,8 +10909,6 @@ async function loadOperationsReports() {
   renderOpsPeakTraffic(peakReservations, peakWalkIns);
   startPeakTrafficAutoRefresh();
 
-  // Sync active button state and range label
-  await setOpsReportRange(currentOpsReportRange);
 }
 
 async function loadOpsForecast() {
