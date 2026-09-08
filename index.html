@@ -1269,7 +1269,8 @@
       <button
         id="res-alert-bell"
         onclick="toggleResAlertPanel()"
-        title="Reservasi online baru"
+        type="button" aria-label="Booking follow-ups" aria-controls="res-alert-panel" aria-expanded="false"
+        title="Booking follow-ups"
         style="
           order: 2; /* bell sits right of the birthday cake */
           width: 40px;
@@ -1307,16 +1308,21 @@
           "
           >0</span
         >
-        <!-- amber badge: bookings already followed up that are now due
-             an attendance re-check (D-1 from opening time, and D-day).
-             Kept visually separate from the red "never contacted" count
-             so FO can see at a glance which kind of work is waiting. -->
+
+      </button>
+
+      <button id="res-arrival-bell" type="button" onclick="toggleResAlertPanel('arrival')"
+        title="Arrival checks" aria-label="Arrival checks" aria-controls="res-alert-panel" aria-expanded="false"
+        style="order:3;width:40px;height:40px;border-radius:50%;background:#fff;border:1px solid #ede9e3;display:flex;align-items:center;justify-content:center;position:relative;box-shadow:0 1px 3px rgba(0,0,0,0.08);cursor:pointer;color:#b7791f">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18M8 16l3 3 5-5"/>
+        </svg>
         <span
           id="res-alert-badge-2"
           class="hidden"
           style="
             position: absolute;
-            bottom: -4px;
+            top: -4px;
             right: -4px;
             background: #b7791f;
             color: #fff;
@@ -1341,7 +1347,7 @@
           position: absolute;
           top: 48px;
           right: 0;
-          width: 340px;
+          width: min(340px, calc(100vw - 40px));
           /* Taller and viewport-aware (2026-08-23). 340px fitted about four
              rows, which is nothing now that handled bookings stay listed. The
              vh cap keeps it on screen on a laptop. */
@@ -1351,8 +1357,8 @@
         "
       >
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm font-semibold text-[color:var(--brand-ink)]"
-            >Reservasi Online Baru</span
+          <span id="res-alert-title" class="text-sm font-semibold text-[color:var(--brand-ink)]"
+            >Booking follow-ups</span
           >
         </div>
         <div id="res-alert-list">

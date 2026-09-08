@@ -112,6 +112,10 @@ const I18N_EXCEPTION_TERMS = new Set([
 
 // Indonesian translations, keyed by the English source string.
 const ID_DICT = {
+  "Booking follow-ups": "Tindak lanjut reservasi",
+  "Arrival checks": "Cek kehadiran",
+  "No arrival checks due.": "Tidak ada kehadiran yang perlu dicek.",
+
   "Selected tables are held for the visit and preparation buffer. Reserve the entire area only for exclusive use. Waitlisted bookings do not hold capacity.": "Meja yang dipilih ditahan selama kunjungan dan jeda persiapan. Pesan seluruh area hanya untuk penggunaan eksklusif. Daftar tunggu tidak menahan kapasitas.",
   "Expected duration if no end time (minutes)": "Perkiraan durasi jika jam selesai kosong (menit)",
   "Default reservation duration (minutes)": "Durasi reservasi standar (menit)",

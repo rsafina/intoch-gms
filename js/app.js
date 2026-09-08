@@ -11898,7 +11898,7 @@ function refreshBirthdayViews() {
 }
 
 function toggleBirthdayAlertPanel() {
-  document.getElementById("res-alert-panel")?.classList.add("hidden"); // one panel at a time
+  if (typeof closeResAlertPanel === "function") closeResAlertPanel(); // one panel at a time
   document.getElementById("bd-alert-panel")?.classList.toggle("hidden");
 }
 

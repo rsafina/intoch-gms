@@ -382,13 +382,20 @@ function _resNotifyRenderBadge() {
     const parts = [];
     if (pending) parts.push(pending + " perlu follow up");
     if (deposit) parts.push(deposit + " perlu invoice DP");
-    if (incoming) parts.push(incoming + " cek kehadiran");
-    bell.title =
+
+    bell.title = t("Booking follow-ups") + ": " +
       (parts.length ? parts.join(" · ") : "Reservasi online") +
       (_resNotifyLive
         ? " (langsung terhubung)"
         : " (koneksi langsung terputus — daftar tetap diperbarui berkala)");
   }
+  if (bell) bell.setAttribute("aria-label", t("Booking follow-ups") + ": " + (pending + deposit));
+  const arrivalBell = document.getElementById("res-arrival-bell");
+  if (arrivalBell) {
+    arrivalBell.title = t("Arrival checks") + ": " + incoming;
+    arrivalBell.setAttribute("aria-label", arrivalBell.title);
+  }
+
 }
 
 // "Sudah ditangani": the third section (2026-08-23, Rere). A booking used to
@@ -467,16 +474,33 @@ function _resNotifyRow(it, kind) {
       </div>`;
 }
 
+let _resNotifyPanelKind = "followup";
+
 function _resNotifyRenderList() {
   const list = document.getElementById("res-alert-list");
   if (!list) return;
+  const title = document.getElementById("res-alert-title");
+  if (title) title.textContent = t(_resNotifyPanelKind === "arrival" ? "Arrival checks" : "Booking follow-ups");
 
   const pending = _resNotifyItems.filter((it) => _resNotifyClassify(it) === "pending");
   const deposit = _resNotifyItems.filter((it) => _resNotifyClassify(it) === "deposit");
   const incoming = _resNotifyItems.filter((it) => _resNotifyClassify(it) === "incoming");
   const handled = _resNotifyItems.filter((it) => _resNotifyClassify(it) === "quiet");
 
-  if (!pending.length && !deposit.length && !incoming.length && !handled.length) {
+  if (_resNotifyPanelKind === "arrival") {
+    let arrivalHtml = "";
+    if (incoming.length) {
+      arrivalHtml =
+        '<p class="text-[11px] font-semibold text-[#B7791F] mb-1">Cek kehadiran (' +
+        incoming.length + ")</p>" +
+        '<p class="text-[10px] text-[#999] mb-1 leading-snug">Hubungi tamu, pastikan jadi datang.</p>' +
+        incoming.map((it) => _resNotifyRow(it, "incoming")).join("");
+    }
+    list.innerHTML = arrivalHtml || '<p class="text-xs text-[#999] text-center py-4">' + t("No arrival checks due.") + '</p>';
+    return;
+  }
+
+  if (!pending.length && !deposit.length && !handled.length) {
     list.innerHTML =
       '<p class="text-xs text-[#bbb] text-center py-4">Belum ada reservasi online</p>';
     return;
@@ -484,7 +508,7 @@ function _resNotifyRenderList() {
 
   let html = "";
 
-  if (!pending.length && !deposit.length && !incoming.length) {
+  if (!pending.length && !deposit.length) {
     html +=
       '<p class="text-xs text-[#1FAF5E] text-center py-3">Semua reservasi online sudah ditangani ✓</p>';
   }
@@ -508,21 +532,11 @@ function _resNotifyRenderList() {
       deposit.map((it) => _resNotifyRow(it, "deposit")).join("");
   }
 
-  if (incoming.length) {
-    html +=
-      '<p class="text-[11px] font-semibold text-[#B7791F] mb-1 ' +
-      (pending.length || deposit.length ? "mt-3 pt-3 border-t border-[#EDE9E3]" : "") +
-      '">Cek kehadiran (' +
-      incoming.length +
-      ")</p>" +
-      '<p class="text-[10px] text-[#999] mb-1 leading-snug">Hubungi tamu, pastikan jadi datang.</p>' +
-      incoming.map((it) => _resNotifyRow(it, "incoming")).join("");
-  }
 
   if (handled.length) {
     html +=
       '<button onclick="resNotifyToggleHandled()" class="w-full flex items-center justify-between text-left text-[11px] font-semibold text-[#777] ' +
-      (pending.length || deposit.length || incoming.length ? "mt-3 pt-3 border-t border-[#EDE9E3]" : "") +
+      (pending.length || deposit.length ? "mt-3 pt-3 border-t border-[#EDE9E3]" : "") +
       '"><span>Sudah ditangani (' +
       handled.length +
       ")</span><span>" +
@@ -690,37 +704,37 @@ function _resNotifyChime() {
   }
 }
 
-function toggleResAlertPanel() {
+function closeResAlertPanel() {
+  document.getElementById("res-alert-panel")?.classList.add("hidden");
+  for (const id of ["res-alert-bell", "res-arrival-bell"])
+    document.getElementById(id)?.setAttribute("aria-expanded", "false");
+}
+
+function toggleResAlertPanel(kind = "followup") {
   const panel = document.getElementById("res-alert-panel");
-  const bdPanel = document.getElementById("bd-alert-panel");
   if (!panel) return;
-  if (bdPanel) bdPanel.classList.add("hidden"); // one panel at a time
-  const opening = panel.classList.contains("hidden");
-  panel.classList.toggle("hidden");
+  document.getElementById("bd-alert-panel")?.classList.add("hidden");
+  const opening = panel.classList.contains("hidden") || _resNotifyPanelKind !== kind;
+  closeResAlertPanel();
   if (opening) {
-    _resNotifyRenderList(); // show what we have immediately
-    _resNotifyRefresh(); // then confirm against the DB
+    _resNotifyPanelKind = kind;
+    panel.classList.remove("hidden");
+    document.getElementById(kind === "arrival" ? "res-arrival-bell" : "res-alert-bell")?.setAttribute("aria-expanded", "true");
+    _resNotifyRenderList();
+    _resNotifyRefresh();
   }
 }
 
 function goToReservationsFromNotify() {
-  document.getElementById("res-alert-panel")?.classList.add("hidden");
+  closeResAlertPanel();
   if (typeof navigateTo === "function") navigateTo("reservations");
 }
 
-// Close the panel when clicking outside (same behavior as birthday panel)
+// A re-render can detach a clicked checkbox before this handler runs.
 document.addEventListener("click", (e) => {
   const wrap = document.getElementById("bd-alert-wrap");
-  const panel = document.getElementById("res-alert-panel");
-  if (!wrap || !panel || panel.classList.contains("hidden")) return;
-  // A click on a control INSIDE the panel often re-renders the panel's list,
-  // which detaches the very node this handler is about to test. contains()
-  // then reports "outside" and the panel closes under the user's finger.
-  // Reported 2026-08-23: opening the "Sudah ditangani" accordion shut the
-  // whole dropdown. isConnected is false for a node that has been replaced,
-  // so this catches every such control rather than one button at a time.
-  if (!e.target.isConnected) return;
-  if (!wrap.contains(e.target)) panel.classList.add("hidden");
+  if (!wrap || !e.target.isConnected) return;
+  if (!wrap.contains(e.target)) closeResAlertPanel();
 });
 
 let _resNotifyPollTimer = null;
