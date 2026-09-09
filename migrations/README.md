@@ -4,6 +4,19 @@
 
 That is the whole procedure, for a brand new client and for an existing one.
 
+## Reservation update errors (September 2026)
+
+If saving a reservation reports a missing `block_buffer_minutes` column, run the
+current **ALL_IN_ONE.sql** in Supabase SQL Editor before deploying/reloading the app.
+Pushing the website does not execute database migrations. The full file includes
+area buffers, timed capacity, simplified deposits, and Waitlist payment promotion.
+Running only the latest incremental file does not install its prerequisites.
+
+The payment repair also promotes existing waitlisted bookings whose recorded
+payments cover the agreed deposit. Capacity checks still apply: SQL warnings list
+bookings that need staff to resolve a table/time conflict. Partial deposits stay
+waitlisted; no payment is invented or recorded by the repair.
+
 ## Why a single file
 
 It is **idempotent**. Every `CREATE` is `IF NOT EXISTS`, every trigger and policy

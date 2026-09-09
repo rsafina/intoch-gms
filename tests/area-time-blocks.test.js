@@ -25,15 +25,15 @@ const slots = (remaining=25, exclusive=false) => ['12:00','13:00','14:00','15:00
  assert.deepEqual(calls,['area_slot_availability'],'capacity loads with percentage display disabled');
  assert.equal(w.areaTimeBlocked('13:00'),false,'party of 10 fits 25 remaining seats');
  w.$('f-time').value='13:00'; w.$('pax-value').value='30'; w.refreshBlockedTimes();
- assert.equal(w.$('f-time').value,'','increasing pax clears unavailable selection');
+ assert.equal(w.$('f-time').value,'13:00','increasing pax keeps the waitlist selection');
  assert.equal(w.areaTimeBlocked('13:00'),true);
  assert.equal(w.areaTimeBlocked('16:00'),false);
- assert.ok(Array.from(w.document.querySelectorAll('button')).some(b=>b.disabled&&b.textContent==='13:00 - Not enough seats'));
+ assert.ok(Array.from(w.document.querySelectorAll('button')).some(b=>!b.disabled&&b.textContent==='13:00 - Waitlist'));
  w.$('pax-value').value='25'; w.refreshBlockedTimes(); assert.equal(w.areaTimeBlocked('13:00'),false,'exact fit allowed');
  w.setArea('indoor'); w.refreshBlockedTimes(); assert.equal(w.document.querySelectorAll('button:disabled').length,0,'other area unaffected');
  w.setArea('outdoor'); w.db.rpc=async()=>({data:slots(0,true)}); await w.loadAvailability();
  assert.equal(w.areaTimeBlocked('13:00'),true,'exclusive hold blocks every party');
- assert.ok(Array.from(w.document.querySelectorAll('button')).some(b=>b.disabled&&b.textContent==='13:00 - Full'));
+ assert.ok(Array.from(w.document.querySelectorAll('button')).some(b=>!b.disabled&&b.textContent==='13:00 - Waitlist'));
  w.$('f-date').value='2026-10-02'; assert.equal(w.areaTimeBlocked('13:00'),false,'old-date data never blocks new date');
  const pending=[]; w.db.rpc=()=>new Promise(resolve=>pending.push(resolve));
  const old=w.loadAvailability(); w.$('f-date').value='2026-10-03'; const current=w.loadAvailability();
@@ -52,6 +52,6 @@ const slots = (remaining=25, exclusive=false) => ['12:00','13:00','14:00','15:00
  w.$('res-duration').value='120'; w.$('res-exclusive-area').checked=false; w.$('res-end-time').value='';
  assert.equal(w.readAreaBlock('res','outdoor','13:00').booking_duration_minutes,120);
  const sql=fs.readFileSync('migrations/20260909_timed_table_capacity.sql','utf8').replace(/\r\n/g,'\n');
- assert.ok(fs.readFileSync('migrations/ALL_IN_ONE.sql','utf8').replace(/\r\n/g,'\n').endsWith(sql));
+ assert.ok(fs.readFileSync('migrations/ALL_IN_ONE.sql','utf8').replace(/\r\n/g,'\n').includes(sql));
  console.log('Timed-slot form: exact fit, pax changes, area/date changes, exclusive blocks, stale responses, duration and buffer validation passed');
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>w.close());

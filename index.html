@@ -7940,6 +7940,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           </button>
         </div>
 
+        <div id="res-deposit-details"></div>
         <input type="hidden" id="res-edit-id" />
         <input type="hidden" id="res-guest-id" />
 
@@ -8649,7 +8650,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         <!-- Says both things it does. Staff who expect only a link are the
              ones who close the WhatsApp tab without sending. -->
         <button
-          onclick="submitDepositInvoice()"
+          onclick="submitSimpleDepositInvoice()"
           class="btn-primary w-full justify-center text-sm mb-2"
         >
           Create invoice & open WhatsApp

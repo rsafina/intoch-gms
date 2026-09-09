@@ -49,6 +49,9 @@ const GUEST_KEEP_ENGLISH = new Set([
 // fragments matches no dictionary key once it is concatenated, which is the
 // trap the prototype fell into.
 const GUEST_DICT = {
+  "To be confirmed": "Akan dikonfirmasi",
+  "Waitlist": "Daftar tunggu",
+  "This time is waitlist only. No payment is due until we accept your request.": "Waktu ini hanya tersedia untuk daftar tunggu. Belum ada pembayaran sampai permintaan Anda kami terima.",
   "Not enough seats": "Kursi tidak cukup",
   "Up to {n} seats available during this visit": "Tersedia hingga {n} kursi selama kunjungan ini",
   "Availability checked for a {n}-minute visit": "Ketersediaan diperiksa untuk kunjungan selama {n} menit",

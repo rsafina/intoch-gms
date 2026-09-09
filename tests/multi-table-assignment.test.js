@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const { JSDOM } = require('jsdom');
 const app = fs.readFileSync('js/app.js', 'utf8').replace(/\r\n/g,'\n');
 const sql = fs.readFileSync('migrations/ALL_IN_ONE.sql', 'utf8');
-const dom = new JSDOM(`<input id="res-table-id"><select id="res-area"><option value="a">Room A</option><option value="b">Room B</option></select><div id="res-table-picker"></div><select id="res-action-area"><option value="a">Room A</option><option value="b">Room B</option></select><div id="res-action-table-wrap"></div>`, {runScripts:'outside-only'});
+const dom = new JSDOM(`<input id="res-action-start-time" type="time" value="13:00"><input id="res-table-id"><select id="res-area"><option value="a">Room A</option><option value="b">Room B</option></select><div id="res-table-picker"></div><select id="res-action-area"><option value="a">Room A</option><option value="b">Room B</option></select><div id="res-action-table-wrap"></div>`, {runScripts:'outside-only'});
 const w = dom.window;
 w.allAreas = [{id:'a',name:'Room A'},{id:'b',name:'Room B'}];
 w.allTables = [{id:'t1',area_id:'a',name:'A1',is_active:true,capacity:4}, {id:'t2',area_id:'a',name:'A2',is_active:true,capacity:6}, {id:'t3',area_id:'a',name:'A3',is_active:true,capacity:4}, {id:'old',area_id:'a',name:'Archived',is_active:false}, {id:'b1',area_id:'b',name:'B1',is_active:true}];

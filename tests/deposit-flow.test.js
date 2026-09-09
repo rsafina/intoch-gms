@@ -68,7 +68,7 @@ ok("no grace-period setting crept back in", !/deposit_grace_hours/.test(sql),
    "something less obvious than 'pay before you eat'.");
 ok("Waitlist beats Incoming", /if v_status = 'Reserved' and v_dep_req then/.test(booking),
    "A booking nobody has agreed to must not start a deposit clock.");
-ok("the deadline is stored on the row", /deposit_due_at, booking_duration_minutes\)/.test(booking) && /v_due_at, v_duration\)/.test(booking));
+ok("the deadline is stored on the row", /deposit_due_at, booking_duration_minutes, is_large_party\)/.test(booking) && /v_due_at, v_duration, p_pax > v_max_pax\)/.test(booking));
 
 console.log("\nRecording a payment and locking the booking are one transaction");
 const rec = fnBody("record_deposit_payment");

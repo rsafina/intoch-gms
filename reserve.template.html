@@ -642,9 +642,9 @@
         margin: 2px 0 14px;
         padding: 10px 14px;
         border-radius: 10px;
-        background: rgba(178, 58, 58, 0.22);
-        border: 1px solid rgba(226, 116, 116, 0.45);
-        color: #ffd9d9;
+        background: #fff1f2;
+        border: 1px solid #fda4af;
+        color: #9f1239;
         font-size: 13px;
         line-height: 1.45;
       }
@@ -1507,7 +1507,7 @@
         // Save the request first; WhatsApp is optional on the next page.
         const submit = $("btn-submit");
         if (submit) {
-          submit.dataset.i18nEn = gate ? "Submit request" : "Reserve Now";
+          submit.dataset.i18nEn = big || areaTimeBlocked($("f-time").value) ? "Submit request" : "Reserve Now";
           submit.textContent = gt(submit.dataset.i18nEn);
         }
       }
@@ -1533,7 +1533,7 @@
         return slot.available_pax != null && Math.min(pax, slot.total_capacity) > slot.available_pax;
       }
       function refreshBlockedTimes() {
-        if (areaTimeBlocked($("f-time").value)) setTime("");
+        // Capacity shortages remain selectable as waitlist requests.
         renderTimePills();
       }
       function buildTimeSlots() {
@@ -1614,16 +1614,11 @@
           b.className = "pill";
           b.setAttribute("aria-pressed", String(label === chosen));
           const blocked = areaTimeBlocked(label);
-          b.disabled = blocked;
-          b.style.opacity = blocked ? "0.45" : "";
-          b.style.cursor = blocked ? "not-allowed" : "";
-          const slot = areaSlot(label);
-          b.textContent = label + (blocked ? " - " + gt(slot?.available_pax === 0 || slot?.exclusive_block ? "Full" : "Not enough seats") : "");
+          b.textContent = label + (blocked ? " - " + gt("Waitlist") : "");
           b.onclick = () => {
             // Tapping the chosen hour again clears it, exactly like the area
             // pills. Two pickers next to each other that behave differently is
             // worse than either rule on its own.
-            if (areaTimeBlocked(label)) return;
             setTime(chosen === label ? "" : label);
             renderTimePills();
             renderAreaCond();
@@ -2021,6 +2016,12 @@
       function renderAreaCond() {
         const el = $("area-cond");
         if (!el) return;
+        const submit = $("btn-submit");
+        if (submit) {
+          submit.dataset.i18nEn = readPaxRaw() > MAX_PAX || areaTimeBlocked($("f-time").value)
+            ? "Submit request" : "Reserve Now";
+          submit.textContent = gt(submit.dataset.i18nEn);
+        }
         const a = AREAS.find((x) => x.id === AREA_ID);
         if (!a) {
           el.style.display = "none";
@@ -2033,7 +2034,9 @@
           );
         if (a.min_spend != null)
           rows.push(row(gt("Minimum spend"), rupiah(a.min_spend)));
-        if (a.deposit_amount != null && Number(a.deposit_amount) > 0)
+        if (readPaxRaw() > MAX_PAX)
+          rows.push(row(gt("Deposit (DP)"), gt("To be confirmed"), "dp"));
+        else if (a.deposit_amount != null && Number(a.deposit_amount) > 0)
           rows.push(row(gt("Deposit (DP)"), rupiah(a.deposit_amount), "dp"));
         if (!rows.length) rows.push(row(gt("No special conditions"), ""));
 
@@ -2041,6 +2044,8 @@
         let extra = "";
         if (av) {
           const bits = [];
+          if (areaTimeBlocked($("f-time").value))
+            bits.push(gt("This time is waitlist only. No payment is due until we accept your request."));
           if (SHOW_CAPACITY && av.available_pax != null)
             bits.push(gtf("Up to {n} seats available during this visit", { n: av.available_pax }));
           bits.push(gtf("Availability checked for a {n}-minute visit", { n: av.duration_minutes }));

@@ -10,6 +10,7 @@ const extract = (name) => app.match(new RegExp(`^async function ${name}\\([\\s\\
     for (const success of [true, false]) {
       for (const dashboard of [true, false]) {
         const calls = [];
+        const reopened = [];
         const ctx = vm.createContext({
           invoicePaymentContext: null, confirmWaitlistOverflow: async () => true, depositActionResId: 'booking', TODAY: '2026-09-07',
           reservationDataRevision: 0,
@@ -23,11 +24,13 @@ const extract = (name) => app.match(new RegExp(`^async function ${name}\\([\\s\\
           currentStaffId: () => 'staff', depositRupiah: String,
           db: { rpc: async () => ({ data: { ok: success, locked: true } }) },
           supabaseQuery: fn => fn(), isViewingStaffDashboard: () => dashboard,
+          openResActions: async id => reopened.push(id),
           loadReservations: async () => calls.push('reservations'),
           loadDashboard: async () => calls.push('dashboard'),
         });
         vm.runInContext(extract(action), ctx);
         await ctx[action]();
+        assert.deepEqual(reopened, success && action === "submitDepositPayment" ? ["booking"] : [], "payment refreshes the open Update panel after success");
         assert.deepEqual(calls, success ? (dashboard ? ['reservations', 'dashboard'] : ['reservations']) : []);
       }
     }

@@ -5781,6 +5781,9 @@ function openReservationModal(res = null) {
   document.getElementById("res-modal-title").textContent = res
     ? "Edit Reservation"
     : "New Reservation";
+  const depositDetails = document.getElementById("res-deposit-details");
+  if (depositDetails) depositDetails.innerHTML = res?.id
+    ? '<button type="button" class="btn-ghost text-sm mb-4" onclick="hideModal(\'modal-reservation\'); openResActions(\'' + res.id + '\')">' + escapeHtml(t("Deposit & invoices")) + '</button>' : '';
   document.getElementById("res-edit-id").value = res?.id || "";
   document.getElementById("res-guest-id").value = res?.guest_id || "";
   document.getElementById("res-phone").value = res?.guests?.phone || "";
@@ -5941,7 +5944,7 @@ async function saveReservation() {
   loader(false);
 
   if (error) {
-    toast(error.message || "Failed to save reservation", "error");
+    toast(reservationSaveError(error, "Failed to save reservation"), "error");
     return;
   }
   toast(editId ? "Reservation updated" : "Reservation created");
@@ -6844,6 +6847,7 @@ async function openResActions(resId) {
       <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="res-action-exclusive-area" ${res.exclusive_area ? "checked" : ""}> ${t("Reserve entire area")}</label>
       <p class="text-xs text-[#777]">${t("Selected tables are held for the visit and preparation buffer. Reserve the entire area only for exclusive use. Waitlisted bookings do not hold capacity.")}</p>
       <div class="grid grid-cols-2 gap-3">
+        <label class="text-xs">${t("Start time")}<input id="res-action-start-time" type="time" required class="form-input mt-1" value="${escapeHtml((res.reservation_time || "").slice(0,5))}"></label>
         <label class="text-xs">${t("End time")}<input id="res-action-end-time" type="time" class="form-input mt-1" value="${escapeHtml((res.end_time || "").slice(0,5))}"></label>
         <label class="text-xs">${t("Buffer before event (minutes)")}<input id="res-action-block-buffer" type="number" min="0" step="1" class="form-input mt-1" value="${Number(res.block_buffer_minutes) || 0}"></label>
       </div>
@@ -6983,22 +6987,35 @@ function onResActionAreaChange(resId) {
   renderResActionTableGrid(document.getElementById("res-action-area")?.value, []);
 }
 
+function reservationSaveError(error, fallback) {
+  if (/block_buffer_minutes|exclusive_area|booking_duration_minutes|is_large_party/.test(error?.message || "") &&
+      (error?.code === "PGRST204" || /schema cache|does not exist/i.test(error?.message || ""))) {
+    return t("The reservation database needs an update. Run migrations/ALL_IN_ONE.sql in Supabase, then reload this page. Your changes have not been saved.");
+  }
+  return error?.message || fallback;
+}
+
 async function saveResActionTable(resId) {
   const areaId = document.getElementById("res-action-area")?.value || null;
   const ids = [..._resActionSelectedTables];
   const res = _resActionReservation;
   if (!res || res.id !== resId) return;
-  const block = readAreaBlock("res-action", areaId, res.reservation_time);
+  const start = document.getElementById("res-action-start-time")?.value || "";
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(start)) {
+    toast(t("Enter a valid start time."), "error");
+    return;
+  }
+  const block = readAreaBlock("res-action", areaId, start);
   if (!block) return;
   loader(true);
   const { data, error } = await supabaseQuery(
-    () => db.from("reservations").update({ assigned_area: areaId, table_id: ids[0] || null, table_ids: ids, ...block })
+    () => db.from("reservations").update({ reservation_time: start, assigned_area: areaId, table_id: ids[0] || null, table_ids: ids, ...block })
       .eq("id", resId).select("id"),
     "Failed to assign table",
   );
   loader(false);
   if (error || !data?.length) {
-    toast(error?.message || t("Failed to assign table"), "error");
+    toast(reservationSaveError(error, t("Failed to assign table")), "error");
     return;
   }
   toast(t("Tables assigned successfully"));
@@ -7495,7 +7512,7 @@ async function openDepositInvoice(resId) {
       db
         .from("reservations")
         .select(
-          "id, status, pax, booking_name, reservation_date, reservation_time, deposit_required, deposit_expected, deposit_due_at, guest_id, table_id, table_ids, guests(name, phone), tables(name)",
+          "id, status, pax, is_large_party, waitlist_reason, booking_name, reservation_date, reservation_time, deposit_required, deposit_expected, deposit_due_at, guest_id, table_id, table_ids, guests(name, phone), tables(name)",
         )
         .eq("id", resId)
         .single(),
@@ -7510,8 +7527,26 @@ async function openDepositInvoice(resId) {
     toast(t("This guest has no phone number — add one first"), "error");
     return;
   }
-  await invOpenReservation(res);
+  if (isLargeReservation(res)) {
+    await invOpenReservation(res);
+    return;
+  }
+  depositActionResId = resId;
+  depositActionRes = res;
+  document.getElementById("dep-inv-summary").textContent =
+    (res.booking_name || res.guests.name) + " - " + depositRupiah(res.deposit_expected);
+  document.getElementById("dep-inv-note").value = "";
+  hideModal("modal-res-actions");
+  hideModal("modal-reservation");
+  showModal("modal-deposit-invoice");
+}
 
+let depositInvoiceSaving = false;
+async function submitSimpleDepositInvoice() {
+  if (depositInvoiceSaving) return;
+  depositInvoiceSaving = true;
+  try { await submitDepositInvoice(); }
+  finally { depositInvoiceSaving = false; }
 }
 
 async function submitDepositInvoice() {
@@ -7536,16 +7571,18 @@ async function submitDepositInvoice() {
     () =>
       db
         .from("invoices")
-        .select("id, token, total")
+        .select("id, token, total, doc")
+        .eq("kind", "deposit")
         .eq("reservation_id", resId)
         .eq("status", "issued")
         .order("issued_at", { ascending: false }),
     "Failed to check existing invoices",
   );
-  let invoice = (live || []).find((i) => Number(i.total) === expected) || null;
+  if (!live) { loader(false); return; }
+  let invoice = (live || []).find((i) => Number(i.total) === expected && !i.doc) || null;
   const stale = (live || []).filter((i) => !invoice || i.id !== invoice.id);
   for (const s of stale) {
-    await supabaseQuery(
+    const { data: voided, error: voidError } = await supabaseQuery(
       () =>
         db
           .from("invoices")
@@ -7554,6 +7591,7 @@ async function submitDepositInvoice() {
           .select("id"),
       "Failed to void the old invoice",
     );
+    if (voidError || !voided?.length) { loader(false); return; }
   }
 
   if (invoice) {
@@ -7802,7 +7840,7 @@ async function submitDepositPayment() {
     "Failed to record the payment",
   );
   loader(false);
-  if (error) return;
+  if (error) { toast(error.message || t("Could not record the payment"), "error"); return; }
   // The function reports its own refusals in the payload rather than raising,
   // so a false `ok` here is a real failure and must not be read as success.
   if (!data || data.ok !== true) {
@@ -7815,6 +7853,7 @@ async function submitDepositPayment() {
   if (isViewingStaffDashboard()) await loadDashboard();
   if (typeof _resNotifyRefresh === "function") await _resNotifyRefresh();
   hideModal("modal-deposit-payment");
+  if (typeof openResActions === "function") await openResActions(resId);
   toast(
     data.locked
       ? t("Payment recorded — booking is now Reserved")
@@ -7965,9 +8004,14 @@ async function submitDepositRefundAck() {
 // touches 'Incoming', so a large party is never auto-cancelled, but a deadline
 // written here would still show the guest and staff a countdown that nothing
 // enforces. Rere, 2026-09-07: nothing automatic, staff decide.
+function isLargeReservation(res) {
+  return res?.is_large_party ?? (res?.waitlist_reason === "over_max_pax" || Number(res?.pax) > Number(APP_SETTINGS.reservation_hours?.max_pax || 20));
+}
+
 function largePartyAgreePanel(res) {
   if (!res || res.status !== "Waitlist") return "";
   if (res.deposit_required && Number(res.deposit_expected) > 0) return ""; // agreed already; the deposit panel has it
+  if (!isLargeReservation(res)) return '<div class="mb-4 p-3 border rounded-xl text-sm">' + escapeHtml(t("No payment is due until this request is accepted. The standard area deposit applies after acceptance.")) + '</div>';
   return (
     '<div class="mb-4 p-3 rounded-10 border border-amber-200 bg-amber-50">' +
     '<p class="text-xs uppercase tracking-wider font-medium text-[#B45309]">' +
@@ -7981,7 +8025,7 @@ function largePartyAgreePanel(res) {
     ) +
     "</p>" +
     '<div class="flex gap-2 mt-3">' +
-    '<input id="lp-agreed-amount" type="number" inputmode="numeric" min="1" class="form-input text-sm flex-1" placeholder="' +
+    '<input id="lp-agreed-amount" type="text" inputmode="numeric" oninput="onAreaMoneyInput(this)" onkeydown="onAreaMoneyKeydown(this, event)" class="form-input text-sm flex-1" placeholder="' +
     escapeHtml(t("Agreed amount")) +
     '" />' +
     '<button onclick="saveLargePartyAmount(\'' +
@@ -7999,7 +8043,7 @@ function largePartyAgreePanel(res) {
 // ordinary deposit booking.
 async function saveLargePartyAmount(resId) {
   const raw = document.getElementById("lp-agreed-amount")?.value;
-  const amount = Math.round(Number(raw));
+  const amount = areaParseRupiah(raw);
   if (!Number.isFinite(amount) || amount <= 0) {
     toast(t("Enter the amount you agreed with the guest"), "error");
     return;
@@ -8115,7 +8159,7 @@ function depositActionsPanel(res, bal) {
     "</div>" +
     // The remaining bill gets its own saved settlement invoice. Recording
     // its payment happens against that invoice after staff review the detail.
-    (settled
+    (settled && isLargeReservation(res)
       ? '<div class="flex flex-wrap gap-2 mt-3"><button onclick="openSettlementInvoice(\'' +
         res.id +
         '\')" class="manager-only-ui btn-ghost text-xs px-3 py-1.5">' +

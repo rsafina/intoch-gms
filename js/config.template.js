@@ -1508,6 +1508,11 @@ const ID_DICT = {
   "Talk to the guest first, then enter what was agreed. The invoice and the payment steps appear once there is a figure.":
     "Hubungi tamu dulu, lalu isi nominal yang disepakati. Invoice dan pencatatan pembayaran muncul setelah ada angkanya.",
   "Agreed amount": "Nominal disepakati",
+  "Start time": "Jam mulai",
+  "Enter a valid start time.": "Masukkan jam mulai yang valid.",
+  "The reservation database needs an update. Run migrations/ALL_IN_ONE.sql in Supabase, then reload this page. Your changes have not been saved.": "Database reservasi perlu diperbarui. Jalankan migrations/ALL_IN_ONE.sql di Supabase, lalu muat ulang halaman ini. Perubahan Anda belum tersimpan.",
+  "Deposit & invoices": "Deposit & faktur",
+  "No payment is due until this request is accepted. The standard area deposit applies after acceptance.": "Belum ada pembayaran sampai permintaan ini diterima. Deposit standar area berlaku setelah diterima.",
   "Save amount": "Simpan nominal",
   "Enter the amount you agreed with the guest": "Isi nominal yang disepakati dengan tamu",
   "Could not save the amount": "Nominal gagal disimpan",

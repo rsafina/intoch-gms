@@ -112,7 +112,7 @@ ok(
 );
 ok(
   "the submit button describes saving a request",
-  /submit\.dataset\.i18nEn = gate \? "Submit request"/.test(form),
+  /submit\.dataset\.i18nEn = big \|\| areaTimeBlocked\([^\n]+\) \? "Submit request"/.test(form),
 );
 
 // ── The waitlist keeps its other reasons ──────────────────────────────────
