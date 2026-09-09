@@ -6,7 +6,7 @@ const sql = fs.readFileSync('migrations/ALL_IN_ONE.sql','utf8');
 const extract = name => app.match(new RegExp('^async function '+name+'\\([^]*?^}', 'm'))[0];
 (async () => {
   const fields = Object.fromEntries(['dep-pay-amount','dep-pay-date','dep-pay-method','dep-pay-ref','dep-pay-note','dep-pay-save-btn'].map(id=>[id,{value:'',disabled:false}]));
-  fields['dep-pay-amount'].value='2500000';fields['dep-pay-date'].value='2026-09-08';
+  fields['dep-pay-amount'].value='2.500.000';fields['dep-pay-date'].value='2026-09-08';
   const ledger = new Map(), calls = [];
   let loseFirstResponse = true;
   const ctx = vm.createContext({
@@ -34,7 +34,7 @@ const extract = name => app.match(new RegExp('^async function '+name+'\\([^]*?^}
   assert.equal(fields['dep-pay-save-btn'].disabled,false);
   ctx.invoicePaymentContext={invoiceId:'invoice-1',resId:'res-1',paymentId:'request-2'};
   fields['dep-pay-amount'].value='0';await ctx.submitInvoicePayment();assert.equal(calls.length,2,'zero payment is refused');
-  fields['dep-pay-amount'].value='-500000';await ctx.submitInvoicePayment();assert.equal(calls[2].p_amount,-500000,'refund is a negative payment');
+  fields['dep-pay-amount'].value='-500.000';await ctx.submitInvoicePayment();assert.equal(calls[2].p_amount,-500000,'refund is a negative payment');
   const payment=sql.slice(sql.indexOf('create or replace function public.record_invoice_payment('));
   assert.match(payment,/where id = p_payment_id/);
   assert.match(payment,/existing_payment\.amount is distinct from p_amount/);

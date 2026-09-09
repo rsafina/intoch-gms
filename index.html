@@ -8681,7 +8681,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <label class="block text-xs text-[#999] uppercase tracking-wider mb-1.5 font-medium">
               Amount
             </label>
-            <input id="dep-pay-amount" type="number" inputmode="numeric" class="form-input text-sm w-full" />
+            <input id="dep-pay-amount" type="text" inputmode="numeric" oninput="formatPaymentAmount(this)" class="form-input text-sm w-full" />
           </div>
           <div>
             <label class="block text-xs text-[#999] uppercase tracking-wider mb-1.5 font-medium">

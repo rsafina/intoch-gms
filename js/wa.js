@@ -495,13 +495,17 @@ function waDepositRequestMessage(ctx) {
 // restaurant has edited {invoice} out of the template we put the URL back on
 // the end, rather than sending a document nobody can open.
 function waInvoiceMessage(ctx) {
-  const msg = waRenderTemplate(waTemplateBody("invoice_send"), {
+  let msg = waRenderTemplate(waTemplateBody("invoice_send"), {
     nama: waGreetName(ctx.guestName),
     resto: WA_RESTAURANT_NAME,
     nomor: ctx.invoiceNo || "-",
     jumlah: ctx.amountText || "-",
     invoice: ctx.link || "",
   });
+  if (ctx.requestedText) {
+    msg += "\n\n" + (ctx.requestLabel || "Pembayaran") + ": " + ctx.requestedText +
+      " dari total " + ctx.amountText;
+  }
   return msg.includes(ctx.link) ? msg : msg.trimEnd() + "\n\n" + ctx.link;
 }
 

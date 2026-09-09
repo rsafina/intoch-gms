@@ -118,5 +118,13 @@ const res = { id: 'reservation-1', guest_id: 'guest-1', booking_name: 'Event org
   await w.invOpenReservation(res,null,'settlement');
   await w.invSaveInvoice(false);
   assert.equal(rows.filter(row=>row.kind==='settlement').length,1,'reopening preserves the final invoice');
+  await w.invOpenReservation(res);
+  const depositId = rows.find(row=>row.kind==='deposit').id;
+  w.document.getElementById('inv-dp-on').checked=true;
+  w.document.getElementById('inv-settle-on').checked=true;
+  w.invRecalc();
+  await w.invSaveInvoice(false);
+  assert.equal(rows.find(row=>row.id===depositId).kind,'deposit','settlement checkbox preserves the original deposit invoice');
+  assert.equal(rows.at(-1).kind,'settlement','settlement checkbox creates a separately payable remainder');
   console.log('Reservation invoice flow: prefill, save/send, reopen/edit, persisted preview, failure, context isolation and double-save passed');
 })().catch(e => { console.error(e); process.exitCode = 1; }).finally(() => dom.window.close());

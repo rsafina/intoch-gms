@@ -401,11 +401,9 @@ function invSummaryFrom(snap) {
   return {
     subtotal: invParseNum(snap.subtotal),
     total,
-    // Only when a settlement line is present is the deposit money already in.
-    // Without one the invoice IS the deposit request, so nothing is applied yet
-    // and the whole total is still due.
+    // These are requested amounts, never proof that money was received.
     deposit_applied: settleOn ? dp : null,
-    amount_due: settleOn ? invParseNum(snap.settle) : total,
+    amount_due: settleOn ? invParseNum(snap.settle) : snap.dpOn ? dp : total,
   };
 }
 
@@ -441,8 +439,11 @@ async function invSaveInvoice(send) {
   }
 
   invSaving = true;
-  const context = invReservationContext;
-  const savedId = invSavedId;
+  // A settlement request has its own balance; recorded deposit money must not
+  // count a second time toward paying the remaining amount.
+  const newSettlement = invReservationContext?.kind === "deposit" && snap.dpOn && snap.settleOn;
+  const context = newSettlement ? { ...invReservationContext, kind: "settlement" } : invReservationContext;
+  const savedId = newSettlement ? null : invSavedId;
   ["inv-send-btn", "inv-save-btn"].forEach(id => { if (invEl(id)) invEl(id).disabled = true; });
   const btn = invEl(send ? "inv-send-btn" : "inv-save-btn");
   const label = btn ? btn.textContent : "";
@@ -522,10 +523,13 @@ async function invSaveInvoice(send) {
       row = data[0];
     }
 
+    invReservationContext = context;
+    invShowReservationContext();
     invSavedId = row.id;
     invSavedToken = row.token;
     invSavedNo = row.invoice_no;
     invShowSavedLine();
+    if (context && typeof reservationDataRevision !== "undefined") reservationDataRevision++;
     // Kept as well as the row: the local list is what staff use to pick up
     // where they left off, and it works with no connection.
     invSaveToHistory();
@@ -542,7 +546,9 @@ async function invSaveInvoice(send) {
       waInvoiceMessage({
         guestName: snap.name,
         invoiceNo: invSavedNo,
-        amountText: invRupiah(invParseNum(snap.total)),
+        amountText: invRupiah(sums.total),
+        requestedText: invRupiah(sums.amount_due),
+        requestLabel: snap.dpOn && snap.settleOn ? "Pelunasan" : snap.dpOn ? "Deposit (DP)" : "Pembayaran penuh",
         link,
       }),
     );
@@ -1347,13 +1353,16 @@ function reservationInvoicesPanel(invoices, error, balances = []) {
   return '<div class="mb-4 p-3 border rounded-xl">' + title + invoices.map(row => {
     const url = row.doc ? invPublicLink(row.token) : depositInvoiceUrl(row.token);
     const issued = row.status === "issued";
+    const requested = row.doc ? invSummaryFrom(row.doc).amount_due : row.total;
+    const requestedLine = requested !== Number(row.total)
+      ? '<p class="text-xs mt-1">' + escapeHtml(t("Requested payment") + ": " + invRupiah(requested) + " / " + invRupiah(row.total)) + '</p>' : '';
     const balance = balances?.find(b => b.invoice_id === row.id);
     const balanceLine = row.kind === "settlement" ? '<p class="text-xs mt-1">' + escapeHtml(balance
       ? t("Paid") + " " + invRupiah(balance.paid) + " - " + t("Outstanding") + " " + invRupiah(Math.max(0, Number(balance.outstanding)))
       : t("Payment balance unavailable. Open Record payment to retry.")) + '</p>' : '';
     return '<div class="py-2 border-b last:border-0"><p class="text-sm font-medium">' +
       escapeHtml(row.invoice_no || t("Invoice")) + ' · ' + escapeHtml(invRupiah(row.total)) +
-      ' · ' + escapeHtml(t(row.status)) + '</p>' + balanceLine + (issued ?
+      ' · ' + escapeHtml(t(row.status)) + '</p>' + requestedLine + balanceLine + (issued ?
       '<div class="flex flex-wrap gap-3 mt-2 text-xs"><a class="underline" target="_blank" rel="noopener" href="' +
       escapeHtml(url) + '">' + escapeHtml(t("Preview guest invoice")) + '</a>' +
       '<button class="underline" data-invoice-url="' + escapeHtml(url) + '" onclick="invCopyReservationLink(this.dataset.invoiceUrl)">' +

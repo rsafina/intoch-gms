@@ -28,12 +28,12 @@ const slots = (remaining=25, exclusive=false) => ['12:00','13:00','14:00','15:00
  assert.equal(w.$('f-time').value,'13:00','increasing pax keeps the waitlist selection');
  assert.equal(w.areaTimeBlocked('13:00'),true);
  assert.equal(w.areaTimeBlocked('16:00'),false);
- assert.ok(Array.from(w.document.querySelectorAll('button')).some(b=>!b.disabled&&b.textContent==='13:00 - Waitlist'));
+ assert.ok(Array.from(w.document.querySelectorAll('button')).some(b=>!b.disabled&&b.getAttribute('aria-label')==='13:00 Request'&&b.querySelector('.time-request-badge')?.textContent==='Request'));
  w.$('pax-value').value='25'; w.refreshBlockedTimes(); assert.equal(w.areaTimeBlocked('13:00'),false,'exact fit allowed');
  w.setArea('indoor'); w.refreshBlockedTimes(); assert.equal(w.document.querySelectorAll('button:disabled').length,0,'other area unaffected');
  w.setArea('outdoor'); w.db.rpc=async()=>({data:slots(0,true)}); await w.loadAvailability();
  assert.equal(w.areaTimeBlocked('13:00'),true,'exclusive hold blocks every party');
- assert.ok(Array.from(w.document.querySelectorAll('button')).some(b=>!b.disabled&&b.textContent==='13:00 - Waitlist'));
+ assert.ok(Array.from(w.document.querySelectorAll('button')).some(b=>!b.disabled&&b.getAttribute('aria-label')==='13:00 Request'&&b.querySelector('.time-request-badge')?.textContent==='Request'));
  w.$('f-date').value='2026-10-02'; assert.equal(w.areaTimeBlocked('13:00'),false,'old-date data never blocks new date');
  const pending=[]; w.db.rpc=()=>new Promise(resolve=>pending.push(resolve));
  const old=w.loadAvailability(); w.$('f-date').value='2026-10-03'; const current=w.loadAvailability();

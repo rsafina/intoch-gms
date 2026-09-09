@@ -7714,7 +7714,7 @@ async function openRecordInvoicePayment(invoiceId) {
   el("dep-pay-summary").innerHTML = '<p class="font-medium">' + escapeHtml(invoice.invoice_no || t("Final bill")) +
     ' - ' + escapeHtml(invoice.bill_to_name || "") + '</p><p class="text-xs mt-1">' +
     escapeHtml(t("Paid") + " " + depositRupiah(balance.paid) + " - " + t("Outstanding") + " " + depositRupiah(Math.max(0, Number(balance.outstanding)))) + '</p>';
-  el("dep-pay-amount").value = Math.max(0, Number(balance.outstanding)) || "";
+  el("dep-pay-amount").value = areaFormatRupiah(Math.max(0, Number(balance.outstanding))) || "";
   el("dep-pay-date").value = TODAY;
   ["dep-pay-method", "dep-pay-ref", "dep-pay-note"].forEach(id => { el(id).value = ""; });
   hideModal("modal-res-actions");
@@ -7725,7 +7725,7 @@ async function submitInvoicePayment() {
   const context = invoicePaymentContext;
   if (!context || invoicePaymentSaving) return;
   const el = id => document.getElementById(id);
-  const raw = String(el("dep-pay-amount")?.value || "").trim();
+  const raw = String(el("dep-pay-amount")?.value || "").replace(/[^\d-]/g, "");
   const amount = Number(raw);
   if (!Number.isFinite(amount) || amount === 0) {
     toast(t("Enter the amount that was paid"), "error");
@@ -7760,6 +7760,21 @@ async function submitInvoicePayment() {
     invoicePaymentSaving = false;
     if (button) button.disabled = false;
   }
+}
+
+function formatPaymentAmount(el) {
+  const raw = el.value;
+  const negative = raw.trimStart().startsWith("-");
+  const caret = el.selectionStart ?? raw.length;
+  const digitsBefore = raw.slice(0, caret).replace(/\D/g, "").length;
+  const digits = raw.replace(/\D/g, "");
+  el.value = (negative ? "-" : "") + digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  let pos = negative ? 1 : 0, seen = 0;
+  while (pos < el.value.length && seen < digitsBefore) {
+    if (/\d/.test(el.value[pos])) seen++;
+    pos++;
+  }
+  el.setSelectionRange(pos, pos);
 }
 
 async function openRecordDepositPayment(resId) {
@@ -7799,7 +7814,7 @@ async function openRecordDepositPayment(resId) {
   // Prefilled with what is outstanding, which is the amount in almost every
   // case, but editable: a guest who transferred the wrong figure is a fact to
   // record, not an error to argue with.
-  if (el("dep-pay-amount")) el("dep-pay-amount").value = Number(bal.outstanding || 0) || "";
+  if (el("dep-pay-amount")) el("dep-pay-amount").value = areaFormatRupiah(Number(bal.outstanding || 0)) || "";
   if (el("dep-pay-date")) el("dep-pay-date").value = TODAY;
   if (el("dep-pay-method")) el("dep-pay-method").value = "";
   if (el("dep-pay-ref")) el("dep-pay-ref").value = "";

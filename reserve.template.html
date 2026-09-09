@@ -209,11 +209,28 @@
         gap: 7px;
       }
       .pills.times .pill {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
         min-height: 40px;
         padding: 9px 4px;
         border-radius: 999px;
         font-size: 13.5px;
         font-variant-numeric: tabular-nums;
+      }
+      .time-request-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 999px;
+        background: #fef3c7;
+        border: 1px solid #fcd34d;
+        color: #92400e;
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 1.2;
+        white-space: nowrap;
       }
       /* The "more hours" row spans the whole grid: as a fifth item in a
          four-column grid it would sit in a column and read as another hour. */
@@ -1614,7 +1631,14 @@
           b.className = "pill";
           b.setAttribute("aria-pressed", String(label === chosen));
           const blocked = areaTimeBlocked(label);
-          b.textContent = label + (blocked ? " - " + gt("Waitlist") : "");
+          b.textContent = label;
+          if (blocked) {
+            const badge = document.createElement("span");
+            badge.className = "time-request-badge";
+            badge.textContent = gt("Request");
+            b.setAttribute("aria-label", label + " " + gt("Request"));
+            b.appendChild(badge);
+          }
           b.onclick = () => {
             // Tapping the chosen hour again clears it, exactly like the area
             // pills. Two pickers next to each other that behave differently is
@@ -2045,7 +2069,7 @@
         if (av) {
           const bits = [];
           if (areaTimeBlocked($("f-time").value))
-            bits.push(gt("This time is waitlist only. No payment is due until we accept your request."));
+            bits.push(gt("This time needs staff confirmation. No payment is due until we accept your request."));
           if (SHOW_CAPACITY && av.available_pax != null)
             bits.push(gtf("Up to {n} seats available during this visit", { n: av.available_pax }));
           bits.push(gtf("Availability checked for a {n}-minute visit", { n: av.duration_minutes }));

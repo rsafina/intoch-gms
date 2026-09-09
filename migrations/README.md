@@ -147,3 +147,13 @@ Rehearse first. Wrap the whole thing in a single `DO $$` block with
 The running database is right. Read it with `pg_get_functiondef`,
 `pg_get_viewdef`, `pg_indexes` and `information_schema.columns`, and correct the
 file. That is how defect 5 above was found.
+
+## Invoice deposit amounts
+
+The current full migration derives each invoice request from its DP/settlement
+checkboxes and synchronizes deposit invoices to the booking's deposit requirement.
+A Rp 5.000.000 bill requesting Rp 2.500.000 DP confirms the booking when recorded
+deposit payments reach Rp 2.500.000. It also corrects existing issued documents
+and already-recorded payments; it does not create any payment records. Review SQL
+warnings for legacy invoices that could not be repaired because of capacity or
+invalid amounts. Separate settlement invoices do not rewrite the deposit.

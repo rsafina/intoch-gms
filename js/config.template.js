@@ -1511,6 +1511,7 @@ const ID_DICT = {
   "Start time": "Jam mulai",
   "Enter a valid start time.": "Masukkan jam mulai yang valid.",
   "The reservation database needs an update. Run migrations/ALL_IN_ONE.sql in Supabase, then reload this page. Your changes have not been saved.": "Database reservasi perlu diperbarui. Jalankan migrations/ALL_IN_ONE.sql di Supabase, lalu muat ulang halaman ini. Perubahan Anda belum tersimpan.",
+  "Requested payment": "Pembayaran yang diminta",
   "Deposit & invoices": "Deposit & faktur",
   "No payment is due until this request is accepted. The standard area deposit applies after acceptance.": "Belum ada pembayaran sampai permintaan ini diterima. Deposit standar area berlaku setelah diterima.",
   "Save amount": "Simpan nominal",
