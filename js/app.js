@@ -14,6 +14,7 @@ let dashboardReservationCounts = [0, 0, 0];
 // Per-day {count, activeCount, pax, excluded, unplacedCount, unplacedPax}
 // for the three Upcoming Reservations tabs. null = not loaded yet.
 let dashboardReservationTotals = [null, null, null];
+let dashboardResFilter = "all";
 let dashboardResPage = 0; // current page index for reservations (0-based)
 let dashboardResData = []; // full reservations dataset for current tab
 let dashboardWalkinPage = 0; // current page index for walk-ins (0-based)
@@ -3346,7 +3347,7 @@ function exportDashboardReservations() {
 }
 
 function dashResNextPage() {
-  const totalPages = Math.ceil(dashboardResData.length / DASH_PAGE_SIZE);
+  const totalPages = Math.ceil(dashboardVisibleReservations().length / DASH_PAGE_SIZE);
   if (dashboardResPage < totalPages - 1) {
     dashboardResPage++;
     renderDashboardReservations(dashboardResData);
@@ -3450,107 +3451,93 @@ function sortReservationsByStatus(rows) {
   );
 }
 
+function compareDashboardReservations(a, b) {
+  const terminal = r => isCancelledRes(r.status) || ["Completed", "Deleted"].includes(r.status);
+  return Number(terminal(a)) - Number(terminal(b)) ||
+    String(a.reservation_time || "").localeCompare(String(b.reservation_time || ""));
+}
+
+function dashboardNeedsAttention(r) {
+  if (isCancelledRes(r.status) || ["Completed", "Deleted"].includes(r.status)) return false;
+  const balance = resDepositBalances[r.id];
+  return ["Waitlist", "Incoming"].includes(r.status) ||
+    (balance && ["pending", "partial", "unpaid"].includes(balance.state) && Number(balance.outstanding) > 0);
+}
+
+function dashboardVisibleReservations() {
+  return dashboardResFilter === "attention"
+    ? dashboardResData.filter(dashboardNeedsAttention) : dashboardResData;
+}
+
+function setDashboardReservationFilter(filter) {
+  dashboardResFilter = filter === "attention" ? "attention" : "all";
+  dashboardResPage = 0;
+  renderDashboardReservations(dashboardResData);
+}
+
+function dashboardDepositSummary(r) {
+  const bal = resDepositBalances[r.id];
+  const id = CURRENT_LANG === "id";
+  if (!bal && r.deposit_required) return `<p class="dash-res-muted">${id ? "Detail deposit belum tersedia" : "Deposit details unavailable"}</p>`;
+  if (!bal || bal.state === "none") return r.status === "Waitlist"
+    ? `<p class="dash-res-muted">${id ? "Belum perlu pembayaran" : "No payment requested yet"}</p>` : "";
+  const deadline = Number(bal.outstanding) > 0 ? depositDeadline(r.deposit_due_at) : null;
+  return `<div class="dash-res-payment">
+    <span class="dash-res-muted">${id ? "Deposit dibayar / diminta" : "Deposit paid / requested"}</span>
+    <div class="dash-res-amount"><strong>${depositRupiah(bal.paid)}</strong><span> / </span><span>${depositRupiah(bal.expected)}</span></div>
+    <span class="${Number(bal.outstanding) > 0 ? "dash-res-muted" : "dash-res-paid"}">${Number(bal.outstanding) > 0
+      ? (id ? "Sisa " : "Remaining ") + depositRupiah(bal.outstanding)
+      : (id ? "Deposit lunas" : "Deposit paid")}</span>
+    ${deadline ? `<span class="dash-res-deadline ${deadline.overdue ? "is-overdue" : ""}">${deadline.overdue ? t("overdue") : (id ? "Jatuh tempo dalam " : "Due in ") + deadline.label}</span>` : ""}
+  </div>`;
+}
+
 function renderDashboardReservations(data) {
-  // Store full dataset and reset page when new data arrives
   if (data !== dashboardResData) {
-    // Dashboard keeps its extra tier: Incoming rises above ordinary active
-    // bookings, because it is money/table risk staff must chase; Completed also drops below the
-    // still-active bookings (that behaviour predates this change and is
-    // what makes the "who's still coming today" glance work), with
-    // cancelled below that again.
-    const rank = (r) => resStatusSortRank(r.status);
-    dashboardResData = [...data].sort((a, b) => rank(a) - rank(b));
+    // The attention view handles staff priorities; the full day is a timeline.
+    dashboardResData = [...data].sort(compareDashboardReservations);
     dashboardResPage = 0;
   }
-
   const el = document.getElementById("dashboard-reservations-list");
   if (!el) return;
-
-  if (!dashboardResData.length) {
-    el.innerHTML =
-      '<p class="text-center text-[#bbb] text-sm py-6">No reservations for this day</p>';
-    renderPaginationControls(
-      "res-pagination-controls",
-      0,
-      0,
-      "dashResPrevPage",
-      "dashResNextPage",
-    );
-    return;
-  }
-
-  renderPaginationControls(
-    "res-pagination-controls",
-    dashboardResPage,
-    dashboardResData.length,
-    "dashResPrevPage",
-    "dashResNextPage",
-  );
-
-  const page = dashboardResData.slice(
-    dashboardResPage * DASH_PAGE_SIZE,
-    (dashboardResPage + 1) * DASH_PAGE_SIZE,
-  );
-
-  el.innerHTML = page
-    .map((r) => {
-      const areaName =
-        r.areas?.name ||
-        allAreas.find((a) => a.id === r.assigned_area)?.name ||
-        "—";
-      const tableName = escapeHtml(assignedTableNames(r) || "—");
-      const notesDisplay = r.notes ? truncateNotes(r.notes) : "";
-      return `
-      <div class="py-3 border-b border-[#F0EDE8] last:border-0">
-        <div class="flex items-center justify-between mb-1">
-          <div class="flex items-center gap-4">
-            <div class="text-center min-w-[52px]">
-              <p class="font-display text-lg text-[color:var(--brand-ink)] leading-none">${fmt.time(r.reservation_time)}</p>
-            </div>
-            <div>
-              <p class="font-medium text-sm text-[#222] flex flex-wrap items-center gap-1.5">
-                <span>${r.guests ? formatGuestName(r.guests) : "—"} ${memberBadge(r.guest_id)}</span>
-                ${(() => {
-                  const tier = r.guests?.spending_tier;
-                  const tag = r.guests?.tag
-                    ? r.guests.tag
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean)
-                        .slice(-1)[0]
-                    : null;
-                  return `${tier ? formatSpendingTierBadge(tier) : ""}${tag ? `<span class="inline-block px-2 py-0.5 rounded-full text-[11px] bg-[#F3F4F6] text-[#555]">${escapeHtml(tag)}</span>` : ""}`;
-                })()}
-              </p>
-              <p class="text-xs text-[#999] mt-1.5">${fmt.pax(r.pax)} · ${areaName}${tableName ? " · " + tableName : ""}${r.occasion ? " · " + r.occasion : ""}${r.reservation_source ? " · " + escapeHtml(r.reservation_source) : ""}</p>
-              ${
-                // Why this booking is waiting on a human, in words. The column
-                // stores a code and staff should never have to read one. Shown
-                // on the row itself rather than behind Update, because the
-                // whole point of a waitlist entry is that someone has to
-                // notice it.
-                r.status === "Waitlist"
-                  ? `<p class="text-xs text-[#B45309] mt-1.5 font-medium">⏳ ${t("Menunggu keputusan")}${r.waitlist_reason ? " · " + t(r.waitlist_reason) : ""}</p>`
-                  : ""
-              }
-              ${renderGuestExtras(r.guests, r._visitCount)}
-              ${notesDisplay ? `<p class="text-xs text-[#999] mt-1 flex items-start gap-1"><span>📝</span><span>${escapeHtml(notesDisplay)}</span></p>` : ""}
-            </div>
-          </div>
-          <div class="flex items-center gap-3">
-            <div>${statusBadge(r.status)}${depositRowBadge(r)}</div>
-            <a href="reservation-confirmation.html?id=${r.id}" target="_blank" title="View confirmation page" class="text-xs text-[color:var(--brand)] hover:underline flex items-center gap-1">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              Link
-            </a>
-            <button onclick="openResActions('${r.id}')" class="text-xs text-[color:var(--accent-strong)] hover:underline">Update</button>
-            ${waReservationBtns(r)}
-          </div>
+  const id = CURRENT_LANG === "id";
+  const visible = dashboardVisibleReservations();
+  dashboardResPage = Math.min(dashboardResPage, Math.max(0, Math.ceil(visible.length / DASH_PAGE_SIZE) - 1));
+  renderPaginationControls("res-pagination-controls", dashboardResPage, visible.length, "dashResPrevPage", "dashResNextPage");
+  const filters = `<div class="dash-res-filters" role="group" aria-label="${id ? "Tampilan reservasi" : "Reservation view"}">
+    <button type="button" aria-pressed="${dashboardResFilter === "all"}" onclick="setDashboardReservationFilter('all')">${id ? "Semua reservasi" : "All upcoming"} <span>${dashboardResData.length}</span></button>
+    <button type="button" aria-pressed="${dashboardResFilter === "attention"}" onclick="setDashboardReservationFilter('attention')">${id ? "Perlu perhatian" : "Needs attention"} <span>${dashboardResData.filter(dashboardNeedsAttention).length}</span></button>
+  </div>`;
+  el.innerHTML = filters + (visible.length ? visible.slice(dashboardResPage * DASH_PAGE_SIZE, (dashboardResPage + 1) * DASH_PAGE_SIZE).map((r) => {
+    const area = r.areas?.name || allAreas.find(a => a.id === r.assigned_area)?.name;
+    const tables = assignedTableNames(r);
+    const notes = [r.guests?.notes, r.notes].filter(Boolean).join(" / ");
+    // Retain allergy/food preferences in the visible guest extras; only prose notes collapse.
+    const guest = r.guests ? {...r.guests, notes: ""} : null;
+    const followup = waReservationBtns(r).replace(/>(Invoice Followup|Pax Follow Up|Waitlist Follow Up|WA Follow Up)</g,
+      ">" + (id ? "Tindak lanjut" : "Follow up") + "<");
+    return `<article class="dash-res-row">
+      <time class="dash-res-time">${escapeHtml(String(r.reservation_time || "").slice(0,5) || "--")}</time>
+      <div class="dash-res-guest">
+        <div class="dash-res-name">${r.guests ? formatGuestName(r.guests) : "--"} ${memberBadge(r.guest_id)}
+          ${r.guests?.spending_tier ? formatSpendingTierBadge(r.guests.spending_tier) : ""}
+          ${r.guests?.tag ? `<span class="dash-res-muted">${escapeHtml(r.guests.tag.split(",").map(s => s.trim()).filter(Boolean).slice(-1)[0] || "")}</span>` : ""}
+        </div>
+        <p class="dash-res-meta">${fmt.pax(r.pax)} &middot; ${escapeHtml(area || (id ? "Area belum ditentukan" : "Area unassigned"))} &middot; ${escapeHtml(tables || (id ? "Meja belum ditentukan" : "Unassigned"))}</p>
+        ${r.reservation_source || r.occasion ? `<p class="dash-res-muted">${[r.reservation_source, r.occasion].filter(Boolean).map(escapeHtml).join(" &middot; ")}</p>` : ""}
+        ${renderGuestExtras(guest, r._visitCount)}
+        ${r.status === "Waitlist" ? `<p class="dash-res-waiting">${id ? "Menunggu keputusan" : "Awaiting a decision"}${r.waitlist_reason ? " &middot; " + escapeHtml(t(r.waitlist_reason)) : ""}</p>` : ""}
+        ${notes ? `<details class="dash-res-notes"><summary><span>${escapeHtml(notes)}</span><span class="dash-res-more">${id ? "Catatan" : "Notes"} +</span></summary><p>${escapeHtml(notes)}</p></details>` : ""}
+      </div>
+      <div class="dash-res-state">${statusBadge(r.status)}${dashboardDepositSummary(r)}</div>
+      <div class="dash-res-actions">
+        <button type="button" class="dash-res-update" onclick="openResActions('${r.id}')">${t("Update")}</button>
+        <div class="dash-res-secondary">${followup}
+          <a href="reservation-confirmation.html?id=${encodeURIComponent(r.id)}" target="_blank" rel="noopener" title="${id ? "Buka halaman tamu" : "Open guest page"}" aria-label="${id ? "Buka halaman tamu" : "Open guest page"}">&#8599;</a>
         </div>
       </div>
-    `;
-    })
-    .join("");
+    </article>`;
+  }).join("") : `<p class="dash-res-empty">${dashboardResFilter === "attention" ? (id ? "Tidak ada reservasi yang perlu perhatian." : "No reservations need attention.") : (id ? "Tidak ada reservasi pada tanggal ini." : "No reservations for this day.")}</p>`);
 }
 
 function renderDashboardWalkIns(data) {

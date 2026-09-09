@@ -15,17 +15,10 @@ const sandbox = {};
 new Function("ctx", setSrc + "\nctx.isCancelledRes=isCancelledRes;ctx.sortReservationsByStatus=sortReservationsByStatus;ctx.resStatusSortRank=resStatusSortRank;ctx.CANCELLED_RES_STATUSES=CANCELLED_RES_STATUSES;")(sandbox);
 const { isCancelledRes, sortReservationsByStatus, resStatusSortRank, CANCELLED_RES_STATUSES } = sandbox;
 
-// Dashboard rank, extracted the same way.
-const dashStart = src.indexOf("const rank = (r) =>", grab("function renderDashboardReservations"));
-assert.ok(dashStart > -1, "dashboard rank not found in app.js");
-const dashSrc = src.slice(dashStart, grab("dashboardResData = [...data]"));
+// Dashboard now uses a timeline plus a separate attention filter.
 const dash = {};
-new Function("ctx", "isCancelledRes", "resStatusSortRank", dashSrc + "\nctx.rank=rank;")(
-  dash,
-  isCancelledRes,
-  resStatusSortRank,
-);
-const rank = dash.rank;
+new Function("ctx", setSrc + "\nctx.compare=compareDashboardReservations;")(dash);
+const compare = dash.compare;
 
 let pass = 0, fail = 0;
 const check = (n, f) => { try { f(); pass++; console.log("  ok  " + n); } catch (e) { fail++; console.log("  FAIL " + n + " :: " + e.message); } };
@@ -122,7 +115,7 @@ check("status ranks match the requested service priority", () => {
   assert.ok(resStatusSortRank("Cancelled") < resStatusSortRank("Deleted"));
 });
 
-check("dashboard order follows the same status rank", () => {
+check("dashboard timeline orders active rows by time and completed rows last", () => {
   const rows = [
     r("Reserved", "18:00", "Reserved"),
     r("Incoming", "21:00", "Incoming"),
@@ -130,8 +123,8 @@ check("dashboard order follows the same status rank", () => {
     r("Completed", "17:00", "Completed"),
   ];
   assert.deepStrictEqual(
-    [...rows].sort((a, b) => rank(a) - rank(b)).map((x) => x.name),
-    ["Incoming", "Reserved", "Arrived", "Completed"]);
+    [...rows].sort(compare).map((x) => x.name),
+    ["Reserved", "Arrived", "Incoming", "Completed"]);
 });
 
 check("dashboard order matches the 9 Aug screenshot expectation", () => {
@@ -142,7 +135,7 @@ check("dashboard order matches the 9 Aug screenshot expectation", () => {
     r("Anindya", "18:30", "Reserved"),
   ];
   assert.deepStrictEqual(
-    [...rows].sort((a, b) => rank(a) - rank(b)).map((x) => x.name),
+    [...rows].sort(compare).map((x) => x.name),
     ["Anindya", "Ibu Ari", "Rian", "Febrianing"]);
 });
 
