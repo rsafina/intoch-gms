@@ -101,9 +101,12 @@ would have shipped:
 Both are now in this file, and the file has been rebuilt from empty twice to
 confirm it still runs clean and is still re-runnable.
 
-Note for whoever hits it next: `idx_one_open_campaign` allows only ONE
-campaign with `ended_at IS NULL`. That is deliberate, and it will look like a
-slug bug the first time it stops an insert.
+Campaign concurrency now allows **10 active campaigns**, with unlimited drafts.
+Run `20260914_multiple_active_campaigns.sql` (or the current `ALL_IN_ONE.sql`)
+before using the updated editor. It removes the old one-open-campaign index
+and enforces ten database slots. Starting/reopening never closes another
+campaign. Sends remain attributed to their selected campaign; guests can
+receive messages from multiple campaigns, with no cross-campaign cooldown.
 
 ### Round 7, 2026-08-30: an empty database is not a test
 

@@ -275,7 +275,7 @@ function ceRenderList(counts) {
       </button>
     </div>` +
     (ceCampaigns.length
-      ? group("Sedang berjalan", active) +
+      ? group(`Sedang berjalan (${active.length}/10)`, active) +
         group("Draft", drafts, "Belum ada pesan yang dikirim. Aman untuk diubah.") +
         group("Selesai", done)
       : `<div class="bg-white rounded-2xl border border-[#E7E4DE] p-8 text-center">
@@ -1764,6 +1764,20 @@ function ceCardTextGuard(c) {
   return null;
 }
 
+// Database slots enforce the same limit if two staff start simultaneously.
+async function ceCanActivate() {
+  const { data, error } = await supabaseQuery(
+    () => db.from("wa_campaigns").select("id").eq("status", "active"),
+    "Gagal memeriksa campaign aktif",
+  );
+  if (error || !data) return false;
+  if (data.filter((c) => c.id !== ceCampaign.id).length >= 10) {
+    toast("Maksimal 10 campaign aktif. Selesaikan salah satu sebelum memulai campaign lain.", "error");
+    return false;
+  }
+  return true;
+}
+
 async function ceActivate() {
   if (!ceCampaign) return;
   const body = ceCampaign.message_body || "";
@@ -1799,30 +1813,13 @@ async function ceActivate() {
       return;
   }
 
-  // Only one campaign may send at a time; close whatever else is open
-  // rather than failing on the unique index and confusing ops.
-  const { data: others } = await db
-    .from("wa_campaigns")
-    .select("id, name")
-    .eq("status", "active");
-  if (others && others.length) {
-    if (
-      !confirm(
-        `Campaign "${others[0].name}" sedang berjalan. Selesaikan yang itu dan mulai campaign ini?`,
-      )
-    )
-      return;
-    await db
-      .from("wa_campaigns")
-      .update({ status: "done", ended_at: new Date().toISOString() })
-      .eq("status", "active");
-  }
+  if (!(await ceCanActivate())) return;
 
   const { error } = await supabaseQuery(
     () =>
       db
         .from("wa_campaigns")
-        .update({ status: "active", started_at: new Date().toISOString() })
+        .update({ status: "active", started_at: new Date().toISOString(), ended_at: null })
         .eq("id", ceCampaign.id),
     "Gagal memulai campaign",
   );
@@ -1860,14 +1857,7 @@ async function ceFinish() {
 
 async function ceReopen() {
   if (!ceCampaign) return;
-  const { data: others } = await db
-    .from("wa_campaigns")
-    .select("id")
-    .eq("status", "active");
-  if (others && others.length) {
-    toast("Selesaikan dulu campaign yang sedang berjalan", "error");
-    return;
-  }
+  if (!(await ceCanActivate())) return;
   const { error } = await supabaseQuery(
     () =>
       db

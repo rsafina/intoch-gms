@@ -8,8 +8,8 @@
 -- UUIDs and creation metadata may differ between resets.
 -- Phone numbers are synthetic demo values, NOT guaranteed unassigned numbers.
 -- This script does not send messages. Do not use demo contacts for outreach.
--- Invoices/payments, campaigns and standalone vouchers start empty; membership
--- vouchers are awarded through the application's transaction function.
+-- Upcoming examples include deposit invoices and synthetic payment records.
+-- Campaigns and standalone vouchers stay empty; membership vouchers use the app function.
 -- Failure rolls back the entire seed. If your SQL client leaves a failed
 -- transaction open, run ROLLBACK before retrying either demo script.
 
@@ -390,34 +390,134 @@ update guests g set created_at = first_visit.at - interval '2 days'
 from (select guest_id, min(created_at) as at from visits group by guest_id) first_visit
 where g.id = first_visit.guest_id;
 
--- Upcoming: today plus the next four days, 24 bookings so each day has a
--- handful rather than one lonely row.
-insert into reservations (
-  booking_name, guest_id, reservation_date, reservation_time, pax, occasion,
-  reservation_source, status, notes, assigned_area, table_id, created_at
-)
-select
-  g.name, g.id,
-  (select today from _anchor) + (r.n % 5),
-  time '18:30' + ((r.n * 25) % 150) * interval '1 minute',
-  2 + (r.n % 6),
-  case r.n % 4 when 0 then 'Birthday' when 1 then 'Anniversary'
-               when 2 then 'Business Dinner' else null end,
-  case r.n % 4 when 0 then 'Online Form' when 1 then 'WhatsApp'
-               when 2 then 'Instagram' else 'Telepon' end,
-  'Reserved',
-  case when r.n % 4 = 0 then 'Minta meja dekat jendela.' else null end,
-  coalesce(t.area_id, a.id), t.id,
-  now() - (r.n || ' hours')::interval
-from generate_series(1, 24) as r(n)
--- Pick by NAME, not by hashing the guest's uuid: uuids are regenerated on
--- every seed, so hashing them would hand tomorrow's bookings to different
--- guests each run and break the reproducibility above.
-join lateral (
-  select id, name from guests order by md5(name || ':up:' || r.n::text) limit 1
-) g on true
-left join _areas  a on a.total > 0 and a.n = r.n % a.total
-left join _tables t on t.total > 0 and t.n = r.n % t.total;
+-- BEGIN UPCOMING DEMO FLOW
+-- Allocate real holds sequentially so every later booking sees earlier holds.
+-- A small floor plan may produce more waitlisted requests, never double bookings.
+create or replace function pg_temp.demo_place(p_pax integer, p_large boolean, p_day integer)
+returns table(area_id uuid, ids uuid[], day date, hour time, deposit numeric)
+language plpgsql as $place$
+declare slot record; room record; cap record; chosen uuid[]; seats integer;
+begin
+ for slot in
+   select a.today+d as day, h as hour from _anchor a
+   cross join generate_series(0,4) d cross join unnest(array[time '11:00',time '14:00',time '17:00',time '20:00']) h
+   cross join lateral (select reservation_hours_for(a.today+d) as value) hours
+   where not coalesce((hours.value->>'closed')::boolean,false)
+     and h>=coalesce((hours.value->>'open')::time,time '00:00')
+     and h<=coalesce((hours.value->>'close')::time,time '23:59')
+     and a.today+d+h > (now() at time zone 'Asia/Jakarta')+interval '30 minutes'
+   order by (d-p_day+5)%5,h
+ loop
+  for room in select * from areas order by name,id loop
+   select * into cap from public.reservation_capacity(room.id,slot.day+slot.hour,slot.day+slot.hour+interval '3 hours');
+   chosen := null;
+   if p_large then
+    select array_agg(t.id order by t.name,t.id),coalesce(sum(t.capacity),0) into chosen,seats
+    from tables t where t.area_id=room.id and t.is_active;
+    if coalesce(cap.held_count,0)>0 or cap.exclusive_block or coalesce(seats,0)<p_pax
+       or coalesce(cap.available_capacity,0)<p_pax then chosen:=null; end if;
+   else
+    select array[t.id] into chosen from tables t
+    join public.reservation_table_availability(slot.day,slot.hour,null,180,0,false,null) av on av.table_id=t.id
+    where t.area_id=room.id and t.is_active and not av.occupied and t.capacity>=p_pax
+      and coalesce(cap.available_capacity,0)>=least(t.capacity,cap.total_capacity)
+    order by t.capacity,t.name,t.id limit 1;
+   end if;
+   if cardinality(chosen)>0 then
+    area_id:=room.id;ids:=chosen;day:=slot.day;hour:=slot.hour;deposit:=greatest(coalesce(room.deposit_amount,0),0);
+    return next;return;
+   end if;
+  end loop;
+ end loop;
+end;
+$place$;
+
+create temporary table _demo_upcoming(n integer,reservation_id uuid,scenario text) on commit drop;
+do $upcoming$
+declare n integer; scenario text; big boolean; pax_count integer; max_pax integer;
+ spot record; guest record; room uuid; assigned uuid[]; book_day date; book_hour time;
+ booking uuid; required_amount numeric; total_amount numeric; payment_result jsonb;
+ book_status text; reason text; description text; document jsonb; fits boolean;
+begin
+ max_pax:=greatest(1,coalesce((get_setting('reservation_hours')->>'max_pax')::integer,20));
+ for n in 1..24 loop
+  scenario:=case n%8 when 1 then 'Small - awaiting deposit' when 2 then 'Small - deposit paid'
+    when 3 then 'Large - awaiting agreement' when 4 then 'Large - partial deposit'
+    when 5 then 'Large - deposit paid in two payments' when 6 then 'Capacity request - no payment due'
+    else 'Regular booking' end;
+  big:=n%8 in (3,4,5);pax_count:=case when big then max_pax+5 else least(max_pax,2+n%4) end;
+  select * into guest from guests order by md5(name||':up:'||n::text) limit 1;
+  select * into spot from pg_temp.demo_place(pax_count,big,n%5);
+  fits:=found;room:=null;assigned:='{}';required_amount:=0;reason:=null;
+  book_day:=(select today+1+n%4 from _anchor);book_hour:=time '17:00';
+  if fits then room:=spot.area_id;book_day:=spot.day;book_hour:=spot.hour;assigned:=spot.ids;
+  else select id into room from areas order by name,id limit 1;end if;
+  book_status:=case when fits then 'Reserved' else 'Waitlist' end;
+  description:='DEMO: '||scenario;
+  if not fits then reason:='over_capacity';description:=description||'. No suitable free tables; request needs staff review.';end if;
+  if n%8=6 then
+   -- Choose a genuinely short-of-capacity window, not an arbitrary waitlist label.
+   select r.assigned_area,r.reservation_date,r.reservation_time into room,book_day,book_hour
+   from reservations r cross join lateral public.reservation_capacity(r.assigned_area,r.reservation_date+r.reservation_time,
+     r.reservation_date+r.reservation_time+interval '3 hours') c
+   where r.status in ('Incoming','Reserved') and r.reservation_date>=(select today from _anchor)
+     and r.assigned_area is not null and c.available_capacity<pax_count
+   order by r.reservation_date,r.reservation_time,r.id limit 1;
+   if not found then
+    room:=spot.area_id;book_day:=coalesce(spot.day,(select today+1 from _anchor));book_hour:=coalesce(spot.hour,time '17:00');
+    description:='DEMO: Unassigned request - no capacity shortage available on this floor plan.';
+    reason:=null;
+   else reason:='over_capacity';end if;
+   book_status:='Waitlist';assigned:='{}';
+  elsif big then
+   book_status:='Waitlist';reason:='over_max_pax';
+   if n%8 in (4,5) then required_amount:=2500000;end if;
+   if n%8=3 then assigned:='{}';end if;
+  elsif fits and n%8 in (1,2) then
+   required_amount:=spot.deposit;
+   if required_amount>0 then book_status:='Incoming';
+   else description:=description||'. This area has no standard deposit; no payment requested.';end if;
+  end if;
+  -- Small waitlists retain the area's quote, but no payment is due yet.
+  insert into reservations(booking_name,guest_id,reservation_date,reservation_time,pax,reservation_source,status,notes,
+    assigned_area,table_id,table_ids,booking_duration_minutes,is_large_party,waitlist_reason,
+    deposit_required,deposit_expected,deposit_due_at,created_at)
+  values(guest.name,guest.id,book_day,book_hour,pax_count,case when n%8 in (0,7) then 'WhatsApp' else 'Online Form' end,book_status,description,
+    room,assigned[1],assigned,180,big,reason,
+    required_amount>0,case when required_amount>0 then required_amount
+      when book_status='Waitlist' and not big then (select greatest(coalesce(deposit_amount,0),0) from areas where id=room) else 0 end,
+    case when book_status='Incoming' then (book_day+book_hour) at time zone 'Asia/Jakarta' else null end,
+    now()-(n||' hours')::interval) returning id into booking;
+  insert into _demo_upcoming values(n,booking,scenario);
+  if required_amount>0 then
+   total_amount:=case when big then 5000000 else required_amount end;
+   document:=case when big then jsonb_build_object('name',guest.name,'pax',pax_count::text,'eventdate',book_day::text,
+     'paydate',(select today::text from _anchor),'items',jsonb_build_array(jsonb_build_object('name','Demo event package',
+      'qty','1','price','5000000','unit','','amount','','amountLocked',false)),
+     'subtotal','5000000','total','5000000','dpOn',true,'dpPct','50','dp','2500000','settleOn',false,
+     'svcOn',false,'taxOn',false,'note','Demo invoice - no payment instructions',
+     'locked',jsonb_build_object('subtotal',false,'svc',false,'tax',false,'total',false,'dp',false,'settle',false)) else null end;
+   insert into invoices(reservation_id,guest_id,kind,bill_to_name,pax,event_date,total,amount_due,doc,invoice_no,note)
+   values(booking,guest.id,'deposit',guest.name,pax_count,book_day,total_amount,required_amount,document,
+     next_invoice_no(),'DEMO: '||scenario);
+   if n%8=2 then
+    payment_result:=record_deposit_payment(booking,required_amount,(select today from _anchor),'Demo transfer',null,'Synthetic demo payment',null);
+    if not coalesce((payment_result->>'ok')::boolean,false) then raise exception 'Demo payment failed: %',payment_result;end if;
+   elsif n%8 in (4,5) then
+    payment_result:=record_deposit_payment(booking,1000000,(select today from _anchor),'Demo transfer',null,'Synthetic first installment',null);
+    if not coalesce((payment_result->>'ok')::boolean,false) then raise exception 'Demo payment failed: %',payment_result;end if;
+    if n%8=5 and fits then
+     payment_result:=record_deposit_payment(booking,1500000,(select today from _anchor),'Demo transfer',null,'Synthetic second installment',null);
+     if not coalesce((payment_result->>'ok')::boolean,false) then raise exception 'Demo payment failed: %',payment_result;end if;
+    elsif n%8=5 then
+     update reservations set notes=notes||' Only a partial deposit was seeded because the party cannot yet be seated.' where id=booking;
+    end if;
+   end if;
+  end if;
+ end loop;
+end;
+$upcoming$;
+-- END UPCOMING DEMO FLOW
 
 -- ── Membership ────────────────────────────────────────────────────────
 -- Cards on guests whose visit history justifies the card. A member with no
@@ -506,6 +606,16 @@ begin
   ) then
     raise exception 'A seeded table is assigned to the wrong area.';
   end if;
+  if (select count(*) from _demo_upcoming) <> 24 then
+    raise exception 'Expected 24 upcoming demo bookings/requests.';
+  end if;
+  if exists (
+    select 1 from _demo_upcoming d join reservations r on r.id=d.reservation_id
+    where r.deposit_required and r.deposit_expected>0 and r.status<>'Reserved'
+      and (select coalesce(sum(p.amount),0) from invoice_payments p where p.reservation_id=r.id)>=r.deposit_expected
+  ) then
+    raise exception 'A paid demo deposit did not confirm its booking.';
+  end if;
   if exists (select 1 from member_transactions where visit_id is null) then
     raise exception 'A membership transaction is missing its visit link.';
   end if;
@@ -518,6 +628,10 @@ union all select '  covers per month',  to_char(sum(pax) / 3.0, 'FM9990') from v
 union all select 'reservations',        count(*)::text from reservations
 union all select '  of which upcoming', count(*)::text from reservations
          where reservation_date >= (select today from _anchor)
+union all select 'demo invoices', count(*)::text from invoices
+union all select 'demo payments', count(*)::text from invoice_payments
+union all select 'upcoming waitlisted', count(*)::text from reservations where status='Waitlist'
+union all select 'upcoming awaiting deposit', count(*)::text from reservations where status='Incoming'
 union all select 'members',             count(*)::text from members
 union all select '  stickers awarded',  coalesce(sum(total_stickers),0)::text from members
 union all select '  vouchers earned',   count(*)::text from member_vouchers
