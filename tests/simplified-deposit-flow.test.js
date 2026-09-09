@@ -12,7 +12,7 @@ w.eval('var depositActionResId=null, depositActionRes=null, depositInvoiceSaving
 for (const name of ['isLargeReservation','openDepositInvoice','submitDepositInvoice','submitSimpleDepositInvoice','depositInvoiceUrl','largePartyAgreePanel','areaParseRupiah','areaFormatRupiah','onAreaMoneyInput']) w.eval(lift(app,name));
 w.APP_SETTINGS = {reservation_hours:{max_pax:20}};
 w.t = s=>s; w.escapeHtml = s=>s; w.depositRupiah = n=>'Rp '+Number(n).toLocaleString('id-ID');
-w.isManagerOrAdmin = ()=>true; w.reservationFormSettings = ()=>({bank_details:'Bank'});
+w.isManagerOrAdmin = ()=>false; w.canIssueDepositInvoice = ()=>true; w.reservationFormSettings = ()=>({bank_details:'Bank'});
 w.refreshAreaDepositHint=()=>{};
 w.currentStaffId = ()=>'staff'; w.loader = ()=>{}; w.toast=()=>{};
 let modal, full=0, rows=[], next=0, failRead=false;

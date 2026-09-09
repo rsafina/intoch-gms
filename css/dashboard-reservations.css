@@ -45,6 +45,13 @@
 }
 
 /* Reservation list and its optional room timelines. */
+.online-days-heading { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:16px; color:var(--brand-ink); }
+.online-days-heading p { font-size:12px; color:#687380; margin-top:5px; }
+.online-day { display:flex; justify-content:space-between; align-items:center; gap:16px; width:100%; text-align:left; padding:18px 0; border-bottom:1px solid #eeece7; color:var(--brand-ink); }
+.online-day:hover { background:#f5f8fb; }
+.online-day > span:first-child { display:flex; flex-direction:column; gap:5px; }
+.online-day span span,.online-day small { font-size:12px; color:#687380; }
+.online-day > span:last-child { font-size:12px; white-space:nowrap; }
 .res-vip-accordion { margin-top:20px; padding-top:16px; border-top:1px solid #ede9e3; }
 .res-vip-accordion > summary { display:flex; align-items:center; justify-content:space-between; gap:16px; cursor:pointer; color:var(--brand-ink,#183b62); font-size:13px; font-weight:600; list-style:none; }
 .res-vip-accordion > summary::-webkit-details-marker { display:none; }

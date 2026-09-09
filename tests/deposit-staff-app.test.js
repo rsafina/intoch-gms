@@ -209,10 +209,10 @@ ok(
 console.log("\nIssuing an invoice");
 const openInv = mod.slice(mod.indexOf("async function openDepositInvoice"), mod.indexOf("async function submitDepositInvoice"));
 const subInv = mod.slice(mod.indexOf("async function submitDepositInvoice"), mod.indexOf("async function openRecordDepositPayment"));
-ok("openDepositInvoice is manager-gated", /isManagerOrAdmin\(\)/.test(openInv));
+ok("openDepositInvoice allows authorized staff", /canIssueDepositInvoice\(\)/.test(openInv));
 ok(
-  "submitDepositInvoice re-checks the manager gate",
-  /isManagerOrAdmin\(\)/.test(subInv),
+  "submitDepositInvoice re-checks staff permission",
+  /canIssueDepositInvoice\(\)/.test(subInv),
   "The opener's check only hides a button. This function is reachable from " +
     "the console, and a hidden button is not an access control.",
 );

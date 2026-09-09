@@ -18,7 +18,7 @@
     <!-- The printed invoice sheet. Shared with invoice-view.html, the page a
          guest opens from WhatsApp, so both draw the same document. -->
     <link rel="stylesheet" href="css/invoice-sheet.css?v=1" />
-    <link rel="stylesheet" href="css/dashboard-reservations.css?v=2" />
+    <link rel="stylesheet" href="css/dashboard-reservations.css?v=3" />
     <style>
       :root {
         /* ── Brand tokens (2026-09-05). ONE PLACE. ───────────────────
@@ -1558,7 +1558,7 @@
                 <!-- The selected day's date now lives in the totals strip
                      below the tabs (renderDashboardReservationTotals), in a
                      bigger font — this line said the same thing twice. -->
-                <p class="text-xs text-[#999] mt-1">
+                <p id="dashboard-reservation-range" class="text-xs text-[#999] mt-1">
                   Next 3 days
                 </p>
               </div>
@@ -1570,7 +1570,7 @@
                 <!-- Exports the whole selected day tab, not the visible
                      page. See exportDashboardReservations in app.js. -->
                 <button
-                  onclick="exportDashboardReservations()"
+                  id="dashboard-reservation-export" onclick="exportDashboardReservations()"
                   class="text-xs text-[color:var(--brand)] hover:underline"
                 >
                   Export Excel
@@ -1608,6 +1608,7 @@
               >
                 +2 Days
               </button>
+              <button id="dashboard-online-tab" onclick="showDashboardOnlineReservations()" class="text-xs px-3 py-2 rounded-full border border-[#D8D2C4] bg-[#F8F6F2] text-[color:var(--brand)]" data-i18n>Online form &middot; 14 days</button>
             </div>
             <!-- Totals for the selected day tab: reservations + expected pax,
                  including bookings with no table/area assigned yet -->
@@ -2979,6 +2980,7 @@
             <div id="res-search-chip" class="hidden mt-2.5"></div>
           </div>
 
+          <label class="flex items-center gap-2 text-sm mb-4"><input id="res-online-only" type="checkbox" onchange="setReservationOnlineOnly(this.checked)" /><span data-i18n>Online form only</span></label>
           <!-- Day occupancy + VIP timeline summary -->
           <div id="res-occupancy-summary"></div>
 
@@ -7971,6 +7973,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               >
               <input
                 id="res-pax"
+                oninput="updateStaffDepositDefaults()"
                 type="number"
                 min="1"
                 value="2"
@@ -7981,8 +7984,17 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               <label class="block text-xs font-medium text-[#555] mb-1.5"
                 >Area <span class="text-[#999]">(auto from table)</span></label
               >
-              <select id="res-area" class="form-input"></select>
+              <select id="res-area" onchange="updateStaffDepositDefaults()" class="form-input"></select>
             </div>
+          </div>
+          <div id="res-staff-deposit" class="p-4 mb-4 rounded-xl border border-[#D8E3EE] bg-[#F5F8FB]">
+            <label class="flex items-center gap-2 text-sm font-medium"><input type="checkbox" id="res-request-deposit" onchange="onStaffDepositChange()" /><span data-i18n>Request deposit</span></label>
+            <div class="flex items-center gap-3 mt-3">
+              <label for="res-deposit-amount" class="text-sm">Rp</label>
+              <input id="res-deposit-amount" class="form-input" type="text" inputmode="numeric" placeholder="50.000" aria-label="Requested deposit" oninput="onAreaMoneyInput(this); onStaffDepositChange()" onkeydown="onAreaMoneyKeydown(this,event)" />
+              <button type="button" class="btn-ghost text-xs whitespace-nowrap" onclick="updateStaffDepositDefaults(true)" data-i18n>Use defaults</button>
+            </div>
+            <p id="res-staff-deposit-help" class="text-xs text-[#586572] mt-2"></p>
           </div>
           <input type="hidden" id="res-table-id" />
           <div id="res-table-picker" class="mb-4"></div>
@@ -8026,6 +8038,8 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 >Status</label
               >
               <select id="res-status" onchange="refreshResTableOccupancy()" class="form-input">
+                <option value="Incoming" disabled>Incoming</option>
+                <option value="Waitlist">Waitlist</option>
                 <option value="Reserved">Reserved</option>
                 <option value="Arrived">Arrived</option>
                 <option value="Completed">Completed</option>
@@ -9316,9 +9330,16 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
 
-    <script src="js/config.js?v=33"></script>
+    <script src="js/config.js?v=34"></script>
     <script src="js/i18n.js?v=3"></script>
-    <script src="js/app.js?v=46"></script>
+    <div id="modal-reservation-ticket" class="modal-overlay hidden" onclick="if(event.target===this) hideModal('modal-reservation-ticket')">
+      <div class="modal-box" style="max-width:520px">
+        <div class="flex justify-between gap-3 mb-4"><h2 class="font-heading text-xl" data-i18n>Confirmation ticket</h2><button type="button" class="btn-ghost" onclick="hideModal('modal-reservation-ticket')" aria-label="Close">&times;</button></div>
+        <div id="reservation-ticket-content"></div>
+      </div>
+    </div>
+    <script src="js/app.js?v=47"></script>
+    <script src="js/reservation-extras.js?v=1"></script>
     <script src="js/membership.js?v=7"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->
@@ -9341,7 +9362,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     <!-- The document itself: markup, renderer and PDF export, shared with
          invoice-view.html. Must load BEFORE invoice.js, which calls into it. -->
     <script src="js/invoice-sheet.js?v=1"></script>
-    <script src="js/invoice.js?v=12"></script>
+    <script src="js/invoice.js?v=13"></script>
     <script src="js/runsheet.js?v=1"></script>
     <!-- vouchers.js uses the voucher-card canvas helpers in voucher.js
          (membership card) for its own card, so it must load after it. -->

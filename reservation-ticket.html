@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Reservation ticket</title>
+  <link rel="icon" href="assets/small-logo.png" />
+  <link rel="stylesheet" href="css/reservation-ticket.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <nav aria-label="Language"><button onclick="setTicketLanguage('id')">ID</button><button onclick="setTicketLanguage('en')">EN</button></nav>
+  <main>
+    <p id="ticket-state" role="status">Loading your confirmation...</p>
+    <article id="guest-ticket" hidden>
+      <header><img src="assets/full-logo.png" alt="Restaurant logo" onerror="this.hidden=true" /><p id="ticket-restaurant"></p><span id="ticket-eyebrow">RESERVATION CONFIRMATION</span><h1 id="ticket-title">You're on the guest list.</h1></header>
+      <section class="ticket-body"><p class="ticket-label" id="ticket-name-label">RESERVED FOR</p><h2 id="ticket-name"></h2><div id="ticket-fields"></div></section>
+      <footer><span id="ticket-status"></span><p id="ticket-reference"></p><p id="ticket-note"></p></footer>
+    </article>
+    <div id="ticket-actions" hidden><button id="ticket-download" onclick="downloadReservationTicket()">Download ticket</button><p id="ticket-download-help">Save your confirmation to show when you arrive.</p></div>
+    <button id="ticket-retry" hidden onclick="loadReservationTicket()">Retry</button>
+  </main>
+  <script src="js/config.js"></script>
+  <script src="js/reservation-ticket.js"></script>
+</body>
+</html>

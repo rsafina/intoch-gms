@@ -169,3 +169,12 @@ the chosen date, hours, duration and preparation buffer. Existing reservations
 are excluded from their own checks; waitlisted bookings do not hold tables.
 The UI disables conflicting tables and prevents saving while availability is
 loading or failed. Database capacity and overlap checks remain the final guard.
+
+
+### Reservation tickets (2026-09-15)
+
+Run `20260915_reservation_tickets.sql` or the current `ALL_IN_ONE.sql` before using Issue ticket. It adds a stable guest token, issuance timestamp, and restricted-field ticket lookup. Reissuing reuses the same link. The page shows live booking details; only Reserved bookings can issue/download a confirmation. No check-in scanning is involved.
+
+The dashboard online-form overview and staff-created deposit controls use the existing reservation/deposit schema. Staff small-party deposits default to the selected area amount and can be edited; large-party deposits require an agreed amount. Small requests enter Incoming with a deadline at the visit time; large requests enter Waitlist without automatic expiry.
+
+Regular staff can now open, save, edit and share reservation deposit invoices, including the full large-party template. General/settlement invoice and design permissions remain manager/admin-only; staff enter the editor through a reservation.

@@ -126,5 +126,21 @@ const res = { id: 'reservation-1', guest_id: 'guest-1', booking_name: 'Event org
   await w.invSaveInvoice(false);
   assert.equal(rows.find(row=>row.id===depositId).kind,'deposit','settlement checkbox preserves the original deposit invoice');
   assert.equal(rows.at(-1).kind,'settlement','settlement checkbox creates a separately payable remainder');
+  // Regular staff can issue/edit a reservation deposit, but not a settlement or general invoice.
+  w.isManagerOrAdmin = () => false;
+  w.canIssueDepositInvoice = () => true;
+  w.currentStaffRole = () => 'staff';
+  await w.invOpenReservation(res);
+  w.document.getElementById('inv-name').value = 'Staff deposit guest';
+  const chatsBeforeStaff = chats.length;
+  await w.invSaveInvoice(true);
+  assert.equal(chats.length, chatsBeforeStaff + 1);
+  assert.ok(rows.some(row => row.kind === 'deposit' && row.bill_to_name === 'Staff deposit guest'));
+  const beforeStaffSettlement = rows.length;
+  await w.invOpenReservation(res, null, 'settlement');
+  assert.equal(rows.length, beforeStaffSettlement);
+  w.invApplySnapshot(copy);
+  assert.equal(await w.invSaveInvoice(false), undefined);
+  assert.equal(rows.length, beforeStaffSettlement);
   console.log('Reservation invoice flow: prefill, save/send, reopen/edit, persisted preview, failure, context isolation and double-save passed');
 })().catch(e => { console.error(e); process.exitCode = 1; }).finally(() => dom.window.close());

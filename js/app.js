@@ -2305,6 +2305,7 @@ function renderTableSelection(prefix, selected = null) {
           </button>`;
         }).join("") + '</div></div>';
     }).join("");
+  if (prefix === "res" && typeof updateStaffDepositDefaults === "function") updateStaffDepositDefaults();
 }
 
 function selectTable(prefix, tableId) {
@@ -3054,7 +3055,7 @@ function updateDashboardReservationTabs() {
   for (let i = 0; i < 3; i += 1) {
     const btn = document.getElementById(`dashboard-reservation-tab-${i}`);
     if (!btn) continue;
-    const active = i === dashboardReservationOffset;
+    const active = i === dashboardReservationOffset && !(typeof dashboardOnlineView !== "undefined" && dashboardOnlineView);
     btn.classList.toggle("bg-[color:var(--brand)]", active);
     btn.classList.toggle("text-white", active);
     btn.classList.toggle("bg-[#F8F6F2]", !active);
@@ -3066,10 +3067,24 @@ function updateDashboardReservationTabs() {
     );
   }
 
-  renderDashboardReservationTotals();
+  const onlineTab = document.getElementById("dashboard-online-tab");
+  const online = typeof dashboardOnlineView !== "undefined" && dashboardOnlineView;
+  if (onlineTab) {
+    onlineTab.classList.toggle("bg-[color:var(--brand)]", online);
+    onlineTab.classList.toggle("text-white", online);
+    onlineTab.classList.toggle("bg-[#F8F6F2]", !online);
+    onlineTab.classList.toggle("text-[color:var(--brand)]", !online);
+    onlineTab.setAttribute("aria-pressed", String(online));
+  }
+  const rangeLabel = document.getElementById("dashboard-reservation-range");
+  if (rangeLabel) rangeLabel.textContent = CURRENT_LANG === "id" ? (online ? "14 hari termasuk hari ini" : "3 hari termasuk hari ini") : (online ? "14 days including today" : "Next 3 days");
+  const exportButton = document.getElementById("dashboard-reservation-export");
+  if (exportButton) exportButton.hidden = online;
+  if (!online) renderDashboardReservationTotals();
 }
 
 async function loadDashboardReservations(offset = 0, initialData = null) {
+  if (typeof dashboardOnlineView !== "undefined" && dashboardOnlineView) return showDashboardOnlineReservations();
   const request = ++dashboardReservationRequest;
   const revision = reservationDataRevision;
   dashboardReservationOffset = offset;
@@ -3106,7 +3121,12 @@ async function loadDashboardReservations(offset = 0, initialData = null) {
 }
 
 function setDashboardReservationTab(offset) {
-  if (dashboardReservationOffset === offset) return;
+  const wasOnline = typeof dashboardOnlineView !== "undefined" && dashboardOnlineView;
+  if (typeof dashboardOnlineView !== "undefined") {
+    dashboardOnlineView = false;
+    ++dashboardOnlineRequest;
+  }
+  if (dashboardReservationOffset === offset && !wasOnline) return;
   dashboardReservationOffset = offset;
   loadDashboardReservations(offset);
 }
@@ -3532,6 +3552,7 @@ function renderDashboardReservations(data) {
       <div class="dash-res-state">${statusBadge(r.status)}${dashboardDepositSummary(r)}</div>
       <div class="dash-res-actions">
         <button type="button" class="dash-res-update" onclick="openResActions('${r.id}')">${t("Update")}</button>
+        ${typeof reservationTicketButton === "function" ? reservationTicketButton(r) : ""}
         <div class="dash-res-secondary">${followup}
           <a href="reservation-confirmation.html?id=${encodeURIComponent(r.id)}" target="_blank" rel="noopener" title="${id ? "Buka halaman tamu" : "Open guest page"}" aria-label="${id ? "Buka halaman tamu" : "Open guest page"}">&#8599;</a>
         </div>
@@ -5818,6 +5839,7 @@ function openReservationModal(res = null) {
     res?.reservation_time?.slice(0, 5) || "19:00";
   document.getElementById("res-pax").value = res?.pax || 2;
   document.getElementById("res-occasion").value = res?.occasion || "";
+  document.getElementById("res-status").disabled = false;
   document.getElementById("res-status").value = res?.status || "Reserved";
   setResSourceValue(res?.reservation_source || "");
   document.getElementById("res-notes").value = res?.notes || "";
@@ -5832,6 +5854,7 @@ function openReservationModal(res = null) {
   if (res?.assigned_area)
     document.getElementById("res-area").value = res.assigned_area;
 
+  if (typeof updateStaffDepositDefaults === "function") updateStaffDepositDefaults(true);
   refreshResTableOccupancy();
 
   if (res?.guest_id) {
@@ -5852,6 +5875,8 @@ function openReservationModal(res = null) {
 }
 
 async function saveReservation() {
+  const staffDeposit = typeof readStaffDeposit === "function" ? readStaffDeposit() : null;
+  if (staffDeposit === false) return;
   let guestId =
     currentResGuestId || document.getElementById("res-guest-id").value;
 
@@ -5942,7 +5967,10 @@ async function saveReservation() {
   };
 
   const editId = document.getElementById("res-edit-id").value;
-  if (!editId) payload.created_by = currentStaffId();
+  if (!editId) {
+    payload.created_by = currentStaffId();
+    if (staffDeposit) Object.assign(payload, staffDeposit);
+  }
   loader(true);
   const { error } = await supabaseQuery(
     () =>
@@ -6013,6 +6041,10 @@ async function loadReservations() {
     )
     .eq("reservation_date", date)
     .order("reservation_time");
+
+  if (typeof reservationOnlineOnly !== "undefined" && reservationOnlineOnly) {
+    query = query.eq("reservation_source", "Online Form");
+  }
 
   if (resStatusFilter === "all") {
     // "All" excludes manager-deleted reservations by default — those are
@@ -6298,6 +6330,9 @@ async function runResSearch(guest = null) {
 
 async function renderResSearchResults() {
   if (!resSearchActive) return;
+  if (typeof reservationOnlineOnly !== "undefined") reservationOnlineOnly = false;
+  const onlineFilter = document.getElementById("res-online-only");
+  if (onlineFilter) onlineFilter.checked = false;
   const { occupancy } = resSearchEls();
   // The occupancy card and VIP timeline describe a single day; they'd be
   // meaningless above a cross-date result list, so they step aside.
@@ -6701,6 +6736,7 @@ async function renderReservationsTable(data) {
         <td><p class="res-list-area">${escapeHtml(area || (id ? "Area belum ditentukan" : "Area unassigned"))}</p><div class="res-list-seating">${seating}</div></td>
         <td><div class="res-list-status">${statusBadge(r.status)}${dashboardDepositSummary(r)}${waitlistReasonLine(r)}</div></td>
         <td><div class="dash-res-actions"><button type="button" class="dash-res-update" onclick="openResActions('${r.id}')">${t("Update")}</button>
+          ${typeof reservationTicketButton === "function" ? reservationTicketButton(r) : ""}
           <div class="dash-res-secondary">${followup}<a href="reservation-confirmation.html?id=${encodeURIComponent(r.id)}" target="_blank" rel="noopener" aria-label="${id ? "Buka halaman tamu" : "Open guest page"}" title="${id ? "Buka halaman tamu" : "Open guest page"}">&#8599;</a></div>
         </div></td>
       </tr>`;
@@ -6764,6 +6800,7 @@ async function openResActions(resId) {
       <p class="text-xs text-[#999]">${fmt.time(res.reservation_time)} · ${fmt.pax(res.pax)}</p>
       ${res.reservation_source ? `<p class="text-xs text-[#999] mt-1">Source: ${escapeHtml(res.reservation_source)}</p>` : ""}
     </div>
+    ${typeof reservationTicketButton === "function" ? reservationTicketButton(res) : ""}
     ${largePartyAgreePanel(res)}
     ${depositActionsPanel(res, bal)}
     ${reservationInvoicesPanel(invoices, invoiceError, balancesError ? null : invoiceBalances)}
@@ -7447,7 +7484,7 @@ let depositActionResId = null;
 let depositActionRes = null;
 
 async function openDepositInvoice(resId) {
-  if (!isManagerOrAdmin()) {
+  if (!isManagerOrAdmin() && !canIssueDepositInvoice()) {
     toast(t("Only a manager can issue an invoice"), "error");
     return;
   }
@@ -7505,7 +7542,7 @@ async function submitSimpleDepositInvoice() {
 async function submitDepositInvoice() {
   // Re-checked here as well as in the opener: this function is reachable from
   // the console, and "the button was hidden" is not an access control.
-  if (!isManagerOrAdmin()) {
+  if (!isManagerOrAdmin() && !canIssueDepositInvoice()) {
     toast(t("Only a manager can issue an invoice"), "error");
     return;
   }
@@ -8100,14 +8137,12 @@ function depositActionsPanel(res, bal) {
         "</p>"
       : "") +
     '<div class="flex flex-wrap gap-2 mt-3">' +
-    // Manager-gated in the markup AND in the function. applyManagerOnlyUI()
-    // hides this for staff; openDepositInvoice() refuses for them too, because
-    // a hidden button is a UI decision, not an access control.
+    // Staff can issue deposit invoices; other invoice permissions are unchanged.
     (settled
       ? ""
       : '<button onclick="openDepositInvoice(\'' +
         res.id +
-        '\')" class="manager-only-ui btn-primary text-xs px-3 py-1.5">' +
+        '\')" class="btn-primary text-xs px-3 py-1.5">' +
         escapeHtml(t("Invoice & WhatsApp")) +
         "</button>") +
     (settled

@@ -141,7 +141,7 @@ check("dashboard order matches the 9 Aug screenshot expectation", () => {
 
 check("day list sort is actually wired into loadReservations", () => {
   const i = src.indexOf("async function loadReservations()");
-  assert.ok(src.slice(i, i + 3000).includes("allReservations = sortReservationsByStatus(data)"));
+  assert.ok(src.slice(i, src.indexOf("function moveResDay", i)).includes("allReservations = sortReservationsByStatus(data)"));
 });
 
 check("old incomplete TERMINAL_RES set is gone", () => {

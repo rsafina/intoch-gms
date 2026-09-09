@@ -112,9 +112,15 @@ const I18N_EXCEPTION_TERMS = new Set([
 
 // Indonesian translations, keyed by the English source string.
 const ID_DICT = {
+  "Open a deposit invoice from a reservation first.": "Buka invoice deposit dari reservasi terlebih dahulu.",
+  "Confirmation ticket": "Tiket konfirmasi",
+  "Online form \u00b7 14 days": "Form online \u00b7 14 hari",
+  "Online form only": "Hanya form online",
+  "Request deposit": "Minta deposit",
+  "Use defaults": "Gunakan default",
   "Guest & booking": "Tamu & reservasi",
   "Seating": "Penempatan",
-  "Status & deposit": "Status & deposit",
+  "Status & deposit": "Status & uang muka",
   "Actions": "Tindakan",
   "Booking follow-ups": "Tindak lanjut reservasi",
   "Arrival checks": "Cek kehadiran",
@@ -1744,6 +1750,12 @@ function isManagerOrAdmin() {
   return role === "manager" || role === "admin";
 }
 
+// Deposit requests are an operational staff task; other invoice types remain manager-only.
+function canIssueDepositInvoice() {
+  const session = getStaffSession();
+  return !!session && ["staff", "manager", "admin"].includes(session.role);
+}
+
 // Pages that staff (non-manager) are allowed to access.
 // "settings" resolves to a subpage in navigateTo(); staff can VIEW
 // Areas and the dish list (settings-menu) but every edit action there
@@ -1782,6 +1794,8 @@ const ADMIN_ONLY_PAGES = new Set(["staff-dashboard", "settings-staff"]);
 // Admin (owner/head-chef) gets full manager-level access to every page —
 // the only difference is the dashboard content, swapped in navigateTo().
 function hasAccess(page) {
+  if (page === "invoice" && typeof invReservationContext !== "undefined" &&
+      invReservationContext?.kind === "deposit" && canIssueDepositInvoice()) return true;
   const role = currentStaffRole();
   if (ADMIN_ONLY_PAGES.has(page)) return role === "admin";
   if (role === "manager" || role === "admin") return true;

@@ -409,7 +409,11 @@ function invSummaryFrom(snap) {
 
 async function invSaveInvoice(send) {
   if (invSaving) return;
-  if (invReservationContext && !isManagerOrAdmin()) {
+  if (!invReservationContext && typeof currentStaffRole === "function" && currentStaffRole() === "staff") {
+    toast(t("Open a deposit invoice from a reservation first."), "error");
+    return;
+  }
+  if (invReservationContext && !isManagerOrAdmin() && !(invReservationContext.kind === "deposit" && canIssueDepositInvoice())) {
     toast(t("Only a manager can issue an invoice"), "error");
     return;
   }
@@ -752,6 +756,11 @@ function invApplySnapshot(h) {
 
 function invReset() {
   if (invSaving) return;
+  if (typeof currentStaffRole === "function" && currentStaffRole() === "staff") {
+    invReservationContext = null;
+    navigateTo("reservations");
+    return;
+  }
   // A browser confirm() is not part of the DOM, so the i18n observer
   // cannot reach it — this one string has to be translated at the
   // source with t().
@@ -1257,7 +1266,7 @@ async function invReturnToReservation() {
 }
 
 async function invOpenReservation(res, invoiceId = null, kind = "deposit") {
-  if (invSaving || !isManagerOrAdmin()) return;
+  if (invSaving || (!isManagerOrAdmin() && !(kind === "deposit" && canIssueDepositInvoice()))) return;
   let query = db.from("invoices").select("*").eq("reservation_id", res.id);
   if (invoiceId) query = query.eq("id", invoiceId);
   else query = query.eq("kind", kind).eq("status", "issued");
@@ -1271,6 +1280,7 @@ async function invOpenReservation(res, invoiceId = null, kind = "deposit") {
     toast(t("This invoice is no longer available to edit."), "error");
     return;
   }
+  if (invoice && invoice.kind !== "deposit" && !isManagerOrAdmin()) return;
   let settlementSource = null;
   let paidDirect = 0;
   if (!invoice && kind === "settlement") {
@@ -1294,6 +1304,8 @@ async function invOpenReservation(res, invoiceId = null, kind = "deposit") {
     }
   }
   hideModal("modal-res-actions");
+  // Set context before navigation so staff receive access to this deposit editor.
+  invReservationContext = { id:res.id, guestId:res.guest_id, kind:invoice ? invoice.kind : kind };
   await navigateTo("invoice");
   const name = res.booking_name || res.guests?.name || "";
   invApplySnapshot(invoice?.doc ? invoice.doc : settlementSource || {
@@ -1331,12 +1343,13 @@ async function invOpenReservation(res, invoiceId = null, kind = "deposit") {
 }
 
 async function invEditReservationInvoice(invoiceId) {
-  if (invSaving || !isManagerOrAdmin()) return;
+  if (invSaving || (!isManagerOrAdmin() && !canIssueDepositInvoice())) return;
   const { data: invoice, error } = await supabaseQuery(
-    () => db.from("invoices").select("reservation_id").eq("id", invoiceId).single(),
+    () => db.from("invoices").select("reservation_id,kind").eq("id", invoiceId).single(),
     "Failed to load the invoice",
   );
   if (error || !invoice?.reservation_id) return;
+  if (invoice.kind !== "deposit" && !isManagerOrAdmin()) return;
   const { data: res, error: resError } = await supabaseQuery(
     () => db.from("reservations").select("*, guests(name, phone), tables(name)")
       .eq("id", invoice.reservation_id).single(),
@@ -1368,7 +1381,7 @@ function reservationInvoicesPanel(invoices, error, balances = []) {
       '<button class="underline" data-invoice-url="' + escapeHtml(url) + '" onclick="invCopyReservationLink(this.dataset.invoiceUrl)">' +
       escapeHtml(t("Copy guest link")) + '</button>' +
       (row.kind === "settlement" ? '<button class="underline" onclick="openRecordInvoicePayment(\'' + escapeHtml(row.id) + '\')">' + escapeHtml(t("Record payment")) + '</button>' : '') +
-      (row.doc && isManagerOrAdmin() ? '<button class="underline" onclick="invEditReservationInvoice(\'' +
+      (row.doc && (isManagerOrAdmin() || (row.kind === "deposit" && canIssueDepositInvoice())) ? '<button class="underline" onclick="invEditReservationInvoice(\'' +
         escapeHtml(row.id) + '\')">' + escapeHtml(t("Edit invoice")) + '</button>' : '') + '</div>' : '') + '</div>';
   }).join('') + '</div>';
 }
