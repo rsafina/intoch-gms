@@ -8008,7 +8008,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               <label class="block text-xs font-medium text-[#555] mb-1.5"
                 >Time *</label
               >
-              <input id="res-time" type="time" class="form-input" onchange="updateResVipTimeRange()" />
+              <input id="res-time" type="time" class="form-input" onchange="refreshResTableOccupancy()" />
             </div>
           </div>
 
@@ -8035,19 +8035,19 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <input type="hidden" id="res-table-id" />
           <div id="res-table-picker" class="mb-4"></div>
           <div class="border border-[#E0DDD7] rounded-xl p-3 mb-4 space-y-2">
-            <label class="flex items-center gap-2 text-sm"><input id="res-exclusive-area" type="checkbox" onchange="updateResVipTimeRange()" /> Reserve entire area</label>
+            <label class="flex items-center gap-2 text-sm"><input id="res-exclusive-area" type="checkbox" onchange="refreshResTableOccupancy()" /> Reserve entire area</label>
             <p class="text-xs text-[#777]">Selected tables are held for the visit and preparation buffer. Reserve the entire area only for exclusive use. Waitlisted bookings do not hold capacity.</p>
-            <label class="block text-xs">Buffer before event (minutes)<input id="res-block-buffer" type="number" min="0" step="1" value="0" class="form-input mt-1" /></label>
+            <label class="block text-xs">Buffer before event (minutes)<input id="res-block-buffer" onchange="refreshResTableOccupancy()" type="number" min="0" step="1" value="0" class="form-input mt-1" /></label>
           </div>
-          <label class="block text-xs mb-3">Expected duration if no end time (minutes)<input id="res-duration" type="number" min="15" max="1440" step="1" value="180" class="form-input mt-1" /></label>
+          <label class="block text-xs mb-3">Expected duration if no end time (minutes)<input id="res-duration" onchange="refreshResTableOccupancy()" type="number" min="15" max="1440" step="1" value="180" class="form-input mt-1" /></label>
           <!-- End time overrides the expected duration for this reservation. -->
           <div id="res-endtime-wrap" class="mb-4 -mt-2">
             <div class="flex flex-wrap items-center gap-2">
               <span class="text-xs font-semibold text-[color:var(--accent-strong)] uppercase tracking-wide mr-1">Reservation hours</span>
               <span class="text-sm text-[#555]">from</span>
-              <input id="res-vip-from" type="time" class="form-input" style="width:auto" oninput="syncVipFromTime()" onchange="syncVipFromTime()" />
+              <input id="res-vip-from" type="time" class="form-input" style="width:auto" oninput="syncVipFromTime(); refreshResTableOccupancy()" onchange="syncVipFromTime(); refreshResTableOccupancy()" />
               <span class="text-sm text-[#555]">to</span>
-              <input id="res-end-time" type="time" class="form-input" style="width:auto" />
+              <input id="res-end-time" onchange="refreshResTableOccupancy()" type="time" class="form-input" style="width:auto" />
               <span class="text-[11px] text-[#999]">Required when reserving the entire area.</span>
             </div>
             <p id="res-vip-conflict" class="hidden text-xs text-red-500 mt-1.5"></p>
@@ -8073,7 +8073,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               <label class="block text-xs font-medium text-[#555] mb-1.5"
                 >Status</label
               >
-              <select id="res-status" class="form-input">
+              <select id="res-status" onchange="refreshResTableOccupancy()" class="form-input">
                 <option value="Reserved">Reserved</option>
                 <option value="Arrived">Arrived</option>
                 <option value="Completed">Completed</option>

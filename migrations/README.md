@@ -157,3 +157,12 @@ deposit payments reach Rp 2.500.000. It also corrects existing issued documents
 and already-recorded payments; it does not create any payment records. Review SQL
 warnings for legacy invoices that could not be repaired because of capacity or
 invalid amounts. Separate settlement invoices do not rewrite the deposit.
+
+## Table picker availability
+
+Run the current ALL_IN_ONE.sql before deploying the staff table picker update.
+It installs reservation_table_availability, which returns occupied table IDs for
+the chosen date, hours, duration and preparation buffer. Existing reservations
+are excluded from their own checks; waitlisted bookings do not hold tables.
+The UI disables conflicting tables and prevents saving while availability is
+loading or failed. Database capacity and overlap checks remain the final guard.

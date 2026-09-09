@@ -11,12 +11,12 @@ const lift = name => app.match(new RegExp('^(?:async )?function '+name+'\\([^]*?
   'res-action-block-buffer':{value:'30'},'res-action-duration':{value:'180'}
  };
  let saved, error=null;const notices=[];
- const ctx=vm.createContext({document:{getElementById:id=>fields[id]},_resActionSelectedTables:['t1','t2'],
+ const ctx=vm.createContext({tablePickerContext:{actions:{}},document:{getElementById:id=>fields[id]},_resActionSelectedTables:['t1','t2'],
   _resActionReservation:{id:'booking',reservation_time:'13:00:00'},t:s=>s,toast:s=>notices.push(s),
   loader(){},hideModal(){},loadReservations(){},isViewingStaffDashboard:()=>false,supabaseQuery:fn=>fn(),
   db:{from:()=>({update(p){saved=p;return this;},eq(){return this;},select:async()=>({data:error?null:[{id:'booking'}],error})})}
  });
- vm.runInContext(['timeToMinutes','readAreaBlock','reservationSaveError','saveResActionTable'].map(lift).join('\n'),ctx);
+ vm.runInContext(['reservationTablesReady','timeToMinutes','readAreaBlock','reservationSaveError','saveResActionTable'].map(lift).join('\n'),ctx);
  await ctx.saveResActionTable('booking');assert.equal(saved.reservation_time,'18:00');assert.equal(saved.block_buffer_minutes,30);
  saved=null;fields['res-action-start-time'].value='22:00';await ctx.saveResActionTable('booking');assert.equal(saved,null,'end must follow edited start');
  fields['res-action-start-time'].value='';await ctx.saveResActionTable('booking');assert.equal(saved,null,'start is required');

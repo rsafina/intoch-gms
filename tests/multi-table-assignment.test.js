@@ -18,7 +18,7 @@ w.hideModal = ()=>{};
 w.loadReservations = ()=>{};
 w.isViewingStaffDashboard = ()=>false;
 w.TODAY = '2026-09-07';
-const names = ['timeToMinutes','readAreaBlock','getTableById','assignedTableIds','tableSelectionIds','selectedTableIdsFor','assignedTableNames','renderTableSelection','selectTable','selectAllAreaTables','clearTableSelection','fetchOccupiedTableIds','renderResActionTableGrid','selectResActionTable','selectAllResActionTables','onResActionAreaChange','saveResActionTable'];
+const names = ['reservationTablesReady','timeToMinutes','readAreaBlock','getTableById','assignedTableIds','tableSelectionIds','selectedTableIdsFor','assignedTableNames','renderTableSelection','selectTable','selectAllAreaTables','clearTableSelection','fetchOccupiedTableIds','renderResActionTableGrid','selectResActionTable','selectAllResActionTables','onResActionAreaChange','saveResActionTable'];
 w.eval('let _resActionSelectedTables = []; let _resActionReservation = {id:"r1"};\n' + names.map(name => app.match(new RegExp('^(?:async )?function '+name+'\\([^]*?^}', 'm'))[0]).join('\n'));
 const ids = () => Array.from(w.selectedTableIdsFor('res'));
 (async () => {
@@ -37,6 +37,9 @@ const ids = () => Array.from(w.selectedTableIdsFor('res'));
   assert.equal(w.document.querySelector('[data-table-id="old"]').disabled,false,'existing archived assignment can be removed');
   w.selectTable('res','old'); assert.deepEqual(ids(), []);
   w.renderResActionTableGrid('a',['t1']);
+  const booked=Array.from(w.document.querySelectorAll('#res-action-table-wrap button')).find(b=>b.textContent.includes('A3'));
+  assert.equal(booked.disabled,true);assert.ok(booked.className.includes('bg-gray-200'));
+  assert.match(booked.textContent,/A3 \u00b7 4 pax/);
   w.selectResActionTable('t2');
   w.selectAllResActionTables();
   let payload;

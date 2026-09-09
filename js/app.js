@@ -2216,29 +2216,61 @@ async function fetchOccupiedTableIds(selfId = null, selfType = "visit", selfRese
   return occupiedIds;
 }
 
-// Re-evaluates table occupancy for the reservation modal based on the
-// chosen DATE. Called on modal open and whenever res-date changes.
-async function refreshResTableOccupancy() {
-  const targetDate = document.getElementById("res-date")?.value || TODAY;
-  const selfId = document.getElementById("res-edit-id")?.value || null;
-  const selectedId = document.getElementById("res-table-id")?.value || "";
-
-  if (targetDate !== TODAY) {
-    // Future (or past) date: nobody is physically at a table on that date,
-    // so all tables are selectable. Double-booking a future date is left
-    // to staff judgment, same as before.
-    tablePickerContext["res"] = { skipOccupancy: true, occupiedIds: new Set() };
-    renderTableSelection("res", selectedId);
-    updateResVipTimeRange();
-    return;
+// Use the database's visit windows for both today and future reservations.
+const tableAvailabilityRequests = {};
+async function refreshTimedTablePicker(prefix) {
+  const actions = prefix === "res-action";
+  const key = actions ? "actions" : "res";
+  const request = tableAvailabilityRequests[key] = (tableAvailabilityRequests[key] || 0) + 1;
+  const el = suffix => document.getElementById(`${prefix}-${suffix}`);
+  const reservation = actions ? _resActionReservation : null;
+  const date = actions ? reservation?.reservation_date : el("date")?.value;
+  const start = el(actions ? "start-time" : "time")?.value;
+  const status = actions ? reservation?.status : el("status")?.value;
+  const render = () => actions
+    ? renderResActionTableGrid(el("area")?.value, _resActionSelectedTables)
+    : renderTableSelection("res");
+  if (status === "Completed") {
+    tablePickerContext[key] = { skipOccupancy: true, occupiedIds: new Set() };
+    render(); return;
   }
+  tablePickerContext[key] = { loading: true, occupiedIds: new Set() };
+  render();
+  if (!date || !start) {
+    tablePickerContext[key] = { failed: true, occupiedIds: new Set() };
+    render(); return;
+  }
+  const { data, error } = await supabaseQuery(
+    () => db.rpc("reservation_table_availability", {
+      p_date: date, p_time: start, p_end: el("end-time")?.value || null,
+      p_duration: Number(el("duration")?.value || 180),
+      p_buffer: Number(el("block-buffer")?.value || 0),
+      p_exclusive: !!el("exclusive-area")?.checked,
+      p_exclude: actions ? reservation?.id : el("edit-id")?.value || null,
+    }), "Failed to load table availability",
+  );
+  if (tableAvailabilityRequests[key] !== request) return;
+  tablePickerContext[key] = { failed: !!error || !data, occupiedIds: new Set((data || []).filter(r => r.occupied).map(r => r.table_id)) };
+  render();
+  if (error) toast(t("Could not check table availability. Check the visit hours and database migrations, then retry."), "error");
+}
 
-  tablePickerContext["res"] = { skipOccupancy: false, occupiedIds: new Set() };
-  renderTableSelection("res", selectedId);
-  const ids = await fetchOccupiedTableIds(selfId, "reservation");
-  tablePickerContext["res"] = { skipOccupancy: false, occupiedIds: ids };
-  renderTableSelection("res", document.getElementById("res-table-id").value);
+async function refreshResTableOccupancy() {
   updateResVipTimeRange();
+  await refreshTimedTablePicker("res");
+}
+
+function reservationTablesReady(key, ids) {
+  const ctx = tablePickerContext[key] || {};
+  if (ctx.loading || ctx.failed) {
+    toast(t("Wait for table availability to finish loading before saving."), "error");
+    return false;
+  }
+  if (!ctx.skipOccupancy && ids.some(id => ctx.occupiedIds?.has(id))) {
+    toast(t("Some selected tables are booked during this visit. Choose available tables or change the hours."), "error");
+    return false;
+  }
+  return true;
 }
 
 function renderTableSelection(prefix, selected = null) {
@@ -2263,12 +2295,12 @@ function renderTableSelection(prefix, selected = null) {
         <button type="button" onclick="selectAllAreaTables('${prefix}','${group.id}')" class="text-xs underline">${t("Select all tables")}</button>
         </div><div class="flex flex-wrap gap-2">` + tables.map(tb => {
           const checked = ids.includes(tb.id);
-          const occupied = !ctx.skipOccupancy && ctx.occupiedIds?.has(tb.id) && !checked;
-          const disabled = !checked && (!tb.is_active || occupied);
+          const occupied = !ctx.skipOccupancy && ctx.occupiedIds?.has(tb.id);
+          const disabled = !checked && (!tb.is_active || occupied || ctx.loading || ctx.failed);
           return `<button type="button" data-table-id="${tb.id}" aria-pressed="${checked}"
             onclick="selectTable('${prefix}','${tb.id}')" ${disabled ? "disabled" : ""}
-            class="px-3 py-2 rounded-full text-xs font-semibold border transition ${checked ? "bg-[color:var(--brand-ink)] text-white" : occupied ? "bg-red-100 text-red-700" : "bg-[#F8F6F2] text-[#555]"} disabled:opacity-50">
-            ${checked ? "&#10003; " : ""}${escapeHtml(tb.name)}${!tb.is_active ? " (" + t("Archived") + ")" : ""}${tb.capacity ? " ? " + tb.capacity : ""}
+            class="px-3 py-2 rounded-full text-xs font-semibold border transition ${occupied ? "bg-gray-200 text-gray-500" : checked ? "bg-[color:var(--brand-ink)] text-white" : "bg-[#F8F6F2] text-[#555]"} disabled:opacity-50">
+            ${checked ? "&#10003; " : ""}${escapeHtml(tb.name)}${!tb.is_active ? " (" + t("Archived") + ")" : ""}${tb.capacity ? " &middot; " + tb.capacity + " pax" : ""}
           </button>`;
         }).join("") + '</div></div>';
     }).join("");
@@ -2282,7 +2314,7 @@ function selectTable(prefix, tableId) {
     renderTableSelection(prefix, ids.filter(id => id !== tableId));
   } else {
     const ctx = tablePickerContext[prefix] || {};
-    if (!table.is_active || (!ctx.skipOccupancy && ctx.occupiedIds?.has(tableId))) return;
+    if (!table.is_active || ctx.loading || ctx.failed || (!ctx.skipOccupancy && ctx.occupiedIds?.has(tableId))) return;
     if (ids.length && getTableById(ids[0])?.area_id !== table.area_id) {
       toast(t("Clear the selection before choosing another area."), "error");
       return;
@@ -2300,7 +2332,7 @@ function selectAllAreaTables(prefix, areaId) {
   }
   const ctx = tablePickerContext[prefix] || {};
   const available = allTables.filter(tb => tb.area_id === areaId && tb.is_active &&
-    (ctx.skipOccupancy || !ctx.occupiedIds?.has(tb.id) || ids.includes(tb.id)));
+    !ctx.loading && !ctx.failed && (ctx.skipOccupancy || !ctx.occupiedIds?.has(tb.id) || ids.includes(tb.id)));
   renderTableSelection(prefix, [...ids, ...available.map(tb => tb.id)]);
   if (prefix === "res") updateResVipTimeRange();
 }
@@ -5813,17 +5845,7 @@ function openReservationModal(res = null) {
   if (res?.assigned_area)
     document.getElementById("res-area").value = res.assigned_area;
 
-  // Completed reservations: skip occupancy (historical edit).
-  // Otherwise occupancy is DATE-AWARE: today's physical occupancy only
-  // matters when the reservation is FOR today. Future dates are freely
-  // selectable (fixes: "cancelled VIP but still can't rebook VIP").
-  const resIsCompleted = res?.status === "Completed";
-  if (resIsCompleted) {
-    tablePickerContext["res"] = { skipOccupancy: true, occupiedIds: new Set() };
-    renderTableSelection("res", assignedTableIds(res).join(","));
-  } else {
-    refreshResTableOccupancy();
-  }
+  refreshResTableOccupancy();
 
   if (res?.guest_id) {
     currentResGuestId = res.guest_id;
@@ -5916,6 +5938,7 @@ async function saveReservation() {
   const block = readAreaBlock("res", assignedArea, time);
   if (!block) return;
 
+  if (!reservationTablesReady("res", selectedTableIds)) return;
   const payload = {
     guest_id: guestId,
     reservation_date: date,
@@ -6844,14 +6867,14 @@ async function openResActions(resId) {
       <div id="res-action-table-wrap" class="grid grid-cols-3 gap-1.5"></div>
     </div>
     <div class="rounded-xl border border-[#E0DDD7] p-3 mb-3 space-y-2">
-      <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="res-action-exclusive-area" ${res.exclusive_area ? "checked" : ""}> ${t("Reserve entire area")}</label>
+      <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="res-action-exclusive-area" onchange="refreshTimedTablePicker('res-action')" ${res.exclusive_area ? "checked" : ""}> ${t("Reserve entire area")}</label>
       <p class="text-xs text-[#777]">${t("Selected tables are held for the visit and preparation buffer. Reserve the entire area only for exclusive use. Waitlisted bookings do not hold capacity.")}</p>
       <div class="grid grid-cols-2 gap-3">
-        <label class="text-xs">${t("Start time")}<input id="res-action-start-time" type="time" required class="form-input mt-1" value="${escapeHtml((res.reservation_time || "").slice(0,5))}"></label>
-        <label class="text-xs">${t("End time")}<input id="res-action-end-time" type="time" class="form-input mt-1" value="${escapeHtml((res.end_time || "").slice(0,5))}"></label>
-        <label class="text-xs">${t("Buffer before event (minutes)")}<input id="res-action-block-buffer" type="number" min="0" step="1" class="form-input mt-1" value="${Number(res.block_buffer_minutes) || 0}"></label>
+        <label class="text-xs">${t("Start time")}<input id="res-action-start-time" onchange="refreshTimedTablePicker('res-action')" type="time" required class="form-input mt-1" value="${escapeHtml((res.reservation_time || "").slice(0,5))}"></label>
+        <label class="text-xs">${t("End time")}<input id="res-action-end-time" onchange="refreshTimedTablePicker('res-action')" type="time" class="form-input mt-1" value="${escapeHtml((res.end_time || "").slice(0,5))}"></label>
+        <label class="text-xs">${t("Buffer before event (minutes)")}<input id="res-action-block-buffer" onchange="refreshTimedTablePicker('res-action')" type="number" min="0" step="1" class="form-input mt-1" value="${Number(res.block_buffer_minutes) || 0}"></label>
       </div>
-      <label class="block text-xs">${t("Expected duration if no end time (minutes)")}<input id="res-action-duration" type="number" min="15" max="1440" step="1" class="form-input mt-1" value="${Number(res.booking_duration_minutes) || 180}"></label>
+      <label class="block text-xs">${t("Expected duration if no end time (minutes)")}<input id="res-action-duration" onchange="refreshTimedTablePicker('res-action')" type="number" min="15" max="1440" step="1" class="form-input mt-1" value="${Number(res.booking_duration_minutes) || 180}"></label>
     </div>
     <button onclick="saveResActionTable('${res.id}')" class="btn-primary w-full justify-center text-sm mb-2">Save tables and availability</button>
     <div class="divider my-3"></div>
@@ -6876,11 +6899,8 @@ async function openResActions(resId) {
 
   // Render initial table grid for current area
   _resActionReservation = res;
-  tablePickerContext.actions = { skipOccupancy: res.reservation_date !== TODAY || res.status === "Completed", occupiedIds: new Set() };
-  if (!tablePickerContext.actions.skipOccupancy) {
-    tablePickerContext.actions.occupiedIds = await fetchOccupiedTableIds(res.id, "reservation");
-  }
-  renderResActionTableGrid(res.assigned_area, assignedTableIds(res));
+  _resActionSelectedTables = assignedTableIds(res);
+  await refreshTimedTablePicker("res-action");
 }
 
 // ── Delete Reservation (manager-only, soft-delete) ──────────────────────
@@ -6956,11 +6976,11 @@ function renderResActionTableGrid(areaId, currentTableIds) {
     <button type="button" onclick="renderResActionTableGrid(document.getElementById('res-action-area').value, [])" class="underline">${t("Clear selection")}</button>
     </div>` + tables.map(tb => {
       const checked = _resActionSelectedTables.includes(tb.id);
-      const occupied = !ctx.skipOccupancy && ctx.occupiedIds?.has(tb.id) && !checked;
+      const occupied = !ctx.skipOccupancy && ctx.occupiedIds?.has(tb.id);
       return `<button type="button" onclick="selectResActionTable('${tb.id}')" aria-pressed="${checked}"
-        ${!checked && (!tb.is_active || occupied) ? "disabled" : ""}
-        class="text-xs py-2 px-2 rounded-lg border disabled:opacity-50 ${checked ? "bg-[color:var(--brand-ink)] text-white" : occupied ? "bg-red-100 text-red-700" : "bg-white"}">
-        ${checked ? "&#10003; " : ""}${escapeHtml(tb.name)}${!tb.is_active ? " (" + t("Archived") + ")" : ""}${tb.capacity ? " ? " + tb.capacity : ""}</button>`;
+        ${!checked && (!tb.is_active || occupied || ctx.loading || ctx.failed) ? "disabled" : ""}
+        class="text-xs py-2 px-2 rounded-lg border disabled:opacity-50 ${occupied ? "bg-gray-200 text-gray-500" : checked ? "bg-[color:var(--brand-ink)] text-white" : "bg-white"}">
+        ${checked ? "&#10003; " : ""}${escapeHtml(tb.name)}${!tb.is_active ? " (" + t("Archived") + ")" : ""}${tb.capacity ? " &middot; " + tb.capacity + " pax" : ""}</button>`;
     }).join("");
 }
 
@@ -6970,7 +6990,7 @@ function selectResActionTable(tableId) {
   if (!table || table.area_id !== areaId) return;
   const selected = _resActionSelectedTables.includes(tableId);
   const ctx = tablePickerContext.actions || {};
-  if (!selected && (!table.is_active || (!ctx.skipOccupancy && ctx.occupiedIds?.has(tableId)))) return;
+  if (!selected && (!table.is_active || ctx.loading || ctx.failed || (!ctx.skipOccupancy && ctx.occupiedIds?.has(tableId)))) return;
   renderResActionTableGrid(areaId, selected ? _resActionSelectedTables.filter(id => id !== tableId)
     : [..._resActionSelectedTables, tableId]);
 }
@@ -6979,7 +6999,7 @@ function selectAllResActionTables() {
   const areaId = document.getElementById("res-action-area")?.value;
   const ctx = tablePickerContext.actions || {};
   const ids = allTables.filter(tb => tb.area_id === areaId && tb.is_active &&
-    (ctx.skipOccupancy || !ctx.occupiedIds?.has(tb.id) || _resActionSelectedTables.includes(tb.id))).map(tb => tb.id);
+    !ctx.loading && !ctx.failed && (ctx.skipOccupancy || !ctx.occupiedIds?.has(tb.id) || _resActionSelectedTables.includes(tb.id))).map(tb => tb.id);
   renderResActionTableGrid(areaId, [..._resActionSelectedTables, ...ids]);
 }
 
@@ -7005,6 +7025,7 @@ async function saveResActionTable(resId) {
     toast(t("Enter a valid start time."), "error");
     return;
   }
+  if (!reservationTablesReady("actions", ids)) return;
   const block = readAreaBlock("res-action", areaId, start);
   if (!block) return;
   loader(true);
