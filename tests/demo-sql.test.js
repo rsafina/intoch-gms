@@ -24,3 +24,15 @@ for (const table of wiped) assert.ok(seed.includes("'" + table + "'"), table + '
 assert.match(seed, /interval '3 months'/);
 assert.match(seed, /v\.id\s*\)/, 'membership transactions receive a visit ID');
 console.log('Demo SQL: schema coverage, preserved configuration, reset guard and transactions passed (static checks only)');
+
+// Historical-only seed: every reservation comes from a historical visit,
+// with a transaction guard rejecting today or any future date.
+assert.equal([...seed.matchAll(/insert\s+into\s+reservations\s*\(/gi)].length, 1);
+const reservationInsert = seed.match(/insert into reservations[\s\S]*?;/i)[0];
+assert.match(reservationInsert, /v\.guest_id, v\.visit_date/);
+assert.match(reservationInsert, /from _visit_rows v/);
+assert.match(reservationInsert, /'Completed'/);
+assert.match(seed, /reservation_date < start_date or reservation_date >= today/);
+assert.ok(!seed.includes('_demo_upcoming'));
+assert.ok(!/insert\s+into\s+(invoices|invoice_payments)\b/i.test(seed));
+console.log('Historical-only seed: completed bookings from visits, no upcoming/payment examples, date guard passed');

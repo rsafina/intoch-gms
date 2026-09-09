@@ -112,6 +112,10 @@ const I18N_EXCEPTION_TERMS = new Set([
 
 // Indonesian translations, keyed by the English source string.
 const ID_DICT = {
+  "Guest & booking": "Tamu & reservasi",
+  "Seating": "Penempatan",
+  "Status & deposit": "Status & deposit",
+  "Actions": "Tindakan",
   "Booking follow-ups": "Tindak lanjut reservasi",
   "Arrival checks": "Cek kehadiran",
   "No arrival checks due.": "Tidak ada kehadiran yang perlu dicek.",

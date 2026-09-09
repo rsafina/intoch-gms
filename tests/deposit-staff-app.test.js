@@ -124,7 +124,7 @@ ok(
 );
 ok(
   "the reservations row renders the deposit badge next to the status badge",
-  /statusBadge\(r\.status\) \+\s*\n\s*depositRowBadge\(r\)/.test(app),
+  /statusBadge\(r\.status\)\}\$\{dashboardDepositSummary\(r\)\}/.test(app),
 );
 ok(
   "Incoming rows are sorted above ordinary reservations",
@@ -159,7 +159,7 @@ ok(
 );
 ok(
   "the dashboard renders the deposit badge beside status",
-  /statusBadge\(r\.status\)\}\$\{depositRowBadge\(r\)\}/.test(app),
+  /statusBadge\(r\.status\)\}\$\{dashboardDepositSummary\(r\)\}/.test(app),
 );
 ok(
   "Incoming deposit rows expose invoice follow-up beside Update",

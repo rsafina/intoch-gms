@@ -18,7 +18,7 @@
     <!-- The printed invoice sheet. Shared with invoice-view.html, the page a
          guest opens from WhatsApp, so both draw the same document. -->
     <link rel="stylesheet" href="css/invoice-sheet.css?v=1" />
-    <link rel="stylesheet" href="css/dashboard-reservations.css?v=1" />
+    <link rel="stylesheet" href="css/dashboard-reservations.css?v=2" />
     <style>
       :root {
         /* ── Brand tokens (2026-09-05). ONE PLACE. ───────────────────
@@ -2982,67 +2982,18 @@
           <!-- Day occupancy + VIP timeline summary -->
           <div id="res-occupancy-summary"></div>
 
-          <div class="card overflow-hidden">
-            <table class="w-full">
-            <div class="overflow-x-auto">
-              <thead>
-                <tr
-                  style="background: #fafaf8; border-bottom: 1px solid #ede9e3"
-                >
-                  <th
-                    class="text-left px-5 py-3 text-xs text-[#999] uppercase tracking-wider font-medium"
-                  >
-                    Date
-                  </th>
-                  <th
-                    class="text-left px-5 py-3 text-xs text-[#999] uppercase tracking-wider font-medium"
-                  >
-                    Time
-                  </th>
-                  <th
-                    class="text-left px-5 py-3 text-xs text-[#999] uppercase tracking-wider font-medium"
-                  >
-                    Guest
-                  </th>
-                  <th
-                    class="text-left px-5 py-3 text-xs text-[#999] uppercase tracking-wider font-medium"
-                  >
-                    Pax
-                  </th>
-                  <th
-                    class="text-left px-5 py-3 text-xs text-[#999] uppercase tracking-wider font-medium hidden md:table-cell"
-                  >
-                    Table
-                  </th>
-                  <th
-                    class="text-left px-5 py-3 text-xs text-[#999] uppercase tracking-wider font-medium hidden md:table-cell"
-                    style="width:120px; min-width:120px; max-width:120px">
-                    Notes
-                  </th>
-                  <th
-                    class="text-left px-5 py-3 text-xs text-[#999] uppercase tracking-wider font-medium hidden md:table-cell"
-                  >
-                    Visits
-                  </th>
-                  <th
-                    class="text-left px-5 py-3 text-xs text-[#999] uppercase tracking-wider font-medium"
-                  >
-                    Status
-                  </th>
-                  <th class="px-5 py-3"></th>
-                </tr>
-              </thead>
-              <tbody id="reservations-tbody">
-                <tr>
-                  <td
-                    colspan="10"
-                    class="px-5 py-8 text-center text-[#bbb] text-sm"
-                  >
-                    Loading…
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="card res-list-card">
+            <div class="res-list-scroll">
+              <table class="res-list-table">
+                <thead><tr>
+                  <th scope="col" data-i18n>Time</th>
+                  <th scope="col" data-i18n>Guest &amp; booking</th>
+                  <th scope="col" data-i18n>Seating</th>
+                  <th scope="col" data-i18n>Status &amp; deposit</th>
+                  <th scope="col" data-i18n>Actions</th>
+                </tr></thead>
+                <tbody id="reservations-tbody"><tr><td colspan="5" class="res-list-empty">Loading...</td></tr></tbody>
+              </table>
             </div>
           </div>
         </div>

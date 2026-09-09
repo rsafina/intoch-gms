@@ -6548,13 +6548,17 @@ async function renderResOccupancySummary(date) {
     </div>
     ${unplacedHtml}`;
 
+  const vipWasOpen = !!container.querySelector(".res-vip-accordion[open]");
   const vipHtml = vipTables.length
-    ? `<div class="mt-5 pt-5 border-t border-[#EDE9E3]">
-        <p class="text-[10px] text-[#999] uppercase tracking-wider font-medium mb-3">
-          ${t("VIP Room Availability")} <span class="normal-case">(${minutesToHHMM(VIP_TIMELINE_START_MIN)}–${minutesToHHMM(VIP_TIMELINE_END_MIN)})</span>
-        </p>
-        ${vipTables.map((vt) => renderVipTableTimeline(vt, rows)).join("")}
-      </div>`
+    ? `<details class="res-vip-accordion" ${vipWasOpen ? "open" : ""}>
+        <summary><span>${t("VIP Room Availability")} &middot; ${vipTables.length}
+          <small>${escapeHtml(date)} &middot; ${minutesToHHMM(VIP_TIMELINE_START_MIN)}&ndash;${minutesToHHMM(VIP_TIMELINE_END_MIN)}</small>
+        </span><span class="res-expand-label">${CURRENT_LANG === "id" ? "Lihat jadwal" : "View availability"} &#8964;</span></summary>
+        <div class="res-vip-scroll">
+          ${allAreas.filter(area => vipTables.some(table => table.area_id === area.id)).map(area =>
+            `<section><h4>${escapeHtml(area.name)}</h4>${vipTables.filter(table => table.area_id === area.id).map(table => renderVipTableTimeline(table, rows)).join("")}</section>`).join("")}
+        </div>
+      </details>`
     : "";
 
   container.innerHTML = `<div class="card p-5 mb-5">${summaryCardsHtml}${vipHtml}</div>`;
@@ -6629,138 +6633,79 @@ function renderVipTableTimeline(table, rows) {
     </div>`;
 }
 
+let reservationListRenderRequest = 0;
+
+async function copyReservationPhone(button) {
+  try {
+    await navigator.clipboard.writeText(button.dataset.phone);
+    toast(CURRENT_LANG === "id" ? "Nomor disalin" : "Phone number copied");
+  } catch (_) {
+    toast(CURRENT_LANG === "id" ? "Tidak dapat menyalin nomor" : "Could not copy phone number", "error");
+  }
+}
+
 async function renderReservationsTable(data) {
+  const request = ++reservationListRenderRequest;
   const tbody = document.getElementById("reservations-tbody");
   if (!tbody) return;
-
+  const id = CURRENT_LANG === "id";
   if (!data.length) {
-    // Different empty states: "this day" is wrong (and confusing) when
-    // the table is showing cross-date search results.
-    const msg = resSearchActive
-      ? "No reservations found for this guest"
-      : "No reservations found for this day";
-    tbody.innerHTML =
-      '<tr><td colspan="9" class="px-5 py-8 text-center text-[#bbb] text-sm">' +
-      msg +
-      "</td></tr>";
+    tbody.innerHTML = `<tr><td colspan="5" class="res-list-empty">${resSearchActive
+      ? (id ? "Tidak ada reservasi untuk tamu ini" : "No reservations found for this guest")
+      : (id ? "Tidak ada reservasi pada tanggal ini" : "No reservations found for this day")}</td></tr>`;
     return;
   }
-
-  // Balances first: depositRowBadge() reads them synchronously while building
-  // the rows, so a render that beat this call would silently show no deposits.
   await loadDepositBalances(data);
-
-  // Attach visit counts
-  const allGuestIds = data.map((r) => ({ guest_id: r.guest_id }));
-  if (allGuestIds.length) {
-    await attachGuestVisitCounts(allGuestIds);
-  }
-  const visitMap = {};
-  data.forEach((r) => {
-    if (r.guest_id) visitMap[r.guest_id] = r._visitCount || 0;
+  // Attach to the rows we render, rather than throwaway guest ID objects.
+  await attachGuestVisitCounts(data);
+  if (request !== reservationListRenderRequest) return;
+  const groups = new Map();
+  data.forEach(r => {
+    if (!groups.has(r.reservation_date)) groups.set(r.reservation_date, []);
+    groups.get(r.reservation_date).push(r);
   });
-
-  tbody.innerHTML = data
-    .map((r) => {
-      const visits = r.guest_id ? visitMap[r.guest_id] || 0 : 0;
-      const tierBadge = formatSpendingTierBadge(r.guests?.spending_tier);
-      const latestTag = r.guests?.tag
-        ? r.guests.tag
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean)
-            .slice(-1)[0]
-        : null;
-      const latestTagHtml = latestTag
-        ? '<span class="inline-block px-2 py-0.5 rounded-full text-[11px] bg-[#F3F4F6] text-[#555]">' +
-          escapeHtml(latestTag) +
-          "</span>"
-        : "";
-      const mbrBadge = memberBadge(r.guest_id);
-      const extras =
-        tierBadge || latestTagHtml || mbrBadge
-          ? '<div class="flex flex-wrap items-center gap-1.5 mt-1.5">' +
-            tierBadge +
-            mbrBadge +
-            latestTagHtml +
-            "</div>"
-          : "";
-      const dateLabel = new Date(
-        r.reservation_date + "T00:00:00",
-      ).toLocaleDateString(CURRENT_LANG === "id" ? "id-ID" : "en-GB", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-      });
-      return (
-        '<tr class="table-row border-b border-[#F5F3EF]">' +
-        '<td class="px-5 py-3.5 text-sm text-[#555]">' +
-        dateLabel +
-        "</td>" +
-        '<td class="px-5 py-3.5 font-display text-[color:var(--brand-ink)]">' +
-        fmt.time(r.reservation_time) +
-        "</td>" +
-        '<td class="px-5 py-3.5">' +
-        '<p class="font-medium text-sm text-[#222]">' +
-        (r.guests?.name || "—") +
-        "</p>" +
-        (r.guests?.phone
-          ? '<p class="text-xs text-[#999] mt-0.5">' + r.guests.phone + "</p>"
-          : "") +
-        extras +
-        "</td>" +
-        '<td class="px-5 py-3.5 text-sm text-[#555]">' +
-        fmt.pax(r.pax) +
-        "</td>" +
-        '<td class="px-5 py-3.5 text-sm text-[#555] hidden md:table-cell">' +
-        escapeHtml(assignedTableNames(r) || "—") +
-        "</td>" +
-        // Area column removed 2026-07-17 — freed horizontal space so the
-        // WA action buttons stay visible without scrolling.
-        (function () {
-          const MAX = 30;
-          const raw = r.notes || "";
-          const truncated = raw.length > MAX;
-          const display = truncated ? raw.slice(0, MAX) + "…" : raw;
-          const cell = raw
-            ? truncated
-              ? '<span class="relative group cursor-default">' +
-                '<span class="block text-xs leading-snug whitespace-normal break-words" style="max-width:110px">' +
-                escapeHtml(display) +
-                "</span>" +
-                '<span class="pointer-events-none absolute z-50 left-0 top-full mt-1 w-56 rounded-lg bg-[#1C2B3A] text-white text-xs px-3 py-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-pre-wrap break-words" style="min-width:140px">' +
-                escapeHtml(raw) +
-                "</span>" +
-                "</span>"
-              : '<span class="block text-xs leading-snug whitespace-normal break-words" style="max-width:110px">' +
-                escapeHtml(display) +
-                "</span>"
-            : "—";
-          return (
-            '<td class="px-5 py-3.5 text-sm text-[#555] hidden md:table-cell align-top">' +
-            cell +
-            "</td>"
-          );
-        })() +
-        '<td class="px-5 py-3.5 hidden md:table-cell"><span class="font-display text-lg text-[color:var(--brand-ink)]">' +
-        (visits || "—") +
-        "</span></td>" +
-        '<td class="px-5 py-3.5">' +
-        statusBadge(r.status) +
-        depositRowBadge(r) +
-        waitlistReasonLine(r) +
-        "</td>" +
-        '<td class="px-5 py-3.5"><div class="flex items-center gap-3"><a href="reservation-confirmation.html?id=' +
-        r.id +
-        '" target="_blank" class="text-xs text-[color:var(--brand)] hover:underline flex items-center gap-1"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\"/><polyline points=\"15 3 21 3 21 9\"/><line x1=\"10\" y1=\"14\" x2=\"21\" y2=\"3\"/></svg>Link</a><button onclick="openResActions(\'' +
-        r.id +
-        '\')" class="text-xs text-[color:var(--accent-strong)] hover:underline">Update</button>' +
-        waReservationBtns(r) +
-        "</div></td>" +
-        "</tr>"
-      );
-    })
-    .join("");
+  tbody.innerHTML = [...groups].map(([date, rows]) => {
+    const dateLabel = new Date(date + "T00:00:00").toLocaleDateString(id ? "id-ID" : "en-GB",
+      {weekday:"long", day:"numeric", month:"long", year:"numeric"});
+    return `<tr class="res-date-group"><th colspan="5" scope="rowgroup">${escapeHtml(dateLabel)} <span>${rows.length} ${id ? "reservasi" : "reservations"}</span></th></tr>` +
+    rows.map(r => {
+      const tableNames = assignedTableNames(r) || "";
+      const names = tableNames.split(",").map(name => name.trim()).filter(Boolean);
+      const seating = names.length > 2
+        ? `<details class="res-seating-details"><summary>${escapeHtml(names.slice(0,2).join(", "))} <span>+${names.length-2}</span></summary><p>${escapeHtml(tableNames)}</p></details>`
+        : escapeHtml(tableNames || (id ? "Belum ditentukan" : "Unassigned"));
+      const area = r.areas?.name || allAreas.find(a => a.id === r.assigned_area)?.name;
+      const notes = [r.notes, r.guests?.notes].filter(Boolean).join(" / ");
+      const followup = waReservationBtns(r).replace(/>(Invoice Followup|Pax Follow Up|Waitlist Follow Up|WA Follow Up)</g,
+        ">" + (id ? "Tindak lanjut" : "Follow up") + "<");
+      const tag = r.guests?.tag?.split(",").map(s => s.trim()).filter(Boolean).slice(-1)[0];
+      return `<tr class="res-list-row">
+        <td><time class="res-list-time">${escapeHtml(String(r.reservation_time || "").slice(0,5) || "--")}</time></td>
+        <td>
+          <p class="res-list-name">${escapeHtml(r.booking_name || r.guests?.name || "--")} <span>&middot; ${fmt.pax(r.pax)}</span></p>
+          <div class="res-list-guest-meta">${formatSpendingTierBadge(r.guests?.spending_tier)} ${memberBadge(r.guest_id)}
+            <span>${Number(r._visitCount || 0)} ${id ? "kunjungan" : "visits"}</span>${tag ? `<span>${escapeHtml(tag)}</span>` : ""}
+          </div>
+          ${r.guests?.food_allergy ? `<p class="res-list-allergy">${id ? "Alergi" : "Allergy"}: ${escapeHtml(r.guests.food_allergy)}</p>` : ""}
+          <details class="res-booking-details">
+            <summary>${id ? "Detail" : "Details"}${notes ? ` &middot; ${id ? "Catatan" : "Notes"}` : ""} <span>+</span></summary>
+            <div>
+              ${r.guests?.phone ? `<p>${escapeHtml(r.guests.phone)} <button type="button" data-phone="${escapeHtml(r.guests.phone)}" onclick="copyReservationPhone(this)">${id ? "Salin" : "Copy"}</button></p>` : ""}
+              ${r.reservation_source ? `<p>${id ? "Sumber" : "Source"}: ${escapeHtml(r.reservation_source)}</p>` : ""}
+              ${r.occasion ? `<p>${escapeHtml(r.occasion)}</p>` : ""}
+              ${notes ? `<p class="res-list-notes">${escapeHtml(notes)}</p>` : ""}
+              ${r.guests?.favorite_menu ? `<p>${id ? "Menu favorit" : "Favourite menu"}: ${escapeHtml(r.guests.favorite_menu)}</p>` : ""}
+            </div>
+          </details>
+        </td>
+        <td><p class="res-list-area">${escapeHtml(area || (id ? "Area belum ditentukan" : "Area unassigned"))}</p><div class="res-list-seating">${seating}</div></td>
+        <td><div class="res-list-status">${statusBadge(r.status)}${dashboardDepositSummary(r)}${waitlistReasonLine(r)}</div></td>
+        <td><div class="dash-res-actions"><button type="button" class="dash-res-update" onclick="openResActions('${r.id}')">${t("Update")}</button>
+          <div class="dash-res-secondary">${followup}<a href="reservation-confirmation.html?id=${encodeURIComponent(r.id)}" target="_blank" rel="noopener" aria-label="${id ? "Buka halaman tamu" : "Open guest page"}" title="${id ? "Buka halaman tamu" : "Open guest page"}">&#8599;</a></div>
+        </div></td>
+      </tr>`;
+    }).join("");
+  }).join("");
 }
 
 async function openResActions(resId) {
