@@ -47,11 +47,15 @@ vm.runInContext(app.slice(app.indexOf('let reservationListRenderRequest'),app.in
  vm.runInContext(app.slice(app.indexOf('async function renderResOccupancySummary('),app.indexOf('// Builds one VIP table')),ctx);
  await ctx.renderResOccupancySummary('2026-09-10');
  assert.equal(doc.querySelector('.res-vip-accordion').open,false);
+ assert.equal(doc.querySelector('.res-area-accordion').open,false,'area details start collapsed');
+ assert.ok(doc.querySelector('.res-occupancy-totals'),'totals remain visible outside details');
+ doc.querySelector('.res-area-accordion').open=true;
  assert.equal(doc.querySelectorAll('.res-vip-scroll section').length,2);
  assert.equal(doc.querySelectorAll('.test-room').length,20);
  doc.querySelector('.res-vip-accordion').open=true;
  await ctx.renderResOccupancySummary('2026-09-10');
  assert.equal(doc.querySelector('.res-vip-accordion').open,true,'refresh preserves expanded state');
+ assert.equal(doc.querySelector('.res-area-accordion').open,true,'refresh preserves area expansion');
  vm.runInContext(app.slice(app.indexOf('function computeDiningAreaCapacity('),app.indexOf('async function renderResOccupancySummary(')),ctx);
  ctx.allAreas.push({id:'indoor',name:'Indoor',capacity:40},{id:'outdoor',name:'Outdoor',capacity:60},{id:'smoking',name:'Outdoor - Smoking',capacity:20});
  ctx.supabaseQuery=async()=>({data:[{assigned_area:'smoking',pax:5},{assigned_area:'indoor',pax:4}],error:null});

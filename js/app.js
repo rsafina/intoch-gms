@@ -6561,19 +6561,12 @@ async function renderResOccupancySummary(date) {
     : "";
 
   const summaryCardsHtml = `
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      <div>
-        <p class="text-[10px] text-[#999] uppercase tracking-wider font-medium">${t("Reservations Today")}</p>
-        <p class="font-display text-2xl font-semibold text-[color:var(--brand-ink)] mt-0.5">${totalReservations}</p>
-      </div>
-      <div>
-        <p class="text-[10px] text-[#999] uppercase tracking-wider font-medium">${t("Total Pax")}</p>
-        <p class="font-display text-2xl font-semibold text-[color:var(--accent-strong)] mt-0.5">${totalPax}</p>
-        <p class="text-[11px] text-[#999] mt-1">${t("all reservations, placed or not")}</p>
-      </div>
-      ${diningCards}
-    </div>
-    ${unplacedHtml}`;
+    <div class="res-occupancy-totals">
+      <span>${t("Reservations Today")} <strong>${totalReservations}</strong></span>
+      <span title="${t("all reservations, placed or not")}">${t("Total Pax")} <strong>${totalPax}</strong></span>
+      ${unplaced.count ? `<span class="res-unplaced-count">${t("Not yet placed")}: <strong>${unplaced.count}</strong> &middot; ${unplaced.pax} ${t("pax")}</span>` : ""}
+    </div>`;
+  const areasWereOpen = !!container.querySelector(".res-area-accordion[open]");
 
   const vipWasOpen = !!container.querySelector(".res-vip-accordion[open]");
   const vipHtml = vipTables.length
@@ -6588,7 +6581,13 @@ async function renderResOccupancySummary(date) {
       </details>`
     : "";
 
-  container.innerHTML = `<div class="card p-5 mb-5">${summaryCardsHtml}${vipHtml}</div>`;
+  container.innerHTML = `<div class="card res-occupancy-compact">
+    ${summaryCardsHtml}
+    <details class="res-area-accordion" ${areasWereOpen ? "open" : ""}>
+      <summary>${CURRENT_LANG === "id" ? "Kapasitas area" : "Area occupancy"} <span class="res-area-chevron" aria-hidden="true">&#8964;</span></summary>
+      <div class="res-area-content"><div class="res-area-grid">${diningCards}</div>${unplacedHtml}${vipHtml}</div>
+    </details>
+  </div>`;
 }
 
 // Builds one VIP table's booked/free timeline for the fixed display

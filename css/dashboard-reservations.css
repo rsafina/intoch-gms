@@ -45,6 +45,19 @@
 }
 
 /* Reservation list and its optional room timelines. */
+.res-occupancy-compact { padding:12px 18px; margin-bottom:16px; display:flex; align-items:center; gap:12px 24px; flex-wrap:wrap; }
+.res-occupancy-totals { display:flex; align-items:center; gap:12px 24px; flex-wrap:wrap; flex:1; font-size:12px; color:#687380; }
+.res-occupancy-totals strong { font-size:17px; color:var(--brand-ink); margin-left:5px; }
+.res-occupancy-totals .res-unplaced-count { color:#956018; }
+.res-area-accordion { font-size:12px; }
+.res-area-accordion > summary { cursor:pointer; color:var(--brand-ink); list-style:none; padding:6px 0; }
+.res-area-accordion > summary::-webkit-details-marker { display:none; }
+.res-area-chevron { display:inline-block; margin-left:8px; }
+.res-area-accordion[open] { width:100%; }
+.res-area-accordion[open] .res-area-chevron { transform:rotate(180deg); }
+.res-area-accordion > summary:focus-visible { outline:2px solid var(--brand); outline-offset:3px; }
+.res-area-content { border-top:1px solid #edf0f3; padding-top:14px; margin-top:8px; }
+.res-area-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; }
 .res-ticket-action { display:flex; margin:0 0 16px; }
 .res-controls { padding:18px; margin-bottom:20px; border:1px solid #e2e8ef; border-radius:16px; background:#fff; }
 .res-controls-top { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
