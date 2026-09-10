@@ -46,7 +46,7 @@
 
 /* Reservation list and its optional room timelines. */
 .res-occupancy-compact { position:relative; padding:12px 18px; margin-bottom:16px; }
-.res-occupancy-totals { display:flex; align-items:center; gap:12px 24px; flex-wrap:wrap; flex:1; font-size:12px; color:#687380; }
+.res-occupancy-totals { display:flex; align-items:center; gap:12px 24px; flex-wrap:wrap; flex:1; font-size:15px; color:#687380; }
 .res-occupancy-totals { min-height:38px; padding-right:180px; }
 .res-occupancy-totals strong { font-size:inherit; font-weight:700; color:inherit; margin-left:5px; }
 .res-occupancy-totals .res-unplaced-count { color:#956018; }
@@ -54,8 +54,10 @@
 .res-area-accordion > summary { position:absolute; top:12px; right:18px; cursor:pointer; color:#fff; background:var(--brand,#183b62); border:1px solid var(--brand,#183b62); border-radius:9px; list-style:none; padding:9px 12px; }
 .res-area-accordion > summary:hover { filter:brightness(1.12); }
 .res-area-accordion > summary::-webkit-details-marker { display:none; }
-.res-area-chevron { display:inline-block; margin-left:8px; }
-.res-area-accordion[open] .res-area-chevron { transform:rotate(180deg); }
+.res-toggle-chevron { display:inline-block; flex-shrink:0; vertical-align:middle; transition:transform .15s ease; }
+.res-area-accordion > summary { display:flex; align-items:center; gap:10px; }
+.res-area-accordion[open] > summary > .res-toggle-chevron,
+.res-vip-accordion[open] > summary .res-toggle-chevron { transform:rotate(180deg); }
 .res-area-accordion > summary:focus-visible { outline:2px solid var(--brand); outline-offset:3px; }
 .res-area-content { border-top:1px solid #edf0f3; padding-top:14px; margin-top:8px; }
 .res-area-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; }
@@ -95,7 +97,7 @@
 .res-vip-accordion > summary { display:flex; align-items:center; justify-content:space-between; gap:16px; cursor:pointer; color:var(--brand-ink,#183b62); font-size:13px; font-weight:600; list-style:none; }
 .res-vip-accordion > summary::-webkit-details-marker { display:none; }
 .res-vip-accordion small { display:block; color:#687380; font-size:11px; font-weight:400; margin-top:4px; }
-.res-expand-label { font-size:11px; font-weight:400; white-space:nowrap; }
+.res-expand-label { display:inline-flex; align-items:center; gap:8px; font-size:11px; font-weight:400; white-space:nowrap; }
 .res-vip-scroll { max-height:340px; overflow-y:auto; padding:16px 12px 0 0; scrollbar-gutter:stable; }
 .res-vip-scroll section + section { border-top:1px solid #ede9e3; padding-top:16px; margin-top:16px; }
 .res-vip-scroll h4 { font-size:13px; color:var(--brand-ink,#183b62); font-weight:600; margin-bottom:12px; }

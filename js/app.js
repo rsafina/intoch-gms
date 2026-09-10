@@ -6573,7 +6573,7 @@ async function renderResOccupancySummary(date) {
     ? `<details class="res-vip-accordion" ${vipWasOpen ? "open" : ""}>
         <summary><span>${t("VIP Room Availability")} &middot; ${vipTables.length}
           <small>${escapeHtml(date)} &middot; ${minutesToHHMM(VIP_TIMELINE_START_MIN)}&ndash;${minutesToHHMM(VIP_TIMELINE_END_MIN)}</small>
-        </span><span class="res-expand-label">${CURRENT_LANG === "id" ? "Lihat jadwal" : "View availability"} &#8964;</span></summary>
+        </span><span class="res-expand-label">${CURRENT_LANG === "id" ? "Lihat jadwal" : "View availability"} <svg class="res-toggle-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></span></summary>
         <div class="res-vip-scroll">
           ${allAreas.filter(area => vipTables.some(table => table.area_id === area.id)).map(area =>
             `<section><h4>${escapeHtml(area.name)}</h4>${vipTables.filter(table => table.area_id === area.id).map(table => renderVipTableTimeline(table, rows)).join("")}</section>`).join("")}
@@ -6584,7 +6584,7 @@ async function renderResOccupancySummary(date) {
   container.innerHTML = `<div class="card res-occupancy-compact">
     ${summaryCardsHtml}
     <details class="res-area-accordion" ${areasWereOpen ? "open" : ""}>
-      <summary>${CURRENT_LANG === "id" ? "Kapasitas area" : "Area occupancy"} <span class="res-area-chevron" aria-hidden="true">&#8964;</span></summary>
+      <summary>${CURRENT_LANG === "id" ? "Kapasitas area" : "Area occupancy"} <svg class="res-toggle-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></summary>
       <div class="res-area-content"><div class="res-area-grid">${diningCards}</div>${unplacedHtml}${vipHtml}</div>
     </details>
   </div>`;
@@ -13630,9 +13630,6 @@ async function saveThresholdSettings() {
     problems.push(t("Family cap must be a whole number of at least 1, or empty for no cap"));
   if (comCap !== null && (!Number.isInteger(comCap) || comCap < 1))
     problems.push(t("Company cap must be a whole number of at least 1, or empty for no cap"));
-  if (!resOpen || !resClose) problems.push(t("Online reservation hours are required"));
-  else if (resOpen >= resClose)
-    problems.push(t("Online reservation: open time must be before last booking time"));
   if (problems.length) {
     toast(problems[0], "error");
     return;
