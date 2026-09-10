@@ -7890,7 +7890,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         <input type="hidden" id="res-edit-id" />
         <input type="hidden" id="res-guest-id" />
 
-        <div class="mb-4">
+        <div id="res-guest-search-wrap" class="mb-4">
           <label class="block text-xs font-medium text-[#555] mb-1.5"
             >Guest *</label
           >
@@ -7909,10 +7909,11 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         <div id="res-guest-info" class="hidden mb-5"></div>
 
         <div id="res-new-guest" class="hidden">
+          <button type="button" class="text-xs underline text-[color:var(--brand-ink)] mb-3" onclick="clearGuestSelection('res'); document.getElementById('res-guest-search').focus()">Search existing guest</button>
           <div class="grid grid-cols-2 gap-3 mb-3">
             <div>
               <label class="block text-xs font-medium text-[#555] mb-1.5"
-                >Full Name *</label
+                >Name *</label
               >
               <input
                 id="res-name"

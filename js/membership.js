@@ -155,7 +155,7 @@ function stickerDots(m) {
   const spv = STICKERS_PER_VOUCHER;
   const inRound = total % spv === 0 && total > 0 ? spv : total % spv;
   let dots = "";
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= spv; i++) {
     dots += `<span class="inline-block w-2.5 h-2.5 rounded-full mr-0.5 ${i <= inRound ? "bg-[color:var(--accent)]" : "bg-[#E7E4DE]"}"></span>`;
   }
   const capNote = rule.cap ? ` / ${rule.cap}` : "";

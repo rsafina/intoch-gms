@@ -5059,6 +5059,7 @@ function setResDetailsEnabled(enabled) {
 // guest, so leaving either visible for an EXISTING guest offers a field that
 // is silently ignored.
 function setResNewGuestVisible(visible) {
+  document.getElementById("res-guest-search-wrap")?.classList.toggle("hidden", visible);
   document.getElementById("res-new-guest")?.classList.toggle("hidden", !visible);
   document.getElementById("res-new-guest-extra")?.classList.toggle("hidden", !visible);
 }
@@ -5081,6 +5082,7 @@ function createNewGuestFromSearch(prefix) {
     document.getElementById("res-name").value =
       document.getElementById("res-guest-search")?.value.trim() || "";
     document.getElementById("res-new-guest-phone").value = "";
+    document.getElementById("res-name").focus();
     populateAreaSelects();
   }
 }
