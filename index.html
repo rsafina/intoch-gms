@@ -18,7 +18,7 @@
     <!-- The printed invoice sheet. Shared with invoice-view.html, the page a
          guest opens from WhatsApp, so both draw the same document. -->
     <link rel="stylesheet" href="css/invoice-sheet.css?v=1" />
-    <link rel="stylesheet" href="css/dashboard-reservations.css?v=3" />
+    <link rel="stylesheet" href="css/dashboard-reservations.css?v=4" />
     <style>
       :root {
         /* ── Brand tokens (2026-09-05). ONE PLACE. ───────────────────
@@ -2798,11 +2798,64 @@
             </div>
           </div>
 
-          <!-- Status Filter & Week Navigation -->
-          <div
-            class="flex flex-col gap-4 mb-5 md:flex-row md:items-center md:justify-between"
-          >
-            <div class="flex gap-2 flex-wrap">
+          <div class="res-controls">
+            <div class="res-controls-top">
+            <div class="res-date-controls">
+              <button
+                onclick="moveResDay(-1)"
+                class="btn-ghost text-xs px-2 py-1.5 flex items-center gap-1 whitespace-nowrap"
+                title="Previous Day"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+                <span class="hidden sm:inline">Prev</span>
+              </button>
+              <!-- Native date input: clicking it opens the browser's own
+                   calendar dropdown (see the input[type=date] + showPicker()
+                   binding near the bottom of this file) -->
+              <input
+                type="date"
+                id="res-date-input"
+                aria-label="Reservation date"
+                onchange="goToResDate(this.value)"
+                class="form-input text-sm font-medium text-[color:var(--brand-ink)] text-center py-1.5 px-2 min-w-[150px]"
+              />
+              <button
+                onclick="moveResDay(1)"
+                class="btn-ghost text-xs px-2 py-1.5 flex items-center gap-1 whitespace-nowrap"
+                title="Next Day"
+              >
+                <span class="hidden sm:inline">Next</span>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+              <button
+                onclick="goToResToday()"
+                class="btn-ghost text-xs px-2.5 py-1.5 whitespace-nowrap flex-shrink-0"
+                title="Jump to today"
+              >
+                Today
+              </button>
+            </div>
+              <label class="res-source-control"><input id="res-online-only" type="checkbox" onchange="setReservationOnlineOnly(this.checked)" /><span data-i18n>Online form only</span></label>
+            </div>
+            <div class="res-status-controls" aria-label="Reservation status">
               <button
                 onclick="filterResByStatus('all')"
                 class="status-filter-btn btn-primary text-xs px-3 py-1.5"
@@ -2877,69 +2930,7 @@
                 Deleted
               </button>
             </div>
-            <div class="flex items-center gap-2">
-              <button
-                onclick="moveResDay(-1)"
-                class="btn-ghost text-xs px-2 py-1.5 flex items-center gap-1 whitespace-nowrap"
-                title="Previous Day"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M15 18l-6-6 6-6" />
-                </svg>
-                <span class="hidden sm:inline">Prev</span>
-              </button>
-              <!-- Native date input: clicking it opens the browser's own
-                   calendar dropdown (see the input[type=date] + showPicker()
-                   binding near the bottom of this file) -->
-              <input
-                type="date"
-                id="res-date-input"
-                onchange="goToResDate(this.value)"
-                class="form-input text-sm font-medium text-[color:var(--brand-ink)] text-center py-1.5 px-2 min-w-[150px]"
-              />
-              <button
-                onclick="moveResDay(1)"
-                class="btn-ghost text-xs px-2 py-1.5 flex items-center gap-1 whitespace-nowrap"
-                title="Next Day"
-              >
-                <span class="hidden sm:inline">Next</span>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </button>
-              <button
-                onclick="goToResToday()"
-                class="btn-ghost text-xs px-2.5 py-1.5 whitespace-nowrap flex-shrink-0"
-                title="Jump to today"
-              >
-                Today
-              </button>
-            </div>
-          </div>
-
-          <!-- ── Guest search ─────────────────────────────────────────
-               Sits between the day filters and the occupancy card. The
-               day view is date-scoped; this is deliberately NOT — staff
-               most often need "where is this guest's booking" without
-               knowing the date. Running a search therefore REPLACES the
-               day table (and hides the occupancy card, which only makes
-               sense for a single day) and shows a clear chip so it's
-               obvious you've left the day view. -->
-          <div class="mb-5">
+          <div class="res-search-controls">
             <div class="relative" id="res-search-wrap">
               <svg
                 class="absolute left-3 top-1/2 -translate-y-1/2 text-[#BBB] pointer-events-none"
@@ -2980,7 +2971,7 @@
             <div id="res-search-chip" class="hidden mt-2.5"></div>
           </div>
 
-          <label class="flex items-center gap-2 text-sm mb-4"><input id="res-online-only" type="checkbox" onchange="setReservationOnlineOnly(this.checked)" /><span data-i18n>Online form only</span></label>
+          </div>
           <!-- Day occupancy + VIP timeline summary -->
           <div id="res-occupancy-summary"></div>
 

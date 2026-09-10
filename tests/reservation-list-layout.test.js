@@ -52,5 +52,18 @@ vm.runInContext(app.slice(app.indexOf('let reservationListRenderRequest'),app.in
  doc.querySelector('.res-vip-accordion').open=true;
  await ctx.renderResOccupancySummary('2026-09-10');
  assert.equal(doc.querySelector('.res-vip-accordion').open,true,'refresh preserves expanded state');
+ vm.runInContext(app.slice(app.indexOf('function computeDiningAreaCapacity('),app.indexOf('async function renderResOccupancySummary(')),ctx);
+ ctx.allAreas.push({id:'indoor',name:'Indoor',capacity:40},{id:'outdoor',name:'Outdoor',capacity:60},{id:'smoking',name:'Outdoor - Smoking',capacity:20});
+ ctx.supabaseQuery=async()=>({data:[{assigned_area:'smoking',pax:5},{assigned_area:'indoor',pax:4}],error:null});
+ await ctx.renderResOccupancySummary('2026-09-10');
+ assert.ok(occupancy.textContent.includes('Outdoor - Smoking'));
+ assert.ok(!occupancy.textContent.includes('Indoor Dining'));
+ let stats=ctx.computeDiningAreaCapacity(ctx.allAreas.find(a=>a.id==='smoking'),[{assigned_area:'smoking',pax:5},{assigned_area:'outdoor',pax:9}]);
+ assert.equal(stats.capacity,20);assert.equal(stats.reservedPax,5);assert.equal(stats.remaining,15);
+ ctx.allAreas.find(a=>a.id==='smoking').name='Terrace <garden>';
+ await ctx.renderResOccupancySummary('2026-09-10');
+ assert.ok(occupancy.textContent.includes('Terrace <garden>'));
+ assert.equal(occupancy.querySelector('garden'),null);
+ assert.equal(ctx.computeDiningAreaCapacity(ctx.allAreas.find(a=>a.id==='smoking'),[{assigned_area:'smoking',pax:5}]).reservedPax,5);
  console.log('Reservation list date groups, visit counts, details, seating, escaping, actions and language passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

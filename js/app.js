@@ -6456,16 +6456,13 @@ function minutesToHHMM(mins) {
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 }
 
-// Pax-vs-capacity stats for a single named dining area (exact area-name
-// match — "Indoor Dining" / "Outdoor Dining"), same math as the front-desk
-// dashboard's renderDashboardAreaOccupancy() so the two views agree.
-// Deliberately separate from the VIP timeline below: VIP tables can serve
-// several parties at different hours in a day, so a capacity/pax number
-// doesn't mean the same thing there — see renderVipTableTimeline.
-function computeDiningAreaCapacity(areaName, rows) {
-  const areas = allAreas.filter((a) => a.name === areaName);
+// Match configured areas by ID so renaming a room never loses its bookings.
+// A string remains supported for legacy callers that group exact area names.
+function computeDiningAreaCapacity(area, rows) {
+  const areas = typeof area === "object" && area
+    ? [area] : allAreas.filter(a => a.name === area);
   const areaIds = new Set(areas.map((a) => a.id));
-  const capacity = areas.reduce((sum, a) => sum + (a.capacity || 0), 0);
+  const capacity = areas.reduce((sum, a) => sum + (Number(a.capacity) || 0), 0);
   const reservedPax = rows
     .filter((r) => areaIds.has(r.assigned_area))
     .reduce((sum, r) => sum + (Number(r.pax) || 0), 0);
@@ -6546,15 +6543,11 @@ async function renderResOccupancySummary(date) {
     (t) => t.is_active !== false && vipAreaIds.has(t.area_id),
   );
 
-  // Pax-vs-capacity style, matching the existing front-desk dashboard area
-  // card (renderDashboardAreaOccupancy) so staff see the same "X/Y pax,
-  // Z% occupied" language in both places instead of two different ways of
-  // describing occupancy. Grouped by `assigned_area` (the area chosen at
-  // booking time), not `table_id` — a reservation counts toward its area's
-  // capacity as soon as it's booked, even before a specific table is
-  // assigned.
-  const indoorStats = computeDiningAreaCapacity("Indoor Dining", rows);
-  const outdoorStats = computeDiningAreaCapacity("Outdoor Dining", rows);
+  // Dining areas come from the floor plan. VIP rooms keep their expandable
+  // timeline below so adding rooms does not push the booking list off screen.
+  const diningCards = allAreas.filter(area => !vipAreaIds.has(area.id))
+    .map(area => renderDiningAreaCard(escapeHtml(area.name), computeDiningAreaCapacity(area, rows)))
+    .join("");
 
   const unplacedHtml = unplaced.count
     ? `<div class="mt-4 pt-3 border-t border-[#EDE9E3] flex items-center gap-2">
@@ -6578,8 +6571,7 @@ async function renderResOccupancySummary(date) {
         <p class="font-display text-2xl font-semibold text-[color:var(--accent-strong)] mt-0.5">${totalPax}</p>
         <p class="text-[11px] text-[#999] mt-1">${t("all reservations, placed or not")}</p>
       </div>
-      ${renderDiningAreaCard(t("Indoor Dining"), indoorStats)}
-      ${renderDiningAreaCard(t("Outdoor Dining"), outdoorStats)}
+      ${diningCards}
     </div>
     ${unplacedHtml}`;
 
@@ -6800,7 +6792,7 @@ async function openResActions(resId) {
       <p class="text-xs text-[#999]">${fmt.time(res.reservation_time)} · ${fmt.pax(res.pax)}</p>
       ${res.reservation_source ? `<p class="text-xs text-[#999] mt-1">Source: ${escapeHtml(res.reservation_source)}</p>` : ""}
     </div>
-    ${typeof reservationTicketButton === "function" ? reservationTicketButton(res) : ""}
+    ${res.status === "Reserved" && typeof reservationTicketButton === "function" ? `<div class="res-ticket-action">${reservationTicketButton(res)}</div>` : ""}
     ${largePartyAgreePanel(res)}
     ${depositActionsPanel(res, bal)}
     ${reservationInvoicesPanel(invoices, invoiceError, balancesError ? null : invoiceBalances)}

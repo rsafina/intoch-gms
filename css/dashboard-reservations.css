@@ -45,6 +45,25 @@
 }
 
 /* Reservation list and its optional room timelines. */
+.res-ticket-action { display:flex; margin:0 0 16px; }
+.res-controls { padding:18px; margin-bottom:20px; border:1px solid #e2e8ef; border-radius:16px; background:#fff; }
+.res-controls-top { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.res-date-controls { display:flex; align-items:center; gap:8px; min-width:0; }
+.res-date-controls #res-date-input { width:172px; min-width:0; height:40px; }
+.res-date-controls button { min-height:40px; }
+.res-source-control { display:flex; align-items:center; gap:9px; font-size:12px; color:var(--brand-ink); padding:10px 12px; border:1px solid #e2e8ef; border-radius:9px; cursor:pointer; white-space:nowrap; }
+.res-source-control:has(input:checked) { background:#edf3f8; border-color:#b9cbdc; }
+.res-source-control input { accent-color:var(--brand); width:15px; height:15px; margin:0; }
+.res-status-controls { display:flex; gap:8px; overflow-x:auto; padding:16px 0; margin-top:14px; border-top:1px solid #edf0f3; scrollbar-width:thin; }
+.res-status-controls button { flex-shrink:0; white-space:nowrap; }
+.res-search-controls { min-width:0; }
+.res-search-controls #res-search-input { background:#fafbfd; }
+@media (max-width:540px) {
+  .res-controls { padding:12px; }
+  .res-controls-top { gap:12px; }
+  .res-date-controls { width:100%; }
+  .res-date-controls #res-date-input { width:auto; flex:1; }
+}
 .online-days-heading { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:16px; color:var(--brand-ink); }
 .online-days-heading p { font-size:12px; color:#687380; margin-top:5px; }
 .online-day { display:flex; justify-content:space-between; align-items:center; gap:16px; width:100%; text-align:left; padding:18px 0; border-bottom:1px solid #eeece7; color:var(--brand-ink); }
