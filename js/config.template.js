@@ -1762,6 +1762,7 @@ function canIssueDepositInvoice() {
 // is manager-gated (manager-only-ui + checks inside the save functions).
 // Prizes and settings-thresholds stay manager-only.
 const STAFF_ALLOWED_PAGES = new Set([
+  "settings-wa",
   "dashboard",
   "reservations",
   "walkins",

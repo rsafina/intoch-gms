@@ -166,7 +166,8 @@ async function issueReservationTicket(resId) {
   const result = await supabaseQuery(() => db.from("reservations").select("booking_name,reservation_date,reservation_time,pax,guests(name,phone)").eq("id",resId).single(),"Failed to load ticket details");
   if (result.error || !result.data) return;
   const res = result.data;
-  const message = `Halo Bapak/Ibu ${res.booking_name || res.guests?.name || ""}, reservasi Anda di ${restaurantName()} telah dikonfirmasi untuk ${res.reservation_date}, pukul ${String(res.reservation_time).slice(0,5)}, ${res.pax} orang. Silakan lihat dan unduh tiket konfirmasi Anda di sini: ${link}`;
+  await waLoadTemplates();
+  const message = waTicketMessage({guestName:res.booking_name || res.guests?.name || "", resDate:res.reservation_date, resTime:res.reservation_time, pax:res.pax, link});
   reservationTicketContext = {link,message,phone:res.guests?.phone};
   const content = document.getElementById("reservation-ticket-content");
   const id = CURRENT_LANG === "id";

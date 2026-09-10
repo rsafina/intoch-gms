@@ -395,40 +395,41 @@ function bcCloseEditor() {
 }
 
 function bcEditorAllowed(key) {
+  if (["large_party", "waitlist_review"].includes(key)) return BC_PLACEHOLDERS.follow_up;
+  if (key === "deposit_request") return [...BC_PLACEHOLDERS.follow_up, "dp", "batas", "invoice"];
+  if (["invoice_send", "deposit_big"].includes(key)) return ["nama", "resto", "nomor", "jumlah", "invoice"];
+  if (key === "reservation_ticket") return [...BC_PLACEHOLDERS.follow_up, "ticket"];
   if (key === "thank_you") return BC_PLACEHOLDERS.thank_you;
   if (key === "follow_up") return BC_PLACEHOLDERS.follow_up;
-  if (key === "voucher_ready") return BC_PLACEHOLDERS.voucher_ready;
+  if (["voucher_ready", "standalone_voucher"].includes(key)) return BC_PLACEHOLDERS.voucher_ready;
   if (key === "birthday") return BC_PLACEHOLDERS.birthday;
   return BC_PLACEHOLDERS.broadcast;
 }
 
-function bcRenderEditor() {
-  const wrap = document.getElementById("bc-editor-list");
+let waEditorScope = "broadcast";
+async function loadWaTemplateSettings() {
+  await waLoadTemplates(true);
+  bcRenderEditor("transactional");
+}
+
+function bcRenderEditor(scope = waEditorScope) {
+  waEditorScope = scope;
+  const wrap = document.getElementById(scope === "transactional" ? "wa-settings-editor-list" : "bc-editor-list");
   if (!wrap) return;
 
   // tag_default is hidden from the editor too — it lives only as the
   // seed text for new tag templates.
-  const keys = [
-    "thank_you",
-    "follow_up",
-    "voucher_ready",
-    "birthday",
-    "at_risk",
-    "acquisition",
-    "returning",
-    "first_timer",
-    "medium_spender",
-    "high_spender",
-    ...Object.keys(waTemplatesCache || {})
-      .filter((k) => k.startsWith("tag:"))
-      .sort(),
-  ];
+  const keys = Object.keys({...WA_DEFAULT_TEMPLATES, ...waTemplatesCache}).filter(key => {
+    if (key === "tag_default") return false;
+    const def = WA_DEFAULT_TEMPLATES[key] || waTemplatesCache[key];
+    return scope === "transactional" ? !def.is_broadcast : !!def.is_broadcast;
+  });
 
   wrap.innerHTML = keys
     .map((key) => {
       const t = waTemplatesCache?.[key];
       const label = t?.label || WA_DEFAULT_TEMPLATES[key]?.label || key;
-      const body = t?.body ?? WA_DEFAULT_TEMPLATES[key]?.body ?? "";
+      const body = t?.body ?? waTemplateBody(key);
       const allowed = bcEditorAllowed(key)
         .map((p) => `{${p}}`)
         .join(" ");
@@ -457,6 +458,7 @@ function bcRenderEditor() {
                </div>`
             : ""
         }
+        ${["deposit_big", "invoice_send"].includes(key) ? '<p class="text-xs text-[#687380] mt-2">The requested payment and invoice total are added automatically when sharing.</p>' : ""}
         <div class="mt-2 text-[11px] uppercase tracking-wider text-[#999]">Preview</div>
         <div id="bc-preview-${safeId}" class="text-sm text-[#555] bg-[#F8F6F2] rounded-lg p-3 mt-1 whitespace-pre-wrap"></div>
         <div class="mt-2 text-right">
@@ -497,6 +499,9 @@ function bcSampleCtx() {
     // config.js. Kept consistent so nobody copies the wrong pattern.
     tanggal_terakhir: waFormatDateId(sample?.lastVisit || TODAY),
     tanggal: waFormatDateId(TODAY),
+    dp: "Rp 50.000", batas: "11 September 2026, 19.00",
+    invoice: "https://example.com/invoice", ticket: "https://example.com/ticket",
+    nomor: "INV/0001/2026", jumlah: "Rp 5.000.000",
     jam: "19.00",
     pax: 4,
     // Voucher preview sample — Family card values, the common case.
@@ -549,7 +554,7 @@ async function bcSaveTemplate(key) {
     waTemplatesCache?.[key]?.label ||
     WA_DEFAULT_TEMPLATES[key]?.label ||
     (key.startsWith("tag:") ? `Broadcast: Tag "${key.slice(4)}"` : key);
-  const isBroadcast = key !== "thank_you" && key !== "follow_up";
+  const isBroadcast = !!(WA_DEFAULT_TEMPLATES[key] || waTemplatesCache?.[key])?.is_broadcast;
 
   const { error } = await supabaseQuery(
     () =>

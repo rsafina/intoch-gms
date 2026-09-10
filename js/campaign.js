@@ -461,7 +461,7 @@ function bcShowTab(tab) {
       )
       .join("")}</div>`;
 
-  if (tab === "template") bcRenderEditor();
+  if (tab === "template") bcRenderEditor("broadcast");
   if (tab === "hasil") campLoadResults();
   if (tab === "campaign" && !ceCampaign) ceLoadList();
 }

@@ -98,7 +98,7 @@ const WA_DEFAULT_TEMPLATES = {
   // path treats it as such; a transactional template carrying it ships a dead
   // placeholder to the guest. campaign-editor.test.js pins that separation.
   deposit_request: {
-    label: "DP (minta pembayaran deposit)",
+    label: "Deposit (small reservation)",
     is_broadcast: false,
     body:
       "Halo {nama}!\n\n" +
@@ -114,6 +114,21 @@ const WA_DEFAULT_TEMPLATES = {
   // the send path; a transactional template carrying it ships a dead
   // placeholder. Same rule as deposit_request, pinned by
   // campaign-editor.test.js.
+  standalone_voucher: {
+    label: "Standalone voucher",
+    is_broadcast: false,
+    body: "Halo {nama},\n\nTerima kasih dari {resto}. Ini voucher untuk Anda:\nNilai: {nominal}\nKode: {kode}\nBerlaku sampai: {berlaku}\n\nTunjukkan kode ini kepada staf kami saat pembayaran ya.",
+  },
+  reservation_ticket: {
+    label: "Reservation confirmation ticket",
+    is_broadcast: false,
+    body: "Halo {nama}! Reservasi Anda di {resto} telah dikonfirmasi untuk {tanggal}, pukul {jam}, {pax} orang. Silakan lihat dan unduh tiket konfirmasi Anda di sini: {ticket}",
+  },
+  deposit_big: {
+    label: "Deposit (big reservation)",
+    is_broadcast: false,
+    body: "Halo {nama}! Berikut invoice dari {resto}:\n\nNo. invoice: {nomor}\nTotal: {jumlah}\n\nDetail lengkapnya bisa dilihat dan diunduh di sini:\n{invoice}\n\nTerima kasih!",
+  },
   invoice_send: {
     label: "Invoice (kirim tautan invoice)",
     is_broadcast: false,
@@ -248,7 +263,7 @@ async function waLoadTemplates(force = false) {
 
 function waTemplateBody(key) {
   return (
-    waTemplatesCache?.[key]?.body || WA_DEFAULT_TEMPLATES[key]?.body || ""
+    waTemplatesCache?.[key]?.body || (key === "deposit_big" ? waTemplatesCache?.invoice_send?.body : "") || WA_DEFAULT_TEMPLATES[key]?.body || ""
   );
 }
 
@@ -495,7 +510,7 @@ function waDepositRequestMessage(ctx) {
 // restaurant has edited {invoice} out of the template we put the URL back on
 // the end, rather than sending a document nobody can open.
 function waInvoiceMessage(ctx) {
-  let msg = waRenderTemplate(waTemplateBody("invoice_send"), {
+  let msg = waRenderTemplate(waTemplateBody(ctx.templateKey === "deposit_big" ? "deposit_big" : "invoice_send"), {
     nama: waGreetName(ctx.guestName),
     resto: WA_RESTAURANT_NAME,
     nomor: ctx.invoiceNo || "-",
@@ -506,6 +521,15 @@ function waInvoiceMessage(ctx) {
     msg += "\n\n" + (ctx.requestLabel || "Pembayaran") + ": " + ctx.requestedText +
       " dari total " + ctx.amountText;
   }
+  return msg.includes(ctx.link) ? msg : msg.trimEnd() + "\n\n" + ctx.link;
+}
+
+function waTicketMessage(ctx) {
+  const msg = waRenderTemplate(waTemplateBody("reservation_ticket"), {
+    nama: waGreetName(ctx.guestName), resto: WA_RESTAURANT_NAME,
+    tanggal: waFormatDateId(ctx.resDate), jam: String(ctx.resTime || "").slice(0,5),
+    pax: ctx.pax, ticket: ctx.link,
+  });
   return msg.includes(ctx.link) ? msg : msg.trimEnd() + "\n\n" + ctx.link;
 }
 

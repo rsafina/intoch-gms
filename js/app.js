@@ -763,6 +763,7 @@ const SETTINGS_SUBPAGES = [
   "prizes",
   "settings-menu",
   "settings-thresholds",
+  "settings-wa",
   "settings-branding",
   "settings-staff",
 ];
@@ -853,6 +854,7 @@ async function navigateTo(page) {
       pendingLoads.push(renderReserveAppearanceSettings());
       pendingLoads.push(renderReservationFormFields());
     }
+    if (page === "settings-wa") pendingLoads.push(loadWaTemplateSettings());
     if (page === "settings-thresholds") pendingLoads.push(renderThresholdSettings());
     if (page === "settings-branding") pendingLoads.push(renderBrandingSettings());
     // Always re-read from the database rather than trusting a cached list:
@@ -13217,6 +13219,7 @@ function renderSettingsTabs(activePage) {
     { page: "areas", label: t("Areas"), managerOnly: false },
     { page: "settings-menu", label: t("Reservation Form"), managerOnly: false },
     { page: "prizes", label: t("Prizes"), managerOnly: true },
+    { page: "settings-wa", label: "WA Templates", managerOnly: false },
     { page: "settings-thresholds", label: t("Thresholds"), managerOnly: true },
     { page: "settings-branding", label: t("Branding"), managerOnly: true },
     // Staff is admin-only, so it is filtered OUT of the list below rather

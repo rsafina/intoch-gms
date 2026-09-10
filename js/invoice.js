@@ -548,6 +548,7 @@ async function invSaveInvoice(send) {
     const opened = waOpenChat(
       phone,
       waInvoiceMessage({
+        templateKey: context?.kind === "deposit" ? "deposit_big" : "invoice_send",
         guestName: snap.name,
         invoiceNo: invSavedNo,
         amountText: invRupiah(sums.total),

@@ -1013,21 +1013,14 @@ async function vchSendCardWA() {
     typeof waGreetName === "function"
       ? waGreetName(vchCardRow.recipient_name || "")
       : vchCardRow.recipient_name || "";
-  const message = [
-    `Halo ${name}`.trim() + ",",
-    "",
-    `Terima kasih dari ${restaurantName()}. Ini voucher untuk Anda:`,
-    `Nilai: ${vchValueText(vchCardRow)}`,
-    `Kode: ${vchCardRow.voucher_code}`,
-    `Berlaku sampai: ${vchDateId(vchCardRow.expires_at)}`,
-    vchCardRow.min_spend_idr
-      ? `Minimum transaksi: ${vchRupiah(vchCardRow.min_spend_idr)}`
-      : null,
-    "",
-    "Tunjukkan kode ini kepada staf kami saat pembayaran ya.",
-  ]
-    .filter((line) => line !== null)
-    .join("\n");
+  await waLoadTemplates();
+  let message = waRenderTemplate(waTemplateBody("standalone_voucher"), {
+    nama:name, resto:restaurantName(), nominal:vchValueText(vchCardRow),
+    kode:vchCardRow.voucher_code, berlaku:vchDateId(vchCardRow.expires_at),
+  });
+  // Keep redemption details and spending conditions available even after edits.
+  if (!message.includes(vchCardRow.voucher_code)) message += "\nKode: " + vchCardRow.voucher_code;
+  if (vchCardRow.min_spend_idr) message += "\nMinimum transaksi: " + vchRupiah(vchCardRow.min_spend_idr);
 
   waOpenChat(phone, message);
 }
