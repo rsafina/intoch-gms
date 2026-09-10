@@ -18,7 +18,7 @@
     <!-- The printed invoice sheet. Shared with invoice-view.html, the page a
          guest opens from WhatsApp, so both draw the same document. -->
     <link rel="stylesheet" href="css/invoice-sheet.css?v=1" />
-    <link rel="stylesheet" href="css/dashboard-reservations.css?v=7" />
+    <link rel="stylesheet" href="css/dashboard-reservations.css?v=8" />
     <style>
       :root {
         /* ── Brand tokens (2026-09-05). ONE PLACE. ───────────────────
@@ -2841,6 +2841,9 @@
             <div id="res-search-chip" class="hidden mt-2.5"></div>
           </div>
             <div class="res-date-controls">
+              <select id="res-range-mode" class="form-input" style="width:auto" aria-label="Date range" onchange="setReservationRangeMode(this.value)">
+                <option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="custom">Custom</option>
+              </select>
               <button
                 onclick="moveResDay(-1)"
                 class="btn-ghost text-xs px-2 py-1.5 flex items-center gap-1 whitespace-nowrap"
@@ -2868,6 +2871,7 @@
                 onchange="goToResDate(this.value)"
                 class="form-input text-sm font-medium text-[color:var(--brand-ink)] text-center py-1.5 px-2 min-w-[150px]"
               />
+              <input id="res-date-end" type="date" class="form-input hidden" aria-label="End date" onchange="setReservationRangeEnd(this.value)" />
               <button
                 onclick="moveResDay(1)"
                 class="btn-ghost text-xs px-2 py-1.5 flex items-center gap-1 whitespace-nowrap"

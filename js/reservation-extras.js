@@ -70,6 +70,7 @@ function setReservationOnlineOnly(value) {
 function openOnlineReservationDay(date) {
   clearResSearch(true);
   resSelectedDate = date;
+  if (typeof resRangeMode !== "undefined") resRangeMode = "daily";
   reservationOnlineOnly = true;
   resStatusFilter = "all";
   const checkbox = document.getElementById("res-online-only");

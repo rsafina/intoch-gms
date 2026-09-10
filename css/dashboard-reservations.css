@@ -137,3 +137,6 @@
   .res-list-row > td,.res-list-table thead th { padding-inline:12px; }
   .res-expand-label { white-space:normal; text-align:right; }
 }
+
+.res-date-controls { flex-wrap:wrap; justify-content:flex-end; }
+.res-date-controls #res-date-end { width:172px; min-width:0; height:40px; }

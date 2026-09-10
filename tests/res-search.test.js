@@ -94,7 +94,7 @@ check("empty-state copy differs for search vs day", () => {
   const i = src.indexOf("async function renderReservationsTable");
   const body = src.slice(i, i + 800);
   assert.ok(body.includes("No reservations found for this guest"));
-  assert.ok(body.includes("No reservations found for this day"));
+  assert.ok(body.includes("No reservations found for these dates"));
 });
 
 check("CSV export filename reflects an active search", () => {

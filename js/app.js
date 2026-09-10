@@ -3560,7 +3560,7 @@ function renderDashboardReservations(data) {
         </div>
       </div>
     </article>`;
-  }).join("") : `<p class="dash-res-empty">${dashboardResFilter === "attention" ? (id ? "Tidak ada reservasi yang perlu perhatian." : "No reservations need attention.") : (id ? "Tidak ada reservasi pada tanggal ini." : "No reservations for this day.")}</p>`);
+  }).join("") : `<p class="dash-res-empty">${dashboardResFilter === "attention" ? (id ? "Tidak ada reservasi yang perlu perhatian." : "No reservations need attention.") : (id ? "Tidak ada reservasi pada rentang tanggal ini." : "No reservations for this day.")}</p>`);
 }
 
 function renderDashboardWalkIns(data) {
@@ -6000,12 +6000,64 @@ async function saveReservation() {
   if (isViewingStaffDashboard()) loadDashboard();
 }
 
+let resRangeMode = "daily";
+let resCustomEnd = null;
+let resLoadRequest = 0;
+function resRangeDate(value, days = 0) {
+  const date = new Date(value + "T12:00:00");
+  date.setDate(date.getDate() + days);
+  return date.getFullYear() + "-" + String(date.getMonth()+1).padStart(2,"0") + "-" + String(date.getDate()).padStart(2,"0");
+}
+function reservationDateRange() {
+  const anchor = resSelectedDate || TODAY;
+  const date = new Date(anchor + "T12:00:00");
+  if (resRangeMode === "weekly") {
+    const start = resRangeDate(anchor, -((date.getDay()+6)%7));
+    return {start, end:resRangeDate(start,6)};
+  }
+  if (resRangeMode === "monthly") {
+    const start = anchor.slice(0,7) + "-01";
+    const end = start.slice(0,8) + String(new Date(date.getFullYear(),date.getMonth()+1,0).getDate());
+    return {start,end};
+  }
+  return {start:anchor,end:resRangeMode === "custom" ? (resCustomEnd || anchor) : anchor};
+}
+function setReservationRangeMode(mode) {
+  if (!["daily","weekly","monthly","custom"].includes(mode)) return;
+  clearResSearch(true);
+  resRangeMode = mode;
+  if (mode === "custom") resCustomEnd = resSelectedDate || TODAY;
+  loadReservations();
+}
+function setReservationRangeEnd(value) {
+  if (!value) return;
+  if (value < (resSelectedDate || TODAY)) {
+    toast(CURRENT_LANG === "id" ? "Tanggal akhir harus setelah tanggal mulai." : "End date must be on or after the start date.", "error");
+    document.getElementById("res-date-end").value = resCustomEnd || resSelectedDate || TODAY;
+    return;
+  }
+  clearResSearch(true);
+  resCustomEnd = value;
+  loadReservations();
+}
+async function fetchReservationRangeRows(query) {
+  const rows = [];
+  for (let offset=0;;offset+=500) {
+    const result = await supabaseQuery(() => query.range(offset,offset+499), "Failed to load reservations");
+    if (result.error) return result;
+    rows.push(...(result.data || []));
+    if ((result.data || []).length < 500) return {data:rows,error:null};
+  }
+}
+
 async function loadReservations() {
+  const request = ++resLoadRequest;
   // Runs once a session. pg_cron does this every ten minutes; doing it here
   // too is what makes the feature work on a client project where cron is not
   // available, without a second implementation to keep in step. Awaited so
   // the list that renders next already reflects it.
   await sweepExpiredDeposits();
+  if (request !== resLoadRequest) return;
 
   // A guest search is date-independent, so it owns the table while it's
   // active. Every "reload the list" path in the app funnels through
@@ -6019,6 +6071,7 @@ async function loadReservations() {
     resSelectedDate = TODAY;
   }
   const date = resSelectedDate;
+  const {start,end} = reservationDateRange();
 
   // Strong, high-visibility subtitle under the "Reservations" heading —
   // this is the single most-glanced-at piece of the page (staff need to
@@ -6026,12 +6079,22 @@ async function loadReservations() {
   // bigger/bolder than a normal subtitle rather than muted grey.
   const label = document.getElementById("res-date-label");
   if (label) {
-    label.textContent = new Date(date + "T00:00:00").toLocaleDateString(
+    label.textContent = new Date(start + "T00:00:00").toLocaleDateString(
       CURRENT_LANG === "id" ? "id-ID" : "en-GB",
       { weekday: "long", day: "numeric", month: "long", year: "numeric" },
     );
   }
 
+  if (label && start !== end) label.textContent += " - " + new Date(end + "T00:00:00").toLocaleDateString(CURRENT_LANG === "id" ? "id-ID" : "en-GB", {day:"numeric",month:"long",year:"numeric"});
+  const modeInput = document.getElementById("res-range-mode");
+  if (modeInput) {
+    modeInput.value = resRangeMode;
+    const labels = CURRENT_LANG === "id" ? ["Harian","Mingguan","Bulanan","Kustom"] : ["Daily","Weekly","Monthly","Custom"];
+    [...modeInput.options].forEach((option,i) => option.textContent = labels[i]);
+  }
+  const endInput = document.getElementById("res-date-end");
+  if (endInput) { endInput.value = end; endInput.min = start; endInput.classList.toggle("hidden",resRangeMode !== "custom"); }
+  document.querySelector('[onclick="openRunSheet()"]')?.classList.toggle("hidden",start !== end);
   // Native date input between Prev/Next — clicking it opens the browser's
   // own calendar dropdown (same pattern as the rest of the app; see the
   // input[type=date] + showPicker() binding at the bottom of index.html).
@@ -6043,8 +6106,9 @@ async function loadReservations() {
     .select(
       "*, guests(name, phone, company, booking_alias, spending_tier, tag, food_allergy, favorite_menu, last_order), areas(name), tables(name)",
     )
-    .eq("reservation_date", date)
-    .order("reservation_time");
+    .gte("reservation_date", start)
+    .lte("reservation_date", end)
+    .order("reservation_date").order("reservation_time").order("id");
 
   if (typeof reservationOnlineOnly !== "undefined" && reservationOnlineOnly) {
     query = query.eq("reservation_source", "Online Form");
@@ -6059,11 +6123,8 @@ async function loadReservations() {
     query = query.eq("status", resStatusFilter);
   }
 
-  const { data, error } = await supabaseQuery(
-    () => query,
-    "Failed to load reservations",
-  );
-  if (error) return;
+  const { data, error } = await fetchReservationRangeRows(query);
+  if (error || request !== resLoadRequest || resSearchActive) return;
   // Time order from the DB is preserved inside each group; cancelled rows
   // just move to the end so the top of the list is only people who are
   // actually still expected.
@@ -6073,21 +6134,22 @@ async function loadReservations() {
   // Occupancy summary always reflects the FULL day regardless of the
   // active status filter/chip — a manager filtering to "Cancelled" to
   // audit no-shows shouldn't see the occupancy card go to zero.
-  await renderResOccupancySummary(date);
+  if (request === resLoadRequest) await renderResOccupancySummary(start, end);
 }
 
 // Shifts the reservations page by `dir` days (-1 = Previous, 1 = Next).
 function moveResDay(dir) {
-  clearResSearch(true); // any day navigation means "take me back to the day view"
-  const [y, m, d] = resSelectedDate.split("-").map(Number);
-  const next = new Date(y, m - 1, d); // local date constructor
-  next.setDate(next.getDate() + dir);
-  resSelectedDate =
-    next.getFullYear() +
-    "-" +
-    String(next.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(next.getDate()).padStart(2, "0");
+  clearResSearch(true);
+  const {start,end} = reservationDateRange();
+  if (resRangeMode === "monthly") {
+    const date = new Date(start + "T12:00:00");
+    date.setMonth(date.getMonth()+dir);
+    resSelectedDate = resRangeDate(date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0")+"-01");
+  } else {
+    const days = resRangeMode === "weekly" ? 7 : resRangeMode === "custom" ? Math.round((new Date(end+"T12:00:00")-new Date(start+"T12:00:00"))/86400000)+1 : 1;
+    resSelectedDate = resRangeDate(start,dir*days);
+    if (resRangeMode === "custom") resCustomEnd = resRangeDate(end,dir*days);
+  }
   loadReservations();
 }
 
@@ -6096,12 +6158,14 @@ function goToResDate(dateStr) {
   if (!dateStr) return;
   clearResSearch(true);
   resSelectedDate = dateStr;
+  if (resRangeMode === "custom" && (!resCustomEnd || resCustomEnd < dateStr)) resCustomEnd = dateStr;
   loadReservations();
 }
 
 // Jumps back to today — exposed for a "Today" shortcut next to the date input.
 function goToResToday() {
   clearResSearch(true);
+  resRangeMode = "daily";
   resSelectedDate = TODAY;
   loadReservations();
 }
@@ -6508,7 +6572,18 @@ function renderDiningAreaCard(label, stats) {
     </div>`;
 }
 
-async function renderResOccupancySummary(date) {
+async function renderResOccupancySummary(date, endDate = date) {
+  const summaryRequest = typeof resLoadRequest === "undefined" ? null : resLoadRequest;
+  const staleSummary = () => summaryRequest !== null && (summaryRequest !== resLoadRequest || !!resSearchActive);
+  if (endDate !== date) {
+    const container = document.getElementById("res-occupancy-summary");
+    if (!container) return;
+    const {data,error} = await fetchReservationRangeRows(db.from("reservations").select("id,pax").gte("reservation_date",date).lte("reservation_date",endDate).in("status",RES_OCCUPANCY_STATUSES).order("id"));
+    if (staleSummary()) return;
+    if (error) { container.innerHTML = ""; return; }
+    container.innerHTML = `<div class="card res-occupancy-compact"><div class="res-occupancy-totals"><span>${CURRENT_LANG === "id" ? "Reservasi" : "Reservations"} <strong>${data.length}</strong></span><span>${t("Total Pax")} <strong>${data.reduce((sum,r)=>sum+(Number(r.pax)||0),0)}</strong></span></div></div>`;
+    return;
+  }
   const container = document.getElementById("res-occupancy-summary");
   if (!container) return;
 
@@ -6521,6 +6596,7 @@ async function renderResOccupancySummary(date) {
         .in("status", RES_OCCUPANCY_STATUSES),
     "Failed to load occupancy summary",
   );
+  if (staleSummary()) return;
   if (error) {
     container.innerHTML = "";
     return;
@@ -6530,6 +6606,7 @@ async function renderResOccupancySummary(date) {
   if (!allTables.length) await loadTables();
   if (!allAreas.length) await loadAreas();
 
+  if (staleSummary()) return;
   const totalReservations = rows.length;
   // Expected pax for the day across ALL reservations in RES_OCCUPANCY_STATUSES,
   // whether or not an area/table has been assigned. Deliberately NOT the sum of
@@ -6682,7 +6759,7 @@ async function renderReservationsTable(data) {
   if (!data.length) {
     tbody.innerHTML = `<tr><td colspan="5" class="res-list-empty">${resSearchActive
       ? (id ? "Tidak ada reservasi untuk tamu ini" : "No reservations found for this guest")
-      : (id ? "Tidak ada reservasi pada tanggal ini" : "No reservations found for this day")}</td></tr>`;
+      : (id ? "Tidak ada reservasi pada rentang tanggal ini" : "No reservations found for these dates")}</td></tr>`;
     return;
   }
   await loadDepositBalances(data);
@@ -6694,7 +6771,7 @@ async function renderReservationsTable(data) {
     if (!groups.has(r.reservation_date)) groups.set(r.reservation_date, []);
     groups.get(r.reservation_date).push(r);
   });
-  tbody.innerHTML = [...groups].map(([date, rows]) => {
+  tbody.innerHTML = [...groups].sort(([a],[b]) => a.localeCompare(b)).map(([date, rows]) => {
     const dateLabel = new Date(date + "T00:00:00").toLocaleDateString(id ? "id-ID" : "en-GB",
       {weekday:"long", day:"numeric", month:"long", year:"numeric"});
     return `<tr class="res-date-group"><th colspan="5" scope="rowgroup">${escapeHtml(dateLabel)} <span>${rows.length} ${id ? "reservasi" : "reservations"}</span></th></tr>` +
@@ -8212,7 +8289,7 @@ function exportReservations() {
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "")
         .slice(0, 40)
-    : resSelectedDate || TODAY;
+    : (() => { const {start,end} = reservationDateRange(); return start === end ? start : start + "_to_" + end; })();
   return downloadReservationSheet(
     `export-reservations-${slug || TODAY}`,
     allReservations.map((r) => resExportRow(r)),
