@@ -108,7 +108,7 @@ check("markup present with the required ids", () => {
   const wrap = html.indexOf('id="res-search-wrap"');
   const occ = html.indexOf('id="res-occupancy-summary"');
   const chips = html.indexOf("status-filter-btn");
-  assert.ok(chips < wrap && wrap < occ, "search bar not between filter row and occupancy card");
+  assert.ok(wrap < chips && chips < occ, "search should precede filters and occupancy card");
 });
 
 check("placeholder is translatable", () => {

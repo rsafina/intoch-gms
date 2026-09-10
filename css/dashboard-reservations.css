@@ -45,35 +45,42 @@
 }
 
 /* Reservation list and its optional room timelines. */
-.res-occupancy-compact { padding:12px 18px; margin-bottom:16px; display:flex; align-items:center; gap:12px 24px; flex-wrap:wrap; }
+.res-occupancy-compact { position:relative; padding:12px 18px; margin-bottom:16px; }
 .res-occupancy-totals { display:flex; align-items:center; gap:12px 24px; flex-wrap:wrap; flex:1; font-size:12px; color:#687380; }
-.res-occupancy-totals strong { font-size:17px; color:var(--brand-ink); margin-left:5px; }
+.res-occupancy-totals { min-height:38px; padding-right:180px; }
+.res-occupancy-totals strong { font-size:inherit; font-weight:700; color:inherit; margin-left:5px; }
 .res-occupancy-totals .res-unplaced-count { color:#956018; }
 .res-area-accordion { font-size:12px; }
-.res-area-accordion > summary { cursor:pointer; color:var(--brand-ink); list-style:none; padding:6px 0; }
+.res-area-accordion > summary { position:absolute; top:12px; right:18px; cursor:pointer; color:#fff; background:var(--brand,#183b62); border:1px solid var(--brand,#183b62); border-radius:9px; list-style:none; padding:9px 12px; }
+.res-area-accordion > summary:hover { filter:brightness(1.12); }
 .res-area-accordion > summary::-webkit-details-marker { display:none; }
 .res-area-chevron { display:inline-block; margin-left:8px; }
-.res-area-accordion[open] { width:100%; }
 .res-area-accordion[open] .res-area-chevron { transform:rotate(180deg); }
 .res-area-accordion > summary:focus-visible { outline:2px solid var(--brand); outline-offset:3px; }
 .res-area-content { border-top:1px solid #edf0f3; padding-top:14px; margin-top:8px; }
 .res-area-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; }
 .res-ticket-action { display:flex; margin:0 0 16px; }
 .res-controls { padding:18px; margin-bottom:20px; border:1px solid #e2e8ef; border-radius:16px; background:#fff; }
-.res-controls-top { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.res-controls-top { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.res-controls-bottom { display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding-top:14px; margin-top:14px; border-top:1px solid #edf0f3; }
 .res-date-controls { display:flex; align-items:center; gap:8px; min-width:0; }
 .res-date-controls #res-date-input { width:172px; min-width:0; height:40px; }
 .res-date-controls button { min-height:40px; }
 .res-source-control { display:flex; align-items:center; gap:9px; font-size:12px; color:var(--brand-ink); padding:10px 12px; border:1px solid #e2e8ef; border-radius:9px; cursor:pointer; white-space:nowrap; }
 .res-source-control:has(input:checked) { background:#edf3f8; border-color:#b9cbdc; }
 .res-source-control input { accent-color:var(--brand); width:15px; height:15px; margin:0; }
-.res-status-controls { display:flex; gap:8px; overflow-x:auto; padding:16px 0; margin-top:14px; border-top:1px solid #edf0f3; scrollbar-width:thin; }
+.res-status-controls { display:flex; flex:1; min-width:0; gap:8px; overflow-x:auto; padding:2px 0; scrollbar-width:thin; }
 .res-status-controls button { flex-shrink:0; white-space:nowrap; }
-.res-search-controls { min-width:0; }
+.res-search-controls { min-width:240px; flex:1; }
+.res-date-controls { margin-left:auto; }
 .res-search-controls #res-search-input { background:#fafbfd; }
 @media (max-width:540px) {
   .res-controls { padding:12px; }
   .res-controls-top { gap:12px; }
+  .res-search-controls { min-width:0; flex-basis:100%; }
+  .res-status-controls { flex-basis:100%; }
+  .res-occupancy-totals { padding-right:0; }
+  .res-area-accordion > summary { position:static; width:fit-content; margin-top:10px; }
   .res-date-controls { width:100%; }
   .res-date-controls #res-date-input { width:auto; flex:1; }
 }

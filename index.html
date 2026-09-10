@@ -18,7 +18,7 @@
     <!-- The printed invoice sheet. Shared with invoice-view.html, the page a
          guest opens from WhatsApp, so both draw the same document. -->
     <link rel="stylesheet" href="css/invoice-sheet.css?v=1" />
-    <link rel="stylesheet" href="css/dashboard-reservations.css?v=5" />
+    <link rel="stylesheet" href="css/dashboard-reservations.css?v=6" />
     <style>
       :root {
         /* ── Brand tokens (2026-09-05). ONE PLACE. ───────────────────
@@ -2800,6 +2800,46 @@
 
           <div class="res-controls">
             <div class="res-controls-top">
+          <div class="res-search-controls">
+            <div class="relative" id="res-search-wrap">
+              <svg
+                class="absolute left-3 top-1/2 -translate-y-1/2 text-[#BBB] pointer-events-none"
+                width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                id="res-search-input"
+                autocomplete="off"
+                placeholder="Search a guest by name or phone"
+                data-i18n-placeholder
+                oninput="onResSearchInput()"
+                onkeydown="onResSearchKeydown(event)"
+                class="form-input text-sm w-full pl-9 pr-9"
+              />
+              <button
+                type="button"
+                id="res-search-clear-x"
+                onclick="clearResSearch()"
+                class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-[#BBB] hover:text-[#555] px-1.5 py-1 text-sm leading-none"
+                title="Clear search"
+                aria-label="Clear search"
+              >
+                &times;
+              </button>
+              <!-- Suggestion dropdown (guest-level, max 8) -->
+              <div
+                id="res-search-suggest"
+                class="hidden absolute z-40 left-0 right-0 mt-1"
+              ></div>
+            </div>
+            <!-- Active-search banner: only visible while results are shown -->
+            <div id="res-search-chip" class="hidden mt-2.5"></div>
+          </div>
             <div class="res-date-controls">
               <button
                 onclick="moveResDay(-1)"
@@ -2853,8 +2893,8 @@
                 Today
               </button>
             </div>
-              <label class="res-source-control"><input id="res-online-only" type="checkbox" onchange="setReservationOnlineOnly(this.checked)" /><span data-i18n>Online form only</span></label>
             </div>
+            <div class="res-controls-bottom">
             <div class="res-status-controls" aria-label="Reservation status">
               <button
                 onclick="filterResByStatus('all')"
@@ -2930,47 +2970,8 @@
                 Deleted
               </button>
             </div>
-          <div class="res-search-controls">
-            <div class="relative" id="res-search-wrap">
-              <svg
-                class="absolute left-3 top-1/2 -translate-y-1/2 text-[#BBB] pointer-events-none"
-                width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <input
-                type="text"
-                id="res-search-input"
-                autocomplete="off"
-                placeholder="Search a guest by name or phone"
-                data-i18n-placeholder
-                oninput="onResSearchInput()"
-                onkeydown="onResSearchKeydown(event)"
-                class="form-input text-sm w-full pl-9 pr-9"
-              />
-              <button
-                type="button"
-                id="res-search-clear-x"
-                onclick="clearResSearch()"
-                class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-[#BBB] hover:text-[#555] px-1.5 py-1 text-sm leading-none"
-                title="Clear search"
-                aria-label="Clear search"
-              >
-                &times;
-              </button>
-              <!-- Suggestion dropdown (guest-level, max 8) -->
-              <div
-                id="res-search-suggest"
-                class="hidden absolute z-40 left-0 right-0 mt-1"
-              ></div>
+              <label class="res-source-control"><input id="res-online-only" type="checkbox" onchange="setReservationOnlineOnly(this.checked)" /><span data-i18n>Online form only</span></label>
             </div>
-            <!-- Active-search banner: only visible while results are shown -->
-            <div id="res-search-chip" class="hidden mt-2.5"></div>
-          </div>
-
           </div>
           <!-- Day occupancy + VIP timeline summary -->
           <div id="res-occupancy-summary"></div>
