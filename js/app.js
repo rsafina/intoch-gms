@@ -6093,13 +6093,22 @@ async function loadReservations() {
     [...modeInput.options].forEach((option,i) => option.textContent = labels[i]);
   }
   const endInput = document.getElementById("res-date-end");
-  if (endInput) { endInput.value = end; endInput.min = start; endInput.classList.toggle("hidden",resRangeMode !== "custom"); }
+  if (endInput) {
+    endInput.value = end;
+    endInput.min = start;
+    endInput.classList.toggle("hidden", resRangeMode === "daily");
+    endInput.disabled = resRangeMode !== "custom";
+  }
+  document.querySelectorAll('.res-date-controls button[onclick^="moveResDay"]').forEach(button => {
+    button.style.display = resRangeMode === "daily" ? "" : "none";
+  });
+  document.getElementById("res-date-range-separator")?.classList.toggle("hidden", resRangeMode === "daily");
   document.querySelector('[onclick="openRunSheet()"]')?.classList.toggle("hidden",start !== end);
   // Native date input between Prev/Next — clicking it opens the browser's
   // own calendar dropdown (same pattern as the rest of the app; see the
   // input[type=date] + showPicker() binding at the bottom of index.html).
   const dateInput = document.getElementById("res-date-input");
-  if (dateInput) dateInput.value = date;
+  if (dateInput) dateInput.value = start;
 
   let query = db
     .from("reservations")
