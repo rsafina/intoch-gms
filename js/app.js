@@ -304,7 +304,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  if (!getStaffSession()) {
+  if (!(await restoreVerifiedStaffSession())) {
     showLoginPage();
     return;
   }
@@ -343,7 +343,7 @@ async function initializeApplication() {
   // burned by unnecessary polling once, see the refreshAutoGuestTiers egress
   // incident). Admin CAN still open it on demand via the Staff Dashboard nav
   // entry, which loads it lazily in navigateTo().
-  if (currentStaffRole() !== "admin") {
+  if (!["admin", "owner"].includes(currentStaffRole())) {
     await loadDashboard();
     setStaffDashboardDateLabel();
   }
@@ -681,17 +681,8 @@ async function loginStaff(event) {
   }
 
   loader(true);
-  const { data: user, error } = await supabaseQuery(
-    () =>
-      db
-        .from("staff_users")
-        .select("id, username, display_name, pin, is_active, role")
-        .eq("username", username)
-        .eq("pin", pin)
-        .eq("is_active", true)
-        .single(),
-    "Staff login failed",
-  );
+  const {error} = await db.auth.signInWithPassword({email:staffAuthEmail(username),password:staffAuthPassword(pin)});
+  const user = error ? null : await restoreVerifiedStaffSession();
   loader(false);
 
   if (error || !user) {
@@ -706,7 +697,8 @@ async function loginStaff(event) {
   navigateTo("dashboard");
 }
 
-function logoutStaff() {
+async function logoutStaff() {
+  await db.auth.signOut();
   clearStaffSession();
   localStorage.removeItem("lastPage");
   // Tear the live connections down BEFORE clearing appInitialized. That flag
@@ -789,7 +781,7 @@ async function navigateTo(page) {
 
     // Admin (owner/head-chef) sees a different dashboard section — everything
     // else renders exactly like it does for manager/staff.
-    const isAdminDashboard = page === "dashboard" && currentStaffRole() === "admin";
+    const isAdminDashboard = page === "dashboard" && ["admin", "owner"].includes(currentStaffRole());
     // "staff-dashboard" is the owner looking at the front-desk view. It is a
     // separate nav entry rather than a toggle so the sidebar highlight, the
     // browser back/forward behaviour and the lastPage restore all keep working
@@ -890,7 +882,7 @@ async function navigateTo(page) {
 function isViewingStaffDashboard() {
   return (
     currentPage === "staff-dashboard" ||
-    (currentPage === "dashboard" && currentStaffRole() !== "admin")
+    (currentPage === "dashboard" && !["admin", "owner"].includes(currentStaffRole()))
   );
 }
 
@@ -7546,6 +7538,7 @@ function depositInvoiceUrl(token) {
 let depositSweepDone = false;
 
 async function sweepExpiredDeposits() {
+  if (currentStaffRole() === "owner") return;
   if (depositSweepDone) return;
   // Set BEFORE awaiting: two loads firing at once must not both sweep.
   depositSweepDone = true;
@@ -7956,6 +7949,7 @@ async function submitDepositPayment() {
 // cannot tell "this area asks for nothing" from "somebody comped it", and the
 // chef's guest is indistinguishable from a mistake.
 async function openWaiveDeposit(resId) {
+  if (!isManagerOrAdmin()) { toast("Only a manager or admin can waive a deposit", "error"); return; }
   depositActionResId = resId;
   const el = document.getElementById("dep-waive-reason");
   if (el) el.value = "";
@@ -7964,6 +7958,7 @@ async function openWaiveDeposit(resId) {
 }
 
 async function submitWaiveDeposit() {
+  if (!isManagerOrAdmin()) { toast("Only a manager or admin can waive a deposit", "error"); return; }
   const resId = depositActionResId;
   if (!resId) return;
   const reason = String(document.getElementById("dep-waive-reason")?.value || "").trim();
@@ -8233,7 +8228,7 @@ function depositActionsPanel(res, bal) {
         '\')" class="btn-ghost text-xs px-3 py-1.5">' +
         escapeHtml(t("Record payment")) +
         "</button>") +
-    (settled
+    (settled || !isManagerOrAdmin()
       ? ""
       : '<button onclick="openWaiveDeposit(\'' +
         res.id +
@@ -12004,7 +11999,7 @@ async function unmarkBirthdayGreeted(guestId, year) {
 function refreshBirthdayViews() {
   if (isViewingStaffDashboard()) loadDashboardBirthdays();
   if (currentPage === "reports") loadBirthdayGuestsReport();
-  if (currentPage === "dashboard" && currentStaffRole() === "admin")
+  if (currentPage === "dashboard" && ["admin", "owner"].includes(currentStaffRole()))
     loadAdminBirthdays();
   // The panel is rendered from birthdayAlertData, which the loaders above
   // refresh. If neither ran (the bell is open over some other page), redraw
@@ -14389,11 +14384,11 @@ function removeBrandImageByUrl(url) {
 //    everywhere else in this app. This screen makes staff management possible
 //    for the owner; it does not make it safe. See CLAUDE.md, "Must be fixed
 //    before the first sale".
-const STAFF_ROLES = ["staff", "manager", "admin"];
+const STAFF_ROLES = ["staff", "manager", "admin", "owner"];
 let allStaffUsers = [];
 
 function staffRoleLabel(role) {
-  return role === "admin" ? t("Admin") : role === "manager" ? t("Manager") : t("Staff");
+  return role === "owner" ? "Owner" : role === "admin" ? t("Admin") : role === "manager" ? t("Manager") : t("Staff");
 }
 
 async function loadStaffUsers() {
@@ -14596,13 +14591,7 @@ async function saveStaffUser() {
       payload.is_active = true;
     }
 
-    const { error } = await supabaseQuery(
-      () =>
-        staffId
-          ? db.from("staff_users").update(payload).eq("id", staffId)
-          : db.from("staff_users").insert(payload),
-      "Failed to save staff",
-    );
+    const {error} = await db.functions.invoke("staff-account", {body:{id:staffId || null,...payload}});
     if (error) {
       // 23505 = unique violation, which here can only be the username.
       const dup =
@@ -14899,6 +14888,7 @@ async function saveReservationFormFields() {
     // would blank it on every save.
   };
 
+  if (!canManagePaymentSettings()) value.bank_details = APP_SETTINGS.reservation_form?.bank_details || null;
   loader(true);
   // .select() is not decoration. With no staff auth every request is the anon
   // role, and a write no policy permits updates zero rows and still answers
@@ -14949,8 +14939,8 @@ const QRIS_PREFIX = "deposit-qris";
 // uploadReserveBackground(), including saving IMMEDIATELY so the file is never
 // left orphaned in storage with nothing pointing at it.
 async function uploadDepositQris() {
-  if (!isManagerOrAdmin()) {
-    toast(t("Only a manager can change settings"), "error");
+  if (!canManagePaymentSettings()) {
+    toast(t("Only an admin can change payment details"), "error");
     return;
   }
   const file = document.getElementById("rff-qris-file")?.files?.[0];
@@ -15003,8 +14993,8 @@ async function uploadDepositQris() {
 }
 
 async function removeDepositQris() {
-  if (!isManagerOrAdmin()) {
-    toast(t("Only a manager can change settings"), "error");
+  if (!canManagePaymentSettings()) {
+    toast(t("Only an admin can change payment details"), "error");
     return;
   }
   const previous = (APP_SETTINGS.reservation_form || {}).qris_url;
@@ -15021,6 +15011,9 @@ async function removeDepositQris() {
 // half-typed screen. This key family has already lost data once by being
 // written as a fresh object.
 async function writeReservationFormValue(patch) {
+  if (!isManagerOrAdmin() || (!canManagePaymentSettings() && ["bank_details","qris_url"].some(key => key in patch))) {
+    toast("Only an admin can change payment details", "error"); return false;
+  }
   const value = { ...(APP_SETTINGS.reservation_form || {}), ...patch };
   const { data, error } = await supabaseQuery(
     () =>

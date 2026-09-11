@@ -14,3 +14,10 @@ node_modules/
 .DS_Store
 Thumbs.db
 *.log
+
+# Local Supabase CLI state and credentials; keep function source tracked.
+supabase/.temp/
+supabase/.branches/
+.env
+.env.*
+!.env.example

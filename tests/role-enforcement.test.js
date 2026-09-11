@@ -1,0 +1,34 @@
+const fs=require('fs'),assert=require('node:assert/strict');const {PGlite}=require('@electric-sql/pglite');
+(async()=>{const db=new PGlite();try{
+ await db.exec(`create role anon; create role authenticated; create role service_role; create schema auth; create schema storage;
+ grant usage on schema public,auth,storage to anon,authenticated;
+ create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+ create function auth.role() returns text language sql stable as $$select nullif(current_setting('request.jwt.claim.role',true),'')$$;
+ create table auth.users(id uuid primary key);
+ create table staff_users(id uuid primary key,username text,display_name text,pin text,role text,is_active boolean default true,created_at timestamptz default now(),auth_user_id uuid);
+ create table app_settings(key text primary key,value jsonb);
+ create table reservations(id uuid primary key default gen_random_uuid(),status text,deposit_required boolean,pax int);
+ create table invoice_payments(id uuid primary key default gen_random_uuid(),amount numeric);
+ create table invoices(id uuid primary key default gen_random_uuid(),kind text,note text,doc jsonb);
+ create table storage.objects(id uuid primary key default gen_random_uuid(),name text,bucket_id text);
+ alter table storage.objects enable row level security;
+ grant all on storage.objects to anon,authenticated;
+ create policy legacy_storage on storage.objects for all to anon,authenticated using(true) with check(true);
+ create function record_deposit_payment(p_amount numeric,p_staff_id uuid default null) returns uuid language plpgsql security definer as $$begin insert into invoice_payments(amount) values(p_amount);return p_staff_id;end$$;
+ create function waive_deposit() returns text language sql security definer as $$select 'waived'::text$$;
+ create function create_public_reservation() returns void language sql security definer as $$insert into reservations(status,pax) values('Incoming',2)$$;
+ create function get_guest_visit_summary() returns table(pax int) language sql security definer as $$select pax from reservations$$;
+ create function unsafe_legacy_write() returns void language sql security definer as $$delete from reservations$$;
+ insert into app_settings values('reservation_form','{"bank_details":"BANK A","qris_url":null}');`);
+ const ids={};for(const [i,role] of ['admin','owner','manager','staff'].entries()){ids[role]='00000000-0000-0000-0000-00000000000'+(i+1);await db.query('insert into staff_users(id,auth_user_id,username,display_name,role,pin) values($1,$1,$2,$2,$2,$3)',[ids[role],role,'1234']);}
+ await db.exec(fs.readFileSync('migrations/20260911_roles_enforce.sql','utf8'));
+ const as=async role=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false),set_config('request.jwt.claim.role',$2,false)",[ids[role]||'',role==='anon'?'anon':'authenticated']);await db.exec('set role '+(role==='anon'?'anon':'authenticated'));};
+ const denied=async sql=>{await assert.rejects(()=>db.exec(sql));};
+ await as('owner');assert.equal((await db.query('select * from reservations')).rows.length,0);await denied("insert into reservations(status) values('Reserved')");await denied('select record_deposit_payment(10)');await denied('select create_public_reservation()');
+ await as('staff');await db.exec("insert into reservations(status,pax) values('Incoming',3)");const paid=await db.query('select record_deposit_payment(100,$1) as actor',[ids.admin]);assert.equal(paid.rows[0].actor,ids.staff);await denied('select record_deposit_payment(-10)');await denied('select waive_deposit()');await denied('select unsafe_legacy_write()');await denied('select pin from staff_users');await db.exec("update app_settings set value='{}'");assert.equal((await db.query("select value from app_settings")).rows[0].value.bank_details,"BANK A");await denied("insert into storage.objects(name) values('deposit-qris-new.png')");
+ await as('manager');await denied("update app_settings set value='{\"bank_details\":\"BANK B\"}'");await db.exec("update app_settings set value=value||'{\"show_notes\":true}'");await denied("insert into storage.objects(name) values('deposit-qris-new.png')");await db.exec("insert into storage.objects(name) values('logo-new.png')");await db.exec('select waive_deposit()');await db.exec("update staff_users set role='admin' where role='manager'");assert.equal((await db.query("select role from staff_users")).rows[0].role,"manager");
+ await as('admin');await db.exec("update app_settings set value=value||'{\"bank_details\":\"BANK B\"}'");await db.exec("insert into storage.objects(name) values('deposit-qris-new.png')");
+ await as('anon');await denied('select * from reservations');await denied('select record_deposit_payment(1)');await db.exec('select create_public_reservation()');await db.exec('select * from app_settings');
+ await db.exec('reset role');assert.ok((await db.query('select * from app_private.role_audit where actor_id=$1',[ids.staff])).rows.length>0);
+ console.log('Database roles: owner read-only, staff payments, manager restrictions, admin QRIS, public booking, RPC bypass prevention and trusted audit passed');
+ }finally{await db.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

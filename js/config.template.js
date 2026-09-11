@@ -1761,17 +1761,9 @@ function canIssueDepositInvoice() {
 // Areas and the dish list (settings-menu) but every edit action there
 // is manager-gated (manager-only-ui + checks inside the save functions).
 // Prizes and settings-thresholds stay manager-only.
-const STAFF_ALLOWED_PAGES = new Set([
-  "settings-wa",
-  "dashboard",
-  "reservations",
-  "walkins",
-  "settings",
-  "areas",
-  "settings-menu",
-  "membership",
-  "broadcast",
-]);
+const STAFF_ALLOWED_PAGES = new Set(["dashboard", "reservations", "walkins", "membership", "guests"]);
+const OWNER_ALLOWED_PAGES = new Set(["dashboard", "reports"]);
+function canManagePaymentSettings() { return currentStaffRole() === "admin"; }
 
 // Pages only the admin (owner/head-chef) should ever see — NOT a security
 // boundary, just a "this would be a duplicate for you" rule.
@@ -1798,6 +1790,7 @@ function hasAccess(page) {
   if (page === "invoice" && typeof invReservationContext !== "undefined" &&
       invReservationContext?.kind === "deposit" && canIssueDepositInvoice()) return true;
   const role = currentStaffRole();
+  if (role === "owner") return OWNER_ALLOWED_PAGES.has(page);
   if (ADMIN_ONLY_PAGES.has(page)) return role === "admin";
   if (role === "manager" || role === "admin") return true;
   return STAFF_ALLOWED_PAGES.has(page);
@@ -1807,9 +1800,7 @@ function applyRoleToNav() {
   const role = currentStaffRole();
   document.querySelectorAll("[data-nav]").forEach((btn) => {
     const page = btn.dataset.nav;
-    const allowed = ADMIN_ONLY_PAGES.has(page)
-      ? role === "admin"
-      : role === "manager" || role === "admin" || STAFF_ALLOWED_PAGES.has(page);
+    const allowed = hasAccess(page);
     btn.classList.toggle("nav-role-hidden", !allowed);
     btn.style.display = allowed ? "" : "none";
     // A nav item may sit inside a wrapper that carries a divider rule.
@@ -1821,7 +1812,7 @@ function applyRoleToNav() {
   // Show/hide the role badge in the sidebar
   const badge = document.getElementById("staff-role-badge");
   if (badge) {
-    badge.textContent =
+    badge.textContent = role === "owner" ? "Owner" :
       role === "admin"
         ? t("Admin")
         : role === "manager"
@@ -1845,6 +1836,8 @@ function applyRoleToNav() {
 // (openResActions, loadWalkIns, loadReservations) since those replace
 // innerHTML and would otherwise reset elements back to visible.
 function applyManagerOnlyUI() {
+  document.querySelectorAll(".admin-only-ui").forEach(el => { el.style.display = currentStaffRole() === "admin" ? "" : "none"; });
+  document.querySelectorAll(".admin-only-input").forEach(el => { el.disabled = currentStaffRole() !== "admin"; });
   const role = currentStaffRole();
   const isManager = role === "manager" || role === "admin";
   document.querySelectorAll(".manager-only-ui").forEach((el) => {

@@ -787,7 +787,7 @@ function invReset() {
   invEl("inv-dp-on").checked = true;
   invEl("inv-settle-on").checked = false;
   invEl("inv-note").value =
-    "Pembayaran downpayment dapat dilakukan melalui QRIS " + restaurantName();
+    String(reservationFormSettings().bank_details || "");
   invEl("inv-paydate").value = invToday();
   invEl("inv-eventdate").value = "";
   Object.keys(invLocked).forEach((k) => (invLocked[k] = false));
@@ -811,6 +811,7 @@ function invCheckReceipt() {
 let invBooted = false;
 
 function initInvoice() {
+  if (invEl("inv-note")) invEl("inv-note").readOnly = currentStaffRole() !== "admin";
   // The sheet's markup is built here rather than sitting in index.html, so the
   // guest page can build the identical document from the same function.
   // Before applyInvoiceStyle and applyBranding, both of which reach into

@@ -9,6 +9,7 @@ w.toast = () => {};
 w.confirm = () => true;
 w.isManagerOrAdmin = () => true;
 w.currentStaffId = () => 'staff-1';
+w.currentStaffRole = () => 'admin';
 w.currentPage = 'invoice';
 w.escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 w.reservationFormSettings = () => ({ bank_details: 'Demo bank' });
