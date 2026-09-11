@@ -984,3 +984,13 @@ warning. That is the failure mode to design against: **own the domain**, so that
 changes terms, moving is an afternoon rather than a crisis.
 
 Full history and reasoning: see `CLAUDE.md` in the `blueheron-gms` repo.
+
+## Progress — 11 September 2026
+
+- Phase 1 is complete and smoke-tested: keep username/PIN login, verified database roles, RLS, `staff-account`, and existing public flows. Do not redesign authentication.
+- Roles: Owner has read-only Dashboard/Reports access; Admin has full access; Manager has restricted sensitive settings (including payment bank details/QRIS); Staff can handle daily operations and deposit invoices/payments within existing permissions.
+- Phase 2 implemented locally: responsive Owner/Admin summary dashboard for phone, tablet, and desktop. Includes reservations, visits, walk-ins, recorded spend, upcoming bookings, overdue deposits, guest leaderboard, and returning guests; Today/7-day/Month views and read-only details.
+- Staff/Manager operational dashboards remain unchanged. No database migration or Phase 1 permission changes.
+- Files: new `js/owner-dashboard.js`, `css/owner-dashboard.css`, `tests/owner-dashboard.test.js`; small integration changes in `index.html` and `js/app.js`.
+- Validation passed: summary calculations/loading, dashboard regression tests, role navigation, database role enforcement, and JavaScript syntax. Browser visual verification was blocked by an environment error; phone/desktop visual review remains to be done.
+- Changes have not been pushed or deployed by Codex.
