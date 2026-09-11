@@ -1,0 +1,32 @@
+﻿const fs=require('fs'),assert=require('node:assert/strict');const {JSDOM}=require('jsdom');
+const dom=new JSDOM(fs.readFileSync('index.html','utf8'),{runScripts:'outside-only',url:'https://example.com'});const w=dom.window;
+w.CURRENT_LANG='en';w.currentStaffRole=()=> 'owner';w.restaurantName=()=> 'Intoch';
+w.eval(fs.readFileSync('js/owner-dashboard.js','utf8')+'\nwindow.testOverview = ownerOverview;');
+const json=x=>JSON.parse(JSON.stringify(x));
+(async()=>{
+ assert.deepEqual(json(w.odRange('today',new Date('2026-09-10T18:00:00Z'))),{start:'2026-09-11',end:'2026-09-11',prevStart:'2026-09-04',prevEnd:'2026-09-04',time:'01:00'});
+ assert.equal(w.odRange('month',new Date('2024-03-31T12:00:00Z')).prevEnd,'2024-02-29');
+ assert.equal(w.odRange('week',new Date('2026-01-02T12:00:00Z')).start,'2025-12-27');
+ const range={start:'2026-09-11',end:'2026-09-11',prevStart:'2026-09-04',prevEnd:'2026-09-04',time:'14:00'};
+ const visits=[{id:'a',guest_id:'a',visit_date:'2026-09-11',visit_time:'12:00',pax:4,spend_amount:100000,visit_type:'Walk-In'},{id:'b',guest_id:'b',visit_date:'2026-09-11',visit_time:'13:00',pax:'2',spend_amount:null,visit_type:'Reservation'},{id:'c',guest_id:'c',visit_date:'2026-09-11',visit_time:'13:00',pax:100,spend_amount:999,voided_at:'2026-09-11'},{id:'d',guest_id:'a',visit_date:'2026-09-04',visit_time:'12:00',pax:3,spend_amount:100000},{id:'e',visit_date:'2026-09-04',visit_time:'19:00',pax:90}];
+ const m=w.odMetrics(visits,range,new Set(['a']));assert.equal(m.pax,6);assert.equal(m.spend,100000);assert.equal(m.walkins,1);assert.equal(m.repeat,50);assert.equal(m.delta,100);assert.equal(m.unrecorded,1);
+ assert.equal(w.odMetrics([...visits,{visit_date:'2026-09-04',pax:1}],range).delta,null);
+ const reservations=[{id:'r1',status:'Reserved',pax:4,reservation_date:'2026-09-11'},{id:'r2',status:'Waitlist',pax:20,reservation_date:'2026-09-11'},{id:'r3',status:'Incoming',pax:2,reservation_date:'2026-09-11'},{id:'r4',status:'Cancelled',pax:30,reservation_date:'2026-09-11'},{id:'r5',status:'Reserved',deleted_at:'x',pax:90}];
+ assert.deepEqual(json(w.odReservationTotals(reservations)),{count:3,confirmed:1,pax:4,waiting:1,waitingPax:20,incoming:1});
+ assert.equal(w.odLeaderboard(visits).find(([id])=>id==='c'),undefined);
+ const root=w.document.getElementById('owner-overview-content');const data={range,metrics:m,reservations:reservations.filter(r=>!r.deleted_at),due:[],leaders:[['a',100000]],names:[{id:'a',name:'<img src=x onerror=alert(1)>'}]};
+ w.odRenderOverview(root,data);assert.equal(root.querySelector('img'),null);assert.ok(root.textContent.includes('<img src=x'));assert.equal(root.querySelectorAll('.od-metric').length,4);assert.equal(root.querySelectorAll('.od-card').length,5);
+ w.testOverview.data=data;w.HTMLElement.prototype.scrollIntoView=()=>{};w.odShowDetails('requests');assert.ok(root.textContent.includes('Read-only summary'));assert.equal(root.querySelectorAll('[onclick*="openResActions"]').length,0);
+ const calls=[];w.db={from:()=>({select(){return this},order(){return this},range:async(a,b)=>{calls.push([a,b]);return {data:Array.from({length:a===0?500:1},(_,i)=>({id:a+i}))};}})};
+ assert.equal((await w.odRows('visits','id')).length,501);assert.deepEqual(calls,[[0,499],[500,999]]);
+ w.document.getElementById('page-owner-dashboard').classList.add('active');w.db={from:()=>{throw Error('test offline')}};const warn=w.console.warn;w.console.warn=()=>{};await w.loadOwnerDashboard();w.console.warn=warn;
+ assert.ok(root.textContent.includes('Overview unavailable'));assert.equal(root.querySelectorAll('.od-metric').length,0);
+ // Exercise the actual loader with successful empty responses, then a denied role.
+ let reads=0;w.db={from:()=>{reads++;return {select(){return this},is(){return this},gte(){return this},lte(){return this},eq(){return this},in(){return this},lt(){return this},order(){return this},range:async()=>({data:[],error:null})}}};
+ await w.loadOwnerDashboard();assert.equal(root.querySelectorAll('.od-metric').length,4);assert.equal(reads,3);assert.equal(w.testOverview.data.metrics.pax,0);
+ w.currentStaffRole=()=> 'staff';await w.loadOwnerDashboard();assert.equal(reads,3);w.currentStaffRole=()=> 'owner';
+ w.CURRENT_LANG='id';w.odRenderOverview(root,data);assert.ok(root.textContent.includes('Belanja tercatat'));
+ const app=fs.readFileSync('js/app.js','utf8');assert.ok(app.includes('if (isAdminDashboard) pendingLoads.push(loadOwnerDashboard())'));
+ const css=fs.readFileSync('css/owner-dashboard.css','utf8');assert.ok(css.includes('@media(max-width:640px)'));assert.ok(css.includes('body.summary-dashboard-active #app-sidebar'));assert.ok(css.includes('grid-template-columns:repeat(2,minmax(0,1fr))'));
+ console.log('Owner overview: Jakarta periods, comparable visits, exclusions, repeat rate, escaping, read-only details, pagination, errors and responsive scope passed');
+})().catch(e=>{console.error(e);process.exitCode=1;});

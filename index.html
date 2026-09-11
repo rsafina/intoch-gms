@@ -19,6 +19,7 @@
          guest opens from WhatsApp, so both draw the same document. -->
     <link rel="stylesheet" href="css/invoice-sheet.css?v=1" />
     <link rel="stylesheet" href="css/dashboard-reservations.css?v=8" />
+    <link rel="stylesheet" href="css/owner-dashboard.css?v=1" />
     <style>
       :root {
         /* ── Brand tokens (2026-09-05). ONE PLACE. ───────────────────
@@ -1905,6 +1906,15 @@
       </section>
 
       <!-- ===== ADMIN DASHBOARD (owner / head-chef view) ===== -->
+      <section id="page-owner-dashboard" class="page-section">
+        <div class="od-container"><header id="owner-overview-header" class="od-header"></header><div id="owner-overview-content" aria-live="polite"></div></div>
+        <nav class="od-mobile-nav" aria-label="Overview navigation">
+          <button onclick="window.scrollTo({top:0,behavior:'smooth'})">Overview</button>
+          <button onclick="navigateTo('reports')">Reports</button>
+          <button onclick="odToggleMenu()">Menu</button>
+        </nav>
+        <button class="od-menu-close" aria-label="Close menu" onclick="odToggleMenu()">&times;</button>
+      </section>
       <section id="page-admin-dashboard" class="page-section p-8">
         <div class="max-w-5xl mx-auto">
           <!-- ══ HEADER + PERIOD SWITCHER ══════════════════════════ -->
@@ -9348,7 +9358,8 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
     <script src="js/staff-auth.js"></script>
-    <script src="js/app.js?v=47"></script>
+    <script src="js/owner-dashboard.js?v=1"></script>
+    <script src="js/app.js?v=48"></script>
     <script src="js/reservation-extras.js?v=1"></script>
     <script src="js/membership.js?v=7"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file

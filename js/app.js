@@ -541,6 +541,7 @@ function scheduleReservationViewsRefresh() {
     _rtReservationTimer = null;
     try {
       if (isViewingStaffDashboard()) await loadDashboard();
+      else if (currentPage === "dashboard" && ["admin", "owner"].includes(currentStaffRole())) await loadOwnerDashboard();
       else if (currentPage === "reservations") await loadReservations();
       else if (currentPage === "reports") {
         await loadDashboardReservationCounts();
@@ -787,9 +788,11 @@ async function navigateTo(page) {
     // browser back/forward behaviour and the lastPage restore all keep working
     // without special cases. It renders the SAME #page-dashboard section staff
     // see — there is no second copy of that markup to drift out of sync.
+    document.body.classList.toggle("summary-dashboard-active", isAdminDashboard);
+    document.body.classList.remove("summary-menu-open");
     const isStaffDashboardView = page === "staff-dashboard";
     const sectionId = isAdminDashboard
-      ? "admin-dashboard"
+      ? "owner-dashboard"
       : isStaffDashboardView
         ? "dashboard"
         : page;
@@ -856,7 +859,7 @@ async function navigateTo(page) {
     if (page === "membership") pendingLoads.push(loadMembership());
     if (page === "broadcast") pendingLoads.push(loadBroadcast());
     if (page === "dashboard" && !isAdminDashboard) pendingLoads.push(loadDashboard());
-    if (isAdminDashboard) pendingLoads.push(loadAdminDashboard());
+    if (isAdminDashboard) pendingLoads.push(loadOwnerDashboard());
     if (isStaffDashboardView) {
       pendingLoads.push(loadDashboard());
       setStaffDashboardDateLabel();
