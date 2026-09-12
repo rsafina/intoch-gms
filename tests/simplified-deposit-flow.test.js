@@ -8,8 +8,10 @@ function lift(src, name, indent='') {
   const match = src.match(new RegExp('^'+indent+'(?:async )?function '+name+'\\([^]*?^'+indent+'}', 'm'));
   assert.ok(match, name); return match[0];
 }
+w.eval(fs.readFileSync('js/deposit-policy.js','utf8'));
 w.eval('var depositActionResId=null, depositActionRes=null, depositInvoiceSaving=false;');
 for (const name of ['isLargeReservation','openDepositInvoice','submitDepositInvoice','submitSimpleDepositInvoice','depositInvoiceUrl','largePartyAgreePanel','areaParseRupiah','areaFormatRupiah','onAreaMoneyInput']) w.eval(lift(app,name));
+w.CURRENT_LANG='en';
 w.APP_SETTINGS = {reservation_hours:{max_pax:20}};
 w.t = s=>s; w.escapeHtml = s=>s; w.depositRupiah = n=>'Rp '+Number(n).toLocaleString('id-ID');
 w.isManagerOrAdmin = ()=>false; w.canIssueDepositInvoice = ()=>true; w.reservationFormSettings = ()=>({bank_details:'Bank'});
@@ -45,6 +47,11 @@ w.db={from(table) {
   failRead=true; await w.submitSimpleDepositInvoice(); assert.equal(rows.length,2,'failed lookup cannot create duplicates'); failRead=false;
   res={...res,pax:62,is_large_party:true,status:'Waitlist'};
   await w.openDepositInvoice('r1'); assert.equal(full,1,'large party uses full editor');
+  res.deposit_invoice_format='simple';await w.openDepositInvoice('r1');assert.equal(full,1,'large party can use the simplified deposit');assert.equal(modal,'modal-deposit-invoice');
+  res.deposit_invoice_format='unselected';await w.openDepositInvoice('r1');assert.equal(modal,'modal-deposit-format','staff chooses the format');
+  w.db.rpc=async(name,args)=>{assert.equal(name,'set_reservation_deposit_request');res.deposit_invoice_format=args.p_format;return {data:{ok:true}};};
+  await w.chooseDepositFormat('simple');assert.equal(modal,'modal-deposit-invoice');assert.equal(full,1);
+  res.deposit_invoice_format='detailed';await w.openDepositInvoice('r1');assert.equal(full,2);
   assert.equal(w.isLargeReservation({...res,pax:10,is_large_party:false,waitlist_reason:'over_capacity'}),false);
   assert.equal(w.isLargeReservation({...res,pax:10,is_large_party:true}),true,'snapshot survives threshold or pax changes');
   const panel=w.largePartyAgreePanel({...res,deposit_required:false}); assert.match(panel,/onAreaMoneyInput/);
@@ -59,7 +66,7 @@ w.db={from(table) {
   w.document.body.insertAdjacentHTML('beforeend','<div id="area-cond"></div><input id="f-time"><button id="btn-submit"></button>');
   w.$=id=>w.document.getElementById(id);w.gt=s=>s;w.gtf=s=>s;w.rupiah=w.depositRupiah;
   w.readPaxRaw=()=>41;w.areaSlot=()=>null;w.areaTimeBlocked=()=>false;
-  w.eval('var AREAS=[{id:"a",deposit_amount:null}], AREA_ID="a", MAX_PAX=20;');
+  w.eval('var DEPOSIT_FORM={}, GUEST_LANG="en"; var AREAS=[{id:"a",deposit_amount:null}], AREA_ID="a", MAX_PAX=20;');
   w.eval(lift(form,'renderAreaCond','      '));w.renderAreaCond();
   assert.match(w.$('area-cond').textContent,/Deposit \(DP\)To be confirmed/,'large party gets deposit notice even in no-deposit area');
   w.eval('AREAS[0].deposit_amount=50000');w.renderAreaCond();
@@ -68,5 +75,9 @@ w.db={from(table) {
   assert.equal(w.$('btn-submit').textContent,'Reserve Now');
   w.areaTimeBlocked=()=>true;w.renderAreaCond();
   assert.equal(w.$('btn-submit').textContent,'Submit request','capacity waitlist is presented as a request');
+  w.eval('DEPOSIT_FORM={deposit_basis:"pax",deposit_free_pax:1,deposit_regular_max_pax:20};');
+  w.areaTimeBlocked=()=>false;w.readPaxRaw=()=>2;w.renderAreaCond();assert.match(w.$('area-cond').textContent,/staff will contact/i);assert.doesNotMatch(w.$('area-cond').textContent,/50\.000/);
+  w.readPaxRaw=()=>1;w.renderAreaCond();assert.doesNotMatch(w.$('area-cond').textContent,/deposit is required/i);
+  w.eval('DEPOSIT_FORM.deposit_free_pax=0');w.renderAreaCond();assert.match(w.$('area-cond').textContent,/deposit is required/i);
   console.log('Simplified deposit routing, link reuse, settlement preservation, money input and guest conditions passed');
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>w.close());

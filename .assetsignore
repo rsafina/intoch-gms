@@ -37,3 +37,28 @@ CLAUDE.md
 README.md
 .gitignore
 .assetsignore
+
+# Internal material and server-only source are not website assets.
+docs
+demo
+supabase
+**/*.md
+**/*.sql
+_to_delete
+assets/_to_delete
+
+# Local secrets and tooling state, including direct local deployments.
+.git
+.github
+.agents
+.codex
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.log
+.gitattributes

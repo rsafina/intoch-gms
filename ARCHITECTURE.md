@@ -24,7 +24,11 @@ js/
                               ymd(), branding, role gating (hasAccess / applyRoleToNav)
   config.js                   BUILD ARTEFACT. Do not edit
   staff-auth.js               username/PIN to Supabase Auth mapping, session restore
-  owner-dashboard.js          Owner/Admin read-only summary (+ css/owner-dashboard.css)
+  owner-dashboard.js          Owner/Admin read-only summary (+ css/owner-dashboard.css).
+                              Counts Reserved, Confirmed, Arrived and Completed as confirmed;
+                              falls back to the linked guest name when a booking has none;
+                              suppresses a pace comparison when the two periods differ in
+                              length, so a 31-day month is never read against a 30-day one
   reservation-extras.js       dashboard online-form overview, online-only filter,
                               staff deposit request copy
   invoice.js                  invoice editor, INV_DEFAULTS, PDF export
@@ -124,7 +128,7 @@ the verified role work. The old rule forbidding `auth.role()` tests is retired.
 | **owner** | Dashboard and Reports only, read-only. Writes and operational RPCs denied. |
 | **admin** | Everything, including staff accounts, bank details, QRIS, payment instructions. |
 | **manager** | Operations and reports, waivers, voids, negative adjustments. No accounts, no role changes, no payment destination. |
-| **staff** | Dashboard, Reservations, Walk-ins, Membership, Guests. Deposit invoices and positive payment records. |
+| **staff** | Dashboard, Reservations, Walk-ins, Membership, Guests. Deposit invoices and positive payment records. Deposit waivers only if individually granted, see below. |
 
 Frontend gating lives in `config.template.js`: `OWNER_ALLOWED_PAGES`, `STAFF_ALLOWED_PAGES`,
 `ADMIN_ONLY_PAGES`, `hasAccess()`, `applyRoleToNav()`, `applyManagerOnlyUI()`,
@@ -171,22 +175,65 @@ writes `staff_users` **as the caller** (so the triggers and the audit log see th
 while using the service-role client only for the Auth side, deletes the Auth user again if the
 row insert fails, and logs PIN changes through `record_staff_pin_change`.
 
-### Three constraints that come with it
+### Per-staff deposit waiver (2026-09-12)
 
-1. **An RPC added after enforcement is denied by default.** The wrapper loop assigns a role to
-   a known list of function names and skips anything unlisted, and the migration revokes
-   execute from `public`, `anon` and `authenticated` first. A new RPC must be reviewed and
-   given a role explicitly. A later migration changing a protected function must change the
-   implementation in `app_private` and keep the public wrapper.
+`staff_users.can_waive_deposit`, boolean, default false, readable by `authenticated` as a
+column grant. `public.app_can_waive_deposit()` answers true for admin and manager
+unconditionally, and for a staff member only when the flag is set on their active row.
+
+- Admin sets it in Settings > Staff, and the control appears only when the role is Staff.
+  `updateStaffWaiverControl()` owns that, and the edge function forces the flag to false for
+  any role other than staff so a manager cannot be given a redundant or contradictory one.
+- The frontend caches it on the session, but `refreshDepositWaiverPermission()` re-reads the
+  live answer before opening the waiver and again before submitting, and **fails closed** if
+  the check cannot be reached. `public.waive_deposit()` re-checks independently, so a tampered
+  local session grants nothing.
+- `20260912_staff_deposit_waiver.sql` patches `app_private.protect_changes()` by reading its
+  own definition with `pg_get_functiondef` and replacing one exact line. If that line has been
+  reformatted it raises "Unexpected staff protection function" rather than silently doing
+  nothing, which is the correct failure, but it does mean **nobody may casually reformat that
+  function**.
+
+### Four constraints that come with all of this
+
+1. **The blanket EXECUTE revoke catches more than RPCs.** The wrapper loop revokes execute on
+   every function in `public` from `public`, `anon` and `authenticated`, assigns a role only to
+   a known list of names, and skips the rest. That list was written for functions the app
+   calls. It missed the **helpers the database calls by itself while saving a row**, and four
+   save paths broke: `normalize_table_assignment()`, the reservation and visit tier trigger,
+   `invoice_document_rupiah()` behind the invoice save, and the two voucher default triggers.
+   Each was fixed by making the **trigger** SECURITY DEFINER with a pinned `search_path`
+   rather than by granting the helper, except `invoice_document_rupiah`, which is a pure
+   JSON-to-number conversion and was granted. `default_reservation_duration()` also had to be
+   re-granted because it is evaluated as a column DEFAULT on a direct insert.
+
+   So before adding any function, ask which of three things it is: an RPC the app calls (wrap
+   it and assign a role), a trigger function (SECURITY DEFINER, pinned search_path, execute
+   revoked), or a pure calculation a trigger needs (granted to `authenticated`, nothing else).
+   Anything unlisted is denied, and the denial surfaces as a failed save rather than as a
+   missing menu item. `tests/role-save-paths.test.js` is the harness for proving it.
+
+   **Still unproven:** `sync_live_table_assignment()` and `guard_last_admin()` both run as the
+   caller and neither has been exercised under enforcement. The first cannot tell a
+   policy-blocked row from a non-matching one, so a failed sync is silent. The second counts
+   `staff_users` under RLS plus column grants, and it is the only enforcement of
+   never-zero-active-admins.
+
 2. **Do not rerun `ALL_IN_ONE.sql` after enforcement.** It would restore the old grants and
-   unwrapped functions. `20260911_roles_enforce.sql` is deliberately not part of it, refuses a
-   second application (it checks for `app_private.role_audit`), and aborts if any staff account
-   is unlinked or if there is no active admin.
-3. **Rollout order is load-bearing.** prepare migration, then
-   `node scripts/migrate-staff-auth.mjs` with a service-role key in a trusted terminal, then
-   `supabase functions deploy staff-account --no-verify-jwt`, then the enforce migration, then
-   the frontend. Out of order and nobody can log in. Public Auth signup and email password
-   recovery stay disabled for these internal identities. Full checklist: `ROLE_ROLLOUT.md`.
+   unwrapped functions. This is now enforced rather than merely documented: the file aborts on
+   a database where `public.app_staff_role()` or `app_private.role_audit` exists.
+   `20260911_roles_enforce.sql` likewise refuses a second application and aborts if any staff
+   account is unlinked or there is no active admin.
+3. **A new client is eight ordered steps**, listed in the header of `ALL_IN_ONE.sql`: that
+   file, `roles_prepare`, `scripts/migrate-staff-auth.mjs` with a service-role key in a
+   trusted terminal, `roles_enforce` alongside the frontend and the deployed edge function,
+   then the four 2026-09-12 follow-ups (`roles_save_paths`, `roles_invoice_amount`,
+   `roles_voucher_defaults`, `staff_deposit_waiver`). Account linking uses the Auth API and
+   cannot be bundled into SQL. Run with stop-on-error (`psql -v ON_ERROR_STOP=1`).
+4. **Order is load-bearing and one-way.** Out of order and nobody can log in. Public Auth
+   signup and email password recovery stay disabled for these internal identities. A later
+   migration changing a protected function must change the implementation in `app_private` and
+   keep the public wrapper. Full checklist: `ROLE_ROLLOUT.md`.
 
 ### What this does not fix
 
@@ -261,7 +308,8 @@ commented as superseded.
 
 A booking in an area with a deposit is created `Incoming`, holds its table, and leaves that
 status by exactly two routes: a recorded payment that clears the balance, or a waiver with a
-written reason. Both write a record.
+written reason. Both write a record. Who may waive: admin, manager, and any staff member
+individually granted it, see "Per-staff deposit waiver" in section 3.
 
 Staff **cannot** click "Reserved" on an `Incoming` booking. That would lock a table with
 neither money nor a reason, and a week later nobody could tell it from a real payment.
@@ -294,6 +342,9 @@ guest to tell anyone.
   cannot be a forgotten second click.
 - A **partial** payment leaves it `Incoming` and **does not move the deadline**. Otherwise a
   guest holds a table forever by sending Rp 1.000 a day.
+- **A capacity conflict at the moment of automatic confirmation rolls back both the payment
+  record and the status change.** Staff must resolve the seating clash and record the payment
+  again. The booking is never left promoted-but-unseated, and never paid-but-unrecorded.
 - `Waitlist` is promoted the same way as `Incoming` (added 2026-09-07). A large party agrees a
   figure over WhatsApp and pays it; the money arriving is the same event in both flows. The
   only difference is how the booking got there: `Incoming` was auto-quoted, `Waitlist` was
@@ -493,14 +544,17 @@ than a blank label or a raw key.
 
 ## 10. Migrations
 
-**One file: `ALL_IN_ONE.sql`.** Paste it into the Supabase SQL Editor and run it. That is the
-whole procedure for a brand new client and for an existing one. It is idempotent: every
-`CREATE` is `IF NOT EXISTS`, every trigger and policy drops itself first, every seed insert is
-guarded, and functions that change shape are dropped before redefinition. So there is no
-"which migrations has this client had?" bookkeeping.
+**`ALL_IN_ONE.sql` builds the legacy base schema and is idempotent**: every `CREATE` is
+`IF NOT EXISTS`, every trigger and policy drops itself first, every seed insert is guarded,
+and functions that change shape are dropped before redefinition. Running it against a
+database that is empty, half-built or fully up to date all do the right thing.
 
-**The one exception is `20260911_roles_enforce.sql`.** It is not in the file, is one-time, and
-`ALL_IN_ONE.sql` must not be run after it. See section 3.
+**It is no longer the whole procedure.** Since role enforcement it is step 1 of eight for a
+new client (the order is in its own header and in section 3), and it is **forbidden** on a
+client that is already secured: the file aborts on sight of `public.app_staff_role()` or
+`app_private.role_audit`. A secured client gets targeted migrations only. So there is still no
+"which migrations has this client had?" bookkeeping for the base schema, but the role
+migrations are genuinely ordered and must be tracked.
 
 ### The rule that keeps the single-file approach working
 

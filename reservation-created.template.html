@@ -481,6 +481,10 @@
             const wl = document.getElementById("waitlist-note");
             wl.textContent = gt("Status: waiting for staff to confirm");
             wl.style.display = "block";
+          } else if (r.awaiting_quote) {
+            const dep = document.getElementById("deposit-note");
+            dep.textContent = GUEST_LANG === "id" ? "Deposit diperlukan untuk mengonfirmasi reservasi. Staf kami akan menghubungi Anda mengenai jumlah dan pembayaran." : "A deposit is required to confirm your reservation. Our staff will contact you with the amount and payment details.";
+            dep.style.display = "block";
           } else if (r.deposit_required && r.deposit_expected) {
             // Only a booking that was actually accepted is asked for money.
             const dep = document.getElementById("deposit-note");

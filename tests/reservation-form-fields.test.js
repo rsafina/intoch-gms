@@ -105,7 +105,9 @@ const ctx = {
   console,
   APP_SETTINGS: {},
   document: { getElementById: () => null },
-  isManagerOrAdmin: () => true,
+  canManagePaymentSettings:()=>true,
+  CURRENT_LANG:'en',
+    isManagerOrAdmin: () => true,
 };
 vm.createContext(ctx);
 vm.runInContext(
@@ -143,6 +145,8 @@ function harness(opts) {
     t: (s) => s,
     toast: (m, kind) => seen.toasts.push([m, kind || "ok"]),
     loader: () => {},
+    canManagePaymentSettings:()=>true,
+    CURRENT_LANG:'en',
     isManagerOrAdmin: () => true,
     supabaseQuery: async (fn) => {
       const r = await fn();
@@ -184,6 +188,10 @@ function harness(opts) {
       // not fail an assertion, it throws inside the vm and takes the whole
       // file down, so a new field on this screen must be added in both places.
       "rff-bank": { value: "" },
+      "rff-deposit-basis": {value:"area"},
+      "rff-deposit-free-pax": {value:"1"},
+      "rff-deposit-max-pax": {value:"20"},
+      "rff-deposit-pax-fields": {hidden:true},
       "rff-wa": { value: "" },
       // renderQrisPreview toggles these. Lifted rather than stubbed so the
       // "only a real URL is treated as an image" rule is exercised here too.
@@ -196,6 +204,7 @@ function harness(opts) {
   };
   c.document = { getElementById: (id) => c.values[id] || null };
   vm.createContext(c);
+  vm.runInContext(fs.readFileSync('js/deposit-policy.js','utf8') + '\n' + lift(appSrc, 'renderDepositPolicySettings', 'app.js'), c);
   vm.runInContext(
     grab(appSrc, "RESERVATION_FORM_DEFAULTS", "app.js") +
       "\nconst RESERVATION_WELCOME_MAX = " +

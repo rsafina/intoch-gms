@@ -1,0 +1,20 @@
+{
+  "captured_at": "2026-09-12T16:41:09.708896",
+  "app_url": "https://dashboard.intoch.app",
+  "anonymized": true,
+  "files": [
+    "02-login.png",
+    "02-menu-sidebar.png",
+    "03-complete-modal.png",
+    "03-daftar-walkins.png",
+    "03-quick-walkin.png",
+    "03-register-walkin.png",
+    "04-panel-deposit.png",
+    "04-reservasi-baru.png",
+    "04-update-reservasi.png",
+    "05-form-online-kosong.png",
+    "05-form-online-terisi.png",
+    "05-halaman-reservations.png",
+    "manifest.json"
+  ]
+}
