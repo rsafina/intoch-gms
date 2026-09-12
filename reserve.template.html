@@ -275,6 +275,24 @@
         font-weight: 700;
         color: #ffb98f;
       }
+      /* The guest-count deposit has no figure to show, so it is a sentence
+         rather than a key/value row. A bold red-orange lead line, then the
+         detail at normal weight: loud enough not to be skipped, quiet enough
+         not to read as an error. It gets its own class rather than reusing
+         .avail, which is the muted footnote style shared with "availability
+         checked for a 90-minute visit" and is exactly why this notice was
+         being read straight past. */
+      .cond .dp-note {
+        margin-top: 9px;
+        padding-top: 9px;
+        border-top: 1px solid rgba(255, 255, 255, 0.18);
+      }
+      .cond .dp-note strong {
+        display: block;
+        font-weight: 700;
+        color: #ffb98f;
+        margin-bottom: 2px;
+      }
       .cond .avail {
         margin-top: 9px;
         padding-top: 9px;
@@ -379,6 +397,12 @@
         border-top-color: rgba(91, 76, 189, 0.14);
       }
       :root[data-rf-bg="solid"] .cond .dp {
+        color: #b23600;
+      }
+      :root[data-rf-bg="solid"] .cond .dp-note {
+        border-top-color: rgba(91, 76, 189, 0.14);
+      }
+      :root[data-rf-bg="solid"] .cond .dp-note strong {
         color: #b23600;
       }
       :root[data-rf-bg="solid"] .lang-switch {
@@ -2066,7 +2090,12 @@
           rows.push(row(gt("Minimum spend"), rupiah(a.min_spend)));
         if (DEPOSIT_FORM.deposit_basis === "pax") {
           if (depositBookingRule(readPaxRaw(), a, DEPOSIT_FORM).required)
-            rows.push(row(gt("Deposit (DP)"), GUEST_LANG === "id" ? "Deposit diperlukan untuk mengonfirmasi reservasi. Staf kami akan menghubungi Anda mengenai jumlah dan pembayaran." : "A deposit is required to confirm your reservation. Our staff will contact you with the amount and payment details.", "dp"));
+            // The wording is unchanged; it is split at the full stop so the
+            // first sentence can carry the weight and the second can sit back.
+            rows.push(row(
+              GUEST_LANG === "id" ? "Deposit diperlukan untuk mengonfirmasi reservasi." : "A deposit is required to confirm your reservation.",
+              GUEST_LANG === "id" ? "Staf kami akan menghubungi Anda mengenai jumlah dan pembayaran." : "Our staff will contact you with the amount and payment details.",
+              "dp"));
         } else if (readPaxRaw() > MAX_PAX)
           rows.push(row(gt("Deposit (DP)"), gt("To be confirmed"), "dp"));
         else if (a.deposit_amount != null && Number(a.deposit_amount) > 0)
@@ -2088,7 +2117,10 @@
         el.style.display = "";
 
         function row(k, v, cls) {
-          if (cls === "dp" && DEPOSIT_FORM.deposit_basis === "pax") return '<div class="avail">' + v + "</div>";
+          // Not .avail: that is the muted footnote style, and this is the one
+          // line on the page that tells a guest money will be asked for.
+          if (cls === "dp" && DEPOSIT_FORM.deposit_basis === "pax")
+            return '<div class="dp-note"><strong>' + k + "</strong>" + v + "</div>";
           return (
             '<div class="cond-row ' + (cls || "") + '"><span>' + k +
             "</span><span>" + v + "</span></div>"

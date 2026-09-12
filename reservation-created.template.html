@@ -483,7 +483,12 @@
             wl.style.display = "block";
           } else if (r.awaiting_quote) {
             const dep = document.getElementById("deposit-note");
-            dep.textContent = GUEST_LANG === "id" ? "Deposit diperlukan untuk mengonfirmasi reservasi. Staf kami akan menghubungi Anda mengenai jumlah dan pembayaran." : "A deposit is required to confirm your reservation. Our staff will contact you with the amount and payment details.";
+            // Same split as the booking form, so the two pages say it the same
+            // way. Literal copy only, no guest input, which is why innerHTML is
+            // safe here exactly as in the branch below.
+            dep.innerHTML = GUEST_LANG === "id"
+              ? "<strong>Deposit diperlukan untuk mengonfirmasi reservasi.</strong><br>Staf kami akan menghubungi Anda mengenai jumlah dan pembayaran."
+              : "<strong>A deposit is required to confirm your reservation.</strong><br>Our staff will contact you with the amount and payment details.";
             dep.style.display = "block";
           } else if (r.deposit_required && r.deposit_expected) {
             // Only a booking that was actually accepted is asked for money.
