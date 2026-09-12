@@ -6825,6 +6825,7 @@ async function renderReservationsTable(data) {
 }
 
 async function openResActions(resId) {
+  await refreshDepositWaiverPermission();
   const { data: res, error } = await supabaseQuery(
     () =>
       db
@@ -7059,7 +7060,7 @@ function onResActionAreaChange(resId) {
 function reservationSaveError(error, fallback) {
   if (/block_buffer_minutes|exclusive_area|booking_duration_minutes|is_large_party/.test(error?.message || "") &&
       (error?.code === "PGRST204" || /schema cache|does not exist/i.test(error?.message || ""))) {
-    return t("The reservation database needs an update. Run migrations/ALL_IN_ONE.sql in Supabase, then reload this page. Your changes have not been saved.");
+    return t("The reservation database needs an update. Ask your administrator to apply the required targeted migration in Supabase, then reload this page. Your changes have not been saved.");
   }
   return error?.message || fallback;
 }
@@ -7956,7 +7957,8 @@ async function submitDepositPayment() {
 // cannot tell "this area asks for nothing" from "somebody comped it", and the
 // chef's guest is indistinguishable from a mistake.
 async function openWaiveDeposit(resId) {
-  if (!isManagerOrAdmin()) { toast("Only a manager or admin can waive a deposit", "error"); return; }
+  await refreshDepositWaiverPermission();
+  if (!canWaiveDeposit()) { toast("This account cannot waive deposits", "error"); return; }
   depositActionResId = resId;
   const el = document.getElementById("dep-waive-reason");
   if (el) el.value = "";
@@ -7965,7 +7967,8 @@ async function openWaiveDeposit(resId) {
 }
 
 async function submitWaiveDeposit() {
-  if (!isManagerOrAdmin()) { toast("Only a manager or admin can waive a deposit", "error"); return; }
+  await refreshDepositWaiverPermission();
+  if (!canWaiveDeposit()) { toast("This account cannot waive deposits", "error"); return; }
   const resId = depositActionResId;
   if (!resId) return;
   const reason = String(document.getElementById("dep-waive-reason")?.value || "").trim();
@@ -7982,7 +7985,7 @@ async function submitWaiveDeposit() {
     "Failed to waive the deposit",
   );
   loader(false);
-  if (error) return;
+  if (error) { toast(error.message || t("Could not waive the deposit"), "error"); return; }
   if (!data || data.ok !== true) {
     toast((data && data.message) || t("Could not waive the deposit"), "error");
     return;
@@ -8235,7 +8238,7 @@ function depositActionsPanel(res, bal) {
         '\')" class="btn-ghost text-xs px-3 py-1.5">' +
         escapeHtml(t("Record payment")) +
         "</button>") +
-    (settled || !isManagerOrAdmin()
+    (settled || !canWaiveDeposit()
       ? ""
       : '<button onclick="openWaiveDeposit(\'' +
         res.id +
@@ -14406,7 +14409,7 @@ async function loadStaffUsers() {
     () =>
       db
         .from("staff_users")
-        .select("id, username, display_name, role, is_active, created_at")
+        .select("id, username, display_name, role, is_active, created_at, can_waive_deposit")
         .order("is_active", { ascending: false })
         .order("display_name"),
     "Failed to load staff",
@@ -14481,6 +14484,8 @@ function openStaffModal(staffId) {
   set("staff-form-username", user ? user.username : "");
   set("staff-form-pin", "");
   set("staff-form-role", user ? user.role : "staff");
+  document.getElementById("staff-form-waive-deposit").checked = user?.can_waive_deposit === true;
+  updateStaffWaiverControl();
 
   const title = document.getElementById("staff-modal-title");
   if (title) title.textContent = user ? t("Edit Staff") : t("Add Staff");
@@ -14517,6 +14522,16 @@ function isWeakPin(pin) {
   const ascending = digits.every((d, i) => i === 0 || d === digits[i - 1] + 1);
   const descending = digits.every((d, i) => i === 0 || d === digits[i - 1] - 1);
   return ascending || descending;
+}
+
+function updateStaffWaiverControl() {
+  const staff = document.getElementById("staff-form-role").value === "staff";
+  document.getElementById("staff-form-waiver-wrap").classList.toggle("hidden", !staff);
+  const id = CURRENT_LANG === "id";
+  document.getElementById("staff-form-waive-label").textContent = id ? "Boleh membebaskan deposit" : "Can waive deposits";
+  document.getElementById("staff-form-waive-hint").textContent = id
+    ? "Izinkan staf ini membebaskan deposit reservasi dengan alasan. Nonaktif secara default."
+    : "Allows this staff member to waive a reservation deposit with a reason. Off by default.";
 }
 
 async function saveStaffUser() {
@@ -14591,7 +14606,8 @@ async function saveStaffUser() {
     btn.textContent = t("Saving...");
   }
   try {
-    const payload = { display_name: displayName, role: effectiveRole };
+    const payload = { display_name: displayName, role: effectiveRole,
+      can_waive_deposit: effectiveRole === "staff" && document.getElementById("staff-form-waive-deposit").checked };
     if (pin) payload.pin = pin;
     if (!staffId) {
       payload.username = username;

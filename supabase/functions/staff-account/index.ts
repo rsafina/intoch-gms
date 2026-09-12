@@ -14,13 +14,15 @@ Deno.serve(async req=>{
  try{
   const body=await req.json();
   const {id,display_name,role,pin}=body;
+  if(body.can_waive_deposit!==undefined && typeof body.can_waive_deposit!=='boolean')return reply({error:'Invalid deposit waiver permission'},400);
+  const waiverPermission=body.can_waive_deposit===undefined?{}:{can_waive_deposit:role==='staff' && body.can_waive_deposit};
   if(!['owner','admin','manager','staff'].includes(role)||typeof display_name!=='string'||display_name.trim().length<2)return reply({error:'Invalid account details'},400);
   if(pin!==undefined&&!/^\d{4}$/.test(pin))return reply({error:'PIN must be four digits'},400);
   if(id){
    const {data:old}=await admin.from('staff_users').select('auth_user_id,role').eq('id',id).single();
    if(!old?.auth_user_id)return reply({error:'Account not migrated'},400);
    if(id===actor.id&&role!==old.role)return reply({error:'Cannot change your own role'},400);
-   const {error}=await editor.from('staff_users').update({display_name:display_name.trim(),role}).eq('id',id);
+   const {error}=await editor.from('staff_users').update({display_name:display_name.trim(),role,...waiverPermission}).eq('id',id);
    if(error)return reply({error:error.message},400);
    if(pin){const result=await admin.auth.admin.updateUserById(old.auth_user_id,{password:'Intoch-PIN:'+pin});if(result.error)return reply({error:'Name/role saved, but PIN update failed. Retry the PIN change.'},500);const logged=await editor.rpc('record_staff_pin_change',{p_staff_id:id});if(logged.error)return reply({error:'PIN changed, but the audit entry failed. Contact your administrator.'},500);}
   }else{
@@ -28,7 +30,7 @@ Deno.serve(async req=>{
    if(!/^[a-z0-9._-]{3,20}$/.test(username)||!pin)return reply({error:'Valid username and PIN required'},400);
    const created=await admin.auth.admin.createUser({email:username+'@staff.intoch.invalid',password:'Intoch-PIN:'+pin,email_confirm:true});
    if(created.error)return reply({error:'Could not create account; check for an existing username.'},400);
-   const {error}=await editor.from('staff_users').insert({username,display_name:display_name.trim(),role,auth_user_id:created.data.user.id,is_active:true,pin:null});
+   const {error}=await editor.from('staff_users').insert({username,display_name:display_name.trim(),role,auth_user_id:created.data.user.id,is_active:true,pin:null,...waiverPermission});
    if(error){await admin.auth.admin.deleteUser(created.data.user.id);return reply({error:error.message},400);}
   }
   return reply({ok:true});

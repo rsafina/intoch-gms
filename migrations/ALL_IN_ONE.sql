@@ -24,6 +24,9 @@
 --   4. 20260911_roles_enforce.sql, alongside the Phase 1 frontend and
 --      deployed staff-account function/configuration.
 --   5. 20260912_roles_save_paths.sql (required save-trigger/default permissions).
+--   6. 20260912_roles_invoice_amount.sql (invoice amount helper permission).
+--   7. 20260912_roles_voucher_defaults.sql (voucher default trigger permissions).
+--   8. 20260912_staff_deposit_waiver.sql (Admin-controlled per-staff waiver permission).
 -- Account linking uses the Auth API and cannot be bundled into this SQL file.
 -- Enforcement is a one-time migration; do not append or rerun it here.
 -- For an EXISTING secured project, use only targeted migrations instead.

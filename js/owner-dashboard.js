@@ -34,7 +34,8 @@ function odMetrics(visits,range,priorIds=new Set()) {
   const valid=visits.filter(v=>!v.voided_at);
   const current=valid.filter(v=>v.visit_date>=range.start && v.visit_date<=range.end && (v.visit_date<range.end || !v.visit_time || v.visit_time.slice(0,5)<=range.time));
   const previousAll=valid.filter(v=>v.visit_date>=range.prevStart && v.visit_date<=range.prevEnd);
-  const comparisonReady=previousAll.length>0 && !previousAll.some(v=>v.visit_date===range.prevEnd && !v.visit_time) && !current.some(v=>v.visit_date===range.end && !v.visit_time);
+  const equalDays=Date.parse(range.end)-Date.parse(range.start)===Date.parse(range.prevEnd)-Date.parse(range.prevStart);
+  const comparisonReady=equalDays && previousAll.length>0 && !previousAll.some(v=>v.visit_date===range.prevEnd && !v.visit_time) && !current.some(v=>v.visit_date===range.end && !v.visit_time);
   const previous=previousAll.filter(v=>v.visit_date<range.prevEnd || (v.visit_time && v.visit_time.slice(0,5)<=range.time));
   const pax=rows=>rows.reduce((sum,v)=>sum+Number(v.pax || 0),0);
   const spent=rows=>rows.reduce((sum,v)=>sum+Number(v.spend_amount || 0),0);
@@ -46,7 +47,7 @@ function odMetrics(visits,range,priorIds=new Set()) {
 }
 function odReservationTotals(rows){
   const active=rows.filter(r=>!r.deleted_at&&!['Deleted','Cancelled','Cancelled (No Show)','No Show'].includes(r.status));
-  const waiting=active.filter(r=>r.status==='Waitlist');const confirmed=active.filter(r=>['Reserved','Arrived','Completed'].includes(r.status));
+  const waiting=active.filter(r=>r.status==='Waitlist');const confirmed=active.filter(r=>['Reserved','Confirmed','Arrived','Completed'].includes(r.status));
   return {count:active.length,confirmed:confirmed.length,pax:confirmed.reduce((s,r)=>s+Number(r.pax||0),0),waiting:waiting.length,waitingPax:waiting.reduce((s,r)=>s+Number(r.pax||0),0),incoming:active.filter(r=>r.status==='Incoming').length};
 }
 function odLeaderboard(visits){
@@ -62,8 +63,8 @@ async function loadOwnerDashboard(){
   try{
     const [visits,reservations,overdue]=await Promise.all([
       odRows('visits','id,guest_id,pax,spend_amount,visit_date,visit_time,visit_type,voided_at',q=>q.is('voided_at',null).gte('visit_date',range.prevStart).lte('visit_date',range.end)),
-      odRows('reservations','id,booking_name,reservation_date,reservation_time,status,pax,deleted_at',q=>q.is('deleted_at',null).gte('reservation_date',range.start).lte('reservation_date',odDateShift(range.end,6))),
-      odRows('reservations','id,booking_name,reservation_date,pax,deposit_due_at',q=>q.is('deleted_at',null).eq('deposit_required',true).in('status',['Incoming','Waitlist','Reserved']).lt('deposit_due_at',now.toISOString()))
+      odRows('reservations','id,booking_name,guests(name),reservation_date,reservation_time,status,pax,deleted_at',q=>q.is('deleted_at',null).gte('reservation_date',range.start).lte('reservation_date',odDateShift(range.end,6))),
+      odRows('reservations','id,booking_name,guests(name),reservation_date,pax,deposit_due_at',q=>q.is('deleted_at',null).eq('deposit_required',true).in('status',['Incoming','Waitlist','Reserved']).lt('deposit_due_at',now.toISOString()))
     ]);
     const current=odMetrics(visits,range).current; const guestIds=[...new Set(current.map(v=>v.guest_id).filter(Boolean))];
     const [history,balances]=await Promise.all([
@@ -122,7 +123,7 @@ function odShowDetails(kind){
  const upcoming=d.reservations.filter(r=>r.reservation_date>=d.range.end);
  const rows=kind==='deposits'?d.due:kind==='requests'?upcoming.filter(r=>r.status==='Waitlist'):upcoming;
  const title=kind==='deposits'?odText('Overdue deposits','Deposit tertunggak'):kind==='requests'?odText('Booking requests','Permintaan reservasi'):odText('Upcoming reservations','Reservasi mendatang');
- document.getElementById('od-details').innerHTML=`<section class="od-card od-detail-panel" tabindex="-1"><div class="od-card-title"><h2>${title}</h2><button class="btn-ghost" onclick="document.getElementById('od-details').innerHTML=''">${odText('Close','Tutup')}</button></div><p class="od-subtitle">${odText('Read-only summary','Ringkasan hanya baca')}</p>${rows.filter(r=>!['Deleted','Cancelled','Cancelled (No Show)','No Show'].includes(r.status)).sort((a,b)=>a.reservation_date.localeCompare(b.reservation_date)).map(r=>`<div class="od-detail-row"><span>${odEscape(r.booking_name||odText('Reservation','Reservasi'))}<small>${r.reservation_date} · ${r.pax} pax</small></span><strong>${kind==='deposits'?odMoney(r.outstanding):odEscape(r.status)}</strong></div>`).join('')||odText('No reservations.','Tidak ada reservasi.')}</section>`;
+ document.getElementById('od-details').innerHTML=`<section class="od-card od-detail-panel" tabindex="-1"><div class="od-card-title"><h2>${title}</h2><button class="btn-ghost" onclick="document.getElementById('od-details').innerHTML=''">${odText('Close','Tutup')}</button></div><p class="od-subtitle">${odText('Read-only summary','Ringkasan hanya baca')}</p>${rows.filter(r=>!['Deleted','Cancelled','Cancelled (No Show)','No Show'].includes(r.status)).sort((a,b)=>a.reservation_date.localeCompare(b.reservation_date)).map(r=>`<div class="od-detail-row"><span>${odEscape(r.booking_name||r.guests?.name||odText('Reservation','Reservasi'))}<small>${r.reservation_date} · ${r.pax} pax</small></span><strong>${kind==='deposits'?odMoney(r.outstanding):odEscape(r.status)}</strong></div>`).join('')||odText('No reservations.','Tidak ada reservasi.')}</section>`;
  document.querySelector('.od-detail-panel').focus();document.querySelector('.od-detail-panel').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function odToggleMenu(){document.body.classList.toggle('summary-menu-open');}
