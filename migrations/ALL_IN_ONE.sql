@@ -14,6 +14,31 @@
 -- ============================================================
 
 -- ============================================================
+-- PHASE 1 AUTH / ROLES (2026-09-11)
+-- This file builds the legacy/base schema; it is NOT a complete secure setup.
+-- For a NEW project, run in this order:
+--   1. ALL_IN_ONE.sql (this file).
+--   2. 20260911_roles_prepare.sql.
+--   3. scripts/migrate-staff-auth.mjs with the required server-side environment.
+--      Keep existing usernames/PINs; ensure an active admin exists.
+--   4. 20260911_roles_enforce.sql, alongside the Phase 1 frontend and
+--      deployed staff-account function/configuration.
+--   5. 20260912_roles_save_paths.sql (required save-trigger/default permissions).
+-- Account linking uses the Auth API and cannot be bundled into this SQL file.
+-- Enforcement is a one-time migration; do not append or rerun it here.
+-- For an EXISTING secured project, use only targeted migrations instead.
+-- Phase 2's Owner/Admin summary dashboard needs NO database migration.
+-- Run with stop-on-error enabled (psql: -v ON_ERROR_STOP=1).
+-- Block before the legacy definitions can replace secured RPCs or policies.
+do $$
+begin
+  if to_regprocedure('public.app_staff_role()') is not null
+     or to_regclass('app_private.role_audit') is not null then
+    raise exception 'Phase 1 roles are installed. Do not rerun ALL_IN_ONE.sql; apply only targeted migrations.';
+  end if;
+end $$;
+
+-- ============================================================
 -- PREAMBLE: clear functions this script is about to redefine
 --
 -- WHY THIS IS HERE

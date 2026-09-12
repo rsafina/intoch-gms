@@ -5927,6 +5927,10 @@ async function saveReservation() {
       return;
     }
     guestId = newGuest.id;
+    // Keep the created guest if the reservation save fails, so retrying
+    // does not attempt another insert with the same phone number.
+    currentResGuestId = guestId;
+    document.getElementById("res-guest-id").value = guestId;
   }
 
   const date = document.getElementById("res-date").value;
