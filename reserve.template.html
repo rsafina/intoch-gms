@@ -282,7 +282,7 @@
          .avail, which is the muted footnote style shared with "availability
          checked for a 90-minute visit" and is exactly why this notice was
          being read straight past. */
-      .cond .dp-note {
+      .cond .cond-row + .dp-note {
         margin-top: 9px;
         padding-top: 9px;
         border-top: 1px solid rgba(255, 255, 255, 0.18);
@@ -399,7 +399,7 @@
       :root[data-rf-bg="solid"] .cond .dp {
         color: #b23600;
       }
-      :root[data-rf-bg="solid"] .cond .dp-note {
+      :root[data-rf-bg="solid"] .cond .cond-row + .dp-note {
         border-top-color: rgba(91, 76, 189, 0.14);
       }
       :root[data-rf-bg="solid"] .cond .dp-note strong {
@@ -2077,7 +2077,13 @@
           submit.textContent = gt(submit.dataset.i18nEn);
         }
         const a = AREAS.find((x) => x.id === AREA_ID);
-        if (!a && DEPOSIT_FORM.deposit_basis !== "pax") {
+        // Nothing is said until the guest has picked an area. With pills on
+        // screen and none pressed, the conditions belong to no area yet, and a
+        // deposit line there is a claim about a room nobody has chosen. The one
+        // exception is a restaurant with no bookable area at all: there is no
+        // picker, so there is nothing to wait for and the guest-count rule is
+        // the whole story.
+        if (!a && !(DEPOSIT_FORM.deposit_basis === "pax" && !AREAS.length)) {
           el.style.display = "none";
           return;
         }
