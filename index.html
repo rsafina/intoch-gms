@@ -7578,7 +7578,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           </div>
           <div>
             <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Role *</label>
-            <select id="staff-form-role" class="form-input">
+            <select id="staff-form-role" class="form-input" onchange="updateStaffWaiverControl()">
               <option value="staff" data-i18n>Staff</option>
               <option value="manager" data-i18n>Manager</option>
               <option value="admin" data-i18n>Admin</option>
@@ -7587,6 +7587,13 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <p id="staff-form-role-self-note" class="text-[11px] text-[#B23B3B] mt-1 hidden" data-i18n>
               You cannot change your own role. Ask another admin to do it.
             </p>
+          </div>
+          <div id="staff-form-waiver-wrap" class="rounded-xl border border-[#DCE5EF] bg-[#F5F8FC] p-4">
+            <label class="flex items-center gap-3 text-sm font-medium">
+              <input id="staff-form-waive-deposit" type="checkbox" />
+              <span id="staff-form-waive-label">Can waive deposits</span>
+            </label>
+            <p id="staff-form-waive-hint" class="text-xs text-[#63758A] mt-2">Allows this staff member to waive a reservation deposit with a reason. Off by default.</p>
           </div>
         </div>
         <div class="flex items-center justify-end gap-3">
@@ -9349,7 +9356,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
 
-    <script src="js/config.js?v=34"></script>
+    <script src="js/config.js?v=35"></script>
     <script src="js/i18n.js?v=3"></script>
     <div id="modal-reservation-ticket" class="modal-overlay hidden" onclick="if(event.target===this) hideModal('modal-reservation-ticket')">
       <div class="modal-box" style="max-width:520px">
@@ -9357,9 +9364,9 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         <div id="reservation-ticket-content"></div>
       </div>
     </div>
-    <script src="js/staff-auth.js"></script>
-    <script src="js/owner-dashboard.js?v=1"></script>
-    <script src="js/app.js?v=49"></script>
+    <script src="js/staff-auth.js?v=2"></script>
+    <script src="js/owner-dashboard.js?v=2"></script>
+    <script src="js/app.js?v=51"></script>
     <script src="js/reservation-extras.js?v=1"></script>
     <script src="js/membership.js?v=7"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file

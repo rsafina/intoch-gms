@@ -486,3 +486,30 @@ state" section at the top.
 - Added migrations/20260912_roles_save_paths.sql: trusted trigger execution with fixed search paths, internal RPCs remain revoked, authenticated access to the read-only reservation duration default. Does not change login or table-edit permissions. Apply after roles_enforce; do not rerun ALL_IN_ONE.
 - Reservation retries now reuse the guest created before a failed booking save, avoiding duplicate-phone errors. app.js cache version is 49.
 - tests/role-save-paths.test.js reproduces both reported errors and validates the fix and retained restrictions. Migration prepared locally, not applied to production.
+
+## Phase 1/2 regression review — 12 September 2026
+- Confirmed another Phase 1 failure: deposit/settlement invoice saves could not execute invoice_document_rupiah(jsonb). Added migrations/20260912_roles_invoice_amount.sql granting authenticated execution of this pure numeric helper only. Existing role/write restrictions remain intact. Apply this targeted migration after Phase 1; do not rerun ALL_IN_ONE.
+- Expanded role-save-paths test to reproduce the invoice failure and verify deposit/settlement amounts after the fix, alongside the earlier reservation/walk-in regressions.
+- Phase 2: summary detail rows now fall back to linked guest names; legacy Confirmed bookings count toward confirmed pax; unequal month lengths suppress misleading visit-pace comparisons. Owner dashboard asset version is 2.
+- Focused local checks passed: role enforcement/navigation, staff-account endpoint, save paths, owner summary, staff deposits, invoice requested amounts, payment schema, public booking copy/flow, guest ticket rendering, realtime lifecycle, syntax and diff whitespace.
+- Scope: repository and local test database review, not live Supabase/browser verification. Normal voucher UI supplies expiry explicitly; default-expiry helper permissions remain a potential issue for direct imports that omit expiry. No production changes, commit or push performed.
+
+## Voucher / membership / reports follow-up — 12 September 2026
+- Confirmed and fixed the previously noted voucher-default edge case: direct authorized voucher inserts relying on database defaults failed on revoked internal helpers. Added migrations/20260912_roles_voucher_defaults.sql for trusted standalone/member voucher default triggers with fixed search paths; no new direct helper RPC grants or table permissions.
+- New tests/role-membership-reports.test.js uses actual current SQL functions and report views, then applies Phase 1 enforcement. Verified below-minimum spend earns no sticker; three qualifying spends issue a voucher; staff redemption uses the verified actor; duplicate/expired redemption is blocked; manager standalone redemption/voiding and defaults work; owner/anon write restrictions remain intact.
+- Report views tested as Owner, Manager and Admin: guest_visit_stats, online_reservation_performance, standalone_voucher_batches and get_guest_visit_summary. Voided visits excluded from tested totals. Operations report navigation/ranges and owner overview tests also passed.
+- Previous note about default-expiry permission risk is now resolved locally by the new voucher migration. No production SQL, commit or push performed; live browser verification not included.
+
+## Reservation/deposit follow-up — 12 September 2026
+- Focused small/large reservation checks passed: simplified invoice routing/link reuse, staff custom deposit defaults, partial/full requested-deposit thresholds, start-time edits, deadlines, timed table capacity, invoice save/reopen, settlement retry/refund guards and ticket gates.
+- Extended reservation-update-payment test with actual Phase 1 enforcement: Staff records partial/full deposits for Incoming and Waitlist; recorded actor cannot be spoofed; Owner payment and Staff waiver are denied; Manager waiver keeps payment history and records the verified manager.
+- Capacity conflict on automatic confirmation rolls back both the payment record and status update; staff must resolve seating before retrying. This is existing behavior verified by tests.
+- Replaced obsolete reservation schema-error guidance to rerun ALL_IN_ONE with administrator/targeted-migration guidance. app.js asset version is 50.
+- No new SQL migration from this follow-up. Earlier invoice_amount and voucher_defaults migrations remain required if not yet applied. Local tests only; no live deployment or push.
+
+## Individual staff deposit waiver permission — 12 September 2026
+- Admin can enable/disable Can waive deposits in Settings > Staff > Edit/Add Staff. New staff default off. Manager/Admin retain waiver access; Owner remains read-only. Applies to small and large reservation deposits.
+- New migrations/20260912_staff_deposit_waiver.sql adds staff_users.can_waive_deposit, verified app_can_waive_deposit(), a narrow update to the existing reservation protection guard, and the waiver RPC permission check. Original reason, capacity, status, payment-history and actor-note logic remains in app_private.waive_deposit. Existing staff-account RLS/audit guards protect permission changes.
+- staff-account endpoint accepts the boolean on create/edit; frontend sessions retain it and refresh the verified permission when opening reservation actions/waivers and before submitting. RPC independently rechecks current DB permissions; cache changes cannot grant access.
+- Deploy in order: apply waiver SQL, redeploy staff-account Edge Function, then build/deploy frontend (config template updated; config v35, staff-auth v2, app v51). Earlier invoice/voucher fixes remain pending unless already applied. No live deployment performed.
+- Tested: enabled staff waiver, reason required, verified actor, revocation/stale-session denial, self-escalation/manager permission-edit denial, Owner denial, endpoint boolean validation/create/edit, role UI/session refresh and existing invoice/deposit regressions.

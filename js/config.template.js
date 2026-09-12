@@ -1726,6 +1726,7 @@ function setStaffSession(user) {
       username: user.username,
       display_name: user.display_name,
       role: user.role || "staff",
+      can_waive_deposit: user.can_waive_deposit === true,
     }),
   );
 }
@@ -1748,6 +1749,12 @@ function currentStaffRole() {
 function isManagerOrAdmin() {
   const role = currentStaffRole();
   return role === "manager" || role === "admin";
+}
+
+function canWaiveDeposit() {
+  const session = getStaffSession();
+  return !!session && (isManagerOrAdmin() ||
+    (session.role === "staff" && session.can_waive_deposit === true));
 }
 
 // Deposit requests are an operational staff task; other invoice types remain manager-only.

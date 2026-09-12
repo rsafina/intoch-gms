@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');const {stripTypeScriptTypes}=require('node:module');
 let handler,role='admin',authed=true,created=null,saved=null;
-const admin={auth:{getUser:async()=>authed?{data:{user:{id:'jwt-user'}}}:{error:Error(),data:{}},admin:{createUser:async data=>{created=data;return {data:{user:{id:'new-auth'}}}},deleteUser:async()=>{},updateUserById:async()=>({})}},from:()=>({select(){return this},eq(){return this},single:async()=>({data:{id:'admin-id',role,is_active:true}})})};
-const editor={from:()=>({insert:async data=>{saved=data;return {}},update(){return this},eq:async()=>({})}),rpc:async()=>({})};
+const admin={auth:{getUser:async()=>authed?{data:{user:{id:'jwt-user'}}}:{error:Error(),data:{}},admin:{createUser:async data=>{created=data;return {data:{user:{id:'new-auth'}}}},deleteUser:async()=>{},updateUserById:async()=>({})}},from:()=>({select(){return this},eq(){return this},single:async()=>({data:{id:'admin-id',role,is_active:true,auth_user_id:'target-auth'}})})};
+const editor={from:()=>({insert:async data=>{saved=data;return {}},update(data){saved=data;return this},eq:async()=>({})}),rpc:async()=>({})};
 const source=stripTypeScriptTypes(fs.readFileSync('supabase/functions/staff-account/index.ts','utf8').replace(/^import [^\n]*\n/,''));
 vm.runInNewContext(source,{Request,Response,createClient:(url,key)=>key==='service'?admin:editor,Deno:{env:{get:key=>key==='SUPABASE_SERVICE_ROLE_KEY'?'service':'anon'},serve:fn=>handler=fn}});
 const call=body=>handler(new Request('https://example.com',{method:'POST',headers:{Authorization:'Bearer test'},body:JSON.stringify(body)}));
@@ -12,5 +12,10 @@ const call=body=>handler(new Request('https://example.com',{method:'POST',header
  role='admin';assert.equal((await call({username:'frontdesk',pin:'2849',display_name:'Front Desk',role:'staff'})).status,200);
  assert.equal(created.email,'frontdesk@staff.intoch.invalid');assert.equal(created.password,'Intoch-PIN:2849');assert.equal(saved.pin,null);assert.equal(saved.auth_user_id,'new-auth');
  assert.equal((await call({username:'bad',pin:'oops',display_name:'Test',role:'admin'})).status,400);
+ assert.equal((await call({username:'fo-staff',pin:'2849',display_name:'FO Staff',role:'staff',can_waive_deposit:true})).status,200);assert.equal(saved.can_waive_deposit,true);
+ assert.equal((await call({username:'fo-staff',pin:'2849',display_name:'FO Staff',role:'staff',can_waive_deposit:false})).status,200);assert.equal(saved.can_waive_deposit,false);
+ assert.equal((await call({username:'fo-staff',pin:'2849',display_name:'FO Staff',role:'staff',can_waive_deposit:'true'})).status,400);
+ assert.equal((await call({id:'existing-fo',display_name:'FO Staff',role:'staff',can_waive_deposit:true})).status,200);assert.equal(saved.can_waive_deposit,true);
+ assert.equal((await call({id:'existing-fo',display_name:'FO Staff',role:'staff',can_waive_deposit:false})).status,200);assert.equal(saved.can_waive_deposit,false);
  console.log('Account endpoint: verified admin only, account validation and PIN-free staff records passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});
