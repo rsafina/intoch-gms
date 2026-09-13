@@ -3492,6 +3492,15 @@ function setDashboardReservationFilter(filter) {
   renderDashboardReservations(dashboardResData);
 }
 
+function waitlistReasonLabel(reason) {
+  const labels = {
+    over_capacity: "Insufficient capacity",
+    below_min_pax: "Below the area's minimum party size",
+    over_max_pax: "Large party",
+  };
+  return labels[reason] ? t(labels[reason]) : "";
+}
+
 function dashboardDepositSummary(r) {
   if (r.deposit_required && r.deposit_expected !== undefined && !(Number(r.deposit_expected)>0)) return `<p class="dash-res-muted">${CURRENT_LANG === "id" ? "Menunggu jumlah deposit" : "Awaiting deposit amount"}</p>`;
   const bal = resDepositBalances[r.id];
@@ -3544,7 +3553,7 @@ function renderDashboardReservations(data) {
         <p class="dash-res-meta">${fmt.pax(r.pax)} &middot; ${escapeHtml(area || (id ? "Area belum ditentukan" : "Area unassigned"))} &middot; ${escapeHtml(tables || (id ? "Meja belum ditentukan" : "Unassigned"))}</p>
         ${r.reservation_source || r.occasion ? `<p class="dash-res-muted">${[r.reservation_source, r.occasion].filter(Boolean).map(escapeHtml).join(" &middot; ")}</p>` : ""}
         ${renderGuestExtras(guest, r._visitCount)}
-        ${r.status === "Waitlist" ? `<p class="dash-res-waiting">${id ? "Menunggu keputusan" : "Awaiting a decision"}${r.waitlist_reason ? " &middot; " + escapeHtml(t(r.waitlist_reason)) : ""}</p>` : ""}
+        ${r.status === "Waitlist" ? `<p class="dash-res-waiting">${id ? "Menunggu keputusan" : "Awaiting a decision"}${waitlistReasonLabel(r.waitlist_reason) ? " &middot; " + escapeHtml(waitlistReasonLabel(r.waitlist_reason)) : ""}</p>` : ""}
         ${notes ? `<details class="dash-res-notes"><summary><span>${escapeHtml(notes)}</span><span class="dash-res-more">${id ? "Catatan" : "Notes"} +</span></summary><p>${escapeHtml(notes)}</p></details>` : ""}
       </div>
       <div class="dash-res-state">${statusBadge(r.status)}${dashboardDepositSummary(r)}</div>
@@ -3552,7 +3561,7 @@ function renderDashboardReservations(data) {
         <button type="button" class="dash-res-update" onclick="openResActions('${r.id}')">${t("Update")}</button>
         ${typeof reservationTicketButton === "function" ? reservationTicketButton(r) : ""}
         <div class="dash-res-secondary">${followup}
-          <a href="reservation-confirmation.html?id=${encodeURIComponent(r.id)}" target="_blank" rel="noopener" title="${id ? "Buka halaman tamu" : "Open guest page"}" aria-label="${id ? "Buka halaman tamu" : "Open guest page"}">&#8599;</a>
+          <a href="reservation-confirmation.html?id=${encodeURIComponent(r.id)}" target="_blank" rel="noopener" title="${id ? "Buka halaman tamu" : "Open guest page"}" aria-label="${id ? "Buka halaman tamu" : "Open guest page"}">${id ? "Halaman tamu" : "Guest page"} &#8599;</a>
         </div>
       </div>
     </article>`;
@@ -6818,7 +6827,7 @@ async function renderReservationsTable(data) {
         <td><div class="res-list-status">${statusBadge(r.status)}${dashboardDepositSummary(r)}${waitlistReasonLine(r)}</div></td>
         <td><div class="dash-res-actions"><button type="button" class="dash-res-update" onclick="openResActions('${r.id}')">${t("Update")}</button>
           ${typeof reservationTicketButton === "function" ? reservationTicketButton(r) : ""}
-          <div class="dash-res-secondary">${followup}<a href="reservation-confirmation.html?id=${encodeURIComponent(r.id)}" target="_blank" rel="noopener" aria-label="${id ? "Buka halaman tamu" : "Open guest page"}" title="${id ? "Buka halaman tamu" : "Open guest page"}">&#8599;</a></div>
+          <div class="dash-res-secondary">${followup}<a href="reservation-confirmation.html?id=${encodeURIComponent(r.id)}" target="_blank" rel="noopener" aria-label="${id ? "Buka halaman tamu" : "Open guest page"}" title="${id ? "Buka halaman tamu" : "Open guest page"}">${id ? "Halaman tamu" : "Guest page"} &#8599;</a></div>
         </div></td>
       </tr>`;
     }).join("");
@@ -8175,7 +8184,7 @@ function waitlistReasonLine(r) {
     // stays Indonesian for a guest-facing English switch; not fixing that here,
     // but not copying it either.
     escapeHtml(t("Waiting for a decision")) +
-    (r.waitlist_reason ? " · " + escapeHtml(t(r.waitlist_reason)) : "") +
+    (waitlistReasonLabel(r.waitlist_reason) ? " · " + escapeHtml(waitlistReasonLabel(r.waitlist_reason)) : "") +
     "</p>"
   );
 }

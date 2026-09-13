@@ -875,6 +875,9 @@ const ID_DICT = {
   // Waitlist reasons, shown as words in the reservations list. The stored value
   // is a code; staff should never have to read one.
   over_capacity: "Terlalu besar untuk area",
+  "Insufficient capacity": "Kapasitas tidak mencukupi",
+  "Below the area's minimum party size": "Di bawah minimum tamu area",
+  "Large party": "Rombongan besar",
   below_min_pax: "Di bawah minimum area",
   over_max_pax: "Rombongan besar",
   Confirmed: "Terkonfirmasi",
