@@ -8140,6 +8140,10 @@ function largePartyAgreePanel(res) {
     ) +
     "</p>" +
     (isLargeReservation(res) ? depositFormatSelect() : "") +
+    '<div class="mt-3 flex items-center gap-3 rounded-xl border border-amber-200 bg-white px-3 py-2">' +
+    '<span class="text-sm text-[#666]">' + (CURRENT_LANG === "id" ? "Jumlah tamu" : "Number of guests") + '</span>' +
+    '<strong class="text-2xl text-[color:var(--brand-ink)]">' + escapeHtml(String(res.pax ?? "—")) + '</strong>' +
+    '</div>' +
     '<div class="flex gap-2 mt-3">' +
     '<input id="lp-agreed-amount" type="text" inputmode="numeric" oninput="onAreaMoneyInput(this)" onkeydown="onAreaMoneyKeydown(this, event)" class="form-input text-sm flex-1" placeholder="' +
     escapeHtml(t("Agreed amount")) +
