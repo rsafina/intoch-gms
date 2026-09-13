@@ -1,5 +1,5 @@
 {
-  "captured_at": "2026-09-12T16:41:09.708896",
+  "captured_at": "2026-09-13T08:54:52.186477",
   "app_url": "https://dashboard.intoch.app",
   "anonymized": true,
   "files": [
@@ -15,6 +15,18 @@
     "05-form-online-kosong.png",
     "05-form-online-terisi.png",
     "05-halaman-reservations.png",
-    "manifest.json"
+    "admin-dashboard.png",
+    "admin-deposit-basis-area.png",
+    "admin-deposit-basis-pax.png",
+    "admin-sidebar.png",
+    "admin-staff-form.png",
+    "deposit-large-party.png",
+    "finance-deposit-queue.png",
+    "finance-invoice.png",
+    "finance-sidebar.png",
+    "modal-deposit-format.png",
+    "staff-dashboard.png",
+    "staff-deposit-pax.png",
+    "staff-sidebar.png"
   ]
 }

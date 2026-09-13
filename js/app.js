@@ -8140,9 +8140,13 @@ function largePartyAgreePanel(res) {
     ) +
     "</p>" +
     (isLargeReservation(res) ? depositFormatSelect() : "") +
-    '<div class="mt-3 flex items-center gap-3 rounded-xl border border-amber-200 bg-white px-3 py-2">' +
-    '<span class="text-sm text-[#666]">' + (CURRENT_LANG === "id" ? "Jumlah tamu" : "Number of guests") + '</span>' +
-    '<strong class="text-2xl text-[color:var(--brand-ink)]">' + escapeHtml(String(res.pax ?? "—")) + '</strong>' +
+    // When and how many, on one line. Small on purpose (Rere, 2026-09-13), so
+    // weight and the brand navy do the work the old 2xl pax number was doing.
+    // Both halves matter: this is the line staff read before quoting, and a
+    // deposit agreed against the wrong date is a wrong deposit.
+    '<div class="mt-3 rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-[color:var(--brand-ink)]">' +
+    escapeHtml(fmt.dayDateTime(res.reservation_date, res.reservation_time)) + ' &middot; ' +
+    escapeHtml(res.pax != null ? fmt.pax(res.pax) : "—") +
     '</div>' +
     '<div class="flex gap-2 mt-3">' +
     '<input id="lp-agreed-amount" type="text" inputmode="numeric" oninput="onAreaMoneyInput(this)" onkeydown="onAreaMoneyKeydown(this, event)" class="form-input text-sm flex-1" placeholder="' +

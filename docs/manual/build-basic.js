@@ -438,7 +438,7 @@ body.push(...fields([
   ['Area', 'Terisi sendiri mengikuti meja yang kamu pilih. Isi manual hanya kalau tamu belum diberi meja.', 'Tidak'],
   ['Notes', 'Permintaan khusus, alergi, atau pesan untuk kitchen.', 'Tidak'],
 ]));
-body.push(...figure('03-register-walkin', 'Jendela Register Walk-In, nomor mengikuti tabel di atas'));
+body.push(...figure('03-register-walkin', 'Jendela Register Walk-In. 1 pencarian tamu, 2 jumlah orang, 3 area, 4 catatan'));
 body.push(P('Setelah semua terisi, klik "Confirm Walk-In". Jendela tertutup dan tamu langsung muncul di daftar walk-in hari ini.'));
 
 body.push(H2('3.4 Melengkapi data setelah ramai reda'));
@@ -520,7 +520,7 @@ body.push(...fields([
   ['Reservation Source', 'Dari mana reservasi ini datang: WhatsApp, Phone Call, Instagram, Referral, dan seterusnya. Kalau tidak ada di daftar, pilih "Other (type below)" lalu tuliskan.', 'Ya, isi selalu'],
   ['Notes', 'Permintaan khusus, alergi, kursi bayi, dan sejenisnya.', 'Tidak'],
 ]));
-body.push(...figure('04-reservasi-baru', 'Formulir New Reservation, nomor mengikuti tabel di atas'));
+body.push(...figure('04-reservasi-baru', 'Formulir New Reservation. 1 tamu, 2 tanggal, 3 jam, 4 jumlah orang, 5 area'));
 body.push(...ingat([
   '"Reservation Source" kelihatan sepele tapi selalu diisi. Dari kolom itu restoran tahu kanal mana yang benar-benar mendatangkan tamu, dan itu menentukan ke mana biaya promosi pergi.',
 ]));
@@ -621,7 +621,8 @@ body.push(table(
   [1700, 4300, 3360],
 ));
 body.push(spacer(190));
-body.push(...figure('05-form-online-terisi', 'Form reservasi online, seperti yang dilihat tamu di HP-nya'));
+body.push(...figure('05-form-online-kosong', 'Form reservasi online seperti yang dibuka tamu'));
+body.push(...figure('05-form-online-terisi', 'Form yang sudah terisi. Panel di bawah area menampilkan minimum belanja dan DP sebelum tombol pesan'));
 body.push(...jangan([
   'Jangan menganggap semua reservasi online sudah pasti. Tamu berstatus Waitlist sudah diberi tahu di halaman konfirmasi bahwa reservasinya BELUM dikonfirmasi dan diminta tidak datang sebelum dihubungi. Kalau kamu diam saja, tamu itu menunggu kabar yang tidak pernah datang.',
 ]));

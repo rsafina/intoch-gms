@@ -1631,6 +1631,38 @@ const fmt = {
   phone: (p) => p || "—",
   currency: (n) => (n ? `Rp ${Number(n).toLocaleString("id-ID")}` : "—"),
   pax: (n) => `${n} pax`,
+  // "Sunday, 18th May 19.00" / "Minggu, 18 Mei 19.00".
+  //
+  // Built from the date PARTS, never `new Date("2026-05-18")`: that string is
+  // parsed as UTC midnight, and one timezone west of Greenwich it renders as
+  // the day before. Same reason the house rule says ymd() rather than
+  // toISOString().
+  //
+  // 24-hour with a dot is deliberate here and ONLY here (Rere, 2026-09-13).
+  // fmt.time stays 8:00 PM everywhere else; this line is the one place a
+  // second format was wanted, so do not "tidy" the two together.
+  //
+  // The ordinal suffix is English-only. Indonesian writes the bare number.
+  dayDateTime: (d, t) => {
+    const id = CURRENT_LANG === "id";
+    let datePart = "";
+    if (d) {
+      const [y, m, day] = String(d).split("-").map(Number);
+      const dt = new Date(y, (m || 1) - 1, day || 1);
+      if (!isNaN(dt.getTime())) {
+        const weekday = dt.toLocaleDateString(id ? "id-ID" : "en-GB", { weekday: "long" });
+        const month = dt.toLocaleDateString(id ? "id-ID" : "en-GB", { month: "long" });
+        const n = dt.getDate();
+        const suffix = id ? "" : ["th", "st", "nd", "rd"][(n % 100 - 20) % 10] || ["th", "st", "nd", "rd"][n % 100] || "th";
+        datePart = `${weekday}, ${n}${suffix} ${month}`;
+      }
+    }
+    // "19:00" and "19:00:00" both land on "19.00".
+    const timePart = t ? String(t).slice(0, 5).replace(":", ".") : "";
+    // Whatever is missing is simply left out, rather than printing a dash
+    // where staff expect a date.
+    return [datePart, timePart].filter(Boolean).join(" ") || "\u2014";
+  },
 };
 
 const STATUS_COLORS = {
