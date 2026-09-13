@@ -1,3 +1,11 @@
+> **Historical feature specification, not current rollout instructions.** Phase 1 Auth/RLS,
+> Finance and subsequent deposit/session changes supersede earlier security assumptions and
+> planned states in this file. Anonymous/full-access and plaintext-PIN statements describe
+> the past, not permission to restore them. Read [AGENTS.md](../../AGENTS.md),
+> [current architecture](../ARCHITECTURE.md) and [migration guide](../../migrations/README.md).
+> Do not run ALL_IN_ONE on a secured database. Preserve this document as design history;
+> verify any business rule against current code and DECISIONS before implementing it.
+
 # Phase 1 build spec: area conditions on the booking form
 
 **Status:** partly built. The schema (section 2) and the Settings screen (section 3)

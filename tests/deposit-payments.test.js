@@ -16,7 +16,7 @@ const path = require("path");
 
 const ROOT = path.join(__dirname, "..");
 const sql = fs.readFileSync(path.join(ROOT, "migrations", "ALL_IN_ONE.sql"), "utf8");
-const spec = fs.readFileSync(path.join(ROOT, "RESERVATION_INVOICE_SPEC.md"), "utf8");
+const spec = fs.readFileSync(path.join(ROOT, "docs", "history", "RESERVATION_INVOICE_SPEC.md"), "utf8");
 
 let pass = 0, fail = 0;
 function ok(name, cond, detail) {

@@ -1,6 +1,7 @@
 # Session, spending and notification update
 
-Local changes; not applied to the hosted database or deployed by Codex.
+Implemented and committed in `d89252c`. The implementation session did not apply SQL or
+deploy; current per-project rollout status is unverified. See CURRENT_STATE.md.
 Keep username/PIN login and the existing Phase 1/2 roles, RLS and public flows.
 
 ## Apply to each environment
@@ -65,7 +66,7 @@ unsupported `location.reload` warning during the logout/loading test.
 
 Known pre-existing failures, reproduced against unchanged HEAD sources:
 `tests/finance-role.test.js` references a removed `.non-finance-ui` element;
-`tests/deposit-staff-app.test.js` reports an absent legacy `lp-deposit-format`
-element, two missing translations, and generated-config/template mismatch.
+`tests/deposit-staff-app.test.js` misses the dynamically generated `lp-deposit-format`
+element in `js/deposit-policy.js`, and reports two missing translations plus generated-config/template mismatch.
 The complete suite is therefore not claimed green. Generated config was not rebuilt
 locally; the normal deployment build must regenerate it from the updated template.

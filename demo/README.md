@@ -1,11 +1,12 @@
 # Demo reset and seeds
 
-For a fresh demo, run these whole files in Supabase SQL Editor in this order:
+Only use an explicitly authorized disposable demo project. Never run these on client production.
+First bootstrap/upgrade it using [the migration guide](../migrations/README.md).
+For an already-prepared demo, run these whole files in Supabase SQL Editor in this order:
 
-1. `migrations/ALL_IN_ONE.sql` (current database functions and columns).
-2. `demo/00_wipe_except_staff.sql` (enable its explicit reset line first).
-3. `demo/00_seed_areas_tables.sql` (optional floor-plan balancing).
-4. `demo/01_seed_3_months.sql` (past three months of guest, visit and reservation history only).
+1. `demo/00_wipe_except_staff.sql` (enable its explicit reset line first).
+2. `demo/00_seed_areas_tables.sql` (optional floor-plan balancing).
+3. `demo/01_seed_3_months.sql` (past three months of guest, visit and reservation history only).
 
 Today and all future dates (including the next seven days) stay empty so you
 can create your own stress-test reservations. The seed keeps 120 guests,

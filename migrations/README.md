@@ -1,164 +1,100 @@
-# Migrations
+# Database bootstrap and migration safety
 
-## Current projects with Phase 1 roles installed
+This is the canonical sequence for the current repository (audit 2026-09-14).
+No SQL is run by reading this document or by deploying frontend files.
 
-### Finance role rollout (release branch)
+## Never apply filename order blindly
 
-On the already updated database, run `20260916_finance_role.sql`, redeploy
-`staff-account` to that same Supabase project, then build/deploy the frontend.
-Admin can then assign Finance and optionally enable its deposit-waiver checkbox.
-Finance can issue general/deposit/settlement invoices and issue/download/share
-vouchers. Walk-In writes, settings, bank/QRIS changes, voucher redemption/voiding,
-record deletion and negative payment adjustments remain restricted.
-Dashboard and Reservations default to Incoming/Waitlist. Existing role enforcement
-must not be rerun. SQL is applied per database, not per Git branch.
+`ALL_IN_ONE.sql` consolidates historical schema, including capacity, requested invoice
+amounts, table availability, ten campaigns and tickets. It contains repeated definitions;
+the last one wins. It is **not** the full secured setup. Its guard rejects a database with
+Phase 1 role helpers/audit. `20260911_roles_enforce.sql` also refuses a second application.
 
-**Do not rerun ALL_IN_ONE.sql or roles_enforce.** Apply only the targeted migration for the change being deployed. SQL runs per Supabase project, not per Git branch. Stop on any error.
+**Existing secured project: never rerun either file or bypass either guard.** Older standalone
+feature SQL may redefine unwrapped public functions or restore grants; do not replay it onto
+Phase 1 based only on its date. Inspect private implementations and wrapper preservation.
 
-### Guest-count deposit mode (13 September 2026)
+## Fresh client (empty, isolated project only)
 
-Run `20260913_deposit_policy.sql` after Phase 1 and the earlier role follow-ups, then build/deploy the frontend. No Edge Function change is needed for this feature.
+Keep the client unavailable until security and smoke checks are complete. Confirm the target,
+backup policy and an approved initial active Admin before touching data. Follow these steps:
 
-The migration preserves existing booking requirements and the authenticated public RPC wrapper. Settings > Reservation Form gains area/pax mode; area remains the default. Pax mode stores an unquoted requirement without a deadline. Sending the request starts the regular-booking deadline; large bookings retain no automatic deadline. Staff chooses a simple or detailed deposit invoice before issuance. Issued formats cannot be silently switched.
+1. Run `ALL_IN_ONE.sql` once on the fresh database. It is only the legacy/base stage.
+2. Run `20260911_roles_prepare.sql` (Auth links/Owner role).
+3. Link all initial staff accounts with `scripts/migrate-staff-auth.mjs` from a trusted
+   terminal using server-only `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`. The script preserves
+   IDs and existing initial login credentials, resumes linked rows, and uses Auth's API.
+   Initial provisioning is privileged setup, not permission to retain plaintext PINs in the
+   finished system or in repo files. Do not expose the legacy stage publicly.
+4. Run `20260911_roles_enforce.sql` ONCE. It requires linked accounts and an active Admin,
+   clears/restricts legacy PIN storage, installs RLS/guards and wraps permitted RPCs.
+5. Run `20260912_roles_save_paths.sql`.
+6. Run `20260912_roles_invoice_amount.sql`.
+7. Run `20260912_roles_voucher_defaults.sql`.
+8. Run `20260912_staff_deposit_waiver.sql`.
+9. Run `20260913_deposit_policy.sql`.
+10. Run `20260916_finance_role.sql`.
+11. Run `20260917_session_notifications.sql`.
+12. Run `20260918_spending_deposit_choice.sql`.
+13. Deploy the **current** `staff-account` Edge Function; current source requires the
+    session-validity RPC from step 11. Configure server environment and disable public
+    Auth signup/email password recovery for internal staff identities.
+14. Build/deploy current frontend, then verify roles and guest flows before opening access.
 
-For a fresh project, follow the staged setup order at the top of `ALL_IN_ONE.sql`, including account linking and role enforcement. Filename order alone is not the setup order.
+The ALL_IN_ONE header documents the SQL/account-link sequence; the current function cannot
+be used before its later session RPC exists. Its old ?alongside Phase 1? wording is historical
+coordination, not permission to use current frontend/function with only the base schema.
+Stop on any error (`psql -v ON_ERROR_STOP=1` when using psql). Never continue half-applied setup.
 
-## Historical setup notes (pre-Phase 1; not instructions for secured projects)
+## Existing client with Phase 1 installed
 
-## Why the individual migration files are gone
+Verify its actual schema/function definitions and applied history first. Do not infer this
+from branch name or a commit. There is no fleet migration ledger in this repo.
 
-They were deleted on 2026-08-23. Nothing was lost: `ALL_IN_ONE.sql` contains every
-one of them verbatim, in dependency order, each under a `-- ## filename` header.
-Git holds the originals if they are ever wanted.
+| Requirement | Targeted update |
+|---|---|
+| Reservation/table normalization and spending-tier save helpers | `20260912_roles_save_paths.sql` |
+| Invoice document amount helper permissions | `20260912_roles_invoice_amount.sql` |
+| Voucher default trigger permissions | `20260912_roles_voucher_defaults.sql` |
+| Per-account Staff waiver | `20260912_staff_deposit_waiver.sql` |
+| Area/pax rules and selectable invoice format | `20260913_deposit_policy.sql` |
+| Finance role | `20260916_finance_role.sql` after waiver; redeploy function/frontend |
+| Session validity/PIN reset/checklist | `20260917_session_notifications.sql` after Finance |
+| Explicit deposit-inclusive spending | `20260918_spending_deposit_choice.sql` |
 
-They were deleted because they had stopped being trustworthy as a history. Building
-a database from them for the first time on 2026-08-22 surfaced five separate
-defects:
+Apply only missing required updates in the dependency order above, with rehearsals/backups
+appropriate to the change. Then deploy the matching function/frontend. Later session helpers
+supersede earlier role helpers: do not rerun an older helper migration over newer ones.
+For the latest update, use [SESSION_SPENDING_ROLLOUT](../docs/SESSION_SPENDING_ROLLOUT.md).
+An unusual legacy project needs a reviewed upgrade plan, not a blind table of filenames.
 
-1. **Seven files were not in the repo at all.** The membership and WhatsApp tables
-   lived in a folder outside it, so a database built from the repo alone was missing
-   `members`, `wa_templates` and `wa_outreach_log`.
-2. **Filename order was not dependency order.** A seed file sorted before the file
-   that created the table it seeds.
-3. **The `admin` role was in no migration**, though the code requires it. It had been
-   added by hand in production.
-4. **Nothing was re-runnable.** Plain `CREATE TABLE`, plain `CREATE TRIGGER`, and
-   functions redefined with changing return types.
-5. **14 columns, 2 views and 5 functions existed in production and in no file at all**,
-   found by diffing against the live database.
+## Why these safeguards exist
 
-A history that cannot rebuild the thing it claims to describe is not a history.
+- Blanket public-function EXECUTE revocation in Phase 1 broke hidden trigger/default calls.
+  Fixes used narrow grants for pure calculations and pinned SECURITY DEFINER trigger paths
+  for privileged helpers. Never grant every helper to authenticated to make saves pass.
+- `normalize_table_assignment()` took a row lock requiring visibility ordinary staff lacked;
+  this produced misleading ?selected tables no longer exist? errors. Tier/default invoice/
+  voucher helpers also caused save failures. The role follow-ups address those paths.
+- `calculate_guest_spending_tier` changed its return shape while a stale
+  `recalculate_guest_spending_tier` caller survived elsewhere in the consolidated file.
+  A backfill triggered the mismatch only on populated data. Keep final definitions adjacent,
+  inspect all callers and exercise real writes. Do not loosen a CHECK to accept corrupt data.
+- A successful empty-schema run proves neither backfill correctness nor role safety. Test
+  representative guest, visit, booking, payments and member data as real app roles.
+- Waiver/Finance migrations patch function definitions using text replacement. Unexpected
+  definition errors are stop signals; casual formatting can break downstream patches.
 
-## Proving it before a client sees it
+## Verification
 
-Reading this file cannot tell you whether it is complete. Building a database
-from it and asking the application what it expects can.
+Use relevant PGlite suites: role-enforcement, role-save-paths, role-membership-reports,
+finance-role, deposit-policy-sql and session-spending-sql. Known harness limitations are
+in [CURRENT_STATE](../docs/CURRENT_STATE.md). Local tests do not prove live Auth/Storage.
 
-Two steps, neither of which needs Postgres installed locally:
+For an authorized schema inventory, `scripts/schema-dump.sql` produces a catalog JSON;
+`npm run schema-check -- catalog.json` compares referenced objects to it. It checks existence,
+not complete types/semantics or RLS/grants. Keep any live inventory private and out of static
+assets. Do not follow old docs suggesting an env-only schema-check proves the whole database.
 
-1. Run `ALL_IN_ONE.sql` on the empty Supabase project, exactly as client
-   setup does.
-2. Run `scripts/schema-dump.sql` in the same SQL editor, save the JSON it
-   returns to a file, and run `npm run schema-check -- catalog.json`.
-
-It compares every table, column, RPC argument and storage bucket the app code
-references against what actually got built, and exits non-zero on any that is
-missing. `scripts/schema-refs.js` documents what it does and does not cover:
-it proves an object EXISTS, never that its type, nullability, default or
-foreign key is right, and RLS and grants are out of scope entirely.
-
-### Round 6, 2026-08-30
-
-The first run of that check found two more of the same class, both of which
-would have shipped:
-
-6. **`wa_campaigns.slug` existed in no migration.** Broadcast > Campaigns was
-   not degraded, it was unusable: `ceUniqueSlug()` selects on `slug` before
-   every save and `saveCampaign()` writes it, so no campaign could be created
-   at all on a new client. Its unique index was missing too, and the code
-   depends on that index rather than merely benefiting from it.
-7. **The `promo-images` storage bucket existed in no migration.** Promo image
-   uploads 404, and because the public URL is built by hand in
-   `cePromoImageUrl()`, every campaign's WhatsApp share card would have
-   resolved to nothing.
-
-Both are now in this file, and the file has been rebuilt from empty twice to
-confirm it still runs clean and is still re-runnable.
-
-Campaign concurrency now allows **10 active campaigns**, with unlimited drafts.
-Run `20260914_multiple_active_campaigns.sql` (or the current `ALL_IN_ONE.sql`)
-before using the updated editor. It removes the old one-open-campaign index
-and enforces ten database slots. Starting/reopening never closes another
-campaign. Sends remain attributed to their selected campaign; guests can
-receive messages from multiple campaigns, with no cross-campaign cooldown.
-
-### Round 7, 2026-08-30: an empty database is not a test
-
-Round 6 was verified by building from empty, twice. That missed a defect that
-only exists on a database with rows in it, and Rere hit it re-running the file
-against her seeded Intoch database:
-
-8. **`recalculate_guest_spending_tier` was defined 1,700 lines after the last
-   redefinition of `calculate_guest_spending_tier`.** In between sits the
-   `booking_name` backfill, an `update public.reservations`, which fires the
-   reservations tier trigger, which calls the still-old text-expecting version
-   of a function whose partner now returns `TABLE(tier, qualified_at)`. The
-   row gets stringified to `(medium_spender,)` and fails
-   `guests_spending_tier_check`. The whole run aborts.
-
-   **On an empty database the backfill matches nothing, the trigger never
-   fires, and the file runs clean.** That is the entire reason it survived.
-
-   Fixed by moving the corrected definition to sit immediately beneath the
-   last `calculate_guest_spending_tier`. Both functions now carry a comment
-   saying they must move together.
-
-**So: an empty-database run proves the file is syntactically sound and
-re-runnable. It does NOT prove the file is safe on a client's database.**
-Anything guarded by a `WHERE` that matches no rows on an empty database is
-untested until you put rows there. Backfills and data repairs are exactly that
-shape, and this file is full of them.
-
-Rehearse a change like this on a database with at least: a guest, a visit
-carrying real spend, and an Online Form reservation with a NULL
-`booking_name`. That fixture alone reproduces this defect in seconds.
-
-## Applying to a database with real data in it
-
-Rehearse first. Wrap the whole thing in a single `DO $$` block with
-`GET DIAGNOSTICS ROW_COUNT` assertions per statement, run it once ending in
-`RAISE EXCEPTION 'DRY RUN OK'` so it rolls back, then re-run without the RAISE.
-
-## When a migration history and a running database disagree
-
-The running database is right. Read it with `pg_get_functiondef`,
-`pg_get_viewdef`, `pg_indexes` and `information_schema.columns`, and correct the
-file. That is how defect 5 above was found.
-
-## Invoice deposit amounts
-
-The current full migration derives each invoice request from its DP/settlement
-checkboxes and synchronizes deposit invoices to the booking's deposit requirement.
-A Rp 5.000.000 bill requesting Rp 2.500.000 DP confirms the booking when recorded
-deposit payments reach Rp 2.500.000. It also corrects existing issued documents
-and already-recorded payments; it does not create any payment records. Review SQL
-warnings for legacy invoices that could not be repaired because of capacity or
-invalid amounts. Separate settlement invoices do not rewrite the deposit.
-
-## Table picker availability
-
-Run the current ALL_IN_ONE.sql before deploying the staff table picker update.
-It installs reservation_table_availability, which returns occupied table IDs for
-the chosen date, hours, duration and preparation buffer. Existing reservations
-are excluded from their own checks; waitlisted bookings do not hold tables.
-The UI disables conflicting tables and prevents saving while availability is
-loading or failed. Database capacity and overlap checks remain the final guard.
-
-
-### Reservation tickets (2026-09-15)
-
-Run `20260915_reservation_tickets.sql` or the current `ALL_IN_ONE.sql` before using Issue ticket. It adds a stable guest token, issuance timestamp, and restricted-field ticket lookup. Reissuing reuses the same link. The page shows live booking details; only Reserved bookings can issue/download a confirmation. No check-in scanning is involved.
-
-The dashboard online-form overview and staff-created deposit controls use the existing reservation/deposit schema. Staff small-party deposits default to the selected area amount and can be edited; large-party deposits require an agreed amount. Small requests enter Incoming with a deadline at the visit time; large requests enter Waitlist without automatic expiry.
-
-Regular staff can now open, save, edit and share reservation deposit invoices, including the full large-party template. General/settlement invoice and design permissions remain manager/admin-only; staff enter the editor through a reservation.
+Demo wipes/seeds are not migrations. See [demo/README](../demo/README.md); never use them to
+upgrade a client or as part of routine deployment.
