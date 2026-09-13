@@ -3549,7 +3549,7 @@ function renderDashboardReservations(data) {
     // Retain allergy/food preferences in the visible guest extras; only prose notes collapse.
     const guest = r.guests ? {...r.guests, notes: ""} : null;
     const followup = waReservationBtns(r).replace(/>(Invoice Followup|Pax Follow Up|Waitlist Follow Up|WA Follow Up)</g,
-      ">" + (id ? "Tindak lanjut" : "Follow up") + "<");
+      ">" + (id ? "Tindak lanjut" : "Follow up") + "<").replace(/<\/button>/g, ' <span aria-hidden="true">&#8599;</span></button>');
     return `<article class="dash-res-row">
       <time class="dash-res-time">${escapeHtml(String(r.reservation_time || "").slice(0,5) || "--")}</time>
       <div class="dash-res-guest">
@@ -3567,9 +3567,7 @@ function renderDashboardReservations(data) {
       <div class="dash-res-actions">
         <button type="button" class="dash-res-update" onclick="openResActions('${r.id}')">${t("Update")}</button>
         ${typeof reservationTicketButton === "function" ? reservationTicketButton(r) : ""}
-        <div class="dash-res-secondary">${followup}
-          <a href="reservation-confirmation.html?id=${encodeURIComponent(r.id)}" target="_blank" rel="noopener" title="${id ? "Buka halaman tamu" : "Open guest page"}" aria-label="${id ? "Buka halaman tamu" : "Open guest page"}">${id ? "Halaman tamu" : "Guest page"} &#8599;</a>
-        </div>
+        ${!followup || ["Arrived", "Cancelled", "Cancelled (No Show)"].includes(r.status) ? "" : `<div class="dash-res-secondary">${followup}</div>`}
       </div>
     </article>`;
   }).join("") : `<p class="dash-res-empty">${dashboardResFilter === "attention" ? (id ? "Tidak ada reservasi yang perlu perhatian." : "No reservations need attention.") : (id ? "Tidak ada reservasi pada rentang tanggal ini." : "No reservations for this day.")}</p>`);
@@ -6811,7 +6809,7 @@ async function renderReservationsTable(data) {
       const area = r.areas?.name || allAreas.find(a => a.id === r.assigned_area)?.name;
       const notes = [r.notes, r.guests?.notes].filter(Boolean).join(" / ");
       const followup = waReservationBtns(r).replace(/>(Invoice Followup|Pax Follow Up|Waitlist Follow Up|WA Follow Up)</g,
-        ">" + (id ? "Tindak lanjut" : "Follow up") + "<");
+        ">" + (id ? "Tindak lanjut" : "Follow up") + "<").replace(/<\/button>/g, ' <span aria-hidden="true">&#8599;</span></button>');
       const tag = r.guests?.tag?.split(",").map(s => s.trim()).filter(Boolean).slice(-1)[0];
       return `<tr class="res-list-row">
         <td><time class="res-list-time">${escapeHtml(String(r.reservation_time || "").slice(0,5) || "--")}</time></td>
@@ -6836,7 +6834,7 @@ async function renderReservationsTable(data) {
         <td><div class="res-list-status">${statusBadge(r.status)}${dashboardDepositSummary(r)}${waitlistReasonLine(r)}</div></td>
         <td><div class="dash-res-actions"><button type="button" class="dash-res-update" onclick="openResActions('${r.id}')">${t("Update")}</button>
           ${typeof reservationTicketButton === "function" ? reservationTicketButton(r) : ""}
-          <div class="dash-res-secondary">${followup}<a href="reservation-confirmation.html?id=${encodeURIComponent(r.id)}" target="_blank" rel="noopener" aria-label="${id ? "Buka halaman tamu" : "Open guest page"}" title="${id ? "Buka halaman tamu" : "Open guest page"}">${id ? "Halaman tamu" : "Guest page"} &#8599;</a></div>
+          ${!followup || ["Arrived", "Cancelled", "Cancelled (No Show)"].includes(r.status) ? "" : `<div class="dash-res-secondary">${followup}</div>`}
         </div></td>
       </tr>`;
     }).join("");
