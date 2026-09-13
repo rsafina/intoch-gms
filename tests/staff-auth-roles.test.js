@@ -22,7 +22,7 @@ w.setStaffSession({id:'owner',role:'owner',can_waive_deposit:true});assert.equal
  assert.equal(await w.restoreVerifiedStaffSession(),null);assert.equal(w.getStaffSession(),null);
  const profile={id:'actual',role:'staff',is_active:true};
  const query={select(){return this},eq(){return this},maybeSingle:async()=>({data:profile})};
- w.db={auth:{getUser:async()=>({data:{user:{id:'auth-id'}}})},from:()=>query};
+ w.db={rpc:async()=>({data:true}),auth:{getUser:async()=>({data:{user:{id:'auth-id'}}})},from:()=>query};
  await w.restoreVerifiedStaffSession();assert.equal(w.getStaffSession().role,'staff');
  w.db.rpc=async()=>({data:true});await w.refreshDepositWaiverPermission();assert.equal(w.canWaiveDeposit(),true);
  w.db.rpc=async()=>({data:false});await w.refreshDepositWaiverPermission();assert.equal(w.canWaiveDeposit(),false);

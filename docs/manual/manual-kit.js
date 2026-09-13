@@ -139,6 +139,29 @@ const steps = (items, instance) => items.map(t => new Paragraph({
 
 const proc = (items) => { stepInstance += 1; return steps(items, stepInstance); };
 
+// A numbered tutorial whose steps can carry their own picture or callout,
+// so the reader sees the screen at the moment the step talks about it.
+// Each item is a string, or { lead, text, fig: [file, caption], after: [] }.
+const tutorial = (items) => {
+  stepInstance += 1;
+  const inst = stepInstance;
+  const out = [];
+  for (const raw of items) {
+    const it = typeof raw === 'string' ? { text: raw } : raw;
+    out.push(new Paragraph({
+      numbering: { reference: 'steps', level: 0, instance: inst },
+      spacing: { after: it.fig || it.after ? 60 : 110, line: 288 },
+      children: [
+        ...(it.lead ? [new TextRun({ text: it.lead + ' ', size: 21, bold: true, color: INK })] : []),
+        new TextRun({ text: it.text, size: 21 }),
+      ],
+    }));
+    if (it.fig) out.push(...figure(it.fig[0], it.fig[1]));
+    if (it.after) out.push(...it.after);
+  }
+  return out;
+};
+
 const bullets = (items) => items.map(t => new Paragraph({
   numbering: { reference: 'dots', level: 0 },
   spacing: { after: 90, line: 288 },
@@ -257,7 +280,7 @@ function resetFigures() { chapterNo = 0; figNo = 0; }
 
 module.exports = {
   d, fs, path, INK, ACC, GREY, BLUE, GREEN, RED,
-  P, H1, H2, H3, proc, bullets, fields, table, box, flow,
+  P, H1, H2, H3, proc, tutorial, bullets, fields, table, box, flow,
   istilah, ingat, jangan, salah, spacer, figure, resetFigures,
   Document: d.Document, Packer: d.Packer, Paragraph: d.Paragraph, TextRun: d.TextRun,
   AlignmentType: d.AlignmentType, LevelFormat: d.LevelFormat, Footer: d.Footer,

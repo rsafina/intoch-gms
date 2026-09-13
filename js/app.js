@@ -346,6 +346,8 @@ async function initializeApplication(landingPage) {
     return;
   }
 
+  startStaffSessionMonitor();
+
   const connected = await testSupabaseConnection();
   // Its toast lives in the body, which the boot screen hides. Uncover before
   // giving up, or the failure is invisible behind a spinning logo.
@@ -722,7 +724,8 @@ async function loginStaff(event) {
 }
 
 async function logoutStaff() {
-  await db.auth.signOut();
+  stopStaffSessionMonitor();
+  await db.auth.signOut({scope:'local'});
   clearStaffSession();
   localStorage.removeItem("lastPage");
   // Tear the live connections down BEFORE clearing appInitialized. That flag
@@ -744,6 +747,7 @@ async function logoutStaff() {
   // A navigation may still have been in flight when logout was clicked.
   if (typeof PageLoading !== "undefined") PageLoading.finish();
   showLoginPage();
+  window.location.reload();
 }
 
 function startClock() {
@@ -4876,7 +4880,9 @@ async function saveFavoriteMenu(guestId) {
   });
 }
 
-function startEditVisitSpend(visitId, currentAmount, guestId) {
+async function startEditVisitSpend(visitId, currentAmount, guestId) {
+  let billing;
+  try { billing=await fetchCompletionBilling("visit",visitId); } catch(error) { toast(error.message,"error"); return; }
   const row = document.getElementById(`visit-row-${visitId}`);
   if (!row) return;
   const displayEl = document.getElementById(`visit-spend-display-${visitId}`);
@@ -4886,15 +4892,17 @@ function startEditVisitSpend(visitId, currentAmount, guestId) {
 
   const wrapper = document.createElement("div");
   wrapper.id = `visit-spend-edit-${visitId}`;
-  wrapper.className = "flex items-center gap-1.5";
+  wrapper.className = "flex items-center flex-wrap gap-1.5";
+  wrapper.dataset.deposit=String(billing.deposit);
   wrapper.innerHTML = `
+    ${billing.resId ? `<label class="w-full text-xs"><input type="checkbox" id="visit-spend-includes-${visitId}" ${billing.visit?.spend_includes_deposit !== false ? "checked" : ""}> ${t("Spending Amount Includes Deposit")} (${depositRupiah(billing.deposit)})</label>` : ""}
     <span class="text-xs text-[#999]">Rp</span>
     <input
       id="visit-spend-input-${visitId}"
       type="number"
       min="0"
       step="1000"
-      value="${currentAmount || ""}"
+      value="${Number(billing.visit?.spend_input_amount ?? currentAmount) || 0}"
       class="w-28 text-right text-sm border border-[#D0DCE8] rounded-8 px-2 py-1 focus:outline-none focus:border-[color:var(--brand-ink)] text-[#222]"
       onkeydown="if(event.key==='Enter')saveVisitSpend('${visitId}','${guestId}');if(event.key==='Escape')cancelEditVisitSpend('${visitId}',${currentAmount || 0});"
     />
@@ -4941,20 +4949,14 @@ async function saveVisitSpend(visitId, guestId) {
     saveBtn.textContent = "…";
   }
 
-  const { error } = await supabaseQuery(
-    () =>
-      db
-        .from("visits")
-        .update({
-          spend_amount: newAmount,
-          spend_updated_at: new Date().toISOString(),
-          spend_updated_by: currentStaffId(),
-        })
-        .eq("id", visitId),
-    "Failed to update spending amount",
-  );
+  const {data:saved,error}=await supabaseQuery(()=>db.rpc('save_visit_spending',{
+    p_amount:newAmount,p_includes_deposit:document.getElementById(`visit-spend-includes-${visitId}`)?.checked ?? true,
+    p_expected_deposit:Number(document.getElementById(`visit-spend-edit-${visitId}`)?.dataset.deposit || 0),
+    p_visit_id:visitId,p_complete:false,
+  }), 'Failed to update spending amount');
 
-  if (error) {
+  if (error || !saved?.ok) {
+    toast(error?.message || t('Could not save spending. Please try again.'), 'error');
     if (saveBtn) {
       saveBtn.disabled = false;
       saveBtn.textContent = "Save";
@@ -4967,7 +4969,7 @@ async function saveVisitSpend(visitId, guestId) {
 
   // Membership: award sticker if guest is a member and this visit
   // hasn't been recorded yet (DB enforces once-per-visit).
-  await maybeAwardMembershipSticker(guestId, newAmount, visitId);
+  await maybeAwardMembershipSticker(guestId, Number(saved.spend_amount), visitId);
 
   toast("Spending updated", "success");
   // Re-render the full profile to reflect new amount and any tier change
@@ -8401,60 +8403,49 @@ function exportReservationSources() {
 // from a previous open.
 let completeBilling = null;
 
-async function fetchCompletionBilling(type, id) {
-  let q = db.from("visits").select("reservation_id, spend_amount, extra_spend_amount, status");
-  q = type === "reservation" ? q.eq("reservation_id", id) : q.eq("id", id);
-  const { data: visit, error: visitError } = await supabaseQuery(() => q.maybeSingle(), "Failed to load visit spending");
-  if (visitError) throw new Error(t("Could not load recorded spending. Reopen this window to retry."));
-  const resId = type === "reservation" ? id : visit?.reservation_id;
-  if (!resId) return { key: type + ":" + id, hasBilling: false, visit };
-  const { data: money, error } = await supabaseQuery(
-    () => db.from("reservation_money").select("paid_total, settlement_total")
-      .eq("reservation_id", resId).single(), "Failed to load recorded payments",
-  );
-  if (error || !money) throw new Error(t("Could not load recorded spending. Reopen this window to retry."));
-  const paid = Math.max(0, Number(money.paid_total || 0));
-  const base = Math.max(0, Number(money.settlement_total ?? paid));
-  return { key: type + ":" + id, hasBilling: base > 0, base, paid, resId, visit,
-    source: money.settlement_total != null ? "Final invoice total" : "Recorded payments" };
-}
-
-async function prepareCompleteBilling(type, id) {
-  const key = type + ":" + id;
-  completeBilling = { key, loading: true };
-  try {
-    const state = await fetchCompletionBilling(type, id);
-    if (completeBilling?.key !== key) return;
-    completeBilling = state;
-    if (state.hasBilling) {
-      const extra = state.visit?.extra_spend_amount ?? Math.max(0, Number(state.visit?.spend_amount || 0) - state.base);
-      document.getElementById("complete-spend").value = extra || "";
-      const label = document.getElementById("complete-spend-label");
-      if (label) label.textContent = t("Additional spending (Rp, optional)");
-    }
-    const button = document.getElementById("complete-submit-btn");
-    if (button) button.disabled = false;
-    updateCompleteSpendingPreview();
-  } catch (error) {
-    if (completeBilling?.key === key) toast(error.message, "error");
+async function fetchCompletionBilling(type,id) {
+  let q=db.from('visits').select('id,reservation_id,spend_amount,spend_input_amount,spend_includes_deposit,spend_deposit_snapshot,status');
+  q=type==='reservation'?q.eq('reservation_id',id).is('voided_at',null):q.eq('id',id);
+  const {data:visit,error}=await supabaseQuery(()=>q.maybeSingle(),'Failed to load visit spending');
+  if(error) throw new Error(t('Could not load recorded spending. Reopen this window to retry.'));
+  const resId=type==='reservation'?id:visit?.reservation_id;
+  let deposit=0;
+  if(resId) {
+    const result=await db.rpc('reservation_spending_context',{p_reservation_id:resId});
+    if(result.error || !result.data) throw new Error(t('Could not load recorded spending. Reopen this window to retry.'));
+    deposit=Math.max(0,Number(visit?.spend_deposit_snapshot ?? result.data.deposit ?? 0));
   }
+  return {key:type+':'+id,resId,visit,deposit};
 }
-
+async function prepareCompleteBilling(type,id) {
+  const key=type+':'+id;
+  completeBilling={key,loading:true};
+  try {
+    const state=await fetchCompletionBilling(type,id);
+    if(completeBilling?.key!==key) return;
+    completeBilling=state;
+    document.getElementById('complete-includes-deposit').checked=state.visit?.spend_includes_deposit ?? true;
+    document.getElementById('complete-deposit-choice').classList.toggle('hidden',!state.resId);
+    if(state.visit?.spend_amount != null) document.getElementById('complete-spend').value=state.visit.spend_input_amount ?? state.visit.spend_amount;
+    document.getElementById('complete-submit-btn').disabled=false;
+    updateCompleteSpendingPreview();
+  } catch(error) { if(completeBilling?.key===key) toast(error.message,'error'); }
+}
 function updateCompleteSpendingPreview() {
-  const line = document.getElementById("complete-billing-summary");
-  if (!line) return;
-  const billed = completeBilling?.hasBilling;
-  line.classList.toggle("hidden", !billed);
-  if (!billed) return;
-  const extra = Number(cleanNumericInput(document.getElementById("complete-spend")?.value || "")) || 0;
-  line.textContent = t(completeBilling.source) + ": " + depositRupiah(completeBilling.base) +
-    " - " + t("Paid") + ": " + depositRupiah(completeBilling.paid) +
-    " - " + t("Total spending") + ": " + depositRupiah(completeBilling.base + extra) +
-    ". " + t("Leave blank if there is no additional spending.");
+  const line=document.getElementById('complete-billing-summary');
+  if(!line) return;
+  line.classList.toggle('hidden',!completeBilling?.resId);
+  if(!completeBilling?.resId) return;
+  const amount=Number(cleanNumericInput(document.getElementById('complete-spend')?.value || '')) || 0;
+  const included=document.getElementById('complete-includes-deposit').checked;
+  line.textContent=t('Deposit applied')+': '+depositRupiah(completeBilling.deposit)+
+    ' - '+t('Total spending')+': '+depositRupiah(amount+(included?0:completeBilling.deposit));
 }
 
 function resetCompleteArrivedAsk() {
   completeBilling = null;
+  document.getElementById('complete-deposit-choice')?.classList.add('hidden');
+  if(document.getElementById('complete-includes-deposit')) document.getElementById('complete-includes-deposit').checked=true;
   const label = document.getElementById("complete-spend-label");
   if (label) label.textContent = t("Spend Amount (Rp)") + " *";
   document.getElementById("complete-billing-summary")?.classList.add("hidden");
@@ -8651,8 +8642,7 @@ async function confirmCompleteVisit() {
     toast(error.message, "error");
     return;
   }
-  const extraSpend = spendAmount ?? 0;
-  if (billing.hasBilling && spendAmount === null) spendAmount = 0;
+
   // Spend is mandatory — show inline error and abort if missing
   if (spendAmount === null || !Number.isFinite(spendAmount) || spendAmount < 0) {
     const errEl = document.getElementById("complete-spend-error");
@@ -8662,209 +8652,20 @@ async function confirmCompleteVisit() {
   }
 
   loader(true);
-  const completePayload = { notes, updated_at: new Date().toISOString() };
 
   let guestIdForTier = null;
   let visitIdForMembership = null;
 
-  if (billing.hasBilling) {
-    const { data, error } = await supabaseQuery(
-      () => db.rpc("complete_billed_reservation", {
-        p_reservation_id: billing.resId, p_extra_spend: extraSpend,
-        p_expected_base: billing.base, p_notes: notes, p_staff_id: currentStaffId(),
-      }), "Failed to complete the prepaid reservation",
-    );
-    loader(false);
-    if (error || !data?.ok) {
-      toast(data?.message || t("Could not complete the reservation. Please try again."), "error");
-      return;
-    }
-    spendAmount = Number(data.spend_amount);
-    guestIdForTier = data.guest_id;
-    visitIdForMembership = data.visit_id;
-  } else if (type === "visit") {
-    completePayload.spend_amount = spendAmount;
-    completePayload.completed_at = new Date().toISOString();
-    completePayload.status = "Done";
-    const { error } = await supabaseQuery(
-      () => db.from("visits").update(completePayload).eq("id", id),
-      "Failed to complete visit",
-    );
-    loader(false);
-    if (error) {
-      toast("Failed to save — visit not completed. Please try again.", "error");
-      return;
-    }
-
-    // Verify the write actually landed with the spend amount
-    const { data: saved } = await supabaseQuery(
-      () =>
-        db
-          .from("visits")
-          .select("guest_id, spend_amount, status")
-          .eq("id", id)
-          .single(),
-      "Failed to verify visit",
-    );
-    if (!saved || saved.status !== "Done" || saved.spend_amount === null) {
-      toast("Spend amount did not save correctly. Please try again.", "error");
-      // Roll back the status so the visit isn't silently stuck as Done without spend
-      await supabaseQuery(
-        () =>
-          db
-            .from("visits")
-            .update({
-              status: "Arrived",
-              completed_at: null,
-              spend_amount: null,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", id),
-        "Failed to rollback visit status",
-      );
-      return;
-    }
-    guestIdForTier = saved.guest_id;
-    visitIdForMembership = id;
-  } else if (type === "reservation") {
-    // 1. Mark reservation as Completed
-    const { error: resError } = await supabaseQuery(
-      () =>
-        db
-          .from("reservations")
-          .update({ status: "Completed", updated_at: new Date().toISOString() })
-          .eq("id", id),
-      "Failed to complete reservation",
-    );
-    if (resError) {
-      loader(false);
-      toast(
-        "Failed to save — reservation not completed. Please try again.",
-        "error",
-      );
-      return;
-    }
-
-    // 2. Find the linked visit (created when guest Arrived) and save spend + mark Done
-    let { data: linkedVisit } = await supabaseQuery(
-      () =>
-        db
-          .from("visits")
-          .select("id, guest_id")
-          .eq("reservation_id", id)
-          .maybeSingle(),
-      "Failed to find linked visit",
-    );
-
-    // No linked visit means staff went Reserved -> Completed without ever
-    // clicking Arrived. Two completely different things cause that, and this
-    // branch used to do nothing at all for either of them: the reservation
-    // flipped to Completed, no visit row was written, the spend staff had
-    // just typed was discarded, and the toast still said "Visit completed".
-    //
-    // Measured at Blue Heron 2026-08-30: 15 reservations, 7.7% of every
-    // completed booking, 91 pax. Every one flipped on the reservation day
-    // between 16:00 and 21:30, which is front desk clearing the board at
-    // closing. Some of those guests ate; some never came.
-    //
-    // So the app asks (see the arrival question in openCompleteReservation)
-    // and only reaches this point when staff said the guest DID come. Same
-    // insert shape as updateResStatus("Arrived") - keep the two in step.
-    if (!linkedVisit) {
-      const { data: resRow } = await supabaseQuery(
-        () =>
-          db
-            .from("reservations")
-            .select("guest_id, reservation_date, pax, assigned_area, table_id, table_ids")
-            .eq("id", id)
-            .single(),
-        "Failed to load reservation for visit",
-      );
-      if (resRow) {
-        const { data: createdVisit } = await supabaseQuery(
-          () =>
-            db
-              .from("visits")
-              .insert({
-                guest_id: resRow.guest_id,
-                reservation_id: id,
-                visit_type: "Reservation",
-                visit_date: resRow.reservation_date,
-                visit_time: getNowTime(),
-                pax: resRow.pax,
-                assigned_area: resRow.assigned_area,
-                table_id: resRow.table_id || null,
-                table_ids: assignedTableIds(resRow),
-                created_by: currentStaffId(),
-              })
-              .select("id, guest_id")
-              .single(),
-          "Failed to record visit for completed reservation",
-        );
-        if (createdVisit) linkedVisit = createdVisit;
-      }
-    }
-
-    if (linkedVisit) {
-      const { error: visitError } = await supabaseQuery(
-        () =>
-          db
-            .from("visits")
-            .update({
-              spend_amount: spendAmount,
-              notes: notes || undefined,
-              completed_at: new Date().toISOString(),
-              status: "Done",
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", linkedVisit.id),
-        "Failed to save spend on reservation visit",
-      );
-      if (visitError) {
-        loader(false);
-        toast(
-          "Spend amount did not save correctly. Please try again.",
-          "error",
-        );
-        // Roll back reservation status
-        await supabaseQuery(
-          () =>
-            db
-              .from("reservations")
-              .update({
-                status: "Arrived",
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", id),
-          "Failed to rollback reservation status",
-        );
-        return;
-      }
-      guestIdForTier = linkedVisit.guest_id;
-      visitIdForMembership = linkedVisit.id;
-    } else {
-      // The visit could not be found AND could not be created. Leaving the
-      // reservation Completed here would recreate exactly the silent
-      // data-loss this block exists to remove, so roll the status back and
-      // say so out loud. Reserved, not Arrived: there is no visit row, so
-      // the guest was never marked arrived in the first place.
-      await supabaseQuery(
-        () =>
-          db
-            .from("reservations")
-            .update({ status: "Reserved", updated_at: new Date().toISOString() })
-            .eq("id", id),
-        "Failed to rollback reservation status",
-      );
-      loader(false);
-      toast(
-        "Could not save the visit. Spend was not recorded, please try again.",
-        "error",
-      );
-      return;
-    }
-    loader(false);
-  }
+  const {data:saved,error:saveError}=await supabaseQuery(()=>db.rpc('save_visit_spending',{
+    p_amount:spendAmount,p_includes_deposit:document.getElementById('complete-includes-deposit').checked,
+    p_expected_deposit:billing.deposit || 0,p_reservation_id:billing.resId || null,
+    p_visit_id:type==='visit'?id:null,p_complete:true,p_notes:notes,
+  }), 'Failed to save visit spending');
+  loader(false);
+  if(saveError || !saved?.ok) { toast(saveError?.message || t('Could not complete the reservation. Please try again.'),'error'); return; }
+  spendAmount=Number(saved.spend_amount);
+  guestIdForTier=saved.guest_id;
+  visitIdForMembership=saved.visit_id;
 
   if (guestIdForTier) await updateGuestSpendingTier(guestIdForTier);
 

@@ -551,3 +551,13 @@ state" section at the top.
   allowed. Settings, bank/QRIS, Walk-In writes, void/delete and negative adjustments
   stay restricted. Admin can toggle Finance deposit waivers like Staff. Apply
   20260916_finance_role.sql, redeploy staff-account, then frontend. Preserve Phase 1.
+
+- Session/spending/notification backlog (local, not deployed): active-account and
+  Auth-session checks invalidate pre-PIN-reset sessions; open clients recheck every
+  15s/on focus. Username/PIN and existing roles remain. Spending now has an explicit
+  includes-deposit choice, net deposit receipts/refunds and a saved snapshot;
+  settlement excluded, historical totals not backfilled. Notification refreshes
+  ignore stale responses, paginate the queue and recover on focus/reconnect;
+  checklist RPC stamps verified staff. Apply 20260917_session_notifications.sql,
+  then 20260918_spending_deposit_choice.sql, redeploy staff-account, then frontend.
+  See docs/SESSION_SPENDING_ROLLOUT.md for rollout and live smoke checks.

@@ -71,6 +71,7 @@ function makeDb(state) {
         q._filters[col] = val;
         return q;
       },
+      is() { return q; },
       single() {
         return q._run();
       },
@@ -121,12 +122,13 @@ function makeDb(state) {
   };
   return { from: table, _calls: calls, rpc: async (name, args) => {
     calls.push({rpc:name,args});
-    if (state.billingError) return {data:{ok:false,message:'Changed billing'},error:null};
-    const base = state.money.settlement_total ?? state.money.paid_total;
-    state.visit = {...(state.visit || {}), id:state.visit?.id || 'billed-visit', guest_id:'guest-1',
-      spend_amount:base+args.p_extra_spend, extra_spend_amount:args.p_extra_spend, status:'Done'};
+    if(name==='reservation_spending_context') return {data:{deposit:state.deposit || 0},error:state.moneyError || null};
+    if(state.billingError || state.visitUpdateError) return {data:null,error:{message:'Save failed'}};
+    const total=args.p_amount+(args.p_includes_deposit?0:(state.deposit || 0));
+    state.visit={...(state.visit || {}),id:state.visit?.id || 'visit-new',guest_id:'guest-1',reservation_id:RES_ID,
+      visit_date:state.reservation.reservation_date,pax:state.reservation.pax,spend_amount:total,status:'Done'};
     state.reservation.status='Completed';
-    return {data:{ok:true,visit_id:state.visit.id,guest_id:'guest-1',spend_amount:state.visit.spend_amount},error:null};
+    return {data:{ok:true,visit_id:state.visit.id,guest_id:'guest-1',spend_amount:total},error:null};
   }};
 }
 
@@ -152,6 +154,7 @@ function makeCtx(state, arrived) {
   const fields = {
     "complete-visit-id": { value: RES_ID },
     "complete-type": { value: "reservation" },
+    "complete-includes-deposit": {checked:true},
     "complete-spend": { value: "450000", focus() {} },
     "complete-notes": { value: "" },
     // Renamed 2026-09-02: what a guest ate now saves to guests.last_order,
@@ -366,23 +369,23 @@ function ok(label, cond, extra) {
     ok("reservation Completed", state.reservation.status === "Completed");
   }
 
-  console.log("\n[7] Prepaid/final-invoice spending and optional extras");
-  for (const extra of ['', '500000']) {
-    const state = {reservation:{id:RES_ID,status:'Arrived'},
-      visit:{id:'visit-existing',guest_id:'guest-1',reservation_id:RES_ID},
-      money:{paid_total:3500000,settlement_total:3500000}};
+  console.log("\n[7] Spending includes or excludes only the received deposit");
+  for (const included of [true,false]) {
+    const state={reservation:{id:RES_ID,status:'Arrived'},deposit:200000,
+      visit:{id:'v',guest_id:'guest-1',reservation_id:RES_ID}};
     const ctx=makeCtx(state);
-    ctx.document.getElementById('complete-spend').value=extra;
+    ctx.document.getElementById('complete-spend').value='1000000';
+    ctx.document.getElementById('complete-includes-deposit').checked=included;
     await ctx.__run();
-    ok('full bill plus only extras is saved',state.visit.spend_amount===3500000+Number(extra));
-    ok('membership sees the full spend',state.stickerArgs?.[1]===3500000+Number(extra));
-    await ctx.__run();
-    ok('repeated completion does not add prepayment twice',state.visit.spend_amount===3500000+Number(extra));
+    const expected=included?1000000:1200000;
+    ok('saved total matches checkbox',state.visit.spend_amount===expected);
+    ok('membership sees final total',state.stickerArgs?.[1]===expected);
+    await ctx.__run();ok('repeated save does not double count',state.visit.spend_amount===expected);
   }
   {
     const state={reservation:{id:RES_ID,status:'Arrived'},visit:{id:'v',reservation_id:RES_ID},money:{paid_total:3500000,settlement_total:null}};
     const ctx=makeCtx(state);ctx.document.getElementById('complete-spend').value='';
-    await ctx.__run();ok('recorded payments are used when there is no final invoice',state.visit.spend_amount===3500000);
+    await ctx.__run();ok('blank spending is rejected even with payments',state.visit.spend_amount===undefined);
   }
   {
     const state={reservation:{id:RES_ID,status:'Arrived'},visit:{id:'v',reservation_id:RES_ID},moneyError:{message:'offline'}};

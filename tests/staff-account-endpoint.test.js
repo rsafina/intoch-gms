@@ -1,7 +1,9 @@
 const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');const {stripTypeScriptTypes}=require('node:module');
+const resetCalls=[];
+let validSession=true;
 let handler,role='admin',authed=true,created=null,saved=null;
-const admin={auth:{getUser:async()=>authed?{data:{user:{id:'jwt-user'}}}:{error:Error(),data:{}},admin:{createUser:async data=>{created=data;return {data:{user:{id:'new-auth'}}}},deleteUser:async()=>{},updateUserById:async()=>({})}},from:()=>({select(){return this},eq(){return this},single:async()=>({data:{id:'admin-id',role,is_active:true,auth_user_id:'target-auth'}})})};
-const editor={from:()=>({insert:async data=>{saved=data;return {}},update(data){saved=data;return this},eq:async()=>({})}),rpc:async()=>({})};
+const admin={rpc:async(name,args)=>{resetCalls.push(name);return {}},auth:{getUser:async()=>authed?{data:{user:{id:'jwt-user'}}}:{error:Error(),data:{}},admin:{createUser:async data=>{created=data;return {data:{user:{id:'new-auth'}}}},deleteUser:async()=>{},updateUserById:async()=>({})}},from:()=>({select(){return this},eq(){return this},single:async()=>({data:{id:'admin-id',role,is_active:true,auth_user_id:'target-auth'}})})};
+const editor={from:()=>({insert:async data=>{saved=data;return {}},update(data){saved=data;return this},eq:async()=>({})}),rpc:async(name)=>{resetCalls.push(name);return {data:name==='app_session_valid'?validSession:undefined}}};
 const source=stripTypeScriptTypes(fs.readFileSync('supabase/functions/staff-account/index.ts','utf8').replace(/^import [^\n]*\n/,''));
 vm.runInNewContext(source,{Request,Response,createClient:(url,key)=>key==='service'?admin:editor,Deno:{env:{get:key=>key==='SUPABASE_SERVICE_ROLE_KEY'?'service':'anon'},serve:fn=>handler=fn}});
 const call=body=>handler(new Request('https://example.com',{method:'POST',headers:{Authorization:'Bearer test'},body:JSON.stringify(body)}));
@@ -20,5 +22,8 @@ const call=body=>handler(new Request('https://example.com',{method:'POST',header
  assert.equal((await call({id:'existing-fo',display_name:'FO Staff',role:'staff',can_waive_deposit:false})).status,200);assert.equal(saved.can_waive_deposit,false);
  assert.equal((await call({username:'finance',pin:'2849',display_name:'Finance',role:'finance',can_waive_deposit:true})).status,200);assert.equal(saved.role,'finance');assert.equal(saved.can_waive_deposit,true);
  assert.equal((await call({id:'existing-finance',display_name:'Finance',role:'finance',can_waive_deposit:false})).status,200);assert.equal(saved.can_waive_deposit,false);
+ assert.equal((await call({id:'existing-fo',display_name:'FO Staff',role:'staff',pin:'2849'})).status,200);
+ assert.ok(resetCalls.includes('begin_staff_pin_reset'));assert.ok(resetCalls.includes('finish_staff_pin_reset'));
+ validSession=false;assert.equal((await call({id:'existing-fo',display_name:'FO Staff',role:'staff'})).status,401);
  console.log('Account endpoint: verified admin only, account validation and PIN-free staff records passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

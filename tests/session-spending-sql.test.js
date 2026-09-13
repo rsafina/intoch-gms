@@ -1,0 +1,66 @@
+const fs=require('fs'),assert=require('node:assert/strict');
+const {PGlite}=require('@electric-sql/pglite');
+(async()=>{const db=new PGlite();try{
+ const base=fs.readFileSync('tests/deposit-policy-sql.test.js','utf8');
+ await db.exec(base.slice(base.indexOf('await db.exec(`')+15,base.indexOf('`);')));
+ await db.exec(`create function auth.jwt() returns jsonb language sql stable as $$select jsonb_build_object('session_id',current_setting('test.session',true))$$;
+ create table auth.sessions(id uuid,user_id uuid,created_at timestamptz);
+ create table visits(id uuid primary key default gen_random_uuid(),guest_id uuid,reservation_id uuid,visit_type text,visit_date date,visit_time time,pax int,
+ assigned_area uuid,table_id uuid,table_ids uuid[],spend_amount numeric,billing_base_amount numeric,extra_spend_amount numeric,
+ status text,completed_at timestamptz,notes text,created_by uuid,voided_at timestamptz,spend_updated_at timestamptz,spend_updated_by uuid,updated_at timestamptz);
+ alter table invoice_payments add column invoice_id uuid;
+ alter table reservations add column follow_up_done boolean default false,add column follow_up_done_at timestamptz,add column follow_up_done_by uuid,
+ add column reminder_d1_ack_at timestamptz,add column reminder_d1_ack_by uuid,add column reminder_dday_ack_at timestamptz,add column reminder_dday_ack_by uuid;
+ create function waive_deposit(p_reservation_id uuid,p_reason text,p_staff_id uuid default null) returns jsonb language sql security definer as $$select '{"ok":true}'::jsonb$$;
+ insert into auth.sessions values('20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001',now()-interval '1 day'),
+ ('20000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000002',now()-interval '1 day');`);
+ for(const f of ['20260911_roles_enforce','20260912_staff_deposit_waiver','20260916_finance_role','20260917_session_notifications','20260918_spending_deposit_choice','20260917_session_notifications','20260918_spending_deposit_choice']) await db.exec(fs.readFileSync('migrations/'+f+'.sql','utf8'));
+ const as=async(n,s=n)=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.role','authenticated',false),set_config('request.jwt.claim.sub',$1,false),set_config('test.session',$2,false)",['10000000-0000-0000-0000-00000000000'+n,'20000000-0000-0000-0000-00000000000'+s]);await db.exec('set role authenticated');};
+ await as(2);assert.equal((await db.query('select app_session_valid() as ok')).rows[0].ok,true);
+ const r=(await db.query("insert into reservations(reservation_date,reservation_time,pax,status,deposit_required,reservation_source) values(current_date,'12:00',2,'Arrived',true,'Online Form') returning id")).rows[0].id;
+ await db.query("select set_reservation_followup($1,'followup',true,'dday')",[r]);
+ assert.equal((await db.query('select follow_up_done_by from reservations')).rows[0].follow_up_done_by,'10000000-0000-0000-0000-000000000002');
+ await assert.rejects(()=>db.exec("select set_reservation_followup(gen_random_uuid(),'followup',true,null)"),/no longer/);
+ await db.exec("reset role;select set_config('request.jwt.claim.role','service_role',false)");
+ await db.query('insert into invoice_payments(reservation_id,amount) values($1,200000),($1,-50000)',[r]);
+ const invoice=(await db.query("insert into invoices(reservation_id,kind,status) values($1,'settlement','issued') returning id",[r])).rows[0].id;
+ await db.query('insert into invoice_payments(invoice_id,amount) values($1,500000)',[invoice]);
+ await as(2);
+ assert.equal((await db.query('select reservation_spending_context($1) as c',[r])).rows[0].c.deposit,150000);
+ const save=async(amount,includes,expected=150000)=> (await db.query('select save_visit_spending($1,$2,$3,$4) as s',[amount,includes,expected,r])).rows[0].s;
+ assert.equal((await save(1000000,true)).spend_amount,1000000);
+ assert.equal((await save(1000000,false)).spend_amount,1150000);
+ assert.equal((await save(1000000,false)).spend_amount,1150000);
+ assert.equal((await db.query('select count(*) as n from visits')).rows[0].n,1);
+ await assert.rejects(()=>save(10,false,999),/Deposit changed/);
+ await db.exec("reset role;select set_config('request.jwt.claim.role','service_role',false)");await db.query('insert into invoice_payments(reservation_id,amount) values($1,-150000)',[r]);
+ await as(2);assert.equal((await save(1000000,false)).spend_amount,1150000,'saved snapshot survives later refund');
+ await db.exec("reset role;select set_config('request.jwt.claim.role','service_role',false)");
+ const dp=(await db.query("insert into invoices(reservation_id,kind,status) values($1,'deposit','issued') returning id",[r])).rows[0].id;
+ await db.query('insert into invoice_payments(invoice_id,amount) values($1,80000),($1,-10000)',[dp]);
+ await as(2);assert.equal((await db.query('select reservation_spending_context($1) as c',[r])).rows[0].c.deposit,70000,'invoice deposit includes its refund but not settlement');
+ await as(1);await db.query('update reservations set deposit_required=false where id=$1',[r]);
+ assert.equal((await db.query('select reservation_spending_context($1) as c',[r])).rows[0].c.deposit,0,'waived deposit contributes zero');
+ const walk=(await db.query("insert into visits(visit_type,status,spend_amount) values('Walk-In','Arrived',123) returning id")).rows[0].id;
+ assert.equal((await db.query('select spend_input_amount from visits where id=$1',[walk])).rows[0].spend_input_amount,null,'historical input stays unset');
+ await as(2);assert.equal((await db.query('select save_visit_spending(500,true,0,null,$1) as s',[walk])).rows[0].s.spend_amount,500);
+ await as(1);await db.exec("update staff_users set role='finance' where username='staff'");await as(2);
+ await assert.rejects(()=>db.query('select save_visit_spending(500,true,0,null,$1)',[walk]),/Finance cannot/);
+ assert.equal((await save(1000000,false)).spend_amount,1150000,'Finance can save reservation spending with preserved snapshot');
+ await as(1);await db.exec("update staff_users set role='staff' where username='staff'");
+ await as(1);await db.exec("update staff_users set is_active=false where username='staff'");
+ await as(2);assert.equal((await db.query('select app_session_valid() as ok')).rows[0].ok,false);
+ await assert.rejects(()=>save(1000000,true),/cannot perform/);
+ await as(1);await db.exec("update staff_users set is_active=true where username='staff'");
+ await db.exec("select begin_staff_pin_reset('10000000-0000-0000-0000-000000000002')");
+ await assert.rejects(()=>db.exec("select begin_staff_pin_reset('10000000-0000-0000-0000-000000000002')"),/already in progress/);
+ await as(2);assert.equal((await db.query('select app_session_valid() as ok')).rows[0].ok,false);
+ await assert.rejects(()=>db.exec("select finish_staff_pin_reset('10000000-0000-0000-0000-000000000002',true)"));
+ await db.exec("reset role;select set_config('request.jwt.claim.role','service_role',false);select finish_staff_pin_reset('10000000-0000-0000-0000-000000000002',true)");
+ await as(2);assert.equal((await db.query('select app_session_valid() as ok')).rows[0].ok,false,'old session stays invalid after reset/refresh');
+ await db.exec("reset role;insert into auth.sessions values('20000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000002',clock_timestamp())");
+ await as(2,3);assert.equal((await db.query('select app_session_valid() as ok')).rows[0].ok,true);
+ await as(1);await db.exec("update staff_users set role='owner' where username='staff'");await as(2,3);
+ await assert.rejects(()=>db.query("select set_reservation_followup($1,'followup',false,null)",[r]),/cannot perform/);
+ console.log('Session invalidation, new login, trusted checklist, spending/refunds/snapshots, permissions and migration reruns passed');
+}finally{await db.close();}})().catch(e=>{console.error(e);process.exitCode=1});

@@ -4,7 +4,7 @@
 const K = require('./manual-kit.js');
 const {
   fs, path, INK, ACC, GREY,
-  P, H1, H2, H3, proc, bullets, fields, table, flow,
+  P, H1, H2, H3, proc, tutorial, bullets, fields, table, flow,
   istilah, ingat, jangan, salah, spacer, figure, resetFigures,
   Document, Packer, Paragraph, TextRun, AlignmentType, LevelFormat, Footer,
   PageNumber, convertInchesToTwip,
@@ -107,8 +107,12 @@ function chapterLogin(n, roleName, menuRows, sidebarFigure, extra = []) {
 
 // Deposit policy, explained from the angle each role needs.
 function chapterDepositPolicy(n, angle) {
+  let sub = 0;
+  const S = () => n + '.' + (++sub) + ' ';
   const head = [
-    H1(n + '. Dua Cara Menghitung Deposit'),
+    H1(n + '. Fitur Deposit'),
+    P('Deposit adalah uang muka yang dibayar tamu sebelum hari kunjungan, supaya mejanya benar-benar ditahan. Tidak semua reservasi memerlukannya. Yang menentukan perlu atau tidak, dan berapa, adalah satu pengaturan restoran yang dijelaskan di bawah ini.'),
+    H2(S() + 'Dua Cara Menentukan Deposit'),
     P('Sejak September 2026 restoran memilih SATU dari dua cara menentukan deposit. Pilihannya ada di Settings, bagian Reservation Form, pada kolom "Deposit basis". Seluruh aplikasi mengikuti pilihan itu.'),
     spacer(70),
     table(['', 'By area (berdasarkan area)', 'By guest count (berdasarkan jumlah tamu)'], [
@@ -122,8 +126,23 @@ function chapterDepositPolicy(n, angle) {
     ...ingat([
       'Pada mode jumlah tamu, deposit BUKAN harga per orang dikali jumlah tamu. Sistem tidak pernah mengalikan apa pun. Angkanya selalu hasil kesepakatan dengan tamu, diketik oleh staf.',
     ]),
+
+    H2(S() + 'Yang Dilihat Tamu di Form Online'),
+    P('Pilihan tadi mengubah satu panel kecil di form online, tepat di bawah pilihan area. Panel itu yang membuat tamu tahu apakah dia perlu bayar di muka atau tidak. Bentuknya berbeda untuk tiap mode, dan perbedaan ini yang paling sering ditanyakan tamu.'),
+
+    H3('Mode by area: angkanya langsung terlihat'),
+    P('Tamu melihat baris "Deposit (DP)" beserta nominalnya, diambil dari nilai deposit area yang dia pilih. Tamu sudah tahu berapa yang harus ditransfer bahkan sebelum menekan Reserve Now. Kalau tamu berpindah area, angkanya ikut berubah.'),
+    ...figure('05-form-online-dp-area', 'Mode by area. Baris "Deposit (DP)" menampilkan nominal yang diambil dari area yang dipilih tamu'),
+
+    H3('Mode by guest count: angkanya tidak ditampilkan'),
+    P('Tidak ada nominal sama sekali. Yang muncul hanya kalimat "A deposit is required to confirm your reservation" dan keterangan bahwa staf akan menghubungi tamu untuk jumlah dan cara pembayarannya. Ini disengaja: pada mode ini angkanya belum ada sampai staf dan tamu menyepakatinya, jadi sistem tidak boleh menebak.'),
+    ...figure('05-form-online-dp-pax', 'Mode by guest count. Tidak ada nominal DP, hanya pemberitahuan bahwa staf akan menghubungi tamu'),
+    ...ingat([
+      'Kalau jumlah tamu masih di bawah batas "No deposit up to", panel ini tidak menampilkan pemberitahuan deposit sama sekali. Tamu memang tidak diminta DP.',
+      'Konsekuensinya untuk staf: pada mode by guest count, tamu datang ke percakapan WhatsApp TANPA tahu angkanya. Sebutkan nominalnya dengan jelas saat follow up, jangan berasumsi tamu sudah membacanya di form.',
+    ]),
   ];
-  return head.concat(angle(n));
+  return head.concat(angle(n, S));
 }
 
 function chapterLargeParty(n, forRole) {
@@ -152,6 +171,82 @@ function chapterLargeParty(n, forRole) {
   ];
 }
 
+// The online-form flow, told as one sequence from the guest's tap to a
+// confirmed booking. Statuses are explained AFTER the steps, because the
+// steps are what a new reader actually needs first.
+function chapterOnlineFlow(n, forRole, opts = {}) {
+  const depositRef = opts.depositRef || 'bab Fitur Deposit';
+  let sub = 0;
+  const S = () => n + '.' + (++sub) + ' ';
+  const who = forRole === 'finance' ? 'kamu' : 'kamu';
+  return [
+    H1(n + '. ' + (opts.title || 'Reservasi dari Form Online')),
+    P('Ini satu-satunya jenis reservasi yang tidak ' + who + ' ketik sendiri. Tamu yang mengisinya, dan tugasmu adalah menindaklanjuti. Empat langkah berikut dikerjakan berurutan.'),
+    ...flow(['Tamu mengisi form', 'Waitlist: waive atau ajukan DP', 'DP masuk, catat', 'Reserved']),
+
+    H2(S() + 'Langkah demi langkah'),
+    ...tutorial([
+      {
+        lead: 'Tamu mengisi form sendiri.',
+        text: 'Reservasi lewat form online datang langsung dari tamu. Dari HP-nya, tamu mengisi nama, nomor HP, jumlah orang, area, tanggal, dan jam. Pada langkah ini kamu tidak mengetik apa pun.',
+        fig: ['05-form-online-netral', 'Form yang dilihat tamu, sebelum area dipilih. Panel informasi baru muncul setelah tamu memilih area'],
+        after: ingat([
+          'Setelah tamu memilih area, muncul panel kecil berisi minimum tamu dan minimum belanja. Panel ini BISA menampilkan perkiraan DP, bisa juga tidak, tergantung setting deposit yang dipakai restoran. Dua kemungkinannya dijelaskan lengkap dengan gambar di ' + depositRef + '.',
+          'Artinya kamu tidak boleh berasumsi tamu sudah tahu angka DP-nya. Periksa dulu setting mana yang sedang aktif sebelum follow up.',
+        ]),
+      },
+      {
+        lead: 'Reservasi muncul di Deposit queue dengan status Waitlist.',
+        text: 'Buka Dashboard, lalu tab "Deposit queue". Reservasi yang baru masuk ada di sana, menunggu dikonfirmasi dan diputuskan DP-nya. Ada dua kemungkinan. Kalau DP tidak diperlukan, klik tombol "Waive" dan status booking langsung menjadi Reserved. Kalau DP diperlukan, isi nominal DP sesuai jumlah yang disepakati bersama tamu, lalu klik tombol "Invoice & WhatsApp" untuk mengajukan DP. Pada tahap ini status booking menjadi Incoming.',
+        fig: ['finance-deposit-queue', 'Tab Deposit queue di Dashboard. Tiap baris menunjukkan status dan keterangan pembayarannya'],
+        after: ingat([
+          'Kalau restoran memakai mode area, nominal DP sudah terisi sendiri dari nilai area dan reservasinya biasanya langsung berstatus Incoming. Yang perlu kamu lakukan tinggal mengirim tagihannya.',
+          'Tombol "Invoice & WhatsApp" mengerjakan dua hal sekaligus: membuat invoice dan membuka WhatsApp. Pesannya harus benar-benar dikirim, bukan sekadar menutup tab.',
+        ]),
+      },
+      {
+        lead: 'DP diterima, catat pembayarannya.',
+        text: 'Begitu uang DP masuk, buka reservasinya dan klik tombol "Record payment". Isi jumlah yang benar-benar diterima, lalu simpan. Status booking berubah menjadi Reserved dan mejanya aman.',
+        after: ingat([
+          'Kalau yang masuk baru sebagian, statusnya tetap Incoming sampai kekurangannya dilunasi, dan jatuh temponya tidak bergeser.',
+        ]),
+      },
+      {
+        lead: 'Centang notifikasinya.',
+        text: 'Icon lonceng di kanan atas memberi tahu bahwa ada reservasi online yang baru masuk. Setelah reservasi itu ditindaklanjuti seperti langkah nomor 2, centang notifikasinya. Kalau tidak dicentang, angka di lonceng akan terus muncul walaupun pekerjaannya sudah selesai.',
+      },
+    ]),
+
+    H2(S() + 'Arti Status Booking'),
+    P('Empat langkah tadi sebenarnya memindahkan reservasi dari satu status ke status berikutnya. Ini arti ketiganya, berurutan.'),
+    spacer(70),
+    table(['Status', 'Artinya', 'Meja ditahan?', 'Yang harus dilakukan'], [
+      ['1. Waitlist', 'Baru masuk dari form online, belum diputuskan apa pun.', 'Belum', 'Hubungi tamu hari itu juga. Konfirmasi, lalu waive atau ajukan DP.'],
+      ['2. Incoming', 'DP sudah diajukan, tinggal menunggu uangnya masuk.', 'Ya', 'Pantau pembayarannya dan ingatkan tamu sebelum jatuh tempo.'],
+      ['3. Reserved', 'Sudah pasti. DP lunas, atau memang dibebaskan.', 'Ya', 'Ingatkan jamnya, lalu tekan "Arrived" saat tamu datang.'],
+    ], [1500, 3100, 1200, 3560]),
+    spacer(180),
+    ...jangan([
+      'Waitlist TIDAK menahan meja. Selama masih Waitlist, meja yang sama bisa diambil reservasi lain. Jangan menundanya sampai besok.',
+    ].concat(opts.warn || [])),
+
+    ...(typeof opts.extra === 'function' ? opts.extra(S) : (opts.extra || [])),
+
+    H2(S() + 'Cara tercepat melihat reservasi yang perlu ditindaklanjuti'),
+    ...proc([
+      'Buka menu "Reservations".',
+      'Nyalakan saringan "Online form only", supaya yang tampil hanya reservasi dari form.',
+      'Klik status "Waitlist" untuk yang belum diputuskan, lalu "Incoming" untuk yang menunggu uang masuk.',
+      'Kerjakan Waitlist lebih dulu, karena mejanya belum ditahan.',
+    ]),
+    ...figure('05-halaman-reservations', 'Halaman Reservations. 1 pencarian, 2 tanggal, 3 saringan Online form only'),
+    ...ingat([
+      'Bel notifikasi terus menyala sampai seseorang mencentangnya. Membuka jendela WhatsApp tidak otomatis mencentangnya.',
+      'Biasakan memeriksa Deposit queue dan daftar Waitlist di awal shift, bukan di akhir.',
+    ]),
+  ];
+}
+
 function warnLargeParty(forRole) {
   const common = [
     'Waitlist TIDAK menahan meja. Selama masih Waitlist, meja yang sama bisa diambil reservasi lain. Tetapkan meja segera setelah ada kesepakatan.',
@@ -177,7 +272,7 @@ const DOCS = {
       '1. Mengenal Intoch dalam Lima Menit',
       '2. Login dan Layar Kamu',
       '3. Empat Peran dan Siapa Boleh Apa',
-      '4. Dua Cara Menghitung Deposit',
+      '4. Fitur Deposit',
       '5. Mengelola Akun Staf',
       '6. Pengaturan Pembayaran',
       '7. Kartu Contekan Admin',
@@ -210,8 +305,8 @@ const DOCS = {
         'Finance tidak melihat Walk-Ins, kartu Quick Walk-In, ubin statistik, maupun okupansi area. Dashboardnya sengaja hanya berisi reservasi dan antrian deposit.',
       ]),
 
-      ...chapterDepositPolicy(4, (n) => [
-        H2(n + '.1 Mengubah pilihannya'),
+      ...chapterDepositPolicy(4, (n, S) => [
+        H2(S() + 'Mengubah pilihannya'),
         ...proc([
           'Buka Settings, lalu tab "Reservation Form".',
           'Gulir ke bagian "Deposit basis".',
@@ -221,7 +316,7 @@ const DOCS = {
         ]),
         ...figure('admin-deposit-basis-area', 'Mode "By area". 1 pilihan basis deposit'),
         ...figure('admin-deposit-basis-pax', 'Mode "By guest count". 1 pilihan basis, 2 batas bebas deposit, 3 batas reservasi biasa'),
-        H2(n + '.2 Arti dua kolom pada mode jumlah tamu'),
+        H2(S() + 'Arti dua kolom pada mode jumlah tamu'),
         spacer(70),
         table(['Kolom', 'Artinya', 'Contoh'], [
           ['No deposit up to (guests)', 'Sampai jumlah ini, tamu tidak diminta deposit sama sekali.', 'Diisi 4: reservasi 1 sampai 4 orang bebas deposit, 5 orang sudah diminta.'],
@@ -232,7 +327,7 @@ const DOCS = {
           'Isi 0 pada kolom pertama berarti SEMUA reservasi meminta deposit, termasuk tamu satu orang.',
           'Dua kolom itu hanya berlaku untuk mode jumlah tamu. Pada mode area keduanya diabaikan, walaupun di layar mungkin masih terlihat.',
         ]),
-        H2(n + '.3 Kalau memilih mode area'),
+        H2(S() + 'Kalau memilih mode area'),
         P('Nilai depositnya diambil dari tiap area, yang diatur di Settings > Areas. Area tanpa nilai deposit berarti tidak meminta deposit. Angka itu tetap sama untuk setiap reservasi sampai kamu mengubahnya.'),
         ...jangan([
           'Mengubah basis deposit mengubah perilaku seluruh aplikasi, termasuk form yang dilihat tamu. Beri tahu manager, staf, dan finance sebelum menggantinya, bukan sesudah mereka kebingungan.',
@@ -289,7 +384,7 @@ const DOCS = {
       '1. Mengenal Intoch dalam Lima Menit',
       '2. Login dan Layar Kamu',
       '3. Batas Wewenang Manager',
-      '4. Dua Cara Menghitung Deposit',
+      '4. Fitur Deposit',
       '5. Party Besar dan Pilihan Format Invoice',
       '6. Keputusan yang Hanya Manager',
       '7. Kartu Contekan Manager',
@@ -321,11 +416,11 @@ const DOCS = {
       ], [3000, 1590, 1590, 1590, 1590]),
       spacer(180),
 
-      ...chapterDepositPolicy(4, (n) => [
-        H2(n + '.1 Yang perlu kamu periksa'),
+      ...chapterDepositPolicy(4, (n, S) => [
+        H2(S() + 'Yang perlu kamu periksa'),
         P('Kebijakannya dipasang Admin, tetapi kamu yang akan ditanya staf ketika layar tidak sesuai harapan. Buka Settings > Reservation Form dan lihat sendiri mana yang sedang aktif sebelum menjawab.'),
         ...figure('admin-deposit-basis-pax', 'Bagian Deposit basis di Settings. 1 basis, 2 batas bebas deposit, 3 batas reservasi biasa'),
-        H2(n + '.2 Pertanyaan yang sering muncul dari staf'),
+        H2(S() + 'Pertanyaan yang sering muncul dari staf'),
         spacer(70),
         table(['Kata staf', 'Yang sebenarnya terjadi'], [
           ['"Kolom depositnya kosong, saya harus isi berapa?"', 'Restoran memakai mode jumlah tamu. Tidak ada angka otomatis. Angkanya hasil kesepakatan dengan tamu, dan kamu yang memutuskan kalau ada harga khusus.'],
@@ -392,7 +487,7 @@ const DOCS = {
       '3. Walk-In',
       '4. Reservasi dari Dashboard',
       '5. Reservasi dari Form Online',
-      '6. Dua Cara Menghitung Deposit',
+      '6. Fitur Deposit',
       '7. Party Besar dan Pilihan Format Invoice',
       '8. Batas Wewenangmu',
       '9. Kartu Contekan Staff',
@@ -449,18 +544,46 @@ const DOCS = {
       ]),
 
       H1('4. Reservasi dari Dashboard'),
+      P('Dipakai ketika tamu memesan lewat telepon, WhatsApp, atau datang langsung untuk booking, dan kamu yang mencatatnya.'),
       ...flow(['Catat reservasinya', 'Hari H: tekan Arrived', 'Tamu selesai makan', 'Completed, isi belanja']),
-      ...proc([
-        'Klik "New Reservation" di bagian atas Dashboard.',
-        'Cari tamunya, atau isi Name dan Phone untuk tamu baru. Bagian bawah formulir baru aktif setelah tamu dipilih.',
-        'Isi Date, Time, dan Pax.',
-        'Pilih Area dan meja.',
-        'Periksa panel deposit. Bab 6 menjelaskan dua kemungkinan isinya.',
-        'Pilih "Reservation Source". Selalu diisi.',
-        'Klik "Save Reservation".',
+      P('Buka Dashboard, lalu klik tombol "New Reservation" di bagian atas. Jendela di bawah ini terbuka. Nomor pada gambar sama persis dengan nomor langkah di teks.'),
+      ...figure('04-reservasi-baru', 'Bagian atas jendela New Reservation. Nomor 1 sampai 6 mengikuti nomor langkah pada 4.1'),
+
+      H2('4.1 Langkah demi langkah'),
+      ...tutorial([
+        {
+          lead: 'Isi nama tamu.',
+          text: 'Ketik nama atau nomor HP di kolom "Guest". Setelah dua huruf muncul daftar tamu lama, klik namanya kalau ada. Kalau tamunya memang baru, klik "Create new guest" dan kolom Name serta Phone muncul seperti pada gambar. Selalu cari dulu sebelum membuat tamu baru, supaya riwayat kunjungannya tidak terpecah dua.',
+        },
+        {
+          lead: 'Isi nomor HP.',
+          text: 'Kolom "Phone" baru muncul setelah kamu memilih membuat tamu baru, jadi jangan bingung kalau di awal kolom ini belum kelihatan. Boleh dikosongkan, tetapi tanpa nomor HP tamu ini tidak bisa ditagih DP dan tidak bisa dikirimi tiket.',
+        },
+        { lead: 'Isi Date.', text: 'Tanggal tamu akan datang.' },
+        { lead: 'Isi Time.', text: 'Jam kedatangan, format 24 jam, misalnya 19:00.' },
+        { lead: 'Isi Pax.', text: 'Jumlah orang. Bawaannya 2.' },
+        {
+          lead: 'Pilih Area dan meja.',
+          text: 'Kolom "Area" terisi sendiri mengikuti meja yang kamu klik di bagian "Tables" di bawahnya. Meja yang sudah dipakai reservasi lain pada jam itu tidak bisa diklik.',
+          after: ingat([
+            'Di bawah nomor 6 ada panel "Request deposit". Isi dan perilakunya mengikuti setting deposit restoran, dijelaskan lengkap di Bab 6. Fitur Deposit.',
+          ]),
+        },
+        {
+          lead: 'Pilih Reservation Source.',
+          text: 'Dari mana reservasi ini datang: WhatsApp, Phone Call, Instagram, Referral, dan seterusnya. Selalu diisi, karena dari kolom inilah restoran tahu kanal mana yang benar-benar mendatangkan tamu.',
+        },
+        {
+          lead: 'Klik "Save Reservation".',
+          text: 'Tombolnya ada di paling bawah jendela. Kalau masih ada kolom wajib yang kosong, jendela tidak akan tertutup dan kolom yang bermasalah ditandai. Setelah tersimpan, reservasinya muncul di "Upcoming Reservations" pada Dashboard.',
+          fig: ['04-reservasi-simpan', 'Bagian bawah jendela yang sama. 7 Reservation Source, 8 tombol Save Reservation'],
+        },
       ]),
-      ...figure('04-reservasi-baru', 'Formulir New Reservation. 1 tamu, 2 tanggal, 3 jam, 4 jumlah orang, 5 area'),
-      H2('4.1 Hari H'),
+      ...salah([
+        'Ada yang salah setelah tersimpan? Buka reservasinya dari daftar, lalu pilih "Edit Full Details" untuk membuka kembali formulir yang sama.',
+      ]),
+
+      H2('4.2 Hari H'),
       ...proc([
         'Saat tamu tiba, buka reservasinya dan klik "Arrived".',
         'Saat tamu selesai, klik "Completed" dan isi jumlah belanja.',
@@ -469,24 +592,13 @@ const DOCS = {
         'Kalau "Arrived" tidak pernah ditekan, aplikasi akan bertanya apakah tamu datang. Jawab jujur. Untuk tamu yang tidak muncul, pilih "tidak datang", dan tidak ada angka belanja yang diminta.',
       ]),
 
-      H1('5. Reservasi dari Form Online'),
-      P('Tamu mengisi sendiri dari HP-nya. Tugasmu bukan mencatat, tetapi menindaklanjuti.'),
-      spacer(70),
-      table(['Status', 'Artinya', 'Yang kamu lakukan'], [
-        ['Reserved', 'Sudah pasti, meja aman', 'Follow up dan ingatkan jamnya'],
-        ['Incoming', 'Menunggu deposit, meja ditahan', 'Kirim tagihan DP atau serahkan ke Finance'],
-        ['Waitlist', 'Belum diputuskan, MEJA BELUM DITAHAN', 'Hubungi tamu hari itu juga'],
-      ], [1700, 4300, 3360]),
-      spacer(180),
-      ...figure('05-halaman-reservations', 'Halaman Reservations. 1 pencarian, 2 tanggal, 3 Online form only'),
-      ...ingat([
-        'Cara tercepat melihat pekerjaan yang tertinggal: buka Reservations, nyalakan "Online form only", lalu klik status "Waitlist" dan "Incoming".',
-        'Bel notifikasi terus menyala sampai seseorang mencentangnya. Membuka jendela WhatsApp tidak otomatis mencentangnya.',
-      ]),
-      ...figure('05-form-online-terisi', 'Form yang dilihat tamu. Panel di bawah area menampilkan minimum belanja dan DP sebelum tombol pesan'),
+      ...chapterOnlineFlow(5, 'staff', {
+        depositRef: 'Bab 6. Fitur Deposit',
+        warn: ['Kalau akunmu tidak diizinkan membebaskan deposit, tombol "Waive" tidak muncul. Itu normal. Minta Manager atau Finance yang mengerjakan, jangan mencari jalan lain.'],
+      }),
 
-      ...chapterDepositPolicy(6, (n) => [
-        H2(n + '.1 Yang kamu lihat di formulir'),
+      ...chapterDepositPolicy(6, (n, S) => [
+        H2(S() + 'Yang kamu lihat di formulir'),
         P('Panel "Request deposit" pada formulir reservasi terisi sendiri mengikuti kebijakan restoran. Kalau kolom jumlahnya kosong dan tidak terisi otomatis, itu berarti restoran memakai mode jumlah tamu dan angkanya harus disepakati dulu dengan tamu.'),
         ...figure('staff-deposit-pax', 'Panel deposit pada mode jumlah tamu. 1 centang permintaan deposit, 2 kolom jumlah yang dibiarkan kosong'),
         ...ingat([
@@ -536,8 +648,8 @@ const DOCS = {
     chapters: [
       '1. Mengenal Intoch dalam Lima Menit',
       '2. Login dan Layar Kamu',
-      '3. Menemukan Siapa yang Butuh Deposit',
-      '4. Dua Cara Menghitung Deposit',
+      '3. Reservasi dari Form Online dan Antrian Deposit',
+      '4. Fitur Deposit',
       '5. Party Besar dan Pilihan Format Invoice',
       '6. Menagih dan Mencatat Pembayaran',
       '7. Pembebasan dan Pembatalan',
@@ -559,34 +671,25 @@ const DOCS = {
         ]),
       ]),
 
-      H1('3. Menemukan Siapa yang Butuh Deposit'),
-      P('Ini pekerjaan pertamamu setiap hari. Ada satu tempat yang dibuat khusus untuk itu.'),
-      H2('3.1 Tab "Deposit queue" di Dashboard'),
-      ...proc([
-        'Buka Dashboard.',
-        'Di bawah ringkasan tanggal ada tiga tab: "Deposit queue", "All upcoming", dan "Needs attention".',
-        'Klik "Deposit queue". Angka di sebelahnya adalah jumlah reservasi yang menunggu urusan uang.',
-      ]),
-      ...figure('finance-deposit-queue', 'Tab Deposit queue. Tiap baris menunjukkan status dan keterangan pembayarannya'),
-      H2('3.2 Membaca barisnya'),
-      spacer(70),
-      table(['Yang tertulis', 'Artinya'], [
-        ['No payment requested yet', 'Belum ada tagihan sama sekali. Ini yang paling mendesak.'],
-        ['Awaiting a decision', 'Party besar yang angkanya belum disepakati. Hubungi tamu dulu.'],
-        ['Deposit paid / requested Rp X / Rp Y', 'Sudah dibayar X dari Y yang diminta. Kalau X kurang dari Y, masih ada sisa.'],
-        ['Deposit paid', 'Lunas. Tidak ada yang perlu kamu kerjakan.'],
-      ], [3200, 6160]),
-      spacer(180),
-      H2('3.3 Cara lain: halaman Reservations'),
-      ...proc([
-        'Buka menu "Reservations".',
-        'Klik status "Incoming" untuk yang menunggu pembayaran, atau "Waitlist" untuk yang menunggu keputusan.',
-        'Nyalakan "Online form only" kalau ingin melihat hanya yang datang dari form online.',
-      ]),
-      ...figure('05-halaman-reservations', 'Halaman Reservations. 1 pencarian, 2 tanggal, 3 Online form only'),
+      ...chapterOnlineFlow(3, 'finance', {
+        title: 'Reservasi dari Form Online dan Antrian Deposit',
+        depositRef: 'Bab 4. Fitur Deposit',
+        extra: (S) => [
+          H2(S() + 'Membaca baris di Deposit queue'),
+          P('Tiap baris punya satu kalimat keterangan uang. Kalimat itulah yang memberi tahu apa yang harus kamu kerjakan pada baris tersebut.'),
+          spacer(70),
+          table(['Yang tertulis', 'Artinya'], [
+            ['No payment requested yet', 'Belum ada tagihan sama sekali. Ini yang paling mendesak.'],
+            ['Awaiting a decision', 'Party besar yang angkanya belum disepakati. Hubungi tamu dulu.'],
+            ['Deposit paid / requested Rp X / Rp Y', 'Sudah dibayar X dari Y yang diminta. Kalau X kurang dari Y, masih ada sisa.'],
+            ['Deposit paid', 'Lunas. Tidak ada yang perlu kamu kerjakan.'],
+          ], [3200, 6160]),
+          spacer(180),
+        ],
+      }),
 
-      ...chapterDepositPolicy(4, (n) => [
-        H2(n + '.1 Apa artinya untuk tagihanmu'),
+      ...chapterDepositPolicy(4, (n, S) => [
+        H2(S() + 'Apa artinya untuk tagihanmu'),
         spacer(70),
         table(['Mode', 'Angka yang ditagih', 'Yang perlu kamu lakukan'], [
           ['By area', 'Sudah terisi otomatis dari nilai area', 'Tinggal kirim invoicenya. Jatuh tempo ada di jam reservasi, jadi kejar sebelum itu.'],
@@ -707,10 +810,14 @@ function render(key) {
   });
 }
 
-const only = process.argv[2];
-(async () => {
-  for (const key of Object.keys(DOCS)) {
-    if (only && only !== key) continue;
-    await render(key);
-  }
-})();
+module.exports = { DOCS };
+
+if (require.main === module) {
+  const only = process.argv[2];
+  (async () => {
+    for (const key of Object.keys(DOCS)) {
+      if (only && only !== key) continue;
+      await render(key);
+    }
+  })();
+}

@@ -877,6 +877,8 @@ const ID_DICT = {
   over_capacity: "Terlalu besar untuk area",
   "Insufficient capacity": "Kapasitas tidak mencukupi",
   "Deposit queue": "Antrean deposit",
+  "Spending Amount Includes Deposit": "Jumlah belanja sudah termasuk deposit",
+  "Deposit applied": "Deposit yang diperhitungkan",
   "Below the area's minimum party size": "Di bawah minimum tamu area",
   "Large party": "Rombongan besar",
   below_min_pax: "Di bawah minimum area",

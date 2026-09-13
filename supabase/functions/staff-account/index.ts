@@ -11,6 +11,8 @@ Deno.serve(async req=>{
  const {data:actor}=await admin.from('staff_users').select('id,role,is_active').eq('auth_user_id',identity.user.id).single();
  if(!actor?.is_active||actor.role!=='admin')return reply({error:'Admin required'},403);
  const editor=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_ANON_KEY')!,{global:{headers:{Authorization:'Bearer '+token}},auth:{persistSession:false}});
+ const {data:validSession,error:sessionError}=await editor.rpc('app_session_valid');
+ if(sessionError||validSession!==true)return reply({error:'Session expired. Sign in again.'},401);
  try{
   const body=await req.json();
   const {id,display_name,role,pin}=body;
@@ -24,7 +26,14 @@ Deno.serve(async req=>{
    if(id===actor.id&&role!==old.role)return reply({error:'Cannot change your own role'},400);
    const {error}=await editor.from('staff_users').update({display_name:display_name.trim(),role,...waiverPermission}).eq('id',id);
    if(error)return reply({error:error.message},400);
-   if(pin){const result=await admin.auth.admin.updateUserById(old.auth_user_id,{password:'Intoch-PIN:'+pin});if(result.error)return reply({error:'Name/role saved, but PIN update failed. Retry the PIN change.'},500);const logged=await editor.rpc('record_staff_pin_change',{p_staff_id:id});if(logged.error)return reply({error:'PIN changed, but the audit entry failed. Contact your administrator.'},500);}
+   if(pin){
+    const begun=await editor.rpc('begin_staff_pin_reset',{p_staff_id:id});
+    if(begun.error)return reply({error:'Could not secure existing sessions. PIN was not changed.'},500);
+    const result=await admin.auth.admin.updateUserById(old.auth_user_id,{password:'Intoch-PIN:'+pin});
+    const finished=await admin.rpc('finish_staff_pin_reset',{p_staff_id:id,p_succeeded:!result.error});
+    if(finished.error)return reply({error:'PIN reset needs administrator recovery; the account remains locked.'},500);
+    if(result.error)return reply({error:'PIN update failed. Sign in again with the existing PIN and retry.'},500);
+   }
   }else{
    const username=String(body.username||'').trim().toLowerCase();
    if(!/^[a-z0-9._-]{3,20}$/.test(username)||!pin)return reply({error:'Valid username and PIN required'},400);

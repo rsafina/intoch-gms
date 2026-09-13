@@ -54,6 +54,8 @@ function harness({ connected = true, lastPage = null } = {}) {
   w.currentStaffRole = () => 'staff';
   w.getStaffSession = () => ({ display_name: 'Rere', role: 'staff' });
   w.clearStaffSession = () => {};
+  w.startStaffSessionMonitor = () => {};
+  w.stopStaffSessionMonitor = () => {};
   w.setStaffSession = () => {};
   w.clearResSearch = () => {};
   w.toast = () => {};

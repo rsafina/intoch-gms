@@ -139,8 +139,25 @@ function _resNotifyClassify(it) {
 // app.js: re-subscribing a channel that is already open throws, and that
 // throw used to take the whole bell down.
 let _resNotifyChannel = null;
+let _resNotifyGeneration = 0;
+let _resNotifyRequest = 0;
+const resNotifyDiagnostics = {lastSuccess:null,lastError:null,subscription:null};
+function _resNotifyWake() {
+  if (_resNotifyStarted && !document.hidden) _resNotifyRefresh({chimeNew:true});
+}
 
 function teardownOnlineResNotify() {
+  _resNotifyGeneration++;
+  _resNotifyRequest++;
+  _resNotifyItems = [];
+  _resNotifySaving.clear();
+  _resNotifyStaffNames = null;
+  _resNotifySeenIncoming = new Set();
+  window.removeEventListener('online',_resNotifyWake);
+  window.removeEventListener('focus',_resNotifyWake);
+  document.removeEventListener('visibilitychange',_resNotifyWake);
+  closeResAlertPanel();
+  _resNotifyRenderBadge();
   if (_resNotifyPollTimer) {
     clearInterval(_resNotifyPollTimer);
     _resNotifyPollTimer = null;
@@ -168,7 +185,9 @@ function teardownOnlineResNotify() {
 
 async function _resNotifyFetch() {
   const today = _resNotifyToday();
-
+  const generation = _resNotifyGeneration;
+  const rows = [];
+  for (let offset = 0; ; offset += RES_NOTIFY_MAX) {
   const { data, error } = await db
     .from("reservations")
     .select(
@@ -198,14 +217,19 @@ async function _resNotifyFetch() {
     .or("follow_up_done.eq.false,reservation_date.gte." + today)
     .order("reservation_date", { ascending: true })
     .order("reservation_time", { ascending: true })
-    .limit(RES_NOTIFY_MAX);
+    .order("id", { ascending: true })
+    .range(offset, offset + RES_NOTIFY_MAX - 1);
 
   if (error) {
-    console.error("[res-notify] fetch failed:", error);
+    resNotifyDiagnostics.lastError={at:new Date().toISOString(),code:error.code};
+    console.error("[res-notify] fetch failed:", {code:error.code,message:error.message});
     return null;
   }
-
-  return data.map((row) => ({
+  if (generation !== _resNotifyGeneration) return null;
+  rows.push(...(data || []));
+  if (!data || data.length < RES_NOTIFY_MAX) break;
+  }
+  return [...new Map(rows.map(row => [row.id, row])).values()].map((row) => ({
     id: row.id,
     // booking_name is what the guest typed into the public form.
     // guests.name can be an older stored name (the RPC reuses guests
@@ -238,16 +262,19 @@ async function _resNotifyFetch() {
 let _resNotifyStaffNames = null;
 
 async function _resNotifyLoadStaffNames() {
+  const generation = _resNotifyGeneration;
   if (_resNotifyStaffNames) return _resNotifyStaffNames;
   try {
     const { data, error } = await db
       .from("staff_users")
       .select("id, display_name");
+    if (generation !== _resNotifyGeneration) return;
     if (error) throw error;
     _resNotifyStaffNames = Object.fromEntries(
       (data || []).map((r) => [r.id, r.display_name]),
     );
   } catch (e) {
+    if (generation !== _resNotifyGeneration) return;
     console.warn("[res-notify] staff names unavailable", e);
     _resNotifyStaffNames = {}; // rows just say "handled" with no name
   }
@@ -255,8 +282,14 @@ async function _resNotifyLoadStaffNames() {
 }
 
 async function _resNotifyRefresh({ chimeNew = false } = {}) {
-  const items = await _resNotifyFetch();
+  const generation = _resNotifyGeneration, request = ++_resNotifyRequest;
+  let items;
+  try { items = await _resNotifyFetch(); }
+  catch (error) { resNotifyDiagnostics.lastError={at:new Date().toISOString(),code:error.code||error.name}; return; }
+  if (generation !== _resNotifyGeneration || request !== _resNotifyRequest) return;
   if (!items) return; // network hiccup — keep the last-known list rather than blanking it
+  resNotifyDiagnostics.lastSuccess=new Date().toISOString();
+  resNotifyDiagnostics.lastError=null;
   // Not awaited before the counts below: the badge must not wait on a
   // cosmetic lookup. It resolves before the panel is opened in practice, and
   // a row with no name still reads correctly.
@@ -562,86 +595,37 @@ function _resNotifyFmtDate(iso) {
   }
 }
 
-async function resNotifyToggleDone(id) {
-  const item = _resNotifyItems.find((it) => it.id === id);
-  if (!item) return;
-  const newDone = !item.done;
-
-  const nowIso = new Date().toISOString();
-  const staff = typeof currentStaffId === "function" ? currentStaffId() : null;
-  const payload = {
-    follow_up_done: newDone,
-    follow_up_done_at: newDone ? nowIso : null,
-    follow_up_done_by: newDone ? staff : null,
-  };
-
-  // Guardrail: if the booking is ALREADY inside a reminder slot when
-  // staff tick the follow-up (e.g. an online booking for tonight that
-  // came in this morning), stamp that slot too. Otherwise the row would
-  // jump straight from "perlu follow up" to "cek kehadiran" in the same
-  // click and read as if the tick did nothing.
-  const slot = newDone ? _resNotifySlot(item.date) : null;
-  if (slot === "dday") {
-    payload.reminder_dday_ack_at = nowIso;
-    payload.reminder_dday_ack_by = staff;
-  } else if (slot === "d1") {
-    payload.reminder_d1_ack_at = nowIso;
-    payload.reminder_d1_ack_by = staff;
-  }
-
-  // optimistic UI — this is a manual staff click, don't make them wait
-  const prev = { done: item.done, d1Ack: item.d1Ack, ddayAck: item.ddayAck };
-  item.done = newDone;
-  if (slot === "dday") item.ddayAck = true;
-  if (slot === "d1") item.d1Ack = true;
-  _resNotifyRenderList();
-  _resNotifyRenderBadge();
-
-  const { error } = await db.from("reservations").update(payload).eq("id", id);
-
-  if (error) {
-    console.error("[res-notify] toggle failed:", error);
-    item.done = prev.done;
-    item.d1Ack = prev.d1Ack;
-    item.ddayAck = prev.ddayAck;
-    _resNotifyRenderList();
-    _resNotifyRenderBadge();
-    if (typeof toast === "function") toast("Gagal menyimpan status follow up. Coba lagi.");
-  }
+const _resNotifySaving = new Set();
+async function _resNotifySaveChecklist(id, action, done, slot) {
+  if (_resNotifySaving.has(id)) return;
+  const generation = _resNotifyGeneration;
+  _resNotifySaving.add(id);
+  try {
+    const {data,error} = await db.rpc('set_reservation_followup', {
+      p_reservation_id:id,p_action:action,p_done:done,p_slot:slot || null,
+    });
+    if (generation !== _resNotifyGeneration) return;
+    if (error || !data?.ok || data.id !== id) throw error || {code:'NO_SAVED_ROW'};
+    await _resNotifyRefresh();
+  } catch (error) {
+    if (generation !== _resNotifyGeneration) return;
+    const diagnostic = {action,id,code:error.code || error.name || 'UNKNOWN',at:new Date().toISOString()};
+    resNotifyDiagnostics.lastError=diagnostic;
+    console.error('[res-notify] checklist failed',diagnostic);
+    _resNotifyRenderList(); // Restore the checkbox from confirmed database state.
+    if (typeof toast === 'function') toast('Could not save checklist ('+diagnostic.code+'). Please retry.','error');
+  } finally { if(generation === _resNotifyGeneration) _resNotifySaving.delete(id); }
 }
-
-// "Mark as read" for the attendance reminder. Deliberately one-way:
-// D-1 and D-day are separate columns, so acknowledging tomorrow's
-// reminder leaves the day-of reminder to fire on its own.
-async function resNotifyAckReminder(id) {
-  const item = _resNotifyItems.find((it) => it.id === id);
+async function resNotifyToggleDone(id) {
+  const item = _resNotifyItems.find(it => it.id === id);
   if (!item) return;
-  const slot = _resNotifySlot(item.date);
-  if (!slot) return; // slot closed between render and click — next refresh sorts it out
-
-  const nowIso = new Date().toISOString();
-  const staff = typeof currentStaffId === "function" ? currentStaffId() : null;
-  const payload =
-    slot === "dday"
-      ? { reminder_dday_ack_at: nowIso, reminder_dday_ack_by: staff }
-      : { reminder_d1_ack_at: nowIso, reminder_d1_ack_by: staff };
-
-  const prev = { d1Ack: item.d1Ack, ddayAck: item.ddayAck };
-  if (slot === "dday") item.ddayAck = true;
-  else item.d1Ack = true;
-  _resNotifyRenderList();
-  _resNotifyRenderBadge();
-
-  const { error } = await db.from("reservations").update(payload).eq("id", id);
-
-  if (error) {
-    console.error("[res-notify] reminder ack failed:", error);
-    item.d1Ack = prev.d1Ack;
-    item.ddayAck = prev.ddayAck;
-    _resNotifyRenderList();
-    _resNotifyRenderBadge();
-    if (typeof toast === "function") toast("Gagal menyimpan tanda dicek. Coba lagi.");
-  }
+  const done = !item.done;
+  await _resNotifySaveChecklist(id,'followup',done,done ? _resNotifySlot(item.date) : null);
+}
+async function resNotifyAckReminder(id) {
+  const item = _resNotifyItems.find(it => it.id === id);
+  const slot = item && _resNotifySlot(item.date);
+  if (slot) await _resNotifySaveChecklist(id,'reminder',true,slot);
 }
 
 // "Gong" via WebAudio (no audio file needed): a strike transient plus
@@ -742,6 +726,10 @@ let _resNotifyPollTimer = null;
 function setupOnlineResNotify() {
   if (_resNotifyStarted) return;
   _resNotifyStarted = true;
+  const generation = _resNotifyGeneration;
+  window.addEventListener('online',_resNotifyWake);
+  window.addEventListener('focus',_resNotifyWake);
+  document.addEventListener('visibilitychange',_resNotifyWake);
 
   // Always fetch fresh from the DB on load — this alone fixes both
   // "nobody had a tab open when it came in" and "the PC was off all
@@ -766,6 +754,7 @@ function setupOnlineResNotify() {
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "reservations" },
       (payload) => {
+        if (generation !== _resNotifyGeneration) return;
         if (payload?.new?.reservation_source !== "Online Form") return;
         _resNotifyRefresh({ chimeNew: true });
       },
@@ -774,11 +763,15 @@ function setupOnlineResNotify() {
       "postgres_changes",
       { event: "UPDATE", schema: "public", table: "reservations" },
       (payload) => {
+        if (generation !== _resNotifyGeneration) return;
         if (payload?.new?.reservation_source !== "Online Form") return;
         _resNotifyRefresh({ chimeNew: true }); // also catches an INSERT missed during reconnect
       },
     )
     .subscribe((status) => {
+      if (generation !== _resNotifyGeneration) return;
+      resNotifyDiagnostics.subscription={status,at:new Date().toISOString()};
+      if (['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status)) console.warn('[res-notify] subscription',resNotifyDiagnostics.subscription);
       _resNotifyLive = status === "SUBSCRIBED";
       // Catch bookings created during a disconnect or the initial subscription gap.
       if (_resNotifyLive) _resNotifyRefresh({ chimeNew: true });

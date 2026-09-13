@@ -139,6 +139,28 @@ const steps = (items, instance) => items.map(t => new Paragraph({
 
 const proc = (items) => { stepInstance += 1; return steps(items, stepInstance); };
 
+// A numbered tutorial whose steps can carry their own picture or callout,
+// so the reader sees the screen at the moment the step talks about it.
+const tutorial = (items) => {
+  stepInstance += 1;
+  const inst = stepInstance;
+  const out = [];
+  for (const raw of items) {
+    const it = typeof raw === 'string' ? { text: raw } : raw;
+    out.push(new Paragraph({
+      numbering: { reference: 'steps', level: 0, instance: inst },
+      spacing: { after: it.fig || it.after ? 60 : 110, line: 288 },
+      children: [
+        ...(it.lead ? [new TextRun({ text: it.lead + ' ', size: 21, bold: true, color: INK })] : []),
+        new TextRun({ text: it.text, size: 21 }),
+      ],
+    }));
+    if (it.fig) out.push(...figure(it.fig[0], it.fig[1]));
+    if (it.after) out.push(...it.after);
+  }
+  return out;
+};
+
 const bullets = (items) => items.map(t => new Paragraph({
   numbering: { reference: 'dots', level: 0 },
   spacing: { after: 90, line: 288 },
@@ -254,10 +276,10 @@ const flow = (stages) => [
 const tocEntries = [
   ['1. Mengenal Intoch dalam Lima Menit', '3'],
   ['2. Login dan Mengenal Layar', '5'],
-  ['3. Cara 1: Walk-In dari Dashboard', '7'],
-  ['4. Cara 2: Reservasi dari Dashboard', '10'],
-  ['5. Cara 3: Reservasi dari Form Online', '14'],
-  ['6. Kartu Contekan', '17'],
+  ['3. Cara 1: Walk-In dari Dashboard', '9'],
+  ['4. Cara 2: Reservasi dari Dashboard', '15'],
+  ['5. Cara 3: Reservasi dari Form Online', '22'],
+  ['6. Kartu Contekan', '29'],
 ];
 
 const body = [];
@@ -275,7 +297,7 @@ body.push(
   new Paragraph({ spacing: { after: 900 }, alignment: AlignmentType.CENTER,
     children: [new TextRun({ text: 'Belum pernah memakai aplikasi ini? Mulai dari halaman pertama.', size: 20, color: ACC, italics: true })] }),
   new Paragraph({ spacing: { after: 60 }, alignment: AlignmentType.CENTER,
-    children: [new TextRun({ text: 'Versi 1.0  ·  12 September 2026', size: 20, color: GREY })] }),
+    children: [new TextRun({ text: 'Versi 2.0  ·  13 September 2026', size: 20, color: GREY })] }),
   new Paragraph({ spacing: { after: 0 }, alignment: AlignmentType.CENTER,
     children: [new TextRun({ text: 'Dokumen internal. Mohon tidak dibagikan ke luar restoran.', size: 19, color: GREY, italics: true })] }),
 );
@@ -498,31 +520,47 @@ body.push(H2('4.1 Membuka formulir'));
 body.push(P('Klik tombol reservasi baru di bagian atas Dashboard. Terbuka jendela berjudul "New Reservation".'));
 body.push(P('Perhatikan: seluruh bagian bawah formulir masih abu-abu dan tidak bisa diisi. Itu normal. Ada keterangan "Pick a guest above, or create a new one, to fill in the rest". Pilih tamunya dulu, sisanya baru terbuka.'));
 
-body.push(H2('4.2 Mengisi data tamu'));
-body.push(...proc([
-  'Ketik nama atau nomor HP tamu di kolom "Guest".',
-  'Kalau tamu muncul di daftar hasil, klik namanya. Bagian bawah formulir langsung aktif.',
-  'Kalau tamu belum ada, isi "Name" dan "Phone" pada blok tamu baru di bawahnya.',
-]));
-body.push(...ingat([
-  'Selalu cari dulu sebelum membuat tamu baru. Kalau kamu membuat data baru untuk tamu yang sudah ada, riwayat kunjungannya terpecah jadi dua dan dia tidak lagi terlihat sebagai langganan.',
+body.push(H2('4.2 Mengisi formulir, langkah demi langkah'));
+body.push(P('Nomor pada gambar sama persis dengan nomor langkah di teks.'));
+body.push(...figure('04-reservasi-baru', 'Bagian atas jendela New Reservation. Nomor 1 sampai 6 mengikuti nomor langkah di bawah'));
+body.push(...tutorial([
+  {
+    lead: 'Isi nama tamu.',
+    text: 'Ketik nama atau nomor HP di kolom "Guest". Kalau tamu muncul di daftar hasil, klik namanya dan bagian bawah formulir langsung aktif. Kalau tamu memang belum ada, klik "Create new guest" dan kolom Name serta Phone muncul seperti pada gambar.',
+    after: ingat([
+      'Selalu cari dulu sebelum membuat tamu baru. Kalau kamu membuat data baru untuk tamu yang sudah ada, riwayat kunjungannya terpecah jadi dua dan dia tidak lagi terlihat sebagai langganan.',
+    ]),
+  },
+  {
+    lead: 'Isi nomor HP.',
+    text: 'Kolom "Phone" baru muncul setelah kamu memilih membuat tamu baru, jadi jangan bingung kalau di awal kolom ini belum kelihatan. Boleh dikosongkan, tetapi tanpa nomor HP tamu ini tidak bisa ditagih DP dan tidak bisa dikirimi tiket.',
+  },
+  { lead: 'Isi Date.', text: 'Tanggal tamu akan datang. Klik dan pilih dari kalender.' },
+  { lead: 'Isi Time.', text: 'Jam tamu akan datang. Format 24 jam, misalnya 19:00.' },
+  { lead: 'Isi Pax.', text: 'Jumlah orang. Bawaannya 2.' },
+  {
+    lead: 'Pilih Area dan meja.',
+    text: 'Kolom "Area" terisi sendiri mengikuti meja yang kamu klik di bagian "Tables" di bawahnya. Meja yang sudah dipakai reservasi lain pada jam itu tampil tidak bisa diklik.',
+    after: ingat([
+      'Di bawah nomor 6 ada panel "Request deposit". Panel itu dibahas di bagian 4.4.',
+    ]),
+  },
+  {
+    lead: 'Pilih Reservation Source.',
+    text: 'Dari mana reservasi ini datang: WhatsApp, Phone Call, Instagram, Referral, dan seterusnya. Kalau tidak ada di daftar, pilih "Other (type below)" lalu tuliskan. Kolom ini kelihatan sepele tapi selalu diisi, karena dari situ restoran tahu kanal mana yang benar-benar mendatangkan tamu.',
+  },
+  {
+    lead: 'Klik "Save Reservation".',
+    text: 'Tombolnya ada di paling bawah jendela. Kalau masih ada kolom wajib yang kosong, jendela tidak akan tertutup dan kolom yang bermasalah ditandai.',
+    fig: ['04-reservasi-simpan', 'Bagian bawah jendela yang sama. 7 Reservation Source, 8 tombol Save Reservation'],
+  },
 ]));
 
-body.push(H2('4.3 Mengisi detail reservasi'));
+body.push(H2('4.3 Kolom lain yang boleh dilewati'));
 body.push(...fields([
-  ['Date', 'Tanggal tamu akan datang. Klik dan pilih dari kalender.', 'Ya'],
-  ['Time', 'Jam tamu akan datang. Format 24 jam, misalnya 19:00.', 'Ya'],
-  ['Pax', 'Jumlah orang.', 'Ya'],
-  ['Area', 'Area tempat tamu akan duduk. Kalau kamu sudah memilih meja, kolom ini terisi sendiri.', 'Sebaiknya'],
-  ['Pemilih meja', 'Meja yang akan disiapkan. Meja yang sudah dipakai reservasi lain di jam itu tampil tidak bisa diklik.', 'Sebaiknya'],
   ['Occasion', 'Acaranya, misalnya Birthday atau Business Dinner. Berguna untuk penyambutan.', 'Tidak'],
   ['Status', 'Biarkan apa adanya untuk reservasi biasa. Sistem yang mengurus ini.', 'Tidak'],
-  ['Reservation Source', 'Dari mana reservasi ini datang: WhatsApp, Phone Call, Instagram, Referral, dan seterusnya. Kalau tidak ada di daftar, pilih "Other (type below)" lalu tuliskan.', 'Ya, isi selalu'],
   ['Notes', 'Permintaan khusus, alergi, kursi bayi, dan sejenisnya.', 'Tidak'],
-]));
-body.push(...figure('04-reservasi-baru', 'Formulir New Reservation. 1 tamu, 2 tanggal, 3 jam, 4 jumlah orang, 5 area'));
-body.push(...ingat([
-  '"Reservation Source" kelihatan sepele tapi selalu diisi. Dari kolom itu restoran tahu kanal mana yang benar-benar mendatangkan tamu, dan itu menentukan ke mana biaya promosi pergi.',
 ]));
 
 body.push(H3('Bagian jam dan durasi, boleh dilewati untuk reservasi biasa'));
@@ -549,8 +587,8 @@ body.push(...bullets([
 body.push(...figure('04-panel-deposit', 'Panel Request deposit. 1 centang permintaan DP, 2 jumlahnya'));
 body.push(P('Penanganan DP selanjutnya, mulai dari mengirim tagihan sampai mencatat pembayaran, ada di manual pelatihan yang lengkap. Untuk sekarang cukup tahu bahwa reservasi berDP tidak langsung pasti sampai uangnya masuk.'));
 
-body.push(H2('4.5 Menyimpan'));
-body.push(P('Klik "Save Reservation" di bagian paling bawah formulir. Reservasi akan muncul di bagian "Upcoming Reservations" pada Dashboard, di tab tanggal yang sesuai.'));
+body.push(H2('4.5 Setelah tersimpan'));
+body.push(P('Begitu "Save Reservation" diklik dan jendela tertutup, reservasinya muncul di bagian "Upcoming Reservations" pada Dashboard, di tab tanggal yang sesuai.'));
 body.push(...salah([
   'Ada yang salah setelah tersimpan? Buka reservasinya dari daftar, lalu pilih "Edit Full Details" untuk membuka kembali formulir yang sama.',
 ]));
@@ -605,81 +643,113 @@ body.push(...bullets([
 
 // ═══════════════════ BAB 5 ═══════════════════
 body.push(H1('5. Cara 3: Reservasi dari Form Online'));
-body.push(P('Restoran punya halaman reservasi di internet. Tamu mengisi sendiri dari HP-nya, dan datanya langsung masuk ke sistem tanpa kamu mengetik apa pun. Tugasmu di sini bukan mencatat, tetapi menindaklanjuti.'));
-body.push(...flow(['Tamu memesan sendiri', 'Kamu follow up lewat WhatsApp', 'Hari H: tekan Arrived', 'Completed, isi belanja']));
+body.push(P('Restoran punya halaman reservasi di internet. Tamu mengisi sendiri dari HP-nya, dan datanya langsung masuk ke sistem tanpa kamu mengetik apa pun. Tugasmu di sini bukan mencatat, tetapi menindaklanjuti. Kerjakan empat langkah berikut berurutan.'));
+body.push(...flow(['Tamu mengisi form', 'Waitlist: waive atau ajukan DP', 'DP masuk, catat', 'Reserved']));
 
-body.push(H2('5.1 Reservasi online tidak selalu berarti sudah pasti'));
-body.push(P('Ketika tamu selesai mengisi form, sistem memutuskan sendiri salah satu dari tiga keadaan. Kamu perlu bisa membedakannya, karena tindakanmu berbeda.'));
+body.push(H2('5.1 Langkah demi langkah'));
+body.push(...tutorial([
+  {
+    lead: 'Tamu mengisi form sendiri.',
+    text: 'Reservasi lewat form online datang langsung dari tamu. Dari HP-nya, tamu mengisi nama, nomor HP, jumlah orang, area, tanggal, dan jam. Pada langkah ini kamu tidak mengetik apa pun.',
+    fig: ['05-form-online-netral', 'Form yang dilihat tamu, sebelum area dipilih. Panel informasi baru muncul setelah tamu memilih area'],
+    after: ingat([
+      'Setelah tamu memilih area, muncul panel kecil berisi minimum tamu dan minimum belanja. Panel ini BISA menampilkan perkiraan DP, bisa juga tidak, tergantung setting deposit yang dipakai restoran. Dua kemungkinannya dijelaskan lengkap dengan gambar di bagian 5.2.',
+      'Artinya jangan berasumsi tamu sudah tahu angka DP-nya sebelum kamu menyebutkannya.',
+    ]),
+  },
+  {
+    lead: 'Reservasi muncul di Deposit queue dengan status Waitlist.',
+    text: 'Buka Dashboard, lalu tab "Deposit queue". Reservasi yang baru masuk ada di sana, menunggu dikonfirmasi dan diputuskan DP-nya. Ada dua kemungkinan. Kalau DP tidak diperlukan, klik tombol "Waive" dan status booking langsung menjadi Reserved. Kalau DP diperlukan, isi nominal DP sesuai jumlah yang disepakati bersama tamu, lalu klik tombol "Invoice & WhatsApp" untuk mengajukan DP. Pada tahap ini status booking menjadi Incoming.',
+    fig: ['finance-deposit-queue', 'Tab Deposit queue di Dashboard. Tiap baris menunjukkan status dan keterangan pembayarannya'],
+    after: ingat([
+      'Kalau restoran memakai mode area, nominal DP sudah terisi sendiri dari nilai area dan reservasinya biasanya langsung berstatus Incoming. Yang perlu kamu lakukan tinggal mengirim tagihannya.',
+      'Tombol "Invoice & WhatsApp" mengerjakan dua hal sekaligus: membuat invoice dan membuka WhatsApp. Pesannya harus benar-benar dikirim, bukan sekadar menutup tab.',
+      'Kalau tombol "Waive" tidak muncul di layarmu, akunmu memang tidak diizinkan membebaskan deposit. Minta Manager atau Finance yang mengerjakan.',
+    ]),
+  },
+  {
+    lead: 'DP diterima, catat pembayarannya.',
+    text: 'Begitu uang DP masuk, buka reservasinya dan klik tombol "Record payment". Isi jumlah yang benar-benar diterima, lalu simpan. Status booking berubah menjadi Reserved dan mejanya aman.',
+    after: ingat([
+      'Kalau yang masuk baru sebagian, statusnya tetap Incoming sampai kekurangannya dilunasi, dan jatuh temponya tidak bergeser.',
+    ]),
+  },
+  {
+    lead: 'Centang notifikasinya.',
+    text: 'Icon lonceng di kanan atas memberi tahu bahwa ada reservasi online yang baru masuk. Setelah reservasi itu ditindaklanjuti seperti langkah nomor 2, centang notifikasinya. Kalau tidak dicentang, angka di lonceng akan terus muncul walaupun pekerjaannya sudah selesai.',
+    after: ingat([
+      'Membuka jendela WhatsApp tidak otomatis mencentang notifikasi. Jendela terbuka bukan berarti pesan terkirim.',
+    ]),
+  },
+]));
+
+body.push(H2('5.2 Dua Tampilan DP di Form Online'));
+body.push(P('Restoran memilih satu dari dua cara menentukan DP, dan pilihan itu mengubah satu panel kecil di form online, tepat di bawah pilihan area. Kamu perlu tahu bentuk keduanya, karena inilah yang sudah atau belum dibaca tamu sebelum kamu menghubunginya.'));
+
+body.push(H3('Mode by area: angkanya langsung terlihat tamu'));
+body.push(P('Tamu melihat baris "Deposit (DP)" beserta nominalnya, diambil dari nilai deposit area yang dia pilih. Jadi tamu sudah tahu berapa yang harus ditransfer sebelum menekan Reserve Now. Kalau tamu berpindah area, angkanya ikut berubah.'));
+body.push(...figure('05-form-online-dp-area', 'Mode by area. Baris "Deposit (DP)" menampilkan nominal yang diambil dari area yang dipilih tamu'));
+
+body.push(H3('Mode by guest count: angkanya tidak ditampilkan'));
+body.push(P('Tidak ada nominal sama sekali. Yang muncul hanya kalimat "A deposit is required to confirm your reservation" dan keterangan bahwa staf akan menghubungi tamu untuk jumlah dan cara pembayarannya. Ini disengaja: pada mode ini angkanya belum ada sampai kamu dan tamu menyepakatinya, jadi sistem tidak menebak.'));
+body.push(...figure('05-form-online-dp-pax', 'Mode by guest count. Tidak ada nominal DP, hanya pemberitahuan bahwa staf akan menghubungi tamu'));
+body.push(...ingat([
+  'Kalau jumlah tamu masih di bawah batas bebas deposit, panel ini tidak menampilkan pemberitahuan DP sama sekali. Tamu memang tidak diminta DP.',
+  'Pada mode by guest count, tamu masuk ke percakapan WhatsApp TANPA tahu angkanya. Sebutkan nominalnya dengan jelas saat follow up, jangan berasumsi tamu sudah membacanya di form.',
+  'Kalau kamu tidak yakin restoran sedang memakai mode yang mana, lihat gejalanya: kolom jumlah DP yang terisi sendiri berarti mode by area.',
+]));
+
+body.push(H2('5.3 Arti Status Booking'));
+body.push(P('Empat langkah tadi sebenarnya memindahkan reservasi dari satu status ke status berikutnya. Ini arti ketiganya, berurutan.'));
 body.push(spacer(80));
 body.push(table(
-  ['Status', 'Artinya', 'Yang kamu lakukan'],
+  ['Status', 'Artinya', 'Meja ditahan?', 'Yang harus dilakukan'],
   [
-    ['Reserved', 'Sudah pasti. Meja aman. Tamu tidak perlu bayar apa pun di depan.', 'Cukup follow up dan ingatkan jamnya.'],
-    ['Incoming', 'Butuh DP. Meja ditahan, tetapi baru pasti setelah uangnya masuk.', 'Kirim tagihan DP, lalu catat pembayarannya. Lihat manual lengkap.'],
-    ['Waitlist', 'Belum diputuskan. Party-nya terlalu besar, terlalu kecil untuk area itu, atau areanya penuh. MEJA BELUM DITAHAN.', 'Hubungi tamu dan tentukan. Jangan didiamkan.'],
+    ['1. Waitlist', 'Baru masuk dari form online, belum diputuskan apa pun.', 'Belum', 'Hubungi tamu hari itu juga. Konfirmasi, lalu waive atau ajukan DP.'],
+    ['2. Incoming', 'DP sudah diajukan, tinggal menunggu uangnya masuk.', 'Ya', 'Pantau pembayarannya dan ingatkan tamu sebelum jatuh tempo.'],
+    ['3. Reserved', 'Sudah pasti. DP lunas, atau memang dibebaskan.', 'Ya', 'Ingatkan jamnya, lalu tekan "Arrived" saat tamu datang.'],
   ],
-  [1700, 4300, 3360],
+  [1500, 3100, 1200, 3560],
 ));
 body.push(spacer(190));
-body.push(...figure('05-form-online-kosong', 'Form reservasi online seperti yang dibuka tamu'));
-body.push(...figure('05-form-online-terisi', 'Form yang sudah terisi. Panel di bawah area menampilkan minimum belanja dan DP sebelum tombol pesan'));
 body.push(...jangan([
+  'Waitlist TIDAK menahan meja. Selama masih Waitlist, meja yang sama bisa diambil reservasi lain.',
   'Jangan menganggap semua reservasi online sudah pasti. Tamu berstatus Waitlist sudah diberi tahu di halaman konfirmasi bahwa reservasinya BELUM dikonfirmasi dan diminta tidak datang sebelum dihubungi. Kalau kamu diam saja, tamu itu menunggu kabar yang tidak pernah datang.',
 ]));
 
-body.push(H2('5.2 Tiga tempat melihat reservasi online'));
-body.push(spacer(80));
-body.push(table(
-  ['Tempat', 'Gunanya'],
-  [
-    ['Bel notifikasi', 'Angka merah di bel menandakan ada reservasi online yang belum ditindaklanjuti siapa pun. Buka ini setiap mulai shift.'],
-    ['Dashboard, tab "Online form"', 'Semua reservasi online untuk 14 hari ke depan, dalam satu tab di bagian Upcoming Reservations.'],
-    ['Halaman Reservations', 'Daftar lengkap, bisa dicari dan difilter. Ini tempat kerja utama untuk reservasi online.'],
-  ],
-  [2500, 6860],
-));
-body.push(spacer(190));
+body.push(H2('5.4 Cara tercepat melihat reservasi yang perlu ditindaklanjuti'));
+body.push(...proc([
+  'Buka menu "Reservations" di sisi kiri.',
+  'Nyalakan saringan "Online form only", supaya yang tampil hanya reservasi dari form.',
+  'Klik status "Waitlist" untuk yang belum diputuskan, lalu "Incoming" untuk yang menunggu uang masuk.',
+  'Kerjakan Waitlist lebih dulu, karena mejanya belum ditahan.',
+]));
+body.push(...figure('05-halaman-reservations', 'Halaman Reservations. 1 pencarian, 2 tanggal, 3 saringan Online form only'));
+body.push(P('Klik barisnya untuk membuka jendela "Update Reservation", tempat semua tombol tindakan berada.'));
+body.push(...ingat([
+  'Bel notifikasi terus menyala sampai seseorang mencentangnya. Itu memang disengaja: pernah ada satu reservasi online yang tidak tersentuh selama 17 hari karena belnya berhenti terlalu cepat.',
+  'Biasakan memeriksa Deposit queue dan daftar Waitlist di awal shift, bukan di akhir.',
+]));
 
-body.push(H2('5.3 Memakai halaman Reservations'));
-body.push(P('Buka menu "Reservations" di sisi kiri. Ini alat yang tersedia di atas daftar.'));
+body.push(H2('5.5 Alat lain di halaman Reservations'));
 body.push(...fields([
   ['Kolom pencarian', 'Cari tamu dengan nama atau nomor HP. Berguna kalau tamu menelepon menanyakan reservasinya.', 'Tidak'],
   ['Pilihan tanggal', 'Lihat satu tanggal, atau ubah ke mode rentang untuk melihat beberapa hari sekaligus.', 'Tidak'],
-  ['Online form only', 'Nyalakan ini untuk menyembunyikan semua reservasi yang dicatat staf, sehingga tinggal yang datang dari form online.', 'Tidak'],
   ['Tombol status', 'All, Reserved, Waitlist, Incoming, Arrived, Completed, Cancelled, No Show, Deleted. Klik untuk menyaring.', 'Tidak'],
   ['Run Sheet', 'Membuka lembar kerja harian untuk dicetak. Isinya mengikuti data terbaru setiap kali dibuka atau dicetak ulang.', 'Tidak'],
   ['Export Excel', 'Mengunduh daftar menjadi file Excel.', 'Tidak'],
-]));
-body.push(...figure('05-halaman-reservations', 'Halaman Reservations. 1 pencarian, 2 tanggal, 3 Online form only'));
-body.push(P('Setiap baris punya kolom: Time, Guest & booking, Seating, Status & deposit, dan Actions. Klik barisnya untuk membuka jendela "Update Reservation", tempat semua tombol tindakan berada.'));
-body.push(...ingat([
-  'Cara paling cepat memeriksa pekerjaan yang tertinggal: buka Reservations, nyalakan "Online form only", lalu klik status "Waitlist" dan "Incoming". Yang muncul adalah daftar tamu yang sedang menunggu kabar darimu.',
+  ['Terbitkan tiket', 'Membuat satu tautan bukti reservasi untuk dikirim ke tamu. Hanya bisa untuk reservasi yang sudah Reserved.', 'Tidak'],
 ]));
 
-body.push(H2('5.4 Menindaklanjuti reservasi online'));
-body.push(...proc([
-  'Buka bel notifikasi dan lihat reservasi online yang belum ditangani.',
-  'Buka reservasinya, periksa statusnya lebih dulu memakai tabel di bagian 5.1.',
-  'Hubungi tamu lewat WhatsApp: pastikan pesanannya, tanyakan kebutuhan khusus, dan ingatkan jamnya. Untuk Waitlist, sampaikan keputusan restoran.',
-  'Tetapkan meja kalau belum ada: pilih area dan meja di jendela yang sama, lalu klik "Save tables and availability".',
-  'Kalau tamu perlu bukti, klik "Terbitkan tiket". Sistem membuat satu tautan berisi nama, tanggal, jam, jumlah orang, dan area, yang bisa kamu kirim ke tamu.',
-  'Setelah benar-benar dihubungi, centang tanda follow-up pada daftar bel.',
-]));
-body.push(...ingat([
-  'Bel akan terus menyala sampai ada yang mencentangnya. Itu memang disengaja: pernah ada satu reservasi online yang tidak tersentuh selama 17 hari karena belnya berhenti terlalu cepat.',
-  'Membuka jendela WhatsApp tidak otomatis mencentang follow-up. Jendela terbuka bukan berarti pesan terkirim.',
-  '"Terbitkan tiket" hanya bisa untuk reservasi yang sudah berstatus Reserved. Menerbitkannya dua kali memakai tautan yang sama, jadi jangan takut mengulang.',
-]));
-
-body.push(H2('5.5 Hari H dan penyelesaian'));
+body.push(H2('5.6 Hari H dan penyelesaian'));
 body.push(P('Dari titik ini, reservasi online tidak berbeda sama sekali dengan reservasi yang kamu catat sendiri. Tekan "Arrived" saat tamu tiba, lalu "Completed" dan isi belanjanya saat tamu selesai. Lihat bagian 4.6 sampai 4.8.'));
 
-body.push(H2('5.6 Daftar periksa cara 3'));
+body.push(H2('5.7 Daftar periksa cara 3'));
 body.push(...bullets([
-  'Bel notifikasi dibuka setiap awal shift.',
-  'Status setiap reservasi online diperiksa: Reserved, Incoming, atau Waitlist.',
-  'Tamu dihubungi lewat WhatsApp, dan tanda follow-up dicentang setelahnya.',
-  'Tidak ada Waitlist yang menginap tanpa kabar.',
+  'Deposit queue dan bel notifikasi dibuka setiap awal shift.',
+  'Setiap Waitlist sudah dihubungi hari itu juga, lalu di-waive atau diajukan DP.',
+  'Setiap Incoming yang DP-nya sudah masuk sudah dicatat lewat "Record payment".',
+  'Notifikasi dicentang setelah reservasinya benar-benar ditindaklanjuti.',
   '"Arrived" dan "Completed" dikerjakan seperti reservasi biasa.',
 ]));
 
