@@ -21,3 +21,12 @@ supabase/.branches/
 .env
 .env.*
 !.env.example
+
+# Local Cloudflare credentials/state and private key files.
+.wrangler/
+.dev.vars
+.dev.vars.*
+*.pem
+*.key
+*.p12
+*.pfx

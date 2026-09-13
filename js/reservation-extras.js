@@ -85,9 +85,8 @@ let staffDepositEdited = false;
 let staffDepositManagedStatus = false;
 
 function staffDepositDefaults(area, pax, maxPax) {
-  const large = Number(pax) > Number(maxPax || 20);
-  const amount = Number(area?.deposit_amount || 0);
-  return {large, enabled:large || amount > 0, amount:large ? null : amount};
+  const rule = depositBookingRule(pax, area, APP_SETTINGS.reservation_form || {}, {max_pax:maxPax});
+  return {...rule, enabled:rule.required};
 }
 
 function updateStaffDepositDefaults(reset = false) {
@@ -117,7 +116,7 @@ function updateStaffDepositDefaults(reset = false) {
   }
   const id = CURRENT_LANG === "id";
   document.getElementById("res-staff-deposit-help").textContent = enabled.checked
-    ? (defaults.large
+    ? (defaults.basis === "pax" ? (id ? "Deposit diperlukan. Jumlah boleh dikosongkan hingga disepakati dengan tamu." : "Deposit required. Leave the amount blank until agreed with the guest.") : defaults.large
       ? (id ? "Masukkan deposit yang disepakati. Reservasi menunggu hingga deposit lunas. Gunakan invoice lengkap untuk beberapa pembayaran." : "Enter the agreed deposit. The booking stays Waitlist until it is paid. Use the full invoice for multiple payments.")
       : (id ? "Reservasi berstatus Incoming hingga deposit lunas. Jatuh tempo pada waktu reservasi; invoice sederhana digunakan." : "The booking stays Incoming until paid. Deposit is due at the booking time; a simplified invoice is used."))
     : (id ? "Tanpa permintaan deposit. Staf dapat mengaktifkan deposit untuk area mana pun." : "No deposit requested. Staff can enable a deposit for any area.");
@@ -132,20 +131,24 @@ function readStaffDeposit() {
   if (document.getElementById("res-edit-id")?.value) return null;
   const enabled = !!document.getElementById("res-request-deposit")?.checked;
   const amount = enabled ? areaParseRupiah(document.getElementById("res-deposit-amount")?.value) : 0;
-  if (enabled && (!Number.isFinite(amount) || amount <= 0)) {
+  const policy = depositPolicy(APP_SETTINGS.reservation_form || {}, APP_SETTINGS.reservation_hours || {});
+  const quoteLater = enabled && policy.basis === "pax" && !String(document.getElementById("res-deposit-amount")?.value || "").trim();
+  if (enabled && !quoteLater && (!Number.isFinite(amount) || amount <= 0)) {
     toast(CURRENT_LANG === "id" ? "Masukkan jumlah deposit yang valid" : "Enter a valid deposit amount", "error");
     return false;
   }
-  const large = Number(document.getElementById("res-pax")?.value) > Number(APP_SETTINGS.reservation_hours?.max_pax || 20);
+  const large = Number(document.getElementById("res-pax")?.value) > policy.max;
   const date = document.getElementById("res-date")?.value;
   const time = document.getElementById("res-time")?.value;
-  const due = enabled && !large ? new Date(`${date}T${time}+07:00`) : null;
+  const due = enabled && !large && policy.basis === "area" ? new Date(`${date}T${time}+07:00`) : null;
   if (due && !Number.isFinite(due.getTime())) {
     toast("Date and time are required", "error");
     return false;
   }
   return {
-    is_large_party:large, deposit_required:enabled, deposit_expected:enabled ? amount : null,
+    is_large_party:large, deposit_required:enabled, deposit_expected:enabled && !quoteLater ? amount : null,
+    deposit_basis:policy.basis, deposit_quote_required:enabled && policy.basis === "pax",
+    deposit_invoice_format:large ? "unselected" : "simple",
     deposit_due_at:due ? due.toISOString() : null,
     ...(enabled ? {status:large ? "Waitlist" : "Incoming"} : {}),
   };

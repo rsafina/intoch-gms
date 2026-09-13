@@ -275,6 +275,24 @@
         font-weight: 700;
         color: #ffb98f;
       }
+      /* The guest-count deposit has no figure to show, so it is a sentence
+         rather than a key/value row. A bold red-orange lead line, then the
+         detail at normal weight: loud enough not to be skipped, quiet enough
+         not to read as an error. It gets its own class rather than reusing
+         .avail, which is the muted footnote style shared with "availability
+         checked for a 90-minute visit" and is exactly why this notice was
+         being read straight past. */
+      .cond .cond-row + .dp-note {
+        margin-top: 9px;
+        padding-top: 9px;
+        border-top: 1px solid rgba(255, 255, 255, 0.18);
+      }
+      .cond .dp-note strong {
+        display: block;
+        font-weight: 700;
+        color: #ffb98f;
+        margin-bottom: 2px;
+      }
       .cond .avail {
         margin-top: 9px;
         padding-top: 9px;
@@ -379,6 +397,12 @@
         border-top-color: rgba(91, 76, 189, 0.14);
       }
       :root[data-rf-bg="solid"] .cond .dp {
+        color: #b23600;
+      }
+      :root[data-rf-bg="solid"] .cond .cond-row + .dp-note {
+        border-top-color: rgba(91, 76, 189, 0.14);
+      }
+      :root[data-rf-bg="solid"] .cond .dp-note strong {
         color: #b23600;
       }
       :root[data-rf-bg="solid"] .lang-switch {
@@ -1200,6 +1224,7 @@
     </div>
 
     <script src="js/guest-i18n.js"></script>
+    <script src="js/deposit-policy.js?v=1"></script>
     <script>
       // ---- Supabase (same PROD DB as the staff app — YOUR_SUPABASE_PROJECT_REF) ----
       const SUPABASE_URL = "__SUPABASE_URL__";
@@ -1217,6 +1242,7 @@
       // The size above which a booking becomes a request a human reviews.
       // Overwritten from app_settings below; 20 matches the DB default.
       let MAX_PAX = 20;
+      let DEPOSIT_FORM = {};
       let AREAS = [];          // bookable areas, in display order
       let TIME_SLOTS = [];     // bookable hours for the chosen date, "HH:MM"
       let TIMES_EXPANDED = false; // has the guest asked for the rest of the day
@@ -1748,6 +1774,9 @@
           buildTimeSlots();
           renderPaxNote();
           await presentationReady; // optional fields must be set before areas render
+          MAX_PAX = depositPolicy(DEPOSIT_FORM, {max_pax:MAX_PAX}).max;
+          buildTimeSlots();
+          renderPaxNote();
           await loadAreas();
           loadAvailability(); // not awaited — the conditions render without it
           loadFeaturedDishes(); // not awaited — the sheet is below the fold
@@ -1789,6 +1818,7 @@
             .eq("key", "reservation_form")
             .maybeSingle();
           const v = data?.value || {};
+          DEPOSIT_FORM = v;
           // Default ON for notes, OFF for company: fail towards the form that
           // already exists, so an unset key changes nothing.
           SHOW_NOTES = v.show_notes !== false;
@@ -2047,18 +2077,32 @@
           submit.textContent = gt(submit.dataset.i18nEn);
         }
         const a = AREAS.find((x) => x.id === AREA_ID);
-        if (!a) {
+        // Nothing is said until the guest has picked an area. With pills on
+        // screen and none pressed, the conditions belong to no area yet, and a
+        // deposit line there is a claim about a room nobody has chosen. The one
+        // exception is a restaurant with no bookable area at all: there is no
+        // picker, so there is nothing to wait for and the guest-count rule is
+        // the whole story.
+        if (!a && !(DEPOSIT_FORM.deposit_basis === "pax" && !AREAS.length)) {
           el.style.display = "none";
           return;
         }
         const rows = [];
-        if (a.min_pax != null)
+        if (a?.min_pax != null)
           rows.push(
             row(gt("Minimum guests"), gtf("{n} people", { n: a.min_pax })),
           );
-        if (a.min_spend != null)
+        if (a?.min_spend != null)
           rows.push(row(gt("Minimum spend"), rupiah(a.min_spend)));
-        if (readPaxRaw() > MAX_PAX)
+        if (DEPOSIT_FORM.deposit_basis === "pax") {
+          if (depositBookingRule(readPaxRaw(), a, DEPOSIT_FORM).required)
+            // The wording is unchanged; it is split at the full stop so the
+            // first sentence can carry the weight and the second can sit back.
+            rows.push(row(
+              GUEST_LANG === "id" ? "Deposit diperlukan untuk mengonfirmasi reservasi." : "A deposit is required to confirm your reservation.",
+              GUEST_LANG === "id" ? "Staf kami akan menghubungi Anda mengenai jumlah dan pembayaran." : "Our staff will contact you with the amount and payment details.",
+              "dp"));
+        } else if (readPaxRaw() > MAX_PAX)
           rows.push(row(gt("Deposit (DP)"), gt("To be confirmed"), "dp"));
         else if (a.deposit_amount != null && Number(a.deposit_amount) > 0)
           rows.push(row(gt("Deposit (DP)"), rupiah(a.deposit_amount), "dp"));
@@ -2079,6 +2123,10 @@
         el.style.display = "";
 
         function row(k, v, cls) {
+          // Not .avail: that is the muted footnote style, and this is the one
+          // line on the page that tells a guest money will be asked for.
+          if (cls === "dp" && DEPOSIT_FORM.deposit_basis === "pax")
+            return '<div class="dp-note"><strong>' + k + "</strong>" + v + "</div>";
           return (
             '<div class="cond-row ' + (cls || "") + '"><span>' + k +
             "</span><span>" + v + "</span></div>"
@@ -2243,6 +2291,7 @@
                 waitlist_reason: data.waitlist_reason || null,
                 deposit_required: data.deposit_required === true,
                 deposit_expected: data.deposit_expected || null,
+                awaiting_quote: data.awaiting_quote === true,
               }),
             );
             // Always written, never merely set: a leftover link from an

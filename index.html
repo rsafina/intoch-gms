@@ -6752,6 +6752,22 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               </div>
             </div>
 
+            <div class="pt-5 mb-5 border-t border-[#EDE9E3]">
+              <label id="rff-deposit-basis-label" class="block text-sm font-medium mb-2" for="rff-deposit-basis">Deposit basis</label>
+              <select id="rff-deposit-basis" class="form-input" onchange="renderDepositPolicySettings()">
+                <option value="area">By area / Berdasarkan area</option>
+                <option value="pax">By guest count / Berdasarkan jumlah tamu</option>
+              </select>
+              <div id="rff-deposit-pax-fields" class="grid grid-cols-2 gap-3 mt-3" hidden>
+                <label class="text-sm"><span id="rff-deposit-free-label">No deposit up to</span>
+                  <input id="rff-deposit-free-pax" class="form-input mt-1" type="number" min="0" step="1" value="1" />
+                </label>
+                <label class="text-sm"><span id="rff-deposit-max-label">Regular booking up to</span>
+                  <input id="rff-deposit-max-pax" class="form-input mt-1" type="number" min="1" step="1" value="20" />
+                </label>
+                <p id="rff-deposit-policy-help" class="text-xs text-[#63758A] col-span-2">0 means every booking requires a deposit. Staff agrees the amount later; larger bookings can use a simple or detailed invoice.</p>
+              </div>
+            </div>
             <!-- Deposit payment details. Shown on the invoice page a guest
                  opens from WhatsApp. Empty is fine for a restaurant that asks
                  for no deposit; one that does is refused an invoice until at
@@ -9356,7 +9372,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
 
-    <script src="js/config.js?v=35"></script>
+    <script src="js/config.js?v=36"></script>
     <script src="js/i18n.js?v=3"></script>
     <div id="modal-reservation-ticket" class="modal-overlay hidden" onclick="if(event.target===this) hideModal('modal-reservation-ticket')">
       <div class="modal-box" style="max-width:520px">
@@ -9364,10 +9380,20 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         <div id="reservation-ticket-content"></div>
       </div>
     </div>
+    <div id="modal-deposit-format" class="modal-overlay hidden" onclick="if(event.target===this) hideModal('modal-deposit-format')">
+      <div class="bg-white rounded-2xl p-6 max-w-md w-full">
+        <h2 class="text-xl font-semibold mb-3">Choose invoice format / Pilih format invoice</h2>
+        <p class="text-sm mb-4">Simple deposit uses one agreed amount. Detailed invoice includes itemized charges, deposit and settlement.</p>
+        <button class="btn-primary w-full mb-3" onclick="chooseDepositFormat('simple')">Simple deposit / Deposit sederhana</button>
+        <button class="btn-ghost w-full mb-3" onclick="chooseDepositFormat('detailed')">Detailed invoice / Invoice rinci</button>
+        <button class="btn-ghost w-full" onclick="hideModal('modal-deposit-format')">Cancel / Batal</button>
+      </div>
+    </div>
     <script src="js/staff-auth.js?v=2"></script>
     <script src="js/owner-dashboard.js?v=2"></script>
-    <script src="js/app.js?v=51"></script>
-    <script src="js/reservation-extras.js?v=1"></script>
+    <script src="js/deposit-policy.js?v=1"></script>
+    <script src="js/app.js?v=54"></script>
+    <script src="js/reservation-extras.js?v=2"></script>
     <script src="js/membership.js?v=7"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->

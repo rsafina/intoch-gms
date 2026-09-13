@@ -2,6 +2,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {JSDOM}=require('jsdom');
 const w=new JSDOM(fs.readFileSync('index.html','utf8'),{runScripts:'outside-only',url:'https://demo.test/'}).window;
+w.eval(fs.readFileSync('js/deposit-policy.js','utf8'));
 w.eval(fs.readFileSync('js/reservation-extras.js','utf8')+'\nwindow.leaveOnline=()=>{dashboardOnlineView=false; ++dashboardOnlineRequest;};');
 Object.assign(w,{CURRENT_LANG:'en',APP_SETTINGS:{reservation_hours:{max_pax:20}},allAreas:[{id:'a',deposit_amount:50000},{id:'b',deposit_amount:0}],
  areaParseRupiah:s=>Number(String(s||'').replaceAll('.','')),toast:()=>{},refreshResTableOccupancy:()=>{},
@@ -16,6 +17,10 @@ let deposit=w.readStaffDeposit();assert.equal(deposit.status,'Incoming');assert.
 el('res-area').value='b';w.updateStaffDepositDefaults(true);assert.equal(el('res-request-deposit').checked,false);
 el('res-request-deposit').checked=true;el('res-deposit-amount').value='75.000';w.onStaffDepositChange();assert.equal(w.readStaffDeposit().deposit_expected,75000);
 el('res-pax').value='40';w.updateStaffDepositDefaults(true);assert.equal(el('res-request-deposit').checked,true);assert.equal(w.readStaffDeposit(),false);
+ w.APP_SETTINGS.reservation_form={deposit_basis:'pax',deposit_free_pax:1,deposit_regular_max_pax:20};
+ el('res-pax').value='2';w.updateStaffDepositDefaults(true);assert.equal(w.readStaffDeposit().status,'Incoming');assert.equal(w.readStaffDeposit().deposit_expected,null);assert.equal(w.readStaffDeposit().deposit_due_at,null);
+ el('res-pax').value='21';w.updateStaffDepositDefaults(true);assert.equal(w.readStaffDeposit().status,'Waitlist');assert.equal(w.readStaffDeposit().deposit_invoice_format,'unselected');
+ w.APP_SETTINGS.reservation_form={};
 el('res-deposit-amount').value='2.500.000';w.onStaffDepositChange();deposit=w.readStaffDeposit();assert.equal(deposit.status,'Waitlist');assert.equal(deposit.deposit_due_at,null);assert.equal(deposit.is_large_party,true);
 el('res-request-deposit').checked=false;w.onStaffDepositChange();assert.equal(w.readStaffDeposit().deposit_required,false);
 el('res-edit-id').value='existing';w.updateStaffDepositDefaults(true);assert.equal(w.readStaffDeposit(),null);assert.equal(el('res-staff-deposit').hidden,true);

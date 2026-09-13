@@ -3492,7 +3492,17 @@ function setDashboardReservationFilter(filter) {
   renderDashboardReservations(dashboardResData);
 }
 
+function waitlistReasonLabel(reason) {
+  const labels = {
+    over_capacity: "Insufficient capacity",
+    below_min_pax: "Below the area's minimum party size",
+    over_max_pax: "Large party",
+  };
+  return labels[reason] ? t(labels[reason]) : "";
+}
+
 function dashboardDepositSummary(r) {
+  if (r.deposit_required && r.deposit_expected !== undefined && !(Number(r.deposit_expected)>0)) return `<p class="dash-res-muted">${CURRENT_LANG === "id" ? "Menunggu jumlah deposit" : "Awaiting deposit amount"}</p>`;
   const bal = resDepositBalances[r.id];
   const id = CURRENT_LANG === "id";
   if (!bal && r.deposit_required) return `<p class="dash-res-muted">${id ? "Detail deposit belum tersedia" : "Deposit details unavailable"}</p>`;
@@ -3543,7 +3553,7 @@ function renderDashboardReservations(data) {
         <p class="dash-res-meta">${fmt.pax(r.pax)} &middot; ${escapeHtml(area || (id ? "Area belum ditentukan" : "Area unassigned"))} &middot; ${escapeHtml(tables || (id ? "Meja belum ditentukan" : "Unassigned"))}</p>
         ${r.reservation_source || r.occasion ? `<p class="dash-res-muted">${[r.reservation_source, r.occasion].filter(Boolean).map(escapeHtml).join(" &middot; ")}</p>` : ""}
         ${renderGuestExtras(guest, r._visitCount)}
-        ${r.status === "Waitlist" ? `<p class="dash-res-waiting">${id ? "Menunggu keputusan" : "Awaiting a decision"}${r.waitlist_reason ? " &middot; " + escapeHtml(t(r.waitlist_reason)) : ""}</p>` : ""}
+        ${r.status === "Waitlist" ? `<p class="dash-res-waiting">${id ? "Menunggu keputusan" : "Awaiting a decision"}${waitlistReasonLabel(r.waitlist_reason) ? " &middot; " + escapeHtml(waitlistReasonLabel(r.waitlist_reason)) : ""}</p>` : ""}
         ${notes ? `<details class="dash-res-notes"><summary><span>${escapeHtml(notes)}</span><span class="dash-res-more">${id ? "Catatan" : "Notes"} +</span></summary><p>${escapeHtml(notes)}</p></details>` : ""}
       </div>
       <div class="dash-res-state">${statusBadge(r.status)}${dashboardDepositSummary(r)}</div>
@@ -3551,7 +3561,7 @@ function renderDashboardReservations(data) {
         <button type="button" class="dash-res-update" onclick="openResActions('${r.id}')">${t("Update")}</button>
         ${typeof reservationTicketButton === "function" ? reservationTicketButton(r) : ""}
         <div class="dash-res-secondary">${followup}
-          <a href="reservation-confirmation.html?id=${encodeURIComponent(r.id)}" target="_blank" rel="noopener" title="${id ? "Buka halaman tamu" : "Open guest page"}" aria-label="${id ? "Buka halaman tamu" : "Open guest page"}">&#8599;</a>
+          <a href="reservation-confirmation.html?id=${encodeURIComponent(r.id)}" target="_blank" rel="noopener" title="${id ? "Buka halaman tamu" : "Open guest page"}" aria-label="${id ? "Buka halaman tamu" : "Open guest page"}">${id ? "Halaman tamu" : "Guest page"} &#8599;</a>
         </div>
       </div>
     </article>`;
@@ -6817,7 +6827,7 @@ async function renderReservationsTable(data) {
         <td><div class="res-list-status">${statusBadge(r.status)}${dashboardDepositSummary(r)}${waitlistReasonLine(r)}</div></td>
         <td><div class="dash-res-actions"><button type="button" class="dash-res-update" onclick="openResActions('${r.id}')">${t("Update")}</button>
           ${typeof reservationTicketButton === "function" ? reservationTicketButton(r) : ""}
-          <div class="dash-res-secondary">${followup}<a href="reservation-confirmation.html?id=${encodeURIComponent(r.id)}" target="_blank" rel="noopener" aria-label="${id ? "Buka halaman tamu" : "Open guest page"}" title="${id ? "Buka halaman tamu" : "Open guest page"}">&#8599;</a></div>
+          <div class="dash-res-secondary">${followup}<a href="reservation-confirmation.html?id=${encodeURIComponent(r.id)}" target="_blank" rel="noopener" aria-label="${id ? "Buka halaman tamu" : "Open guest page"}" title="${id ? "Buka halaman tamu" : "Open guest page"}">${id ? "Halaman tamu" : "Guest page"} &#8599;</a></div>
         </div></td>
       </tr>`;
     }).join("");
@@ -7515,6 +7525,7 @@ function depositChip(text, cls) {
 // which queue the booking is in; THIS says how urgent, and it is the only one
 // of the two that turns red.
 function depositRowBadge(r) {
+  if (r.deposit_required && r.deposit_expected !== undefined && !(Number(r.deposit_expected)>0)) return depositChip(CURRENT_LANG === "id" ? "Menunggu jumlah deposit" : "Awaiting deposit amount", "bg-cyan-50 text-cyan-800");
   const bal = resDepositBalances[r.id];
   if (!bal || bal.state === "none") return "";
   if (bal.state === "paid")
@@ -7584,7 +7595,7 @@ async function openDepositInvoice(resId) {
       db
         .from("reservations")
         .select(
-          "id, status, pax, is_large_party, waitlist_reason, booking_name, reservation_date, reservation_time, deposit_required, deposit_expected, deposit_due_at, guest_id, table_id, table_ids, guests(name, phone), tables(name)",
+          "id, status, pax, is_large_party, deposit_basis, deposit_invoice_format, waitlist_reason, booking_name, reservation_date, reservation_time, deposit_required, deposit_expected, deposit_due_at, guest_id, table_id, table_ids, guests(name, phone), tables(name)",
         )
         .eq("id", resId)
         .single(),
@@ -7599,7 +7610,11 @@ async function openDepositInvoice(resId) {
     toast(t("This guest has no phone number — add one first"), "error");
     return;
   }
-  if (isLargeReservation(res)) {
+  if (res.deposit_invoice_format === "unselected") {
+    depositActionResId = resId; depositActionRes = res;
+    hideModal("modal-res-actions"); showModal("modal-deposit-format"); return;
+  }
+  if (usesDetailedDeposit(res, isLargeReservation(res))) {
     await invOpenReservation(res);
     return;
   }
@@ -7709,17 +7724,19 @@ async function submitDepositInvoice() {
 
   // A record that a message was sent, not a tick somebody can set. Written
   // before WhatsApp opens, because the window may never come back.
-  await supabaseQuery(
+  const {data: requested, error: requestError} = await supabaseQuery(
     () =>
       db
         .from("reservations")
         .update({ deposit_asked_at: new Date().toISOString() })
         .eq("id", resId)
-        .select("id"),
+        .select("id, deposit_due_at"),
     "Failed to record the request",
   );
   loader(false);
 
+  if (requestError || !requested?.length) { toast(requestError?.message || t("Could not record the request"), "error"); return; }
+  if (requested[0].deposit_due_at !== undefined) res.deposit_due_at = requested[0].deposit_due_at;
   const link = depositInvoiceUrl(invoice.token);
   const deadline = res.deposit_due_at
     ? new Date(res.deposit_due_at).toLocaleString("id-ID", {
@@ -8100,13 +8117,13 @@ function isLargeReservation(res) {
 }
 
 function largePartyAgreePanel(res) {
-  if (!res || res.status !== "Waitlist") return "";
+  if (!res || !["Waitlist", "Incoming"].includes(res.status)) return "";
   if (res.deposit_required && Number(res.deposit_expected) > 0) return ""; // agreed already; the deposit panel has it
-  if (!isLargeReservation(res)) return '<div class="mb-4 p-3 border rounded-xl text-sm">' + escapeHtml(t("No payment is due until this request is accepted. The standard area deposit applies after acceptance.")) + '</div>';
+  if (res.status === "Waitlist" && !isLargeReservation(res)) return '<div class="mb-4 p-3 border rounded-xl text-sm">' + escapeHtml(t("No payment is due until this request is accepted. Its saved deposit rule applies after acceptance.")) + '</div>';
   return (
     '<div class="mb-4 p-3 rounded-10 border border-amber-200 bg-amber-50">' +
     '<p class="text-xs uppercase tracking-wider font-medium text-[#B45309]">' +
-    escapeHtml(t("waiting for a decision")) +
+    escapeHtml(res.status === "Incoming" ? (CURRENT_LANG === "id" ? "Menunggu jumlah deposit" : "Awaiting deposit amount") : t("waiting for a decision")) +
     "</p>" +
     '<p class="text-xs text-[#666] mt-1 leading-snug">' +
     escapeHtml(
@@ -8115,6 +8132,7 @@ function largePartyAgreePanel(res) {
       ),
     ) +
     "</p>" +
+    (isLargeReservation(res) ? depositFormatSelect() : "") +
     '<div class="flex gap-2 mt-3">' +
     '<input id="lp-agreed-amount" type="text" inputmode="numeric" oninput="onAreaMoneyInput(this)" onkeydown="onAreaMoneyKeydown(this, event)" class="form-input text-sm flex-1" placeholder="' +
     escapeHtml(t("Agreed amount")) +
@@ -8125,6 +8143,7 @@ function largePartyAgreePanel(res) {
     escapeHtml(t("Save amount")) +
     "</button>" +
     "</div>" +
+    (res.deposit_required && typeof canWaiveDeposit === "function" && canWaiveDeposit() ? '<button class="btn-ghost text-xs mt-3" onclick="openWaiveDeposit(\'' + res.id + '\')">' + escapeHtml(t("Waive")) + '</button>' : '') +
     "</div>"
   );
 }
@@ -8140,27 +8159,13 @@ async function saveLargePartyAmount(resId) {
     return;
   }
   loader(true);
+  const format = document.getElementById("lp-deposit-format")?.value || (document.getElementById("lp-deposit-format") ? "" : "simple");
   const { data, error } = await supabaseQuery(
-    () =>
-      db
-        .from("reservations")
-        .update({
-          deposit_required: true,
-          deposit_expected: amount,
-          deposit_asked_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", resId)
-        .select("id"),
+    () => db.rpc("set_reservation_deposit_request", {p_reservation_id:resId,p_amount:amount,p_format:format}),
     "Failed to save the agreed amount",
   );
   loader(false);
-  // PostgREST answers 204 for an update that matched nothing, which looks
-  // exactly like success. An empty result is a failure, always.
-  if (error || !data || !data.length) {
-    toast(t("Could not save the amount"), "error");
-    return;
-  }
+  if (error || !data?.ok) { toast(error?.message || t("Could not save the amount"), "error"); return; }
   reservationDataRevision++;
   toast(t("Amount saved. You can issue the invoice now"));
   await openResActions(resId); // reopen so the deposit panel replaces this one
@@ -8179,7 +8184,7 @@ function waitlistReasonLine(r) {
     // stays Indonesian for a guest-facing English switch; not fixing that here,
     // but not copying it either.
     escapeHtml(t("Waiting for a decision")) +
-    (r.waitlist_reason ? " · " + escapeHtml(t(r.waitlist_reason)) : "") +
+    (waitlistReasonLabel(r.waitlist_reason) ? " · " + escapeHtml(waitlistReasonLabel(r.waitlist_reason)) : "") +
     "</p>"
   );
 }
@@ -8248,7 +8253,7 @@ function depositActionsPanel(res, bal) {
     "</div>" +
     // The remaining bill gets its own saved settlement invoice. Recording
     // its payment happens against that invoice after staff review the detail.
-    (settled && isLargeReservation(res)
+    (settled && usesDetailedDeposit(res, isLargeReservation(res))
       ? '<div class="flex flex-wrap gap-2 mt-3"><button onclick="openSettlementInvoice(\'' +
         res.id +
         '\')" class="manager-only-ui btn-ghost text-xs px-3 py-1.5">' +
@@ -14775,6 +14780,11 @@ function reservationFormSettings() {
 function renderReservationFormFields() {
   if (!isManagerOrAdmin()) return; // hasAccess() already blocks staff
   const cfg = reservationFormSettings();
+  const policy = depositPolicy(cfg, APP_SETTINGS.reservation_hours || {});
+  document.getElementById("rff-deposit-basis").value = policy.basis;
+  document.getElementById("rff-deposit-free-pax").value = policy.free;
+  document.getElementById("rff-deposit-max-pax").value = cfg.deposit_regular_max_pax || 20;
+  renderDepositPolicySettings();
   const check = (id, on) => {
     const el = document.getElementById(id);
     if (el) el.checked = !!on;
@@ -14850,12 +14860,30 @@ function onReservationWelcomeInput() {
   out.textContent = n + "/" + RESERVATION_WELCOME_MAX;
 }
 
+function renderDepositPolicySettings() {
+  document.getElementById("rff-deposit-pax-fields").hidden = document.getElementById("rff-deposit-basis").value !== "pax";
+  const id = CURRENT_LANG === "id";
+  const text = (key,en,ind) => { const el=document.getElementById(key); if(el) el.textContent=id?ind:en; };
+  text("rff-deposit-basis-label","Deposit basis","Dasar deposit");
+  text("rff-deposit-free-label","No deposit up to (guests)","Tanpa deposit hingga (tamu)");
+  text("rff-deposit-max-label","Regular booking up to (guests)","Reservasi reguler hingga (tamu)");
+  text("rff-deposit-policy-help","0 means every booking requires a deposit. Staff agrees the amount later; larger bookings can use a simple or detailed invoice.","0 berarti semua reservasi memerlukan deposit. Jumlah disepakati staf kemudian; reservasi besar dapat memakai invoice sederhana atau rinci.");
+  const options=document.getElementById("rff-deposit-basis").options;
+  if(options) { options[0].textContent=id?"Berdasarkan area":"By area"; options[1].textContent=id?"Berdasarkan jumlah tamu":"By guest count"; }
+}
+
 async function saveReservationFormFields() {
   if (!isManagerOrAdmin()) {
     toast(t("Only a manager can change settings"), "error");
     return;
   }
   const on = (id) => !!document.getElementById(id)?.checked;
+  const basis = document.getElementById("rff-deposit-basis")?.value || "area";
+  const freePax = Number(document.getElementById("rff-deposit-free-pax")?.value ?? 1);
+  const regularPax = Number(document.getElementById("rff-deposit-max-pax")?.value ?? 20);
+  if (basis === "pax" && (!Number.isInteger(freePax) || !Number.isInteger(regularPax) || freePax < 0 || regularPax < 1 || freePax > regularPax)) {
+    toast(CURRENT_LANG === "id" ? "Batas tanpa deposit harus antara 0 dan batas reservasi reguler." : "No-deposit threshold must be between 0 and the regular booking maximum.", "error"); return;
+  }
   const raw = String(document.getElementById("rff-welcome")?.value || "")
     .trim()
     .slice(0, RESERVATION_WELCOME_MAX);
@@ -14865,6 +14893,7 @@ async function saveReservationFormFields() {
     // being written as a fresh object: anything the booking page gains later
     // and this screen does not know about would be wiped by every save here.
     ...(APP_SETTINGS.reservation_form || {}),
+    deposit_basis:basis, deposit_free_pax:freePax, deposit_regular_max_pax:regularPax,
     show_notes: on("rff-show-notes"),
     show_company: on("rff-show-company"),
     show_capacity: on("rff-show-capacity"),

@@ -1,45 +1,18 @@
 # Migrations
 
-**One file: `ALL_IN_ONE.sql`.** Paste it into the Supabase SQL Editor and run it.
+## Current projects with Phase 1 roles installed
 
-That is the whole procedure, for a brand new client and for an existing one.
+**Do not rerun ALL_IN_ONE.sql or roles_enforce.** Apply only the targeted migration for the change being deployed. SQL runs per Supabase project, not per Git branch. Stop on any error.
 
-## Reservation update errors (September 2026)
+### Guest-count deposit mode (13 September 2026)
 
-If saving a reservation reports a missing `block_buffer_minutes` column, run the
-current **ALL_IN_ONE.sql** in Supabase SQL Editor before deploying/reloading the app.
-Pushing the website does not execute database migrations. The full file includes
-area buffers, timed capacity, simplified deposits, and Waitlist payment promotion.
-Running only the latest incremental file does not install its prerequisites.
+Run `20260913_deposit_policy.sql` after Phase 1 and the earlier role follow-ups, then build/deploy the frontend. No Edge Function change is needed for this feature.
 
-The payment repair also promotes existing waitlisted bookings whose recorded
-payments cover the agreed deposit. Capacity checks still apply: SQL warnings list
-bookings that need staff to resolve a table/time conflict. Partial deposits stay
-waitlisted; no payment is invented or recorded by the repair.
+The migration preserves existing booking requirements and the authenticated public RPC wrapper. Settings > Reservation Form gains area/pax mode; area remains the default. Pax mode stores an unquoted requirement without a deadline. Sending the request starts the regular-booking deadline; large bookings retain no automatic deadline. Staff chooses a simple or detailed deposit invoice before issuance. Issued formats cannot be silently switched.
 
-## Why a single file
+For a fresh project, follow the staged setup order at the top of `ALL_IN_ONE.sql`, including account linking and role enforcement. Filename order alone is not the setup order.
 
-It is **idempotent**. Every `CREATE` is `IF NOT EXISTS`, every trigger and policy
-drops itself first, every seed insert is guarded, and functions that change shape
-are dropped before being redefined. So running it against a database that is
-empty, half-built, or fully up to date all do the right thing.
-
-That removes the usual "which migrations has this client had?" bookkeeping
-entirely. There is nothing to track: you always run the same file.
-
-## The one rule that keeps this working
-
-**Anything you add to this file must be safe to run twice.**
-
-- new table -> `create table if not exists`
-- new column -> `alter table ... add column if not exists`
-- new index -> `create index if not exists`
-- new trigger or policy -> `drop ... if exists` immediately before creating it
-- redefining a function with a different return type or arguments -> drop it first
-- seed data -> `on conflict do nothing`, or `where not exists (...)`
-
-Break that rule once and the file stops being re-runnable, which is the property
-the whole approach depends on.
+## Historical setup notes (pre-Phase 1; not instructions for secured projects)
 
 ## Why the individual migration files are gone
 

@@ -27,6 +27,7 @@
 --   6. 20260912_roles_invoice_amount.sql (invoice amount helper permission).
 --   7. 20260912_roles_voucher_defaults.sql (voucher default trigger permissions).
 --   8. 20260912_staff_deposit_waiver.sql (Admin-controlled per-staff waiver permission).
+--   9. 20260913_deposit_policy.sql (area/pax basis and per-booking invoice format).
 -- Account linking uses the Auth API and cannot be bundled into this SQL file.
 -- Enforcement is a one-time migration; do not append or rerun it here.
 -- For an EXISTING secured project, use only targeted migrations instead.
