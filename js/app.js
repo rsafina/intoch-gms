@@ -103,6 +103,7 @@ async function loadAppSettings() {
     invLoadStyle(APP_SETTINGS.invoice_style || {});
     if (typeof applyInvoiceStyle === "function") applyInvoiceStyle();
   }
+  applyFinancialTrackingUI();
 }
 
 /**
@@ -788,6 +789,7 @@ const SETTINGS_SUBPAGES = [
   "settings-wa",
   "settings-branding",
   "settings-staff",
+  "settings-financial",
 ];
 
 function defaultSettingsTab() {
@@ -890,6 +892,7 @@ async function navigateTo(page, bootToken = null) {
     }
     if (page === "settings-wa") pendingLoads.push(loadWaTemplateSettings());
     if (page === "settings-thresholds") pendingLoads.push(renderThresholdSettings());
+    if (page === "settings-financial") pendingLoads.push(renderFinancialTrackingSettings());
     if (page === "settings-branding") pendingLoads.push(renderBrandingSettings());
     // Always re-read from the database rather than trusting a cached list:
     // this screen is the one place where "who can log in" is decided, and a
@@ -3591,7 +3594,7 @@ function renderDashboardReservations(data) {
   dashboardResPage = Math.min(dashboardResPage, Math.max(0, Math.ceil(visible.length / DASH_PAGE_SIZE) - 1));
   renderPaginationControls("res-pagination-controls", dashboardResPage, visible.length, "dashResPrevPage", "dashResNextPage");
   const filters = `<div class="dash-res-filters" role="group" aria-label="${id ? "Tampilan reservasi" : "Reservation view"}">
-    <button type="button" aria-pressed="${dashboardResFilter === "deposits"}" onclick="setDashboardReservationFilter('deposits')">${id ? "Antrean deposit" : "Deposit queue"} <span>${dashboardResData.filter(r => ["Incoming", "Waitlist"].includes(r.status)).length}</span></button>
+    ${financialTrackingSettings().depositEnabled ? `<button type="button" aria-pressed="${dashboardResFilter === "deposits"}" onclick="setDashboardReservationFilter('deposits')">${id ? "Antrean deposit" : "Deposit queue"} <span>${dashboardResData.filter(r => ["Incoming", "Waitlist"].includes(r.status)).length}</span></button>` : ""}
     <button type="button" aria-pressed="${dashboardResFilter === "all"}" onclick="setDashboardReservationFilter('all')">${id ? "Semua reservasi" : "All upcoming"} <span>${dashboardResData.length}</span></button>
     <button type="button" aria-pressed="${dashboardResFilter === "attention"}" onclick="setDashboardReservationFilter('attention')">${id ? "Perlu perhatian" : "Needs attention"} <span>${dashboardResData.filter(dashboardNeedsAttention).length}</span></button>
   </div>`;
@@ -4764,9 +4767,9 @@ async function viewGuestProfile(guestId) {
             <p class="text-xs text-[#999]">${v.visit_type} · ${fmt.pax(v.pax)} · ${v.areas?.name || "—"}</p>
           </div>
           <div class="flex items-center gap-2">
-            <p class="text-sm text-[color:var(--brand-ink)] font-medium" id="visit-spend-display-${v.id}">${fmt.currency(v.spend_amount)}</p>
+            <p class="text-sm text-[color:var(--brand-ink)] font-medium" id="visit-spend-display-${v.id}">${v.spend_amount == null ? t("No Spending Recorded") : fmt.currency(v.spend_amount)}</p>
             ${
-              isCompleted
+              isCompleted && financialTrackingSettings().spendingEnabled
                 ? `<button onclick="startEditVisitSpend('${v.id}', ${v.spend_amount || 0}, '${guestId}')" class="text-[#999] hover:text-[color:var(--brand-ink)] transition-colors" title="Edit spending amount">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>`
@@ -8427,6 +8430,7 @@ async function prepareCompleteBilling(type,id) {
     document.getElementById('complete-includes-deposit').checked=state.visit?.spend_includes_deposit ?? true;
     document.getElementById('complete-deposit-choice').classList.toggle('hidden',!state.resId);
     if(state.visit?.spend_amount != null) document.getElementById('complete-spend').value=state.visit.spend_input_amount ?? state.visit.spend_amount;
+    document.getElementById('complete-skip-spending-btn')?.classList.toggle('hidden', state.visit?.spend_amount != null);
     document.getElementById('complete-submit-btn').disabled=false;
     updateCompleteSpendingPreview();
   } catch(error) { if(completeBilling?.key===key) toast(error.message,'error'); }
@@ -8462,6 +8466,8 @@ function resetCompleteArrivedAsk() {
   document.getElementById("complete-favmenu-block")?.classList.remove("hidden");
   const btn = document.getElementById("complete-submit-btn");
   if (btn) btn.textContent = t("Complete & Save");
+  document.getElementById("complete-skip-spending-btn")?.classList.remove("hidden");
+  applyFinancialTrackingUI();
 }
 
 // Picking "no" turns this modal into a no-show form: nothing to spend, no
@@ -8644,6 +8650,9 @@ async function confirmCompleteVisit() {
   }
 
   // Spend is mandatory — show inline error and abort if missing
+  if (!financialTrackingSettings().spendingEnabled) {
+    return finishVisitWithoutSpending(true);
+  }
   if (spendAmount === null || !Number.isFinite(spendAmount) || spendAmount < 0) {
     const errEl = document.getElementById("complete-spend-error");
     if (errEl) errEl.classList.remove("hidden");
@@ -8713,6 +8722,33 @@ async function confirmCompleteVisit() {
   }
 }
 
+async function finishVisitWithoutSpending(skipConfirmation = false) {
+  const id = document.getElementById("complete-visit-id").value;
+  const type = document.getElementById("complete-type").value;
+  const notes = document.getElementById("complete-notes").value.trim() || null;
+  if (!skipConfirmation && !window.confirm(t("Finish without spending?\nNo spending will be recorded for this visit. Revenue and spending reports may be incomplete."))) return;
+  const arrivedAsk = document.getElementById("complete-arrived-ask");
+  if (type === "reservation" && arrivedAsk && !arrivedAsk.classList.contains("hidden") && !document.getElementById("complete-arrived-yes")?.checked) return confirmCompleteVisit();
+  loader(true);
+  const { data: saved, error } = await supabaseQuery(() => db.rpc("finish_visit_without_spending", {
+    p_reservation_id: type === "reservation" ? id : null,
+    p_visit_id: type === "visit" ? id : null,
+    p_notes: notes,
+  }), "Failed to finish visit without spending");
+  loader(false);
+  if (error || !saved?.ok) {
+    toast(error?.message || t("Could not complete the reservation. Please try again."), "error");
+    return;
+  }
+  toast("Visit completed without spending");
+  invalidateVisitCountCache();
+  invalidateGuestVisitHistoryCache();
+  hideModal("modal-complete-visit");
+  if (isViewingStaffDashboard()) loadDashboard();
+  if (currentPage === "walkins") loadWalkIns();
+  if (currentPage === "reservations") loadReservations();
+}
+
 // ============================================================
 // REPORTS
 // ============================================================
@@ -8742,6 +8778,7 @@ const REPORT_AREA_GROUPS = [
 ];
 
 function setReportsTab(tab) {
+  if (tab === "walkins" && !financialTrackingSettings().spendingEnabled) tab = "marketing";
   currentReportsTab = tab;
   const isMarketing = tab === "marketing";
   const isOperations = tab === "operations";
@@ -13180,6 +13217,7 @@ function renderSettingsTabs(activePage) {
     { page: "prizes", label: t("Prizes"), managerOnly: true },
     { page: "settings-wa", label: "WA Templates", managerOnly: false },
     { page: "settings-thresholds", label: t("Thresholds"), managerOnly: true },
+    { page: "settings-financial", label: t("Financial Tracking"), managerOnly: true },
     { page: "settings-branding", label: t("Branding"), managerOnly: true },
     // Staff is admin-only, so it is filtered OUT of the list below rather
     // than hidden with a CSS class. A hidden-but-present tab would still be
@@ -13200,6 +13238,42 @@ function renderSettingsTabs(activePage) {
     el.innerHTML = `<div class="flex flex-wrap items-center gap-2">${html}</div>`;
   });
   applyManagerOnlyUI();
+}
+
+function financialTrackingSettings() {
+  const cfg = APP_SETTINGS.financial_tracking || {};
+  return { depositEnabled: cfg.deposit_enabled !== false, spendingEnabled: cfg.spending_enabled !== false };
+}
+
+function applyFinancialTrackingUI() {
+  const cfg = financialTrackingSettings();
+  document.querySelectorAll("[data-deposit-tracking]").forEach((el) => el.classList.toggle("hidden", !cfg.depositEnabled));
+  document.querySelectorAll("[data-spending-tracking]").forEach((el) => el.classList.toggle("hidden", !cfg.spendingEnabled));
+  document.querySelectorAll("[data-spending-disabled-notice]").forEach((el) => el.classList.toggle("hidden", cfg.spendingEnabled));
+}
+
+function renderFinancialTrackingSettings() {
+  if (!isManagerOrAdmin()) return;
+  const cfg = financialTrackingSettings();
+  const deposit = document.getElementById("set-deposit-tracking");
+  const spending = document.getElementById("set-spending-tracking");
+  if (deposit) deposit.checked = cfg.depositEnabled;
+  if (spending) spending.checked = cfg.spendingEnabled;
+}
+
+async function saveFinancialTrackingSettings() {
+  if (!isManagerOrAdmin()) return;
+  const value = { deposit_enabled: !!document.getElementById("set-deposit-tracking")?.checked, spending_enabled: !!document.getElementById("set-spending-tracking")?.checked };
+  loader(true);
+  const { data, error } = await supabaseQuery(
+    () => db.from("app_settings").update({ value }).eq("key", "financial_tracking").select("value"),
+    "Failed to save financial tracking settings",
+  );
+  loader(false);
+  if (error || !data?.length) { toast("Failed to save. Please try again.", "error"); return; }
+  APP_SETTINGS.financial_tracking = data[0].value || value;
+  applyFinancialTrackingUI();
+  toast("Financial tracking settings saved");
 }
 
 // ── Thresholds subpage (manager-only) ─────────────────────────────────

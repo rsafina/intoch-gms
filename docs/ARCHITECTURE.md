@@ -39,6 +39,7 @@ from application operation and must never be treated as a production update.
 Browser supabase-js calls PostgREST queries, RPCs, Auth, Storage and Realtime directly.
 There is no general application backend proxy. Postgres owns critical concurrency,
 authorization, payment/status and membership rules. `app_settings` stores JSON settings.
+The `financial_tracking` row independently controls deposit and spending tracking; missing keys default to enabled for existing clients. Disabling a feature preserves historical rows while PostgreSQL prevents new financial state.
 
 | Data | Main objects |
 |---|---|
@@ -163,6 +164,7 @@ receipts, excluding settlement and waived/unpaid amounts. It snapshots the depos
 input/choice so reopening cannot double-count. Historical rows are untouched until explicitly
 edited. Changed deposit context before first save forces review. Membership consumes final
 saved spending, not the raw input. Finance may save reservation spending but not walk-ins.
+`finish_visit_without_spending` completes a real visit with `spend_amount = NULL` and `spend_recording_status = 'skipped'`. Explicit zero remains `spend_amount = 0` with status `recorded`; legacy null rows remain unclassified until explicitly handled.
 
 Reserved bookings can issue a tokenized confirmation ticket. Reissue preserves the token;
 guest output uses live booking details and a narrow field set, hides download outside

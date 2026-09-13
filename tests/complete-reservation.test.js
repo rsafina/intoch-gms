@@ -172,7 +172,9 @@ function makeCtx(state, arrived) {
   const db = makeDb(state);
   const ctx = {
     console,
+    window: { confirm: () => true },
     t: s => s,
+    financialTrackingSettings: () => ({ depositEnabled: true, spendingEnabled: true }),
     document: { getElementById: (id) => fields[id] || null },
     db,
     _toasts: toasts,

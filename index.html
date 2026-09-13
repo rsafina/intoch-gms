@@ -2944,6 +2944,7 @@
                 onclick="filterResByStatus('Incoming')"
                 class="status-filter-btn btn-ghost text-xs px-3 py-1.5"
                 data-status="Incoming"
+                data-deposit-tracking
                 title="Bookings waiting on a deposit payment"
               >
                 Incoming
@@ -3950,7 +3951,8 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 Operations
               </button>
               <button
-                id="reports-tab-walkins"
+                  id="reports-tab-walkins"
+                  data-spending-tracking
                 onclick="setReportsTab('walkins')"
                 class="text-xs font-medium rounded-full px-4 py-2 text-[#555]"
               >
@@ -5698,7 +5700,8 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             </div>
           </div>
 
-          <div id="reports-walkins-insights-view" class="hidden space-y-6">
+          <div class="hidden card p-6 text-sm text-[#586572]" data-spending-disabled-notice data-i18n>Spending Tracking is disabled. Revenue and spending reports are unavailable; missing spending is not treated as zero.</div>
+          <div id="reports-walkins-insights-view" class="hidden space-y-6" data-spending-tracking>
             <!-- ── Today's Spending Summary ────────────────────────────────── -->
             <div class="card p-6">
               <div class="flex items-center justify-between gap-4 mb-4">
@@ -6752,7 +6755,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               </div>
             </div>
 
-            <div class="pt-5 mb-5 border-t border-[#EDE9E3]">
+            <div class="pt-5 mb-5 border-t border-[#EDE9E3]" data-deposit-tracking>
               <label id="rff-deposit-basis-label" class="block text-sm font-medium mb-2" for="rff-deposit-basis">Deposit basis</label>
               <select id="rff-deposit-basis" class="form-input" onchange="renderDepositPolicySettings()">
                 <option value="area">By area / Berdasarkan area</option>
@@ -6773,7 +6776,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                  for no deposit; one that does is refused an invoice until at
                  least one of these is filled, rather than sending a guest a
                  page with nothing to pay into. -->
-            <div class="pt-5 mb-5 border-t border-[#EDE9E3]">
+            <div class="pt-5 mb-5 border-t border-[#EDE9E3]" data-deposit-tracking>
               <p class="text-xs font-medium text-[#555] mb-1" data-i18n>Deposit payment details</p>
               <p class="text-[11px] text-[#999] mb-4" data-i18n>
                 Shown to a guest on the deposit invoice you send them. Fill in the bank
@@ -7127,6 +7130,22 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <button onclick="recalcAllTiersNow()" class="text-sm font-medium text-[color:var(--brand-ink)] underline hover:no-underline" data-i18n>
               Recalculate all guest tiers now
             </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== SETTINGS: FINANCIAL TRACKING (manager+) ===== -->
+      <section id="page-settings-financial" class="page-section p-8">
+        <div class="max-w-5xl mx-auto">
+          <div class="settings-tabs mb-6" data-settings-tabs></div>
+          <div class="gold-bar mb-3"></div>
+          <h1 class="font-heading text-3xl font-semibold text-[color:var(--brand-ink)]" data-i18n>Financial Tracking</h1>
+          <p class="text-[#999] text-sm mt-1 mb-6" data-i18n>Choose which financial workflows this restaurant uses. Turning tracking off preserves all historical records.</p>
+          <div class="card p-6 space-y-6">
+            <label class="flex items-start gap-3 cursor-pointer"><input id="set-deposit-tracking" type="checkbox" class="mt-1" /><span><span class="block font-medium" data-i18n>Deposit Tracking</span><span class="block text-xs text-[#687380] mt-1" data-i18n>Show deposit requirements, queues, payment actions and deposit metrics.</span></span></label>
+            <label class="flex items-start gap-3 cursor-pointer"><input id="set-spending-tracking" type="checkbox" class="mt-1" /><span><span class="block font-medium" data-i18n>Spending Tracking</span><span class="block text-xs text-[#687380] mt-1" data-i18n>Record visit spending and enable revenue, spending tiers and spending reports.</span></span></label>
+            <p class="text-xs text-[#687380] p-3 rounded-xl bg-[#F5F8FB]" data-i18n>Disabling either setting does not delete or rewrite previous deposits, invoices, payments or spending.</p>
+            <button onclick="saveFinancialTrackingSettings()" class="btn-primary px-6 py-2.5 manager-only-ui" data-i18n>Save Financial Tracking</button>
           </div>
         </div>
       </section>
@@ -8029,7 +8048,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               <select id="res-area" onchange="updateStaffDepositDefaults()" class="form-input"></select>
             </div>
           </div>
-          <div id="res-staff-deposit" class="p-4 mb-4 rounded-xl border border-[#D8E3EE] bg-[#F5F8FB]">
+          <div id="res-staff-deposit" class="p-4 mb-4 rounded-xl border border-[#D8E3EE] bg-[#F5F8FB]" data-deposit-tracking>
             <label class="flex items-center gap-2 text-sm font-medium"><input type="checkbox" id="res-request-deposit" onchange="onStaffDepositChange()" /><span data-i18n>Request deposit</span></label>
             <div class="flex items-center gap-3 mt-3">
               <label for="res-deposit-amount" class="text-sm">Rp</label>
@@ -8944,7 +8963,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             Please choose one before completing.
           </p>
         </div>
-        <div class="mb-4" id="complete-spend-block">
+        <div class="mb-4" id="complete-spend-block" data-spending-tracking>
           <label id="complete-spend-label" class="block text-xs font-medium text-[#555] mb-1.5">Spend Amount (Rp) <span class="text-red-500">*</span></label>
           <p id="complete-billing-summary" class="hidden text-sm p-3 mb-3 rounded-xl bg-green-50 text-green-800"></p>
           <label id="complete-deposit-choice" class="hidden flex items-center gap-2 text-sm mb-3">
@@ -8955,6 +8974,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             oninput="formatSpendInput(this); document.getElementById('complete-spend-error').classList.add('hidden'); updateCompleteSpendingPreview();" />
           <p id="complete-spend-error" class="hidden text-xs text-red-500 mt-1">Spend amount is required before completing.</p>
         </div>
+        <p class="hidden mb-4 text-sm p-3 rounded-xl bg-[#F5F8FB] text-[#586572]" data-spending-disabled-notice data-i18n>Spending Tracking is disabled. This visit will be completed with no spending recorded.</p>
         <!-- What they ate goes to guests.last_order, ALWAYS. It only becomes
              their favorite if the box below is ticked. Before 2026-09-02 this
              one field wrote straight to favorite_menu, so recording last
@@ -8993,6 +9013,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         >
           Complete & Save
         </button>
+        <button id="complete-skip-spending-btn" type="button" onclick="finishVisitWithoutSpending()" class="btn-ghost w-full justify-center mt-2" data-spending-tracking data-i18n>Finish Without Spending</button>
       </div>
     </div>
 

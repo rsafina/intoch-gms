@@ -36,10 +36,11 @@ backup policy and an approved initial active Admin before touching data. Follow 
 10. Run `20260916_finance_role.sql`.
 11. Run `20260917_session_notifications.sql`.
 12. Run `20260918_spending_deposit_choice.sql`.
-13. Deploy the **current** `staff-account` Edge Function; current source requires the
+13. Run `20260919_financial_tracking.sql`.
+14. Deploy the **current** `staff-account` Edge Function; current source requires the
     session-validity RPC from step 11. Configure server environment and disable public
     Auth signup/email password recovery for internal staff identities.
-14. Build/deploy current frontend, then verify roles and guest flows before opening access.
+15. Build/deploy current frontend, then verify roles and guest flows before opening access.
 
 The ALL_IN_ONE header documents the SQL/account-link sequence; the current function cannot
 be used before its later session RPC exists. Its old ?alongside Phase 1? wording is historical
@@ -61,6 +62,7 @@ from branch name or a commit. There is no fleet migration ledger in this repo.
 | Finance role | `20260916_finance_role.sql` after waiver; redeploy function/frontend |
 | Session validity/PIN reset/checklist | `20260917_session_notifications.sql` after Finance |
 | Explicit deposit-inclusive spending | `20260918_spending_deposit_choice.sql` |
+| Independent deposit/spending toggles and skipped spending | `20260919_financial_tracking.sql` after spending deposit choice |
 
 Apply only missing required updates in the dependency order above, with rehearsals/backups
 appropriate to the change. Then deploy the matching function/frontend. Later session helpers

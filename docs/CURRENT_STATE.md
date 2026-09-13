@@ -28,6 +28,8 @@ the handoff is committed and replace it with the resulting commit when known.
 
 ## Implemented in current code
 
+Financial Tracking settings independently control deposit and spending workflows. Both default enabled for existing clients. The forward migration `20260919_financial_tracking.sql` preserves historical data and distinguishes explicit zero from intentionally skipped spending. It has not been applied to or deployed on any live project by this repository change.
+
 Core reservation, guest, walk-in, invoice, membership/voucher and report flows exist. Phase 1
 Auth/RLS and Phase 2 responsive Owner/Admin summary are implemented, as are Finance role,
 per-account Staff/Finance waiver permission, area/pax deposit policy, staff-created deposit

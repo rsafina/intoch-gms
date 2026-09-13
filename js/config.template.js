@@ -594,6 +594,14 @@ const ID_DICT = {
   // Settings pages (tabs, thresholds, featured dishes) — added 2026-07-21
   "Reservation Configuration": "Konfigurasi Reservasi",
   Thresholds: "Thresholds",
+  "Financial Tracking": "Pelacakan Keuangan",
+  "Choose which financial workflows this restaurant uses. Turning tracking off preserves all historical records.": "Pilih alur keuangan yang digunakan restoran ini. Menonaktifkan pelacakan tetap menyimpan seluruh catatan historis.",
+  "Deposit Tracking": "Pelacakan Deposit",
+  "Show deposit requirements, queues, payment actions and deposit metrics.": "Tampilkan persyaratan deposit, antrean, tindakan pembayaran, dan metrik deposit.",
+  "Spending Tracking": "Pelacakan Pengeluaran",
+  "Record visit spending and enable revenue, spending tiers and spending reports.": "Catat pengeluaran kunjungan serta aktifkan pendapatan, tingkat pengeluaran, dan laporan pengeluaran.",
+  "Disabling either setting does not delete or rewrite previous deposits, invoices, payments or spending.": "Menonaktifkan salah satu pengaturan tidak menghapus atau menulis ulang deposit, invoice, pembayaran, atau pengeluaran sebelumnya.",
+  "Save Financial Tracking": "Simpan Pelacakan Keuangan",
   "Signature dishes and chef recommendations shown to guests on the online reservation page":
     "Signature Dishes dan Chef's Recommendation yang ditampilkan ke tamu di halaman reservasi online",
   "Add Dish": "Tambah Menu",
@@ -750,6 +758,11 @@ const ID_DICT = {
   "Shown on this guest's future visits. Leave blank to keep what's already saved.":
     "Akan ditampilkan pada kunjungan tamu ini berikutnya. Kosongkan untuk tetap menyimpan data sebelumnya.",
   "Complete & Save": "Selesaikan & Simpan",
+  "Finish Without Spending": "Selesaikan Tanpa Pengeluaran",
+  "No Spending Recorded": "Tidak Ada Pengeluaran Tercatat",
+  "Spending Tracking is disabled. This visit will be completed with no spending recorded.": "Pelacakan Pengeluaran dinonaktifkan. Kunjungan ini akan diselesaikan tanpa pengeluaran tercatat.",
+  "Spending Tracking is disabled. Revenue and spending reports are unavailable; missing spending is not treated as zero.": "Pelacakan Pengeluaran dinonaktifkan. Laporan pendapatan dan pengeluaran tidak tersedia; data yang tidak tercatat tidak dianggap nol.",
+  "Finish without spending?\nNo spending will be recorded for this visit. Revenue and spending reports may be incomplete.": "Selesaikan tanpa pengeluaran?\nTidak ada pengeluaran yang akan dicatat untuk kunjungan ini. Laporan pendapatan dan pengeluaran mungkin tidak lengkap.",
   "Booked On": "Dipesan Pada",
   "Did this guest arrive?": "Tamu ini jadi datang?",
   "Nobody marked them Arrived, so the system cannot tell. Completing a no-show would count them as a guest who came.":

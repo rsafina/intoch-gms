@@ -1243,6 +1243,7 @@
       // Overwritten from app_settings below; 20 matches the DB default.
       let MAX_PAX = 20;
       let DEPOSIT_FORM = {};
+      let DEPOSIT_TRACKING_ENABLED = true;
       let AREAS = [];          // bookable areas, in display order
       let TIME_SLOTS = [];     // bookable hours for the chosen date, "HH:MM"
       let TIMES_EXPANDED = false; // has the guest asked for the rest of the day
@@ -1814,10 +1815,11 @@
         try {
           const { data } = await db
             .from("app_settings")
-            .select("value")
-            .eq("key", "reservation_form")
-            .maybeSingle();
-          const v = data?.value || {};
+            .select("key,value")
+            .in("key", ["reservation_form", "financial_tracking"]);
+          const settings = Object.fromEntries((data || []).map((row) => [row.key, row.value]));
+          const v = settings.reservation_form || {};
+          DEPOSIT_TRACKING_ENABLED = settings.financial_tracking?.deposit_enabled !== false;
           DEPOSIT_FORM = v;
           // Default ON for notes, OFF for company: fail towards the form that
           // already exists, so an unset key changes nothing.
@@ -2094,7 +2096,9 @@
           );
         if (a?.min_spend != null)
           rows.push(row(gt("Minimum spend"), rupiah(a.min_spend)));
-        if (DEPOSIT_FORM.deposit_basis === "pax") {
+        if (!DEPOSIT_TRACKING_ENABLED) {
+          // Existing area minimums remain visible; only deposit messaging is disabled.
+        } else if (DEPOSIT_FORM.deposit_basis === "pax") {
           if (depositBookingRule(readPaxRaw(), a, DEPOSIT_FORM).required)
             // The wording is unchanged; it is split at the full stop so the
             // first sentence can carry the weight and the second can sit back.
@@ -2289,9 +2293,9 @@
                 area: areaName,
                 waitlisted: data.waitlisted === true,
                 waitlist_reason: data.waitlist_reason || null,
-                deposit_required: data.deposit_required === true,
-                deposit_expected: data.deposit_expected || null,
-                awaiting_quote: data.awaiting_quote === true,
+                deposit_required: DEPOSIT_TRACKING_ENABLED && data.deposit_required === true,
+                deposit_expected: DEPOSIT_TRACKING_ENABLED ? (data.deposit_expected || null) : null,
+                awaiting_quote: DEPOSIT_TRACKING_ENABLED && data.awaiting_quote === true,
               }),
             );
             // Always written, never merely set: a leftover link from an
