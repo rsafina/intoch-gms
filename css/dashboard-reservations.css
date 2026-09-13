@@ -20,9 +20,9 @@
 .dash-res-actions { display:flex; flex-direction:column; gap:10px; }
 .dash-res-update { background:var(--brand,#183b62); color:#fff; border-radius:9px; padding:9px 18px; font-size:12px; font-weight:600; }
 .dash-res-update:hover { filter:brightness(1.12); }
-.dash-res-secondary { display:flex; gap:10px; justify-content:flex-end; align-items:center; }
-.dash-res-secondary button { color:var(--brand,#183b62); font-size:11px; }
-.dash-res-secondary a { font-size:19px; color:var(--brand,#183b62); padding:0 4px; }
+.dash-res-secondary { display:flex; flex-wrap:wrap; gap:6px 10px; justify-content:center; align-items:center; }
+.dash-res-secondary :is(button,a) { flex:0 0 auto; color:var(--brand,#183b62); font-size:11px; line-height:1.5; white-space:nowrap; }
+.dash-res-secondary a { display:inline-flex; align-items:center; padding:3px 4px; }
 .dash-res-notes { margin-top:8px; font-size:11px; color:#687380; }
 .dash-res-notes summary { display:flex; gap:8px; cursor:pointer; list-style:none; }
 .dash-res-notes summary::-webkit-details-marker { display:none; }
