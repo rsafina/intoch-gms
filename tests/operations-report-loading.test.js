@@ -8,6 +8,7 @@ const names=['navigateTo','setOpsReportRange','getOpsReportDateRange','updateOps
 if (app.includes('function renderOpsReportRange(')) names.push('renderOpsReportRange');
 const functions=names.map(name=>app.match(new RegExp('^(?:async )?function '+name+'\\([^]*?^}', 'm'))[0]).join('\n');
 w.eval(fs.readFileSync('js/page-loading.js','utf8'));
+w.PageLoading.finish(); // index.html boots covered; this harness starts past that
 w.eval('let currentOpsReportRange="today";\n'+functions);
 w.TODAY='2026-09-08'; w.allAreas=[{id:'outdoor'}]; w.SETTINGS_SUBPAGES=[];
 w.hasAccess=()=>true; w.currentStaffRole=()=> 'admin'; w.t=s=>s;
@@ -21,9 +22,13 @@ w.db={from(){queries++; if(queries>5)throw new Error('Recursive report fetch det
 w.query=new Proxy({}, {get(_,key){if(key==='then')return resolve=>resolve({data:[],error:null});return ()=>w.query;}});
 w.supabaseQuery=fn=>fn();
 (async()=>{
+ let spinner=0; w.loader=show=>{spinner+=show?1:-1;};
  await w.navigateTo('reports');
  assert.equal(queries,5,'opening reports performs one batch, without recursively loading again');
- assert.equal(w.document.documentElement.hasAttribute('data-page-loading'),false,'navigation completes and uncovers the page');
+ // Routing leaves the shell and the section skeleton on screen; the boot
+ // screen belongs to startup and must not come back for a route change.
+ assert.equal(w.document.documentElement.hasAttribute('data-page-loading'),false,'navigation never raises the boot screen');
+ assert.equal(spinner,0,'navigation lowers its own spinner when the batch lands');
  queries=0; await w.setOpsReportRange('month');
  assert.equal(queries,5,'changing the range performs exactly one new batch');
  assert.ok(w.document.getElementById('ops-report-range-month').classList.contains('font-semibold'));

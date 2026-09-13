@@ -305,6 +305,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   if (!(await restoreVerifiedStaffSession())) {
+    // index.html ships with data-page-loading set, so the Intoch screen is up
+    // from the first paint and covers the two auth round trips. Nobody else
+    // will lower it on this branch.
+    if (typeof PageLoading !== "undefined") PageLoading.finish();
     showLoginPage();
     return;
   }
@@ -316,7 +320,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   await initializeApplication();
 });
 
-async function initializeApplication() {
+// `landingPage` is where boot should come to rest: the restored lastPage on a
+// refresh, "dashboard" on a fresh login. It used to be neither — login ran
+// this (which navigated to lastPage) and then navigated again itself, so two
+// navigations raced, each raising the boot screen, and the first one's finish
+// was discarded by PageLoading's generation guard.
+async function initializeApplication(landingPage) {
+  // Re-arms the 15s stall timeout as well as returning the token, so the time
+  // already spent verifying the session does not count against the page load.
+  const bootToken = typeof PageLoading !== "undefined" ? PageLoading.begin() : null;
   dashboardResFilter = currentStaffRole() === "finance" ? "deposits" : "all";
   resStatusFilter = currentStaffRole() === "finance" ? "deposits" : "all";
   document.querySelectorAll(".status-filter-btn").forEach(btn => {
@@ -330,12 +342,17 @@ async function initializeApplication() {
   applyRoleToNav();
 
   if (appInitialized) {
-    navigateTo("dashboard");
+    navigateTo(landingPage || "dashboard", bootToken);
     return;
   }
 
   const connected = await testSupabaseConnection();
-  if (!connected) return;
+  // Its toast lives in the body, which the boot screen hides. Uncover before
+  // giving up, or the failure is invisible behind a spinning logo.
+  if (!connected) {
+    if (bootToken !== null) PageLoading.finish(bootToken);
+    return;
+  }
 
   await loadAppSettings();
   await loadAreas();
@@ -355,8 +372,10 @@ async function initializeApplication() {
   appInitialized = true;
 
   // ── Restore last visited page (persists across refresh) ──
-  const lastPage = localStorage.getItem("lastPage") || "dashboard";
-  navigateTo(lastPage);
+  // Deliberately not awaited, as before: the realtime channel, the bell and
+  // the auto-refresh below must not wait on this page's queries. navigateTo
+  // lowers the boot screen itself once they land.
+  navigateTo(landingPage || localStorage.getItem("lastPage") || "dashboard", bootToken);
 
   // ── Realtime: refresh today-sensitive UI on any reservation/visit change ──
   //
@@ -698,9 +717,8 @@ async function loginStaff(event) {
 
   setStaffSession(user);
   document.getElementById("login-pin").value = "";
-  await initializeApplication();
+  await initializeApplication("dashboard");
   applyRoleToNav();
-  navigateTo("dashboard");
 }
 
 async function logoutStaff() {
@@ -723,6 +741,8 @@ async function logoutStaff() {
     .forEach((btn) =>
       btn.classList.toggle("nav-active", btn.dataset.nav === "dashboard"),
     );
+  // A navigation may still have been in flight when logout was clicked.
+  if (typeof PageLoading !== "undefined") PageLoading.finish();
   showLoginPage();
 }
 
@@ -772,9 +792,19 @@ function defaultSettingsTab() {
   return "areas"; // every role can see Areas
 }
 
-async function navigateTo(page) {
-  const loadingToken = typeof PageLoading !== "undefined" ? PageLoading.begin() : null;
+// `bootToken` is handed in ONLY by initializeApplication(), and it is what
+// keeps the Intoch loading screen up until the first page has its data.
+//
+// Routing does not raise that screen. It used to, on every navigateTo(), and
+// #page-loading hides every sibling in the body — so a route change blanked
+// the shell and the section's own skeleton, put the boot screen back over a
+// running app, and did it again after any save that re-navigates (an invoice
+// send, a campaign save, the reservation bell). Route changes now use the
+// same lightweight spinner every other data fetch uses, which leaves the
+// shell and the skeleton on screen.
+async function navigateTo(page, bootToken = null) {
   const pendingLoads = [];
+  let spinning = false;
   try {
     // "settings" resolves to the last-used (allowed) settings tab
     if (page === "settings") page = defaultSettingsTab();
@@ -874,11 +904,19 @@ async function navigateTo(page) {
     } else {
       document.getElementById("staff-view-banner")?.remove();
     }
+    // Boot is already covered by the Intoch screen; a second indicator under
+    // it would only show as the screen lifts. Only a route change spins.
+    if (bootToken === null && pendingLoads.length && typeof loader === "function") {
+      spinning = true;
+      loader(true);
+    }
     await Promise.all(pendingLoads);
-    if (loadingToken !== null) PageLoading.finish(loadingToken);
+    if (bootToken !== null) PageLoading.finish(bootToken);
   } catch (error) {
     console.error("Page navigation failed", error);
-    if (loadingToken !== null) PageLoading.fail(loadingToken);
+    if (bootToken !== null) PageLoading.fail(bootToken);
+  } finally {
+    if (spinning) loader(false);
   }
 }
 
@@ -3525,6 +3563,17 @@ function dashboardDepositSummary(r) {
   </div>`;
 }
 
+// The follow-up action is one button in three disguises (deposit invoice,
+// waitlist chase, WA reminder). On screen it is always the same secondary
+// action next to Update, so it is relabelled and restyled in one place.
+// "Follow up" stays English in both languages: front desk already says it.
+function followUpActionHtml(res) {
+  return waReservationBtns(res)
+    .replace(/>(Invoice Followup|Pax Follow Up|Waitlist Follow Up|WA Follow Up)</g, ">Follow up<")
+    .replace(/class="[^"]*"/g, 'class="dash-res-followup"')
+    .replace(/<\/button>/g, ' <span aria-hidden="true">&#8599;</span></button>');
+}
+
 function renderDashboardReservations(data) {
   if (data !== dashboardResData) {
     // The attention view handles staff priorities; the full day is a timeline.
@@ -3548,8 +3597,7 @@ function renderDashboardReservations(data) {
     const notes = [r.guests?.notes, r.notes].filter(Boolean).join(" / ");
     // Retain allergy/food preferences in the visible guest extras; only prose notes collapse.
     const guest = r.guests ? {...r.guests, notes: ""} : null;
-    const followup = waReservationBtns(r).replace(/>(Invoice Followup|Pax Follow Up|Waitlist Follow Up|WA Follow Up)</g,
-      ">" + (id ? "Tindak lanjut" : "Follow up") + "<").replace(/<\/button>/g, ' <span aria-hidden="true">&#8599;</span></button>');
+    const followup = followUpActionHtml(r);
     return `<article class="dash-res-row">
       <time class="dash-res-time">${escapeHtml(String(r.reservation_time || "").slice(0,5) || "--")}</time>
       <div class="dash-res-guest">
@@ -6808,8 +6856,7 @@ async function renderReservationsTable(data) {
         : escapeHtml(tableNames || (id ? "Belum ditentukan" : "Unassigned"));
       const area = r.areas?.name || allAreas.find(a => a.id === r.assigned_area)?.name;
       const notes = [r.notes, r.guests?.notes].filter(Boolean).join(" / ");
-      const followup = waReservationBtns(r).replace(/>(Invoice Followup|Pax Follow Up|Waitlist Follow Up|WA Follow Up)</g,
-        ">" + (id ? "Tindak lanjut" : "Follow up") + "<").replace(/<\/button>/g, ' <span aria-hidden="true">&#8599;</span></button>');
+      const followup = followUpActionHtml(r);
       const tag = r.guests?.tag?.split(",").map(s => s.trim()).filter(Boolean).slice(-1)[0];
       return `<tr class="res-list-row">
         <td><time class="res-list-time">${escapeHtml(String(r.reservation_time || "").slice(0,5) || "--")}</time></td>

@@ -23,6 +23,10 @@
 .dash-res-secondary { display:flex; flex-wrap:wrap; gap:6px 10px; justify-content:center; align-items:center; }
 .dash-res-secondary :is(button,a) { flex:0 0 auto; color:var(--brand,#183b62); font-size:11px; line-height:1.5; white-space:nowrap; }
 .dash-res-secondary a { display:inline-flex; align-items:center; padding:3px 4px; }
+/* Outlined twin of .dash-res-update: same shape, inverted fill, so the pair reads
+   as primary + secondary rather than as a button and a stray link. */
+.dash-res-secondary .dash-res-followup { flex:1 1 100%; display:inline-flex; align-items:center; justify-content:center; gap:5px; background:#fff; color:var(--brand,#183b62); border:1px solid var(--brand,#183b62); border-radius:9px; padding:8px 14px; font-size:12px; font-weight:600; }
+.dash-res-secondary .dash-res-followup:hover { background:#edf3f8; }
 .dash-res-notes { margin-top:8px; font-size:11px; color:#687380; }
 .dash-res-notes summary { display:flex; gap:8px; cursor:pointer; list-style:none; }
 .dash-res-notes summary::-webkit-details-marker { display:none; }

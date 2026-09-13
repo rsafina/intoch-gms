@@ -45,18 +45,36 @@ for (const page of pages) {
 
   // Exercise actual staff navigation with a delayed reservation query.
   const app = fs.readFileSync('js/app.js', 'utf8');
-  const navigate = app.match(/^async function navigateTo\(page\) \{[\s\S]*?^}/m)[0];
+  const navigate = app.match(/^async function navigateTo\(page, bootToken = null\) \{[\s\S]*?^}/m)[0];
   w.SETTINGS_SUBPAGES = [];
   w.hasAccess = () => true;
   w.currentStaffRole = () => 'staff';
   w.clearResSearch = () => {};
+  let spinner = 0;
+  w.loader = show => { spinner += show ? 1 : -1; };
   let finishReservations;
   w.loadReservations = () => new Promise(r => finishReservations = r);
   w.eval(navigate);
+
+  // A route change must NOT put the boot screen back over a running app:
+  // #page-loading hides every sibling in the body, so doing that blanked the
+  // shell and the section's own skeleton on every navigation.
+  w.PageLoading.finish();
   const navigation = w.navigateTo('reservations');
-  assert.ok(loading(), 'staff route stays covered during its data request');
+  assert.ok(!loading(), 'a route change never raises the boot screen');
+  assert.equal(spinner, 1, 'a route change with data to fetch spins instead');
   finishReservations(); await navigation;
   assert.ok(!loading());
+  assert.equal(spinner, 0, 'and lowers the spinner when its data lands');
+
+  // Boot hands its token in, and that navigation owns lowering the screen.
+  const bootToken = w.PageLoading.begin();
+  w.loadReservations = () => new Promise(r => finishReservations = r);
+  const boot = w.navigateTo('reservations', bootToken);
+  assert.ok(loading(), 'the first page stays covered until it has data');
+  assert.equal(spinner, 0, 'with no second indicator under the boot screen');
+  finishReservations(); await boot;
+  assert.ok(!loading(), 'boot uncovers exactly once, when its page is ready');
   dom.window.close();
   console.log('Page loaders: templates, navigation, delayed data, retry and back/forward passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -11,6 +11,9 @@ const ctx = vm.createContext({document:dom.window.document,CURRENT_LANG:'en',res
  formatSpendingTierBadge:()=>'',memberBadge:()=>'',fmt:{pax:n=>n+' pax'},t:s=>s,
  statusBadge:s=>`<span>${s}</span>`,dashboardDepositSummary:()=>'<span>Deposit paid</span>',waitlistReasonLine:()=>'',
 });
+// The follow-up relabel lives above this slice; pull it in rather than stub it,
+// so the rendered button is the one staff actually see.
+vm.runInContext(app.slice(app.indexOf('function followUpActionHtml'),app.indexOf('function renderDashboardReservations')),ctx);
 vm.runInContext(app.slice(app.indexOf('let reservationListRenderRequest'),app.indexOf('async function openResActions')),ctx);
 (async()=>{
  const rows=[1,2,3].map(n=>({id:String(n),guest_id:'g',reservation_date:n===3?'2026-09-11':'2026-09-10',reservation_time:'20:00:00',status:'Reserved',pax:4,assigned_area:'a',tableNames:'T1, T2, T3',guests:{name:'Guest',phone:'08123456',food_allergy:'Peanuts'},notes:'<img src=x> Long notes'}));

@@ -1735,9 +1735,21 @@ function hideModal(id) {
   document.getElementById(id)?.classList.add("hidden");
 }
 
+// Reference-counted, because two things now raise it at once: navigateTo()
+// turns it on for a route change while the page loader it is waiting on
+// (loadMembership, the voucher screens) turns it on again for itself. As a
+// plain boolean the inner one's loader(false) uncovered a screen the outer
+// one was still fetching for, which is how the spinner came and went mid
+// navigation.
+//
+// Floored at zero on purpose. Every save path here has ONE loader(true) and
+// several loader(false), one per early-return branch, so a run that takes two
+// of them must not push the count negative and strand the spinner on screen.
+let _loaderDepth = 0;
 function loader(show) {
+  _loaderDepth = show ? _loaderDepth + 1 : Math.max(0, _loaderDepth - 1);
   const el = document.getElementById("page-loader");
-  if (el) el.style.display = show ? "flex" : "none";
+  if (el) el.style.display = _loaderDepth > 0 ? "flex" : "none";
 }
 
 function setActivePage(page) {
