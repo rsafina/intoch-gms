@@ -15,8 +15,8 @@ Deno.serve(async req=>{
   const body=await req.json();
   const {id,display_name,role,pin}=body;
   if(body.can_waive_deposit!==undefined && typeof body.can_waive_deposit!=='boolean')return reply({error:'Invalid deposit waiver permission'},400);
-  const waiverPermission=body.can_waive_deposit===undefined?{}:{can_waive_deposit:role==='staff' && body.can_waive_deposit};
-  if(!['owner','admin','manager','staff'].includes(role)||typeof display_name!=='string'||display_name.trim().length<2)return reply({error:'Invalid account details'},400);
+  const waiverPermission=body.can_waive_deposit===undefined?{}:{can_waive_deposit:['staff','finance'].includes(role) && body.can_waive_deposit};
+  if(!['owner','admin','manager','staff','finance'].includes(role)||typeof display_name!=='string'||display_name.trim().length<2)return reply({error:'Invalid account details'},400);
   if(pin!==undefined&&!/^\d{4}$/.test(pin))return reply({error:'PIN must be four digits'},400);
   if(id){
    const {data:old}=await admin.from('staff_users').select('auth_user_id,role').eq('id',id).single();

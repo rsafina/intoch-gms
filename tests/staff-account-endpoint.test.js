@@ -9,6 +9,7 @@ const call=body=>handler(new Request('https://example.com',{method:'POST',header
  authed=false;assert.equal((await call({})).status,401);
  authed=true;role='manager';assert.equal((await call({})).status,403);
  role='owner';assert.equal((await call({})).status,403);
+ role='finance';assert.equal((await call({})).status,403);
  role='admin';assert.equal((await call({username:'frontdesk',pin:'2849',display_name:'Front Desk',role:'staff'})).status,200);
  assert.equal(created.email,'frontdesk@staff.intoch.invalid');assert.equal(created.password,'Intoch-PIN:2849');assert.equal(saved.pin,null);assert.equal(saved.auth_user_id,'new-auth');
  assert.equal((await call({username:'bad',pin:'oops',display_name:'Test',role:'admin'})).status,400);
@@ -17,5 +18,7 @@ const call=body=>handler(new Request('https://example.com',{method:'POST',header
  assert.equal((await call({username:'fo-staff',pin:'2849',display_name:'FO Staff',role:'staff',can_waive_deposit:'true'})).status,400);
  assert.equal((await call({id:'existing-fo',display_name:'FO Staff',role:'staff',can_waive_deposit:true})).status,200);assert.equal(saved.can_waive_deposit,true);
  assert.equal((await call({id:'existing-fo',display_name:'FO Staff',role:'staff',can_waive_deposit:false})).status,200);assert.equal(saved.can_waive_deposit,false);
+ assert.equal((await call({username:'finance',pin:'2849',display_name:'Finance',role:'finance',can_waive_deposit:true})).status,200);assert.equal(saved.role,'finance');assert.equal(saved.can_waive_deposit,true);
+ assert.equal((await call({id:'existing-finance',display_name:'Finance',role:'finance',can_waive_deposit:false})).status,200);assert.equal(saved.can_waive_deposit,false);
  console.log('Account endpoint: verified admin only, account validation and PIN-free staff records passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

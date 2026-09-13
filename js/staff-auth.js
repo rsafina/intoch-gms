@@ -12,7 +12,7 @@ async function restoreVerifiedStaffSession() {
 
 async function refreshDepositWaiverPermission() {
   const session = getStaffSession();
-  if (!session || session.role !== 'staff') return;
+  if (!session || !['staff','finance'].includes(session.role)) return;
   let allowed = false;
   try {
     const {data,error} = await db.rpc('app_can_waive_deposit');

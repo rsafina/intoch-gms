@@ -317,6 +317,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function initializeApplication() {
+  dashboardResFilter = currentStaffRole() === "finance" ? "deposits" : "all";
+  resStatusFilter = currentStaffRole() === "finance" ? "deposits" : "all";
+  document.querySelectorAll(".status-filter-btn").forEach(btn => {
+    btn.className = "status-filter-btn " + (btn.dataset.status === resStatusFilter ? "btn-primary" : "btn-ghost") + " text-xs px-3 py-1.5";
+  });
   showAppShell();
   const staff = getStaffSession();
   const staffNameEl = document.getElementById("staff-display-name");
@@ -2797,8 +2802,9 @@ async function loadDashboard() {
   const request = ++dashboardLoadRequest;
   const revision = reservationDataRevision;
   try {
+    const finance = currentStaffRole() === "finance";
     const [walkins, reservations] = await Promise.all([
-      supabaseQuery(
+      finance ? Promise.resolve({data:[],error:null}) : supabaseQuery(
         () =>
           db
             .from("visits")
@@ -2851,8 +2857,7 @@ async function loadDashboard() {
     if (request !== dashboardLoadRequest || revision !== reservationDataRevision) return;
     updateDashboardReservationTabs();
     await loadDashboardReservations(dashboardReservationOffset, resData);
-    loadDashboardPrizeRedemptions();
-    loadDashboardBirthdays();
+    if (!finance) { loadDashboardPrizeRedemptions(); loadDashboardBirthdays(); }
   } catch (error) {
     console.error("Dashboard load failed", error);
     toast("Dashboard load failed", "error");
@@ -3482,12 +3487,13 @@ function dashboardNeedsAttention(r) {
 }
 
 function dashboardVisibleReservations() {
+  if (dashboardResFilter === "deposits") return dashboardResData.filter(r => ["Incoming", "Waitlist"].includes(r.status));
   return dashboardResFilter === "attention"
     ? dashboardResData.filter(dashboardNeedsAttention) : dashboardResData;
 }
 
 function setDashboardReservationFilter(filter) {
-  dashboardResFilter = filter === "attention" ? "attention" : "all";
+  dashboardResFilter = ["attention", "deposits"].includes(filter) ? filter : "all";
   dashboardResPage = 0;
   renderDashboardReservations(dashboardResData);
 }
@@ -3532,6 +3538,7 @@ function renderDashboardReservations(data) {
   dashboardResPage = Math.min(dashboardResPage, Math.max(0, Math.ceil(visible.length / DASH_PAGE_SIZE) - 1));
   renderPaginationControls("res-pagination-controls", dashboardResPage, visible.length, "dashResPrevPage", "dashResNextPage");
   const filters = `<div class="dash-res-filters" role="group" aria-label="${id ? "Tampilan reservasi" : "Reservation view"}">
+    <button type="button" aria-pressed="${dashboardResFilter === "deposits"}" onclick="setDashboardReservationFilter('deposits')">${id ? "Antrean deposit" : "Deposit queue"} <span>${dashboardResData.filter(r => ["Incoming", "Waitlist"].includes(r.status)).length}</span></button>
     <button type="button" aria-pressed="${dashboardResFilter === "all"}" onclick="setDashboardReservationFilter('all')">${id ? "Semua reservasi" : "All upcoming"} <span>${dashboardResData.length}</span></button>
     <button type="button" aria-pressed="${dashboardResFilter === "attention"}" onclick="setDashboardReservationFilter('attention')">${id ? "Perlu perhatian" : "Needs attention"} <span>${dashboardResData.filter(dashboardNeedsAttention).length}</span></button>
   </div>`;
@@ -6137,6 +6144,8 @@ async function loadReservations() {
     // staff mistakes (duplicate input), not part of normal operating view.
     // They're still fully recoverable via the "Deleted" filter chip (manager only).
     query = query.neq("status", "Deleted");
+  } else if (resStatusFilter === "deposits") {
+    query = query.in("status", ["Incoming", "Waitlist"]);
   } else {
     query = query.eq("status", resStatusFilter);
   }
@@ -7771,7 +7780,7 @@ let invoicePaymentContext = null;
 let invoicePaymentSaving = false;
 
 async function openSettlementInvoice(resId) {
-  if (!isManagerOrAdmin()) {
+  if (!canManageInvoices()) {
     toast(t("Only a manager can issue an invoice"), "error");
     return;
   }
@@ -8256,7 +8265,7 @@ function depositActionsPanel(res, bal) {
     (settled && usesDetailedDeposit(res, isLargeReservation(res))
       ? '<div class="flex flex-wrap gap-2 mt-3"><button onclick="openSettlementInvoice(\'' +
         res.id +
-        '\')" class="manager-only-ui btn-ghost text-xs px-3 py-1.5">' +
+        '\')" class="invoice-access-ui btn-ghost text-xs px-3 py-1.5">' +
         escapeHtml(t("Record another payment")) +
         "</button></div>"
       : "") +
@@ -14399,11 +14408,11 @@ function removeBrandImageByUrl(url) {
 //    everywhere else in this app. This screen makes staff management possible
 //    for the owner; it does not make it safe. See CLAUDE.md, "Must be fixed
 //    before the first sale".
-const STAFF_ROLES = ["staff", "manager", "admin", "owner"];
+const STAFF_ROLES = ["staff", "finance", "manager", "admin", "owner"];
 let allStaffUsers = [];
 
 function staffRoleLabel(role) {
-  return role === "owner" ? "Owner" : role === "admin" ? t("Admin") : role === "manager" ? t("Manager") : t("Staff");
+  return role === "finance" ? "Finance" : role === "owner" ? "Owner" : role === "admin" ? t("Admin") : role === "manager" ? t("Manager") : t("Staff");
 }
 
 async function loadStaffUsers() {
@@ -14530,7 +14539,7 @@ function isWeakPin(pin) {
 }
 
 function updateStaffWaiverControl() {
-  const staff = document.getElementById("staff-form-role").value === "staff";
+  const staff = ["staff", "finance"].includes(document.getElementById("staff-form-role").value);
   document.getElementById("staff-form-waiver-wrap").classList.toggle("hidden", !staff);
   const id = CURRENT_LANG === "id";
   document.getElementById("staff-form-waive-label").textContent = id ? "Boleh membebaskan deposit" : "Can waive deposits";
@@ -14612,7 +14621,7 @@ async function saveStaffUser() {
   }
   try {
     const payload = { display_name: displayName, role: effectiveRole,
-      can_waive_deposit: effectiveRole === "staff" && document.getElementById("staff-form-waive-deposit").checked };
+      can_waive_deposit: ["staff", "finance"].includes(effectiveRole) && document.getElementById("staff-form-waive-deposit").checked };
     if (pin) payload.pin = pin;
     if (!staffId) {
       payload.username = username;

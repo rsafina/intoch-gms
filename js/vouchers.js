@@ -562,6 +562,9 @@ function vchRenderLookup() {
 }
 
 function vchLookupAction(row, status) {
+  if (typeof currentStaffRole === "function" && currentStaffRole() === "finance") {
+    return vchNoticeInline(CURRENT_LANG === "id" ? "Hubungi manager untuk penukaran atau pembatalan voucher." : "Ask a manager to redeem or cancel this voucher.");
+  }
   if (status === "redeemed") {
     return vchNoticeInline(
       `Already redeemed on ${vchDateId(row.redeemed_at)}. Nothing further to do.`,

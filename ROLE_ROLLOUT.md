@@ -7,7 +7,7 @@ This is a coordinated deployment, not a standalone frontend push. The Owner summ
 - Owner: read-only dashboard/reports. Database writes and operational RPCs are denied.
 - Admin: all operational pages, staff accounts, bank details, QRIS and payment instructions.
 - Manager: operations/reports, waivers and voids, but no accounts, role changes, bank details or QRIS changes.
-- Staff (FO/Finance): Dashboard, Reservations, Walk-ins, Membership and Guests; deposit invoices and positive payment records. Waivers, negative payment adjustments and deletion require Manager/Admin.
+- Staff: Dashboard, Reservations, Walk-ins, Membership and Guests; deposit invoices and positive payment records. Waivers, negative payment adjustments and deletion require Manager/Admin.
 
 Page navigation is a convenience. RLS and protected RPC wrappers enforce verified database roles. Role lookup uses `staff_users.auth_user_id` and `is_active`, not editable JWT metadata or the local-storage role label. Deactivating an account revokes its database access without waiting for its JWT to expire.
 
@@ -37,3 +37,12 @@ Audit entries are in `app_private.role_audit`, with verified actor ID, Auth ID, 
 - `node tests/staff-branding.test.js` covers existing account rules.
 
 No production data, Auth accounts, migrations or functions are deployed by editing this repository. Applying the SQL without the account migration and frontend/function rollout will prevent login; the prepare/enforce split exists to avoid that failure.
+
+## Finance role addition
+
+Apply `20260916_finance_role.sql`, redeploy `staff-account`, then deploy frontend.
+Finance can use Dashboard, Reservations, Guests, Membership, Invoice and Vouchers.
+It starts with Incoming/Waitlist bookings, with other filters available. Finance
+can issue invoices and vouchers. Waivers require the optional per-account toggle
+(also available to Staff). Bank/QRIS changes, settings, Walk-In writes, void/delete,
+negative adjustments and standalone voucher redemption remain restricted.

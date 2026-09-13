@@ -29,5 +29,8 @@ const range=()=>JSON.parse(JSON.stringify(ctx.reservationDateRange()));
  assert.ok(filters.some(f=>f[1]==='gte'&&f[2]==='2026-09-07'));
  assert.ok(filters.some(f=>f[1]==='lte'&&f[2]==='2026-09-13'));
  assert.equal(document.getElementById('res-range-mode').value,'weekly');
+ query.in=(key,value)=>{filters.push([key,'in',Array.from(value)]);return query;};
+ ctx.resStatusFilter='deposits';await ctx.loadReservations();
+ assert.deepEqual(filters.find(f=>f[1]==='in'),['status','in',['Incoming','Waitlist']]);
  console.log('Reservation range boundaries, navigation, pagination and query integration passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

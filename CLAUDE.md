@@ -544,3 +544,10 @@ state" section at the top.
   `migrations/20260913_deposit_policy.sql` on the secured database before building/deploying
   the frontend; do not rerun ALL_IN_ONE or roles_enforce. No staff-account redeploy needed.
   SQL and frontend regression tests cover thresholds, quoting, payment status and routing.
+
+- Finance role (local release work, not deployed): Dashboard, Reservations, Guests,
+  Membership, Invoice and Vouchers. Incoming/Waitlist default deposit queue; other
+  filters remain accessible. General/deposit/settlement invoices and voucher issuance
+  allowed. Settings, bank/QRIS, Walk-In writes, void/delete and negative adjustments
+  stay restricted. Admin can toggle Finance deposit waivers like Staff. Apply
+  20260916_finance_role.sql, redeploy staff-account, then frontend. Preserve Phase 1.

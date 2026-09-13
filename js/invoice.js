@@ -413,7 +413,7 @@ async function invSaveInvoice(send) {
     toast(t("Open a deposit invoice from a reservation first."), "error");
     return;
   }
-  if (invReservationContext && !isManagerOrAdmin() && !(invReservationContext.kind === "deposit" && canIssueDepositInvoice())) {
+  if (invReservationContext && !canManageInvoices() && !(invReservationContext.kind === "deposit" && canIssueDepositInvoice())) {
     toast(t("Only a manager can issue an invoice"), "error");
     return;
   }
@@ -1268,7 +1268,7 @@ async function invReturnToReservation() {
 }
 
 async function invOpenReservation(res, invoiceId = null, kind = "deposit") {
-  if (invSaving || (!isManagerOrAdmin() && !(kind === "deposit" && canIssueDepositInvoice()))) return;
+  if (invSaving || (!canManageInvoices() && !(kind === "deposit" && canIssueDepositInvoice()))) return;
   let query = db.from("invoices").select("*").eq("reservation_id", res.id);
   if (invoiceId) query = query.eq("id", invoiceId);
   else query = query.eq("kind", kind).eq("status", "issued");
@@ -1282,7 +1282,7 @@ async function invOpenReservation(res, invoiceId = null, kind = "deposit") {
     toast(t("This invoice is no longer available to edit."), "error");
     return;
   }
-  if (invoice && invoice.kind !== "deposit" && !isManagerOrAdmin()) return;
+  if (invoice && invoice.kind !== "deposit" && !canManageInvoices()) return;
   let settlementSource = null;
   let paidDirect = 0;
   if (!invoice && kind === "settlement") {
@@ -1345,13 +1345,13 @@ async function invOpenReservation(res, invoiceId = null, kind = "deposit") {
 }
 
 async function invEditReservationInvoice(invoiceId) {
-  if (invSaving || (!isManagerOrAdmin() && !canIssueDepositInvoice())) return;
+  if (invSaving || (!canManageInvoices() && !canIssueDepositInvoice())) return;
   const { data: invoice, error } = await supabaseQuery(
     () => db.from("invoices").select("reservation_id,kind").eq("id", invoiceId).single(),
     "Failed to load the invoice",
   );
   if (error || !invoice?.reservation_id) return;
-  if (invoice.kind !== "deposit" && !isManagerOrAdmin()) return;
+  if (invoice.kind !== "deposit" && !canManageInvoices()) return;
   const { data: res, error: resError } = await supabaseQuery(
     () => db.from("reservations").select("*, guests(name, phone), tables(name)")
       .eq("id", invoice.reservation_id).single(),
@@ -1383,7 +1383,7 @@ function reservationInvoicesPanel(invoices, error, balances = []) {
       '<button class="underline" data-invoice-url="' + escapeHtml(url) + '" onclick="invCopyReservationLink(this.dataset.invoiceUrl)">' +
       escapeHtml(t("Copy guest link")) + '</button>' +
       (row.kind === "settlement" ? '<button class="underline" onclick="openRecordInvoicePayment(\'' + escapeHtml(row.id) + '\')">' + escapeHtml(t("Record payment")) + '</button>' : '') +
-      (row.doc && (isManagerOrAdmin() || (row.kind === "deposit" && canIssueDepositInvoice())) ? '<button class="underline" onclick="invEditReservationInvoice(\'' +
+      (row.doc && (canManageInvoices() || (row.kind === "deposit" && canIssueDepositInvoice())) ? '<button class="underline" onclick="invEditReservationInvoice(\'' +
         escapeHtml(row.id) + '\')">' + escapeHtml(t("Edit invoice")) + '</button>' : '') + '</div>' : '') + '</div>';
   }).join('') + '</div>';
 }

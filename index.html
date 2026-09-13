@@ -1469,7 +1469,7 @@
             <div class="flex gap-3">
               <button
                 onclick="openWalkInModal()"
-                class="btn-gold flex items-center gap-2"
+                class="non-finance-ui btn-gold flex items-center gap-2"
               >
                 <svg
                   width="15"
@@ -1501,7 +1501,7 @@
           </div>
 
           <!-- Quick Walk-In (fast as a spreadsheet: name + phone + Enter) -->
-          <div class="card p-5 mb-8" style="border-left: 4px solid var(--accent)">
+          <div class="non-finance-ui card p-5 mb-8" style="border-left: 4px solid var(--accent)">
             <div class="flex items-center gap-3 flex-wrap">
               <div class="flex-shrink-0">
                 <p class="text-xs font-semibold text-[color:var(--accent-strong)] uppercase tracking-widest">Quick Walk-In</p>
@@ -1622,7 +1622,7 @@
           </div>
 
           <!-- Today's Walk-Ins -->
-          <div class="card p-6 mb-8">
+          <div class="non-finance-ui card p-6 mb-8">
             <div class="flex items-center justify-between mb-5">
               <div>
                 <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)]">
@@ -1656,7 +1656,7 @@
           </div>
 
           <!-- Today Stats -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div class="non-finance-ui grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div class="stat-card">
               <p class="text-xs text-[#999] uppercase tracking-wider mb-2">
                 Walk-Ins Today
@@ -1699,7 +1699,7 @@
 
           <div
             id="dashboard-area-occupancy"
-            class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
+            class="non-finance-ui grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
           >
             <div class="stat-card py-4 px-5">
               <div class="loading-skeleton h-20"></div>
@@ -1713,7 +1713,7 @@
           </div>
 
           <!-- Dashboard Prize Redemptions -->
-          <div class="card p-6 mb-8">
+          <div class="non-finance-ui card p-6 mb-8">
             <div class="flex items-start justify-between mb-4 gap-4">
               <div class="min-w-0">
                 <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)]">
@@ -2911,6 +2911,7 @@
             </div>
             <div class="res-controls-bottom">
             <div class="res-status-controls" aria-label="Reservation status">
+              <button data-status="deposits" onclick="filterResByStatus('deposits')" class="status-filter-btn btn-ghost text-xs px-3 py-1.5" data-i18n>Deposit queue</button>
               <button
                 onclick="filterResByStatus('all')"
                 class="status-filter-btn btn-primary text-xs px-3 py-1.5"
@@ -7596,6 +7597,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n>Role *</label>
             <select id="staff-form-role" class="form-input" onchange="updateStaffWaiverControl()">
               <option value="staff" data-i18n>Staff</option>
+              <option value="finance">Finance</option>
               <option value="manager" data-i18n>Manager</option>
               <option value="admin" data-i18n>Admin</option>
               <option value="owner">Owner</option>
@@ -9269,7 +9271,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <div class="space-y-4">
             <div id="vch-card-summary" class="text-sm text-[#555] space-y-1"></div>
 
-            <div>
+            <div class="non-finance-ui">
               <label class="inv-label">Line on the card</label>
               <div class="flex gap-2">
                 <input id="vch-card-label-edit" class="form-input flex-1" />
@@ -9372,7 +9374,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
 
-    <script src="js/config.js?v=36"></script>
+    <script src="js/config.js?v=37"></script>
     <script src="js/i18n.js?v=3"></script>
     <div id="modal-reservation-ticket" class="modal-overlay hidden" onclick="if(event.target===this) hideModal('modal-reservation-ticket')">
       <div class="modal-box" style="max-width:520px">
@@ -9389,10 +9391,10 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         <button class="btn-ghost w-full" onclick="hideModal('modal-deposit-format')">Cancel / Batal</button>
       </div>
     </div>
-    <script src="js/staff-auth.js?v=2"></script>
+    <script src="js/staff-auth.js?v=3"></script>
     <script src="js/owner-dashboard.js?v=2"></script>
     <script src="js/deposit-policy.js?v=1"></script>
-    <script src="js/app.js?v=54"></script>
+    <script src="js/app.js?v=55"></script>
     <script src="js/reservation-extras.js?v=2"></script>
     <script src="js/membership.js?v=7"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
@@ -9416,11 +9418,11 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     <!-- The document itself: markup, renderer and PDF export, shared with
          invoice-view.html. Must load BEFORE invoice.js, which calls into it. -->
     <script src="js/invoice-sheet.js?v=1"></script>
-    <script src="js/invoice.js?v=13"></script>
+    <script src="js/invoice.js?v=14"></script>
     <script src="js/runsheet.js?v=1"></script>
     <!-- vouchers.js uses the voucher-card canvas helpers in voucher.js
          (membership card) for its own card, so it must load after it. -->
-    <script src="js/vouchers.js?v=4"></script>
+    <script src="js/vouchers.js?v=5"></script>
     <script>
       // Make entire date input clickable (not just the calendar icon)
       document.addEventListener("DOMContentLoaded", function () {

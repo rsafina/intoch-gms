@@ -2,6 +2,17 @@
 
 ## Current projects with Phase 1 roles installed
 
+### Finance role rollout (release branch)
+
+On the already updated database, run `20260916_finance_role.sql`, redeploy
+`staff-account` to that same Supabase project, then build/deploy the frontend.
+Admin can then assign Finance and optionally enable its deposit-waiver checkbox.
+Finance can issue general/deposit/settlement invoices and issue/download/share
+vouchers. Walk-In writes, settings, bank/QRIS changes, voucher redemption/voiding,
+record deletion and negative payment adjustments remain restricted.
+Dashboard and Reservations default to Incoming/Waitlist. Existing role enforcement
+must not be rerun. SQL is applied per database, not per Git branch.
+
 **Do not rerun ALL_IN_ONE.sql or roles_enforce.** Apply only the targeted migration for the change being deployed. SQL runs per Supabase project, not per Git branch. Stop on any error.
 
 ### Guest-count deposit mode (13 September 2026)

@@ -876,6 +876,7 @@ const ID_DICT = {
   // is a code; staff should never have to read one.
   over_capacity: "Terlalu besar untuk area",
   "Insufficient capacity": "Kapasitas tidak mencukupi",
+  "Deposit queue": "Antrean deposit",
   "Below the area's minimum party size": "Di bawah minimum tamu area",
   "Large party": "Rombongan besar",
   below_min_pax: "Di bawah minimum area",
@@ -1754,16 +1755,20 @@ function isManagerOrAdmin() {
   return role === "manager" || role === "admin";
 }
 
+function canManageInvoices() {
+  return isManagerOrAdmin() || currentStaffRole() === "finance";
+}
+
 function canWaiveDeposit() {
   const session = getStaffSession();
   return !!session && (isManagerOrAdmin() ||
-    (session.role === "staff" && session.can_waive_deposit === true));
+    (["staff", "finance"].includes(session.role) && session.can_waive_deposit === true));
 }
 
 // Deposit requests are an operational staff task; other invoice types remain manager-only.
 function canIssueDepositInvoice() {
   const session = getStaffSession();
-  return !!session && ["staff", "manager", "admin"].includes(session.role);
+  return !!session && ["staff", "finance", "manager", "admin"].includes(session.role);
 }
 
 // Pages that staff (non-manager) are allowed to access.
@@ -1773,6 +1778,7 @@ function canIssueDepositInvoice() {
 // Prizes and settings-thresholds stay manager-only.
 const STAFF_ALLOWED_PAGES = new Set(["dashboard", "reservations", "walkins", "membership", "guests"]);
 const OWNER_ALLOWED_PAGES = new Set(["dashboard", "reports"]);
+const FINANCE_ALLOWED_PAGES = new Set(["dashboard", "reservations", "guests", "membership", "invoice", "vouchers"]);
 function canManagePaymentSettings() { return currentStaffRole() === "admin"; }
 
 // Pages only the admin (owner/head-chef) should ever see — NOT a security
@@ -1801,6 +1807,7 @@ function hasAccess(page) {
       invReservationContext?.kind === "deposit" && canIssueDepositInvoice()) return true;
   const role = currentStaffRole();
   if (role === "owner") return OWNER_ALLOWED_PAGES.has(page);
+  if (role === "finance") return FINANCE_ALLOWED_PAGES.has(page);
   if (ADMIN_ONLY_PAGES.has(page)) return role === "admin";
   if (role === "manager" || role === "admin") return true;
   return STAFF_ALLOWED_PAGES.has(page);
@@ -1822,7 +1829,7 @@ function applyRoleToNav() {
   // Show/hide the role badge in the sidebar
   const badge = document.getElementById("staff-role-badge");
   if (badge) {
-    badge.textContent = role === "owner" ? "Owner" :
+    badge.textContent = role === "finance" ? "Finance" : role === "owner" ? "Owner" :
       role === "admin"
         ? t("Admin")
         : role === "manager"
@@ -1846,6 +1853,8 @@ function applyRoleToNav() {
 // (openResActions, loadWalkIns, loadReservations) since those replace
 // innerHTML and would otherwise reset elements back to visible.
 function applyManagerOnlyUI() {
+  document.querySelectorAll(".invoice-access-ui").forEach(el => { el.style.display = canManageInvoices() ? "" : "none"; });
+  document.querySelectorAll(".non-finance-ui").forEach(el => { el.style.display = currentStaffRole() === "finance" ? "none" : ""; });
   document.querySelectorAll(".admin-only-ui").forEach(el => { el.style.display = currentStaffRole() === "admin" ? "" : "none"; });
   document.querySelectorAll(".admin-only-input").forEach(el => { el.disabled = currentStaffRole() !== "admin"; });
   const role = currentStaffRole();

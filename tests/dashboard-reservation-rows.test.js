@@ -33,6 +33,10 @@ assert.equal(doc.querySelector('.dash-res-update').getAttribute('onclick'),"open
 ctx.setDashboardReservationFilter('attention');
 assert.equal(doc.querySelectorAll('article').length,2);
 assert.equal(pagination[2],2);
+ctx.setDashboardReservationFilter('deposits');
+assert.equal(doc.querySelectorAll('article').length,1);
+assert.ok(doc.body.textContent.includes('Guest 1'));
+ctx.setDashboardReservationFilter('attention');
 assert.equal(doc.querySelector('time').textContent,'11:00');
 ctx.dashboardResPage=1;
 ctx.setDashboardReservationFilter('all');
