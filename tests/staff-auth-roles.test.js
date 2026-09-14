@@ -5,6 +5,8 @@ const source=fs.readFileSync('js/config.template.js','utf8');w.eval(source.slice
 for(const role of ['owner','admin','manager','staff']){
  w.setStaffSession({id:'1',role});
  assert.equal(w.hasAccess('dashboard'),true);
+ assert.equal(w.hasAccess('reservation-outlook'),role!=='staff');
+ assert.equal(w.hasAccess('staff-dashboard'),role==='admin'||role==='manager');
  assert.equal(w.hasAccess('settings-staff'),role==='admin');
  assert.equal(w.canManagePaymentSettings(),role==='admin');
  assert.equal(w.canWaiveDeposit(),role==='admin'||role==='manager');

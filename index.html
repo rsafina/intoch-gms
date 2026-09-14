@@ -19,7 +19,7 @@
          guest opens from WhatsApp, so both draw the same document. -->
     <link rel="stylesheet" href="css/invoice-sheet.css?v=1" />
     <link rel="stylesheet" href="css/dashboard-reservations.css?v=9" />
-    <link rel="stylesheet" href="css/owner-dashboard.css?v=1" />
+    <link rel="stylesheet" href="css/owner-dashboard.css?v=3" />
     <style>
       :root {
         /* ── Brand tokens (2026-09-05). ONE PLACE. ───────────────────
@@ -861,6 +861,7 @@
 
       <nav class="flex-1 py-4 px-3 overflow-y-auto min-h-0">
         <div class="space-y-1">
+          <button data-nav="reservation-outlook" onclick="navigateTo('reservation-outlook')" class="od-outlook-nav"><span aria-hidden="true">&#9638;</span><span class="nav-label">Reservation Outlook</span></button>
           <button
             data-nav="dashboard"
             onclick="navigateTo('dashboard')"
@@ -1910,10 +1911,13 @@
         <div class="od-container"><header id="owner-overview-header" class="od-header"></header><div id="owner-overview-content" aria-live="polite"></div></div>
         <nav class="od-mobile-nav" aria-label="Overview navigation">
           <button onclick="window.scrollTo({top:0,behavior:'smooth'})">Overview</button>
-          <button onclick="navigateTo('reports')">Reports</button>
+          <button onclick="navigateTo('reservation-outlook')">Outlook</button>
           <button onclick="odToggleMenu()">Menu</button>
         </nav>
         <button class="od-menu-close" aria-label="Close menu" onclick="odToggleMenu()">&times;</button>
+      </section>
+      <section id="page-reservation-outlook" class="page-section">
+        <div class="od-container"><header id="outlook-header" class="od-header"></header><div id="outlook-content" aria-live="polite"></div></div>
       </section>
       <section id="page-admin-dashboard" class="page-section p-8">
         <div class="max-w-5xl mx-auto">
@@ -3952,7 +3956,6 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               </button>
               <button
                   id="reports-tab-walkins"
-                  data-spending-tracking
                 onclick="setReportsTab('walkins')"
                 class="text-xs font-medium rounded-full px-4 py-2 text-[#555]"
               >
@@ -4865,6 +4868,12 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           </div>
 
           <div id="reports-operations-view" class="hidden space-y-6">
+            <section class="od-card" id="management-financial-history">
+              <h2 data-i18n>Recorded financial history</h2>
+              <p class="od-subtitle" data-i18n>Available even when tracking is disabled. Uses the Operations report date range.</p>
+              <button class="od-refresh" onclick="odLoadFinancialHistory()" data-i18n>Load financial history</button>
+              <div id="management-financial-history-content" aria-live="polite"></div>
+            </section>
             <!-- ── LIVE ───────────────────────────────────────────── -->
             <div class="flex items-center gap-3">
               <span
@@ -5700,8 +5709,8 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             </div>
           </div>
 
-          <div class="hidden card p-6 text-sm text-[#586572]" data-spending-disabled-notice data-i18n>Spending Tracking is disabled. Revenue and spending reports are unavailable; missing spending is not treated as zero.</div>
-          <div id="reports-walkins-insights-view" class="hidden space-y-6" data-spending-tracking>
+          <div class="hidden card p-6 text-sm text-[#586572]" data-spending-disabled-notice data-i18n>Spending Tracking is disabled. Historical recorded spending remains available; missing spending is unknown, not zero.</div>
+          <div id="reports-walkins-insights-view" class="hidden space-y-6">
             <!-- ── Today's Spending Summary ────────────────────────────────── -->
             <div class="card p-6">
               <div class="flex items-center justify-between gap-4 mb-4">
@@ -6919,6 +6928,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </section>
 
       <section id="page-settings-thresholds" class="page-section p-8">
+        <div id="management-threshold-settings" class="od-container"></div>
         <div class="max-w-5xl mx-auto">
           <div class="settings-tabs mb-6" data-settings-tabs></div>
           <div class="mb-8">
@@ -9397,7 +9407,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
 
-    <script src="js/config.js?v=38"></script>
+    <script src="js/config.js?v=39"></script>
     <script src="js/i18n.js?v=3"></script>
     <div id="modal-reservation-ticket" class="modal-overlay hidden" onclick="if(event.target===this) hideModal('modal-reservation-ticket')">
       <div class="modal-box" style="max-width:520px">
@@ -9415,9 +9425,9 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
       </div>
     </div>
     <script src="js/staff-auth.js?v=3"></script>
-    <script src="js/owner-dashboard.js?v=2"></script>
+    <script src="js/owner-dashboard.js?v=3"></script>
     <script src="js/deposit-policy.js?v=1"></script>
-    <script src="js/app.js?v=57"></script>
+    <script src="js/app.js?v=58"></script>
     <script src="js/reservation-extras.js?v=2"></script>
     <script src="js/membership.js?v=7"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file

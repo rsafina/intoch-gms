@@ -30,6 +30,14 @@ This records material decisions and their consequences, not a list of every UI e
 
 ## Product context retained, not implemented promises
 
+Management visibility (2026-09-14): Owner/Admin/Manager share the management overview;
+only Admin/Manager retain the separate operational dashboard. Foot traffic is actual
+non-voided visit pax. Guest Load separates arrivals from pending demand without claiming
+live occupancy. Management large-party visibility defaults to 8 pax and is independently
+configurable, without changing deposit/public-booking classifications. Financial tracking
+toggles stop the relevant current workflows/widgets, but preserve access to historical
+recorded spending and deposits. Deposits and spending must not be added together as revenue.
+
 - The commercial intent is a license buyout with optional maintenance; trials are initially
   owner-managed, with client infrastructure ownership handled separately. Confirm contractual
   arrangements per client; do not infer permission to transfer code/accounts.

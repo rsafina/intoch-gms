@@ -761,7 +761,11 @@ const ID_DICT = {
   "Finish Without Spending": "Selesaikan Tanpa Pengeluaran",
   "No Spending Recorded": "Tidak Ada Pengeluaran Tercatat",
   "Spending Tracking is disabled. This visit will be completed with no spending recorded.": "Pelacakan Pengeluaran dinonaktifkan. Kunjungan ini akan diselesaikan tanpa pengeluaran tercatat.",
-  "Spending Tracking is disabled. Revenue and spending reports are unavailable; missing spending is not treated as zero.": "Pelacakan Pengeluaran dinonaktifkan. Laporan pendapatan dan pengeluaran tidak tersedia; data yang tidak tercatat tidak dianggap nol.",
+  "Spending Tracking is disabled. Historical recorded spending remains available; missing spending is unknown, not zero.": "Pelacakan Pengeluaran dinonaktifkan. Riwayat belanja tercatat tetap tersedia; belanja kosong tidak diketahui, bukan nol.",
+  "Reservation Outlook": "Agenda Reservasi",
+  "Recorded financial history": "Riwayat keuangan tercatat",
+  "Available even when tracking is disabled. Uses the Operations report date range.": "Tetap tersedia saat pelacakan dinonaktifkan. Menggunakan rentang tanggal laporan Operasional.",
+  "Load financial history": "Muat riwayat keuangan",
   "Finish without spending?\nNo spending will be recorded for this visit. Revenue and spending reports may be incomplete.": "Selesaikan tanpa pengeluaran?\nTidak ada pengeluaran yang akan dicatat untuk kunjungan ini. Laporan pendapatan dan pengeluaran mungkin tidak lengkap.",
   "Booked On": "Dipesan Pada",
   "Did this guest arrive?": "Tamu ini jadi datang?",
@@ -1836,32 +1840,28 @@ function canIssueDepositInvoice() {
 // is manager-gated (manager-only-ui + checks inside the save functions).
 // Prizes and settings-thresholds stay manager-only.
 const STAFF_ALLOWED_PAGES = new Set(["dashboard", "reservations", "walkins", "membership", "guests"]);
-const OWNER_ALLOWED_PAGES = new Set(["dashboard", "reports"]);
+const OWNER_ALLOWED_PAGES = new Set(["dashboard", "reservation-outlook", "reports"]);
 const FINANCE_ALLOWED_PAGES = new Set(["dashboard", "reservations", "guests", "membership", "invoice", "vouchers"]);
 function canManagePaymentSettings() { return currentStaffRole() === "admin"; }
 
 // Pages only the admin (owner/head-chef) should ever see — NOT a security
 // boundary, just a "this would be a duplicate for you" rule.
 //
-// "staff-dashboard" (added 2026-07-26, Rere) lets the owner look at the same
-// dashboard the front desk uses. It is admin-only because for a manager or
-// staff member the normal "Dashboard" entry ALREADY renders that exact page
-// — only admin gets the owner dashboard swapped in — so showing it to them
-// would put two identical destinations in the sidebar.
+// Admin and Manager can open the front-desk view separately from management
+// overview. Owner has management reads only; Staff/Finance keep their dashboard.
 // "settings-staff" (added 2026-08-23, Rere) is the screen that creates staff
 // accounts and sets their roles. Admin-only by decision: a manager who could
 // edit roles could promote themselves, which makes the role system decorative.
 //
-// NOTE this is a UI gate, not a security boundary. The anon key is public and
-// RLS is off, so anyone who can reach the app can write staff_users directly.
-// The one rule that is genuinely enforced is "never zero active admins",
-// which lives in a database trigger. See CLAUDE.md, "Must be fixed before the
-// first sale".
-const ADMIN_ONLY_PAGES = new Set(["staff-dashboard", "settings-staff"]);
+// UI gates are not the security boundary. Verified-role RLS and guarded RPCs
+// independently enforce database access; see docs/ARCHITECTURE.md.
+const ADMIN_ONLY_PAGES = new Set(["settings-staff"]);
 
 // Admin (owner/head-chef) gets full manager-level access to every page —
 // the only difference is the dashboard content, swapped in navigateTo().
 function hasAccess(page) {
+  if (page === "staff-dashboard") return ["admin", "manager"].includes(currentStaffRole());
+  if (page === "reservation-outlook") return ["admin", "manager", "owner"].includes(currentStaffRole());
   if (page === "invoice" && typeof invReservationContext !== "undefined" &&
       invReservationContext?.kind === "deposit" && canIssueDepositInvoice()) return true;
   const role = currentStaffRole();

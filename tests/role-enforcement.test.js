@@ -24,6 +24,15 @@ const fs=require('fs'),assert=require('node:assert/strict');const {PGlite}=requi
  await db.exec(fs.readFileSync('migrations/20260911_roles_enforce.sql','utf8'));
  const as=async role=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false),set_config('request.jwt.claim.role',$2,false)",[ids[role]||'',role==='anon'?'anon':'authenticated']);await db.exec('set role '+(role==='anon'?'anon':'authenticated'));};
  const denied=async sql=>{await assert.rejects(()=>db.exec(sql));};
+ for(const role of ['owner','staff']){
+  await as(role);
+  await denied("insert into app_settings(key,value) values('management_dashboard','{\"large_party_pax\":8}')");
+ }
+ await as('manager');
+ const threshold=await db.query("insert into app_settings(key,value) values('management_dashboard','{\"large_party_pax\":12}') on conflict(key) do update set value=excluded.value returning value");
+ assert.equal(threshold.rows[0].value.large_party_pax,12);
+ await as('owner');
+ assert.equal((await db.query("select value from app_settings where key='management_dashboard'")).rows[0].value.large_party_pax,12);
  await as('owner');assert.equal((await db.query('select * from reservations')).rows.length,0);await denied("insert into reservations(status) values('Reserved')");await denied('select record_deposit_payment(10)');await denied('select create_public_reservation()');
  await as('staff');await db.exec("insert into reservations(status,pax) values('Incoming',3)");const paid=await db.query('select record_deposit_payment(100,$1) as actor',[ids.admin]);assert.equal(paid.rows[0].actor,ids.staff);await denied('select record_deposit_payment(-10)');await denied('select waive_deposit()');await denied('select unsafe_legacy_write()');await denied('select pin from staff_users');await db.exec("update app_settings set value='{}'");assert.equal((await db.query("select value from app_settings")).rows[0].value.bank_details,"BANK A");await denied("insert into storage.objects(name) values('deposit-qris-new.png')");
  await as('manager');await denied("update app_settings set value='{\"bank_details\":\"BANK B\"}'");await db.exec("update app_settings set value=value||'{\"show_notes\":true}'");await denied("insert into storage.objects(name) values('deposit-qris-new.png')");await db.exec("insert into storage.objects(name) values('logo-new.png')");await db.exec('select waive_deposit()');await db.exec("update staff_users set role='admin' where role='manager'");assert.equal((await db.query("select role from staff_users")).rows[0].role,"manager");

@@ -368,7 +368,7 @@ async function initializeApplication(landingPage) {
   // burned by unnecessary polling once, see the refreshAutoGuestTiers egress
   // incident). Admin CAN still open it on demand via the Staff Dashboard nav
   // entry, which loads it lazily in navigateTo().
-  if (!["admin", "owner"].includes(currentStaffRole())) {
+  if (!["admin", "owner", "manager"].includes(currentStaffRole())) {
     await loadDashboard();
     setStaffDashboardDateLabel();
   }
@@ -568,7 +568,8 @@ function scheduleReservationViewsRefresh() {
     _rtReservationTimer = null;
     try {
       if (isViewingStaffDashboard()) await loadDashboard();
-      else if (currentPage === "dashboard" && ["admin", "owner"].includes(currentStaffRole())) await loadOwnerDashboard();
+      else if (currentPage === "dashboard" && ["admin", "owner", "manager"].includes(currentStaffRole())) await loadOwnerDashboard();
+      else if (currentPage === "reservation-outlook") await loadReservationOutlook();
       else if (currentPage === "reservations") await loadReservations();
       else if (currentPage === "reports") {
         await loadDashboardReservationCounts();
@@ -725,6 +726,7 @@ async function loginStaff(event) {
 }
 
 async function logoutStaff() {
+  if (typeof odReset === "function") odReset();
   stopStaffSessionMonitor();
   await db.auth.signOut({scope:'local'});
   clearStaffSession();
@@ -821,10 +823,10 @@ async function navigateTo(page, bootToken = null) {
       page = "dashboard";
     }
 
-    // Admin (owner/head-chef) sees a different dashboard section — everything
-    // else renders exactly like it does for manager/staff.
-    const isAdminDashboard = page === "dashboard" && ["admin", "owner"].includes(currentStaffRole());
-    // "staff-dashboard" is the owner looking at the front-desk view. It is a
+    // Management roles land on the read-only overview.
+    const isAdminDashboard = page === "dashboard" && ["admin", "owner", "manager"].includes(currentStaffRole());
+    if (typeof odInvalidate === "function") odInvalidate();
+    // "staff-dashboard" lets Admin/Manager open the front-desk view. It is a
     // separate nav entry rather than a toggle so the sidebar highlight, the
     // browser back/forward behaviour and the lastPage restore all keep working
     // without special cases. It renders the SAME #page-dashboard section staff
@@ -902,6 +904,7 @@ async function navigateTo(page, bootToken = null) {
     if (page === "broadcast") pendingLoads.push(loadBroadcast());
     if (page === "dashboard" && !isAdminDashboard) pendingLoads.push(loadDashboard());
     if (isAdminDashboard) pendingLoads.push(loadOwnerDashboard());
+    if (page === "reservation-outlook") pendingLoads.push(loadReservationOutlook());
     if (isStaffDashboardView) {
       pendingLoads.push(loadDashboard());
       setStaffDashboardDateLabel();
@@ -935,7 +938,7 @@ async function navigateTo(page, bootToken = null) {
 function isViewingStaffDashboard() {
   return (
     currentPage === "staff-dashboard" ||
-    (currentPage === "dashboard" && !["admin", "owner"].includes(currentStaffRole()))
+    (currentPage === "dashboard" && !["admin", "owner", "manager"].includes(currentStaffRole()))
   );
 }
 
@@ -8754,7 +8757,7 @@ const REPORT_AREA_GROUPS = [
 ];
 
 function setReportsTab(tab) {
-  if (tab === "walkins" && !financialTrackingSettings().spendingEnabled) tab = "marketing";
+  // Historical recorded spending remains reportable after tracking is disabled.
   currentReportsTab = tab;
   const isMarketing = tab === "marketing";
   const isOperations = tab === "operations";
@@ -13276,6 +13279,7 @@ function renderThresholdSettings() {
   set("set-com-voucher", com.voucher_amount ?? 500000);
   set("set-com-cap", com.cap ?? "");
   renderReservationAvailability(rh);
+  if (typeof odRenderSettings === "function") odRenderSettings();
   document.getElementById("settings-recalc-hint")?.classList.add("hidden");
 }
 

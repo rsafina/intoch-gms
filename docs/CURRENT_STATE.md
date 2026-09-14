@@ -28,6 +28,19 @@ the handoff is committed and replace it with the resulting commit when known.
 
 ## Implemented in current code
 
+Management dashboard and Reservation Outlook (local, not deployed): Owner/Admin/Manager
+now share the management overview; Admin/Manager retain Staff Dashboard. Today KPIs
+and a fixed seven-day visit-pax chart separate attendance from booked demand. Guest Load
+does not claim live occupancy. Deposit widgets obey Deposit Tracking; Revenue stays
+visible when spending is disabled, with recorded/skipped/unknown coverage when enabled.
+Reports > Operations offers on-demand historical spending/deposit totals even with tracking
+disabled. Outlook includes Today/+1/+2 and all future large parties; Settings > Thresholds
+stores a separate management threshold (default 8 pax). No new SQL/Edge Function changes.
+Targeted jsdom/PGlite/role/loading/realtime checks passed, plus desktop/mobile synthetic
+visual checks; no full-suite or live-client verification. See [full handoff and metric
+definitions](MANAGEMENT_DASHBOARD.md). Existing financial/arrival migration prerequisites
+still apply before deploying current frontend. Nothing pushed, committed or deployed.
+
 Duplicate-arrival repair (local, not deployed): repeated Arrived actions previously inserted
 another visit. The reported pair had NULL spending/notes and zero membership transactions.
 `scripts/repair_duplicate_reservation_visit.sql` is a guarded, incident-specific manual repair:

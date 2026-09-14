@@ -1,6 +1,20 @@
 ﻿/* Scoped to the read-only Owner/Admin overview; operational pages are unchanged. */
 #page-owner-dashboard { padding:32px; color:#183b62; }
 .od-container { max-width:1240px; margin:auto; }
+#page-reservation-outlook { padding:32px; color:var(--brand-ink); }
+.od-outlook-nav { display:flex; align-items:center; gap:12px; width:100%; padding:10px 12px; border-radius:10px; font-size:13px; text-align:left; color:var(--brand-ink); }
+.od-outlook-nav:hover { background:var(--brand-tint); }
+.od-outlook-days { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; }
+.od-load-line { display:flex; justify-content:space-between; align-items:baseline; gap:16px; margin:20px 0; }
+.od-load-line strong { white-space:nowrap; }
+.od-finance-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin:28px 0 12px; }
+.od-finance-heading h2 { font-size:20px; font-weight:600; }
+.od-detail-row > div { min-width:0; overflow-wrap:anywhere; }
+.od-status { font-size:12px; flex-shrink:0; }
+.od-threshold { margin-bottom:24px; }
+.od-threshold label { display:block; margin:16px 0 8px; }
+.od-threshold input { max-width:160px; }
+.od-threshold [role=status] { margin-top:12px; }
 .od-header { display:flex; align-items:center; justify-content:space-between; gap:24px; margin:12px 0 24px; }
 .od-header h1 { font-size:30px; font-weight:650; line-height:1.2; margin:8px 0; }
 .od-eyebrow { font-size:12px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; }
@@ -19,6 +33,7 @@
 .od-verdict a { display:flex; align-items:center; gap:12px; font-size:13px; padding:14px; border:1px solid #7390aa; border-radius:12px; }
 .od-verdict-warning { background:#765021; }
 .od-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-top:18px; }
+.od-metrics.od-today { grid-template-columns:repeat(3,minmax(0,1fr)); }
 .od-metric,.od-card { background:white; border:1px solid #dfe7ef; border-radius:16px; padding:22px; min-width:0; }
 .od-metric h2 { font-size:13px; color:#49617a; font-weight:500; }
 .od-metric strong { display:block; font-size:clamp(22px,2.2vw,30px); margin:10px 0 8px; line-height:1.2; overflow-wrap:anywhere; }
@@ -55,6 +70,10 @@
 #page-owner-dashboard :is(button,a):focus-visible { outline:3px solid #efa92f; outline-offset:3px; }
 @media(max-width:1050px) { .od-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .od-header { align-items:flex-start; } .od-verdict { align-items:flex-start; flex-direction:column; gap:14px; } }
 @media(max-width:640px) {
+ .od-metrics.od-today { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .od-today > :last-child { grid-column:1 / -1; }
+ #page-reservation-outlook { padding:20px 16px 32px; }
+ .od-outlook-days { grid-template-columns:1fr; }
  body.summary-dashboard-active #app-sidebar { display:none; }
  body.summary-dashboard-active #app-main { margin-left:0; }
  #page-owner-dashboard { padding:20px 16px 94px; }
@@ -63,6 +82,8 @@
  .od-header-controls { width:100%; justify-content:space-between; }
  .od-header-controls small { text-align:left; }
  .od-periods { flex:1; }
+ .od-finance-heading .od-periods { flex-basis:100%; }
+ .od-finance-heading .od-periods button { white-space:nowrap; }
  .od-periods button { flex:1; padding:10px 8px; }
  .od-verdict { padding:20px; }
  .od-verdict h2 { font-size:23px; }

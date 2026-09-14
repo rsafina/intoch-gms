@@ -16,7 +16,7 @@ matters. Tailwind/CDN libraries and local feature CSS coexist; there is no frame
 | `js/app.js` | Staff dashboard, reservations, guests, walk-ins, reports, settings, completion/spending |
 | `js/config.template.js` | Supabase client, settings, translations, branding, role/page controls, date helpers |
 | `js/staff-auth.js` | Username/PIN mapping, verified session restoration and session monitor |
-| `js/owner-dashboard.js` | Responsive read-only Owner/Admin summary and comparisons |
+| `js/owner-dashboard.js` | Owner/Admin/Manager overview, Reservation Outlook, financial history and management threshold |
 | `js/reservation-extras.js`, `js/deposit-policy.js` | Online-form overview, staff deposit controls, area/pax classification |
 | `js/membership.js` | Member cards, transactions, stickers, member vouchers and visit conversion |
 | `js/invoice.js`, `js/invoice-sheet.js` | Editor/saved invoice flow and shared preview/PDF rendering |
@@ -115,10 +115,16 @@ duplicate guest creation. Staff creates reservations from the modal; public book
 through a restricted RPC. `visits` represent actual attendance/spending, linked to a booking
 when applicable. Walk-ins also produce visits. Voided visits must be excluded from metrics.
 
+The management dashboard now serves Owner/Admin/Manager with Today volume, actual visit-pax
+traffic, Guest Load and conditional financial summaries. Reservation Outlook is a separate
+read-only page; Admin/Manager retain Staff Dashboard. The large-party visibility threshold
+is separate from deposit policy. Historical financial reporting remains accessible when
+tracking is disabled. See [metric definitions and rollout](MANAGEMENT_DASHBOARD.md).
+
 The staff dashboard retains Today/+1/+2 and an online-form two-week summary linking to the
 reservation list. The list has daily/weekly/monthly/custom ranges, online-only/status filters,
 compact expandable occupancy/VIP availability, and reservation actions. Only daily mode has
-previous/next navigation. Owner/Admin has a separate responsive read-only summary.
+previous/next navigation.
 
 Capacity uses timed, half-open hold windows: start minus preparation buffer through explicit
 end, or snapshotted duration. `reservation_hold_window`, aggregate capacity, table availability
