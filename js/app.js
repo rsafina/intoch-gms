@@ -831,7 +831,7 @@ async function navigateTo(page, bootToken = null) {
     // browser back/forward behaviour and the lastPage restore all keep working
     // without special cases. It renders the SAME #page-dashboard section staff
     // see — there is no second copy of that markup to drift out of sync.
-    document.body.classList.toggle("summary-dashboard-active", isAdminDashboard);
+    document.body.classList.toggle("summary-dashboard-active", isAdminDashboard || page === "reservation-outlook");
     document.body.classList.remove("summary-menu-open");
     const isStaffDashboardView = page === "staff-dashboard";
     const sectionId = isAdminDashboard

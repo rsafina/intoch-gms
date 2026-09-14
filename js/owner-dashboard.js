@@ -129,11 +129,14 @@ async function loadOwnerDashboard() {
 function odError(retry) {
   return `<div class="od-error" role="alert"><h2>${odText('Overview unavailable','Ringkasan belum tersedia')}</h2><p>${odText('The data could not be loaded. Please retry; no totals are being shown.','Data gagal dimuat. Coba lagi; total belum ditampilkan.')}</p><button class="btn-primary" onclick="${retry}()">${odText('Retry','Coba lagi')}</button></div>`;
 }
+function odRenderMobileNav() {
+  document.querySelectorAll('.od-mobile-nav button').forEach((button,index)=>{
+    button.textContent=[odText('Overview','Ringkasan'),odText('Outlook','Agenda')][index%2];
+  });
+}
 function odRenderHeader(range,loading,updated) {
   document.querySelectorAll('[data-nav="reservation-outlook"] .nav-label').forEach(element=>element.textContent=odText('Reservation Outlook','Agenda Reservasi'));
-  document.querySelectorAll('.od-mobile-nav button').forEach((button,index)=>{
-    button.textContent=[odText('Overview','Ringkasan'),odText('Outlook','Agenda'),'Menu'][index];
-  });
+  odRenderMobileNav();
   const host=document.getElementById('owner-overview-header');
   host.innerHTML=`<div><p class="od-eyebrow">${odEscape(restaurantName())} · ${odEscape(currentStaffRole())}</p><h1>${odText('Restaurant overview','Ringkasan restoran')}</h1><p class="od-dates">${range.end} · ${odText('Today, so far','Hari ini, sejauh ini')}</p></div>
     <div class="od-header-controls"><button class="od-refresh" onclick="loadOwnerDashboard()" ${loading?'disabled':''}>${loading?odText('Loading…','Memuat…'):odText('Refresh','Muat ulang')}</button><button class="od-refresh" onclick="navigateTo('reservation-outlook')">${odText('Reservation Outlook','Agenda Reservasi')}</button><small>${updated?odText('Updated ','Diperbarui ')+odClock(updated).time+' WIB':odText('Jakarta time','Waktu Jakarta')}</small></div>`;
@@ -187,6 +190,7 @@ function odShowDetails(kind) {
 }
 async function loadReservationOutlook() {
   if(!odCanView())return;
+  odRenderMobileNav();
   const root=document.getElementById('outlook-content');if(!root)return;
   const request=++outlookState.request, identity=odIdentity(), day=odClock().day, threshold=odThreshold();
   const valid=()=>request===outlookState.request&&identity===odIdentity()&&odCanView()&&document.getElementById('page-reservation-outlook')?.classList.contains('active');
@@ -257,5 +261,3 @@ function odChart(visits,range){
  const values=days.map(day=>visits.filter(v=>v.visit_date===day).reduce((s,v)=>s+Number(v.pax||0),0));const max=Math.max(1,...values);
  return `<div class="od-chart" role="img" aria-label="${odEscape(days.map((d,i)=>d+': '+values[i]+' pax').join('; '))}">${days.map((day,i)=>`<div class="od-bar-column"><span>${values[i]}</span><div class="od-bar-track"><div style="height:${values[i]/max*100}%" class="od-bar ${i===days.length-1?'od-bar-last':''}"></div></div><small>${day.slice(8)}</small></div>`).join('')}</div>`;
 }
-
-function odToggleMenu(){document.body.classList.toggle('summary-menu-open');}

@@ -66,13 +66,13 @@
 .od-detail-row { display:flex; justify-content:space-between; gap:16px; padding:14px 0; border-bottom:1px solid #edf1f5; font-size:14px; }
 .od-detail-row small { display:block; margin-top:5px; color:#63758a; }
 .od-detail-row strong { font-size:12px; }
-.od-mobile-nav,.od-menu-close { display:none; }
+.od-mobile-nav { display:none; }
 #page-owner-dashboard :is(button,a):focus-visible { outline:3px solid #efa92f; outline-offset:3px; }
 @media(max-width:1050px) { .od-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .od-header { align-items:flex-start; } .od-verdict { align-items:flex-start; flex-direction:column; gap:14px; } }
 @media(max-width:640px) {
  .od-metrics.od-today { grid-template-columns:repeat(2,minmax(0,1fr)); }
  .od-today > :last-child { grid-column:1 / -1; }
- #page-reservation-outlook { padding:20px 16px 32px; }
+ #page-reservation-outlook { padding:20px 16px 94px; }
  .od-outlook-days { grid-template-columns:1fr; }
  body.summary-dashboard-active #app-sidebar { display:none; }
  body.summary-dashboard-active #app-main { margin-left:0; }
@@ -95,9 +95,6 @@
  .od-returning { grid-column:auto; }
  .od-mobile-nav { position:fixed; bottom:0; left:0; right:0; display:flex; background:white; border-top:1px solid #dfe7ef; padding:10px 12px max(10px,env(safe-area-inset-bottom)); z-index:45; }
  .od-mobile-nav button { flex:1; min-height:42px; font-size:13px; color:#183b62; border-radius:8px; }
- .od-mobile-nav button:first-child { background:#edf3f8; font-weight:600; }
- body.summary-menu-open #app-sidebar { display:flex; width:220px; z-index:60; box-shadow:0 0 0 100vmax #183b6266; }
- body.summary-menu-open #app-sidebar .nav-label { display:inline; }
- body.summary-menu-open .od-menu-close { display:block; position:fixed; top:12px; left:230px; z-index:65; border-radius:50%; background:white; color:#183b62; width:40px; height:40px; }
+ .od-mobile-nav button[aria-current="page"] { background:var(--brand-tint); font-weight:600; }
 }
 @media(prefers-reduced-motion:reduce) { #page-owner-dashboard * { scroll-behavior:auto; } }

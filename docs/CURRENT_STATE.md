@@ -28,6 +28,10 @@ the handoff is committed and replace it with the resulting commit when known.
 
 ## Implemented in current code
 
+Mobile management navigation: both Overview and Reservation Outlook hide the sidebar
+at widths up to 640px and show only Overview/Outlook bottom navigation. Desktop navigation
+and role permissions are unchanged. Frontend-only change; no deployment performed.
+
 Dashboard legacy-schema compatibility fix (local): user-provided live response confirmed
 `42703: column visits.spend_recording_status does not exist`. Overview and financial-history
 reads now retry without that optional column only for this specific error. Null spending
