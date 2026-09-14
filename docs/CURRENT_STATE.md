@@ -28,6 +28,18 @@ the handoff is committed and replace it with the resulting commit when known.
 
 ## Implemented in current code
 
+Duplicate-arrival repair (local, not deployed): repeated Arrived actions previously inserted
+another visit. The reported pair had NULL spending/notes and zero membership transactions.
+`scripts/repair_duplicate_reservation_visit.sql` is a guarded, incident-specific manual repair:
+keep the earlier visit, soft-void the later one only if the reviewed conditions still hold.
+It is not a fleet migration. Then apply `20260920_reservation_arrival.sql` and deploy frontend.
+The migration refuses unresolved duplicates, adds one non-voided visit per reservation, and
+provides an atomic/retry-safe `record_reservation_arrival` RPC. Completion ignores voided
+rows and reports unresolved duplicates instead of treating a failed lookup as no arrival.
+Tests: reservation-arrival covers repair refusal, idempotence, role gates, uniqueness,
+transaction rollback and completion lookup; existing DP include/exclude tests still pass.
+Unrelated local Financial Tracking panel/test edits were preserved.
+
 Financial Tracking settings independently control deposit and spending workflows. Both default enabled for existing clients. The forward migration `20260919_financial_tracking.sql` preserves historical data and distinguishes explicit zero from intentionally skipped spending. It has not been applied to or deployed on any live project by this repository change.
 
 Core reservation, guest, walk-in, invoice, membership/voucher and report flows exist. Phase 1

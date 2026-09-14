@@ -5,6 +5,14 @@ No SQL is run by reading this document or by deploying frontend files.
 
 ## Never apply filename order blindly
 
+Latest arrival fix: on the affected project only, review/run
+`scripts/repair_duplicate_reservation_visit.sql` before `20260920_reservation_arrival.sql`.
+The repair targets a specific reviewed pair, keeps both rows for audit, and refuses changed
+financial/membership/booking details. Other projects must review their own duplicates;
+never reuse the incident's IDs. Run the arrival migration before the matching frontend.
+No Edge Function redeploy is required for this fix. The migration is additive and does not
+replace the Financial Tracking or spending RPCs. Never bypass its duplicate preflight.
+
 `ALL_IN_ONE.sql` consolidates historical schema, including capacity, requested invoice
 amounts, table availability, ten campaigns and tickets. It contains repeated definitions;
 the last one wins. It is **not** the full secured setup. Its guard rejects a database with
@@ -37,6 +45,7 @@ backup policy and an approved initial active Admin before touching data. Follow 
 11. Run `20260917_session_notifications.sql`.
 12. Run `20260918_spending_deposit_choice.sql`.
 13. Run `20260919_financial_tracking.sql`.
+    Also run `20260920_reservation_arrival.sql` before deploying the current frontend.
 14. Deploy the **current** `staff-account` Edge Function; current source requires the
     session-validity RPC from step 11. Configure server environment and disable public
     Auth signup/email password recovery for internal staff identities.

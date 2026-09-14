@@ -13,6 +13,8 @@ w.eval('var depositActionResId=null, depositActionRes=null, depositInvoiceSaving
 for (const name of ['isLargeReservation','openDepositInvoice','submitDepositInvoice','submitSimpleDepositInvoice','depositInvoiceUrl','largePartyAgreePanel','areaParseRupiah','areaFormatRupiah','onAreaMoneyInput']) w.eval(lift(app,name));
 w.CURRENT_LANG='en';
 w.APP_SETTINGS = {reservation_hours:{max_pax:20}};
+w.financialTrackingSettings = ()=>({depositEnabled:true,spendingEnabled:true});
+w.fmt = {dayDateTime:()=>"Monday, 14 September 2026 12:00",pax:n=>n+" pax"};
 w.t = s=>s; w.escapeHtml = s=>s; w.depositRupiah = n=>'Rp '+Number(n).toLocaleString('id-ID');
 w.isManagerOrAdmin = ()=>false; w.canIssueDepositInvoice = ()=>true; w.reservationFormSettings = ()=>({bank_details:'Bank'});
 w.refreshAreaDepositHint=()=>{};
@@ -66,7 +68,7 @@ w.db={from(table) {
   w.document.body.insertAdjacentHTML('beforeend','<div id="area-cond"></div><input id="f-time"><button id="btn-submit"></button>');
   w.$=id=>w.document.getElementById(id);w.gt=s=>s;w.gtf=s=>s;w.rupiah=w.depositRupiah;
   w.readPaxRaw=()=>41;w.areaSlot=()=>null;w.areaTimeBlocked=()=>false;
-  w.eval('var DEPOSIT_FORM={}, GUEST_LANG="en"; var AREAS=[{id:"a",deposit_amount:null}], AREA_ID="a", MAX_PAX=20;');
+  w.eval('var DEPOSIT_FORM={}, DEPOSIT_TRACKING_ENABLED=true, GUEST_LANG="en"; var AREAS=[{id:"a",deposit_amount:null}], AREA_ID="a", MAX_PAX=20;');
   w.eval(lift(form,'renderAreaCond','      '));w.renderAreaCond();
   assert.match(w.$('area-cond').textContent,/Deposit \(DP\)To be confirmed/,'large party gets deposit notice even in no-deposit area');
   w.eval('AREAS[0].deposit_amount=50000');w.renderAreaCond();

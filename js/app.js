@@ -7224,50 +7224,16 @@ async function updateResStatus(resId, status) {
   // No Show is stored as Cancelled (No Show) — auto-convert
   const dbStatus = status === "No Show" ? "Cancelled (No Show)" : status;
   loader(true);
-  const { error } = await supabaseQuery(
-    () => db.from("reservations").update({ status: dbStatus }).eq("id", resId),
+  const { data: arrival, error } = await supabaseQuery(
+    () => status === "Arrived"
+      ? db.rpc("record_reservation_arrival", { p_reservation_id: resId })
+      : db.from("reservations").update({ status: dbStatus }).eq("id", resId),
     "Failed to update reservation status",
   );
   loader(false);
-
-  if (error) {
-    toast(error.message || "Failed to update reservation status", "error");
+  if (error || (status === "Arrived" && !arrival?.ok)) {
+    toast(error?.message || "Could not record arrival. Please retry.", "error");
     return;
-  }
-
-  if (status === "Arrived") {
-    const { data: res, error: resFetchError } = await supabaseQuery(
-      () => db.from("reservations").select("*").eq("id", resId).single(),
-      "Failed to load reservation for visit",
-    );
-    if (!res || resFetchError) {
-      toast(
-        "Reservation status updated, but could not record arrival visit",
-        "error",
-      );
-    } else {
-      const { error: visitError } = await supabaseQuery(
-        () =>
-          db.from("visits").insert({
-            guest_id: res.guest_id,
-            reservation_id: resId,
-            visit_type: "Reservation",
-            visit_date: res.reservation_date,
-            visit_time: getNowTime(),
-            pax: res.pax,
-            assigned_area: res.assigned_area,
-            table_id: res.table_id || null,
-            table_ids: assignedTableIds(res),
-            created_by: currentStaffId(),
-          }),
-        "Failed to record arrival visit",
-      );
-      if (visitError) {
-        toast("Status updated, but arrival visit could not be saved", "error");
-      } else {
-        await updateGuestSpendingTier(res.guest_id);
-      }
-    }
   }
 
   // Cancelling a reservation must also clean up its linked visit,
@@ -8176,6 +8142,7 @@ function isLargeReservation(res) {
 }
 
 function largePartyAgreePanel(res) {
+  if (!financialTrackingSettings().depositEnabled) return "";
   if (!res || !["Waitlist", "Incoming"].includes(res.status)) return "";
   if (res.deposit_required && Number(res.deposit_expected) > 0) return ""; // agreed already; the deposit panel has it
   if (res.status === "Waitlist" && !isLargeReservation(res)) return '<div class="mb-4 p-3 border rounded-xl text-sm">' + escapeHtml(t("No payment is due until this request is accepted. Its saved deposit rule applies after acceptance.")) + '</div>';
@@ -8257,6 +8224,7 @@ function waitlistReasonLine(r) {
 }
 
 function depositActionsPanel(res, bal) {
+  if (!financialTrackingSettings().depositEnabled) return "";
   if (!res || !res.deposit_required || !(Number(res.deposit_expected) > 0)) return "";
   const owed = bal ? Number(bal.outstanding || 0) : Number(res.deposit_expected);
   const paid = bal ? Number(bal.paid || 0) : 0;
@@ -8530,15 +8498,23 @@ async function openCompleteReservation(resId) {
 
   // Pre-populate spend from linked visit if already completed, and the
   // guest's currently saved favorite menu / recent order (if any).
-  const { data: linkedVisit } = await supabaseQuery(
+  const { data: linkedVisit, error: linkedVisitError } = await supabaseQuery(
     () =>
       db
         .from("visits")
         .select("spend_amount, notes, guest_id, guests(favorite_menu, last_order)")
         .eq("reservation_id", resId)
+        .is("voided_at", null)
         .maybeSingle(),
     "Failed to load linked visit spend",
   );
+
+  if (linkedVisitError) {
+    toast(linkedVisitError.code === "PGRST116"
+      ? "Multiple visits are linked to this reservation. An administrator must review the duplicates."
+      : "Could not load this visit. Reopen this window to retry.", "error");
+    return;
+  }
 
   // No visit row means nobody clicked Arrived, so the app genuinely does not
   // know whether this table showed up. Ask rather than guess: guessing "they
