@@ -28,6 +28,14 @@ the handoff is committed and replace it with the resulting commit when known.
 
 ## Implemented in current code
 
+Dashboard legacy-schema compatibility fix (local): user-provided live response confirmed
+`42703: column visits.spend_recording_status does not exist`. Overview and financial-history
+reads now retry without that optional column only for this specific error. Null spending
+remains unknown; recorded zero remains recorded. Other schema/RLS/network failures still
+fail visibly. Financial Tracking write workflows still require their existing migration.
+No live SQL, push or deployment performed for this fix. Targeted dashboard tests cover
+legacy reads, unchanged totals and refusal to mask unrelated errors.
+
 Management dashboard and Reservation Outlook (local, not deployed): Owner/Admin/Manager
 now share the management overview; Admin/Manager retain Staff Dashboard. Today KPIs
 and a fixed seven-day visit-pax chart separate attendance from booked demand. Guest Load

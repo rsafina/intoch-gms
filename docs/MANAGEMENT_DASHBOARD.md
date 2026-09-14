@@ -107,9 +107,13 @@ very large datasets may warrant a measured aggregation/paging optimization later
 ## Rollout and commit
 
 1. Verify the target client's existing secured migration state. This feature requires
-   the existing Financial Tracking columns (`20260919_financial_tracking.sql`);
+   `20260919_financial_tracking.sql` for Financial Tracking write workflows;
    current frontend also retains the existing arrival dependency (`20260920_reservation_arrival.sql`).
    Follow `migrations/README.md` for missing prerequisites; do not rerun bootstrap/security SQL.
+   Dashboard/history reads tolerate an older database missing `spend_recording_status`:
+   only that specific undefined-column error retries without the field. Null amounts are
+   classified as unknown, without assuming skipped or zero. This does not install or
+   replace the migration needed by spending completion/settings workflows.
 2. No feature-specific SQL or Edge Function rollout is needed.
 3. Build with the real client's existing variables, then deploy frontend only when authorized.
 4. Smoke-test Owner/Manager navigation, disabled toggles/history, large-party settings,

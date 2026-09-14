@@ -50,6 +50,17 @@ function fakeDb(source=records,hold=null){return {from(table){
   order(key){sort=key;return this},async range(from,to){if(hold)await hold;return {data:(source[table]||[]).filter(row=>filters.every(filter=>filter(row))).sort((a,b)=>String(a[sort]).localeCompare(String(b[sort]))).slice(from,to+1),error:null}}};
 }};}
 function activate(id){w.document.querySelectorAll('.page-section').forEach(el=>el.classList.remove('active'));w.document.getElementById(id).classList.add('active');}
+function legacyDb(error={code:'42703',message:'column visits.spend_recording_status does not exist'}) {
+ const base=fakeDb();return {from(table){const query=base.from(table);let columns='';const range=query.range;
+  query.select=function(value){columns=value;return this;};
+  query.range=async function(from,to){
+   if(table==='visits'&&columns.includes('spend_recording_status'))return {data:null,error};
+   const response=await range(from,to);
+   if(table==='visits')response.data=response.data.map(({spend_recording_status,...row})=>row);
+   return response;
+  };return query;
+ }};
+}
 const root=w.document.getElementById('owner-overview-content');
 (async()=>{
  assert.equal(w.odClock(new Date('2026-09-13T18:00:00Z')).day,day);
@@ -72,6 +83,14 @@ const root=w.document.getElementById('owner-overview-content');
  assert.ok(root.textContent.includes('2 / 4 visits'));
  w.odShowDetails('deposits');assert.equal(root.querySelector('img'),null);assert.ok(root.textContent.includes('<img src=x'));
  assert.equal(root.querySelectorAll('[onclick*="openResActions"]').length,0);
+ w.db=legacyDb();await w.loadOwnerDashboard();
+ assert.equal(w.odPax(w.testOverview.data.today),10,'older schema still loads actual attendance');
+ assert.deepEqual(json(w.testOverview.data.coverage),{recorded:2,skipped:0,missing:2,amount:100000},'missing status stays unknown; explicit zero stays recorded');
+ for(const error of [{code:'42501',message:'permission denied'},{code:'42703',message:'column visits.pax does not exist'}]){
+  reads=[];w.db=legacyDb(error);await assert.rejects(()=>w.odVisitRows('id,spend_recording_status',query=>query),failure=>failure.code===error.code);
+  assert.equal(reads.length,1,'unrelated errors must not be retried or hidden');
+ }
+ w.db=fakeDb();
  await w.odSetPeriod('month');assert.equal(root.querySelectorAll('.od-bar-column').length,7);assert.equal(w.testOverview.data.today.length,4);
  features={depositEnabled:false,spendingEnabled:false};reads=[];await w.loadOwnerDashboard();
  assert.deepEqual(reads,['visits','reservations'],'disabled deposits trigger no ledger/queue queries');
@@ -102,6 +121,7 @@ const root=w.document.getElementById('owner-overview-content');
  role='manager';reads=[];await w.loadOwnerDashboard();assert.ok(reads.length>0);
  features={depositEnabled:false,spendingEnabled:false};activate('page-reports');w.db=fakeDb();w.getOpsReportDateRange=()=>({from:'2026-09-01',to:day});
  await w.odLoadFinancialHistory();const history=w.document.getElementById('management-financial-history-content');assert.ok(history.textContent.includes('Rp 280.000'));assert.ok(history.textContent.includes('skipped'));
+ w.db=legacyDb();await w.odLoadFinancialHistory();assert.ok(history.textContent.includes('Rp 280.000'));assert.ok(history.textContent.includes('2 unknown'),'legacy historical missing amounts stay unknown');
  w.odRenderSettings();let writes=0;w.db={from(){return {upsert(row){writes++;assert.equal(row.key,'management_dashboard');return this},select:async()=>({data:[{value:{large_party_pax:10}}]})}}};
  w.document.getElementById('od-large-party-pax').value='10';await w.odSaveThreshold();assert.equal(w.odThreshold(),10);assert.equal(writes,1);
  w.document.getElementById('od-large-party-pax').value='1.5';await w.odSaveThreshold();assert.equal(writes,1,'reject invalid threshold before writing');

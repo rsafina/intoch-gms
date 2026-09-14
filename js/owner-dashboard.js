@@ -21,7 +21,7 @@ async function odRows(table, columns, configure = q=>q, order='id') {
   const rows=[];
   for(let offset=0;;offset+=500){
     const {data,error}=await configure(db.from(table).select(columns)).order(order).range(offset,offset+499);
-    if(error) throw new Error(error.message || 'Could not load summary');
+    if(error) throw Object.assign(new Error(error.message || 'Could not load summary'), {code:error.code,table});
     rows.push(...(data || [])); if((data || []).length<500) return rows;
   }
 }
@@ -29,6 +29,15 @@ async function odByIds(table, columns, key, ids, configure=q=>q, order='id') {
   const result=[];
   for(let i=0;i<ids.length;i+=150) result.push(...await odRows(table,columns,q=>configure(q.in(key,ids.slice(i,i+150))),order));
   return result;
+}
+// Older secured clients can report attendance/spending before Financial Tracking
+// is migrated. Retry only this missing optional column; never mask RLS/network errors.
+async function odVisitRows(columns, configure) {
+  try { return await odRows('visits',columns,configure); }
+  catch(error) {
+    if(error.code!=='42703'||!/\bspend_recording_status\b/.test(error.message))throw error;
+    return odRows('visits',columns.split(',').filter(column=>column!=='spend_recording_status').join(','),configure);
+  }
 }
 function odReservationTotals(rows){
   const active=rows.filter(r=>!r.deleted_at&&!['Deleted','Cancelled','Cancelled (No Show)','No Show'].includes(r.status));
@@ -87,7 +96,7 @@ async function loadOwnerDashboard() {
   try {
     const start=range.start<odDateShift(range.end,-6)?range.start:odDateShift(range.end,-6);
     const [visits,reservations,queue,payments]=await Promise.all([
-      odRows('visits','id,reservation_id,pax,spend_amount,spend_recording_status,visit_date,visit_time,visit_type,status,voided_at',
+      odVisitRows('id,reservation_id,pax,spend_amount,spend_recording_status,visit_date,visit_time,visit_type,status,voided_at',
         query=>query.is('voided_at',null).gte('visit_date',start).lte('visit_date',range.end)),
       odRows('reservations','id,pax,status,deleted_at,reservation_date',
         query=>query.is('deleted_at',null).eq('reservation_date',range.end)),
@@ -114,7 +123,7 @@ async function loadOwnerDashboard() {
     ownerOverview.data=null;
     root.innerHTML=odError('loadOwnerDashboard');
     odRenderHeader(range,false);
-    console.warn('Management overview load failed',{name:error.name});
+    console.warn('Management overview load failed',{name:error.name,code:error.code,table:error.table});
   }
 }
 function odError(retry) {
@@ -214,7 +223,7 @@ async function odLoadFinancialHistory() {
   root.innerHTML='<p class="od-empty">'+odText('Loading…','Memuat…')+'</p>';
   try {
     const [visits,payments]=await Promise.all([
-      odRows('visits','id,spend_amount,spend_recording_status',query=>query.is('voided_at',null).gte('visit_date',from).lte('visit_date',to)),
+      odVisitRows('id,spend_amount,spend_recording_status',query=>query.is('voided_at',null).gte('visit_date',from).lte('visit_date',to)),
       odRows('invoice_payments','id,reservation_id,invoice_id,amount,paid_on',query=>query.gte('paid_on',from).lte('paid_on',to))
     ]);
     if(!valid())return;
