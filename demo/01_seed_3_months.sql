@@ -1,8 +1,10 @@
 -- DEMO SEED: 120 fictional guests, 287 visits, 24 members, historical
 -- reservations only. Today and all future dates stay empty for stress testing.
 -- History covers the rolling three calendar months before today in Jakarta.
--- Run the WHOLE file after demo/00_wipe_except_staff.sql on a demo database.
--- Requires the current migrations/ALL_IN_ONE.sql schema.
+-- Run the WHOLE file in Supabase SQL Editor on an empty disposable demo database.
+-- Prepare its schema using migrations/README.md; never rerun ALL_IN_ONE.sql
+-- or roles_enforce on an already secured database. No reset is needed if empty.
+-- Existing demo data requires a separately authorized reset before seeding.
 -- Staff, areas, tables, configuration and saved report filters are unchanged.
 -- Spend and guest patterns are deterministic relative to the run date.
 -- UUIDs and creation metadata may differ between resets.
@@ -31,7 +33,7 @@ begin
   ] loop
     execute format('select exists (select 1 from public.%I)', relation_name) into has_rows;
     if has_rows then
-      raise exception 'Table % is not empty. Run demo/00_wipe_except_staff.sql before seeding.', relation_name;
+      raise exception 'Table % is not empty. Use an empty demo database, or review and authorize demo/00_wipe_except_staff.sql separately.', relation_name;
     end if;
   end loop;
 end $$;
@@ -418,7 +420,7 @@ begin
     update members set nickname = split_part(full_name, ' ', 1)
     where id in (select id from members order by member_number limit 6);
   else
-    raise warning 'members.nickname is missing, so no nicknames were seeded. Re-run migrations/ALL_IN_ONE.sql to add it.';
+    raise warning 'members.nickname is missing, so no nicknames were seeded. Review migrations/README.md for the appropriate schema upgrade; never rerun ALL_IN_ONE.sql on a secured database.';
   end if;
 end $$;
 

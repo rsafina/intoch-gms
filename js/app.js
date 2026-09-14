@@ -3599,7 +3599,6 @@ function renderDashboardReservations(data) {
   const filters = `<div class="dash-res-filters" role="group" aria-label="${id ? "Tampilan reservasi" : "Reservation view"}">
     ${financialTrackingSettings().depositEnabled ? `<button type="button" aria-pressed="${dashboardResFilter === "deposits"}" onclick="setDashboardReservationFilter('deposits')">${id ? "Antrean deposit" : "Deposit queue"} <span>${dashboardResData.filter(r => ["Incoming", "Waitlist"].includes(r.status)).length}</span></button>` : ""}
     <button type="button" aria-pressed="${dashboardResFilter === "all"}" onclick="setDashboardReservationFilter('all')">${id ? "Semua reservasi" : "All upcoming"} <span>${dashboardResData.length}</span></button>
-    <button type="button" aria-pressed="${dashboardResFilter === "attention"}" onclick="setDashboardReservationFilter('attention')">${id ? "Perlu perhatian" : "Needs attention"} <span>${dashboardResData.filter(dashboardNeedsAttention).length}</span></button>
   </div>`;
   el.innerHTML = filters + (visible.length ? visible.slice(dashboardResPage * DASH_PAGE_SIZE, (dashboardResPage + 1) * DASH_PAGE_SIZE).map((r) => {
     const area = r.areas?.name || allAreas.find(a => a.id === r.assigned_area)?.name;

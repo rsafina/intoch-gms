@@ -2,6 +2,14 @@
 
 Only use an explicitly authorized disposable demo project. Never run these on client production.
 First bootstrap/upgrade it using [the migration guide](../migrations/README.md).
+If the operational tables are already empty, open `01_seed_3_months.sql` and run
+the whole file in Supabase SQL Editor. No wipe is needed. The date range adjusts
+automatically in Jakarta time: a run on September 14, 2026 covers June 14 through
+September 13, 2026. This is a rolling three-month window, not three full months.
+Staff accounts and existing floor-plan/settings data are preserved. No deposit
+invoices or payments are generated. The script refuses populated operational
+tables and rolls back on failure; it does not append to existing client history.
+
 For an already-prepared demo, run these whole files in Supabase SQL Editor in this order:
 
 1. `demo/00_wipe_except_staff.sql` (enable its explicit reset line first).

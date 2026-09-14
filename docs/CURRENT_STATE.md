@@ -28,6 +28,16 @@ the handoff is committed and replace it with the resulting commit when known.
 
 ## Implemented in current code
 
+Dashboard reservation filters (local): the redundant Needs attention tab is hidden; Deposit
+queue and All upcoming remain available. No deployment performed.
+
+Three-month demo seed handoff (2026-09-14): reused the existing
+`demo/01_seed_3_months.sql` (120 guests, 287 historical visits, linked completed
+reservations and 24 memberships). Clarified empty-demo execution and rolling
+Jakarta dates in demo/README; removed unsafe seed advice to rerun ALL_IN_ONE on
+secured databases. No live seed, reset or schema change performed. Verification:
+existing demo SQL static checks only; live schema compatibility remains unverified.
+
 Mobile management navigation: both Overview and Reservation Outlook hide the sidebar
 at widths up to 640px and show only Overview/Outlook bottom navigation. Desktop navigation
 and role permissions are unchanged. Frontend-only change; no deployment performed.

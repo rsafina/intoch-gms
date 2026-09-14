@@ -22,6 +22,7 @@ const rows = Array.from({length:7},(_,i)=>({id:i===2?'paid':String(i),status:i==
 rows[0].notes='<img src=x onerror=alert(1)>';
 ctx.renderDashboardReservations(rows);
 const doc=dom.window.document;
+assert.ok(!doc.body.textContent.includes('Needs attention'));
 assert.equal(doc.querySelectorAll('article').length,5);
 assert.equal(doc.querySelector('time').textContent,'10:00');
 assert.ok(doc.body.textContent.includes('Rp 1.000.000 / Rp 2.500.000'));
@@ -43,7 +44,7 @@ ctx.dashboardResPage=1;
 ctx.setDashboardReservationFilter('all');
 assert.equal(ctx.dashboardResPage,0);
 ctx.CURRENT_LANG='id'; ctx.renderDashboardReservations(rows);
-assert.ok(doc.body.textContent.includes('Perlu perhatian'));
+assert.ok(!doc.body.textContent.includes('Perlu perhatian'));
 assert.ok(doc.body.textContent.includes('Deposit dibayar / diminta'));
 ctx.setDashboardReservationFilter('attention');ctx.renderDashboardReservations([]);
 assert.equal(doc.querySelectorAll('article').length,0);
