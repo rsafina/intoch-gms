@@ -1268,6 +1268,7 @@
       let LARGE_PARTY_WA = false;
       let LARGE_PARTY_WA_NUMBER = "";
       const WELCOME_MAX = 160; // mirrors RESERVATION_WELCOME_MAX in js/app.js
+      const NOTES_PLACEHOLDER_MAX = 160; // mirrors RESERVATION_NOTES_PLACEHOLDER_MAX
       const PAX_REQUEST_MAX = 80; // mirrors RESERVATION_PAX_REQUEST_MAX
       const rupiah = (n) => "Rp " + Number(n).toLocaleString("id-ID");
       let HOURS = { open: "10:00", close: "21:30" }; // fallback; real value from app_settings
@@ -1825,6 +1826,15 @@
           // already exists, so an unset key changes nothing.
           SHOW_NOTES = v.show_notes !== false;
           SHOW_COMPANY = v.show_company === true;
+          const notesPlaceholder = String(v.notes_placeholder || "")
+            .trim()
+            .slice(0, NOTES_PLACEHOLDER_MAX);
+          if (notesPlaceholder) {
+            const notes = $("f-notes");
+            notes.removeAttribute("data-i18n-placeholder");
+            delete notes.dataset.i18nPlaceholderEn;
+            notes.placeholder = notesPlaceholder;
+          }
           if (!SHOW_NOTES) $("notes-field").style.display = "none";
           if (SHOW_COMPANY) $("company-field").style.display = "";
           SHOW_CAPACITY = v.show_capacity === true;

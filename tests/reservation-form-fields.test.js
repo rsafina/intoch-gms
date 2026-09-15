@@ -1,6 +1,6 @@
 // Settings > Reservation Form > Fields on the Form.
 //
-// Four controls over app_settings.reservation_form. Three of the failures
+// Controls over app_settings.reservation_form. Three of the failures
 // this guards against are silent, which is why they are worth a suite:
 //
 //   1. A default drifting. The booking page treats an ABSENT key as
@@ -60,15 +60,18 @@ const BANK_MAX = Number(appSrc.match(/const RESERVATION_BANK_MAX = (\d+);/)[1]);
 const PAX_REQUEST_MAX = Number(
   appSrc.match(/const RESERVATION_PAX_REQUEST_MAX = (\d+);/)[1],
 );
+const NOTES_PLACEHOLDER_MAX = Number(
+  appSrc.match(/const RESERVATION_NOTES_PLACEHOLDER_MAX = (\d+);/)[1],
+);
 
 // -- Markup ------------------------------------------------------------
-console.log("\nThe card exists and offers exactly the four movable fields");
+console.log("\nThe card includes every configurable field");
 const card = html.slice(
   html.indexOf("Fields on the Form"),
   html.indexOf("Signature Dishes"),
 );
 ok("card is present in Settings > Reservation Form", card.length > 200);
-for (const id of ["rff-show-notes", "rff-show-company", "rff-show-capacity", "rff-welcome"])
+for (const id of ["rff-show-notes", "rff-notes-placeholder", "rff-show-company", "rff-show-capacity", "rff-welcome"])
   ok("control " + id + " exists", new RegExp('id="' + id + '"').test(card));
 ok("Save button calls the save function", /saveReservationFormFields\(\)/.test(card));
 ok("Save button is manager-only", /manager-only-ui[\s\S]{0,80}Save Fields/.test(card));
@@ -123,6 +126,7 @@ console.log("\nAn unconfigured restaurant sees exactly what it sees today");
 T.setSettings({});
 let cfg = T.reservationFormSettings();
 eq("notes default on", cfg.show_notes, true);
+eq("notes wording default null", cfg.notes_placeholder, null);
 eq("company default off", cfg.show_company, false);
 eq("capacity default off", cfg.show_capacity, false);
 eq("welcome default null", cfg.welcome_text, null);
@@ -176,6 +180,7 @@ function harness(opts) {
     },
     values: {
       "rff-show-notes": { checked: true },
+      "rff-notes-placeholder": { value: "", disabled: false, style: {} },
       "rff-show-company": { checked: false },
       "rff-show-capacity": { checked: false },
       "rff-welcome": { value: "" },
@@ -211,6 +216,8 @@ function harness(opts) {
       WELCOME_MAX +
       ";\nconst RESERVATION_PAX_REQUEST_MAX = " +
       PAX_REQUEST_MAX +
+      ";\nconst RESERVATION_NOTES_PLACEHOLDER_MAX = " +
+      NOTES_PLACEHOLDER_MAX +
       ";\nconst RESERVATION_BANK_MAX = " +
       BANK_MAX +
       ";\n" +
@@ -223,6 +230,8 @@ function harness(opts) {
       lift(appSrc, "renderQrisPreview", "app.js") +
       "\n" +
       lift(appSrc, "renderPaxRequestLabelState", "app.js") +
+      "\n" +
+      lift(appSrc, "renderNotesPlaceholderState", "app.js") +
       "\n" +
       lift(appSrc, "onReservationWelcomeInput", "app.js") +
       "\n" +
@@ -278,6 +287,18 @@ function harness(opts) {
   eq("notes off", h.seen.payload.value.show_notes, false);
   eq("company on", h.seen.payload.value.show_company, true);
   eq("capacity on", h.seen.payload.value.show_capacity, true);
+
+  console.log("\nThe notes placeholder wording");
+  h = harness();
+  h.c.values["rff-notes-placeholder"].value = "  Please tell us about allergies  ";
+  await h.T.save();
+  eq("custom wording is trimmed", h.seen.payload.value.notes_placeholder, "Please tell us about allergies");
+  h = harness();
+  h.c.values["rff-notes-placeholder"].value = "x".repeat(NOTES_PLACEHOLDER_MAX + 20);
+  await h.T.save();
+  eq("custom wording is capped", h.seen.payload.value.notes_placeholder.length, NOTES_PLACEHOLDER_MAX);
+  ok("public form reads custom wording", /v\.notes_placeholder[\s\S]{0,420}notes\.placeholder = notesPlaceholder/.test(reserveTpl));
+  eq("public and staff caps match", Number(reserveTpl.match(/const NOTES_PLACEHOLDER_MAX = (\d+);/)[1]), NOTES_PLACEHOLDER_MAX);
 
   console.log("\nThe welcome line");
   h = harness();

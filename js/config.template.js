@@ -363,6 +363,8 @@ const ID_DICT = {
   "Notes box": "Kolom Catatan",
   "Where a guest asks for a highchair, a birthday setup or a pre-order. On unless you turn it off.":
     "Tempat tamu meminta kursi bayi, dekorasi ulang tahun atau pre-order. Aktif kecuali Anda matikan.",
+  "Change the example wording shown inside the notes box. Leave it empty for the built-in wording, which is translated for the guest.":
+    "Ubah contoh kalimat yang tampil di dalam kolom catatan. Kosongkan untuk memakai kalimat bawaan, yang otomatis diterjemahkan untuk tamu.",
   "Company box": "Kolom Perusahaan",
   "For corporate bookings. Only filled in on the guest record when that guest has no company saved yet, so a blank never wipes what you already have.":
     "Untuk reservasi kantor. Hanya diisikan ke data tamu bila tamu tersebut belum punya perusahaan tersimpan, jadi kolom kosong tidak pernah menghapus data yang sudah ada.",
@@ -1810,9 +1812,9 @@ function currentStaffRole() {
   return getStaffSession()?.role || "staff";
 }
 
-// Manager and admin have identical permissions everywhere except the
-// dashboard content — use this instead of comparing to "manager" directly
-// for any manager-gated action so admin doesn't silently lose access.
+// Manager and admin share operational permissions. Dashboard access differs:
+// managers only see the staff dashboard; the management overview and outlook
+// belong to Admin/Owner.
 function isManagerOrAdmin() {
   const role = currentStaffRole();
   return role === "manager" || role === "admin";
@@ -1847,8 +1849,9 @@ function canManagePaymentSettings() { return currentStaffRole() === "admin"; }
 // Pages only the admin (owner/head-chef) should ever see — NOT a security
 // boundary, just a "this would be a duplicate for you" rule.
 //
-// Admin and Manager can open the front-desk view separately from management
-// overview. Owner has management reads only; Staff/Finance keep their dashboard.
+// Admin can open the front-desk view separately from management overview.
+// Manager/Staff/Finance use that view as their normal dashboard; Owner has
+// management reads only.
 // "settings-staff" (added 2026-08-23, Rere) is the screen that creates staff
 // accounts and sets their roles. Admin-only by decision: a manager who could
 // edit roles could promote themselves, which makes the role system decorative.
@@ -1860,8 +1863,8 @@ const ADMIN_ONLY_PAGES = new Set(["settings-staff"]);
 // Admin (owner/head-chef) gets full manager-level access to every page —
 // the only difference is the dashboard content, swapped in navigateTo().
 function hasAccess(page) {
-  if (page === "staff-dashboard") return ["admin", "manager"].includes(currentStaffRole());
-  if (page === "reservation-outlook") return ["admin", "manager", "owner"].includes(currentStaffRole());
+  if (page === "staff-dashboard") return currentStaffRole() === "admin";
+  if (page === "reservation-outlook") return ["admin", "owner"].includes(currentStaffRole());
   if (page === "invoice" && typeof invReservationContext !== "undefined" &&
       invReservationContext?.kind === "deposit" && canIssueDepositInvoice()) return true;
   const role = currentStaffRole();

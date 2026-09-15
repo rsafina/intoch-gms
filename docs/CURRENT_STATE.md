@@ -28,6 +28,17 @@ the handoff is committed and replace it with the resulting commit when known.
 
 ## Implemented in current code
 
+Manager dashboard visibility (local, not deployed): Manager now always uses the Staff
+Dashboard. The management Restaurant Overview and Reservation Outlook are visible only to
+Admin and Owner; Admin retains its separate Staff Dashboard link. This is a frontend role
+visibility/routing change and does not alter database permissions.
+
+Online reservation notes wording (local, not deployed): Settings > Reservation Form now
+lets managers replace the example placeholder inside the optional Notes box. Blank keeps
+the existing translated built-in wording; custom text is capped at 160 characters and shown
+exactly as entered. No SQL change is required because it uses the existing
+`app_settings.reservation_form` JSON row.
+
 Dashboard reservation filters (local): the redundant Needs attention tab is hidden; Deposit
 queue and All upcoming remain available. No deployment performed.
 
@@ -50,8 +61,8 @@ fail visibly. Financial Tracking write workflows still require their existing mi
 No live SQL, push or deployment performed for this fix. Targeted dashboard tests cover
 legacy reads, unchanged totals and refusal to mask unrelated errors.
 
-Management dashboard and Reservation Outlook (local, not deployed): Owner/Admin/Manager
-now share the management overview; Admin/Manager retain Staff Dashboard. Today KPIs
+Management dashboard and Reservation Outlook (local, not deployed): Owner/Admin share the
+management overview; Manager always uses Staff Dashboard, and Admin retains a separate Staff Dashboard link. Today KPIs
 and a fixed seven-day visit-pax chart separate attendance from booked demand. Guest Load
 does not claim live occupancy. Deposit widgets obey Deposit Tracking; Revenue stays
 visible when spending is disabled, with recorded/skipped/unknown coverage when enabled.

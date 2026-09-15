@@ -134,12 +134,12 @@ const root=w.document.getElementById('owner-overview-content');
  w.eval(app.match(/^async function navigateTo\([^]*?^}/m)[0]+'\n'+app.match(/^function isViewingStaffDashboard\([^]*?^}/m)[0]);
  w.SETTINGS_SUBPAGES=[];w.hasAccess=()=>true;w.db=fakeDb();
  let staffLoads=0;w.loadDashboard=async()=>{staffLoads++;};w.setStaffDashboardDateLabel=()=>{};w.renderStaffViewBanner=()=>{};
- for(const managementRole of ['owner','admin','manager']){
+ for(const managementRole of ['owner','admin']){
   role=managementRole;await w.navigateTo('dashboard');assert.ok(w.document.getElementById('page-owner-dashboard').classList.contains('active'));assert.equal(w.isViewingStaffDashboard(),false);
   await w.navigateTo('reservation-outlook');assert.ok(w.document.getElementById('page-reservation-outlook').classList.contains('active'));
  }
- for(const operator of ['admin','manager']){role=operator;await w.navigateTo('staff-dashboard');assert.equal(w.isViewingStaffDashboard(),true);}
- for(const operator of ['staff','finance']){role=operator;await w.navigateTo('dashboard');assert.equal(w.isViewingStaffDashboard(),true);}
+ role='admin';await w.navigateTo('staff-dashboard');assert.equal(w.isViewingStaffDashboard(),true);
+ for(const operator of ['manager','staff','finance']){role=operator;await w.navigateTo('dashboard');assert.equal(w.isViewingStaffDashboard(),true);}
  assert.equal(staffLoads,4);
  w.odReset();assert.equal(root.textContent,'');assert.equal(outlook.textContent,'');assert.equal(history.textContent,'');
  console.log('Management dashboard: attendance, seven-day chart, coverage, deposit ledger, disabled states, outlook, roles, pagination, settings and stale-session checks passed');

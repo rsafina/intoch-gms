@@ -16,7 +16,7 @@ matters. Tailwind/CDN libraries and local feature CSS coexist; there is no frame
 | `js/app.js` | Staff dashboard, reservations, guests, walk-ins, reports, settings, completion/spending |
 | `js/config.template.js` | Supabase client, settings, translations, branding, role/page controls, date helpers |
 | `js/staff-auth.js` | Username/PIN mapping, verified session restoration and session monitor |
-| `js/owner-dashboard.js` | Owner/Admin/Manager overview, Reservation Outlook, financial history and management threshold |
+| `js/owner-dashboard.js` | Owner/Admin overview, Reservation Outlook, financial history and management threshold |
 | `js/reservation-extras.js`, `js/deposit-policy.js` | Online-form overview, staff deposit controls, area/pax classification |
 | `js/membership.js` | Member cards, transactions, stickers, member vouchers and visit conversion |
 | `js/invoice.js`, `js/invoice-sheet.js` | Editor/saved invoice flow and shared preview/PDF rendering |
@@ -115,9 +115,10 @@ duplicate guest creation. Staff creates reservations from the modal; public book
 through a restricted RPC. `visits` represent actual attendance/spending, linked to a booking
 when applicable. Walk-ins also produce visits. Voided visits must be excluded from metrics.
 
-The management dashboard now serves Owner/Admin/Manager with Today volume, actual visit-pax
+The management dashboard now serves Owner/Admin with Today volume, actual visit-pax
 traffic, Guest Load and conditional financial summaries. Reservation Outlook is a separate
-read-only page; Admin/Manager retain Staff Dashboard. The large-party visibility threshold
+read-only page for Owner/Admin; Manager uses Staff Dashboard, while Admin retains a separate
+Staff Dashboard link. The large-party visibility threshold
 is separate from deposit policy. Historical financial reporting remains accessible when
 tracking is disabled. See [metric definitions and rollout](MANAGEMENT_DASHBOARD.md).
 

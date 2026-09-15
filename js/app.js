@@ -363,12 +363,12 @@ async function initializeApplication(landingPage) {
   populateAreaSelects();
   setupSpinResultsActions();
 
-  // Admin does not land on page-dashboard, so skip its queries at boot —
+  // Admin/Owner do not land on page-dashboard, so skip its queries at boot —
   // avoids the extra reads for a page that will not render (we already got
   // burned by unnecessary polling once, see the refreshAutoGuestTiers egress
   // incident). Admin CAN still open it on demand via the Staff Dashboard nav
   // entry, which loads it lazily in navigateTo().
-  if (!["admin", "owner", "manager"].includes(currentStaffRole())) {
+  if (!["admin", "owner"].includes(currentStaffRole())) {
     await loadDashboard();
     setStaffDashboardDateLabel();
   }
@@ -568,7 +568,7 @@ function scheduleReservationViewsRefresh() {
     _rtReservationTimer = null;
     try {
       if (isViewingStaffDashboard()) await loadDashboard();
-      else if (currentPage === "dashboard" && ["admin", "owner", "manager"].includes(currentStaffRole())) await loadOwnerDashboard();
+      else if (currentPage === "dashboard" && ["admin", "owner"].includes(currentStaffRole())) await loadOwnerDashboard();
       else if (currentPage === "reservation-outlook") await loadReservationOutlook();
       else if (currentPage === "reservations") await loadReservations();
       else if (currentPage === "reports") {
@@ -823,11 +823,12 @@ async function navigateTo(page, bootToken = null) {
       page = "dashboard";
     }
 
-    // Management roles land on the read-only overview.
-    const isAdminDashboard = page === "dashboard" && ["admin", "owner", "manager"].includes(currentStaffRole());
+    // Only Admin and Owner land on the read-only management overview.
+    const isAdminDashboard = page === "dashboard" && ["admin", "owner"].includes(currentStaffRole());
     if (typeof odInvalidate === "function") odInvalidate();
-    // "staff-dashboard" lets Admin/Manager open the front-desk view. It is a
-    // separate nav entry rather than a toggle so the sidebar highlight, the
+    // "staff-dashboard" lets Admin open the front-desk view; Manager uses
+    // "dashboard" for that view directly. It is a separate nav entry so the
+    // sidebar highlight, the
     // browser back/forward behaviour and the lastPage restore all keep working
     // without special cases. It renders the SAME #page-dashboard section staff
     // see — there is no second copy of that markup to drift out of sync.
@@ -938,7 +939,7 @@ async function navigateTo(page, bootToken = null) {
 function isViewingStaffDashboard() {
   return (
     currentPage === "staff-dashboard" ||
-    (currentPage === "dashboard" && !["admin", "owner", "manager"].includes(currentStaffRole()))
+    (currentPage === "dashboard" && !["admin", "owner"].includes(currentStaffRole()))
   );
 }
 
@@ -14645,6 +14646,7 @@ async function toggleStaffActive(staffId) {
 // has never opened this screen must see exactly what it sees today.
 const RESERVATION_FORM_DEFAULTS = {
   show_notes: true,
+  notes_placeholder: null,
   show_company: false,
   show_capacity: false,
   welcome_text: null,
@@ -14689,6 +14691,9 @@ const RESERVATION_PAX_REQUEST_MAX = 80;
 // other: reserve.template.html, loadFormFields(), WELCOME_MAX.
 const RESERVATION_WELCOME_MAX = 160;
 
+// The booking page applies the same cap when reading settings directly.
+const RESERVATION_NOTES_PLACEHOLDER_MAX = 160;
+
 function reservationFormSettings() {
   return { ...RESERVATION_FORM_DEFAULTS, ...(APP_SETTINGS.reservation_form || {}) };
 }
@@ -14712,6 +14717,11 @@ function renderReservationFormFields() {
   // Read the stored value the same way the booking page does, so the boxes
   // show what a guest actually gets rather than what looks tidy here.
   check("rff-show-notes", cfg.show_notes !== false);
+  set(
+    "rff-notes-placeholder",
+    String(cfg.notes_placeholder || "").slice(0, RESERVATION_NOTES_PLACEHOLDER_MAX),
+  );
+  renderNotesPlaceholderState();
   check("rff-show-company", cfg.show_company === true);
   check("rff-show-capacity", cfg.show_capacity === true);
   const w = document.getElementById("rff-welcome");
@@ -14755,6 +14765,14 @@ function renderQrisPreview(url) {
 function renderPaxRequestLabelState() {
   const on = !!document.getElementById("rff-pax-request")?.checked;
   const el = document.getElementById("rff-pax-request-label");
+  if (!el) return;
+  el.disabled = !on;
+  el.style.opacity = on ? "" : "0.5";
+}
+
+function renderNotesPlaceholderState() {
+  const on = !!document.getElementById("rff-show-notes")?.checked;
+  const el = document.getElementById("rff-notes-placeholder");
   if (!el) return;
   el.disabled = !on;
   el.style.opacity = on ? "" : "0.5";
@@ -14811,6 +14829,12 @@ async function saveReservationFormFields() {
     ...(APP_SETTINGS.reservation_form || {}),
     deposit_basis:basis, deposit_free_pax:freePax, deposit_regular_max_pax:regularPax,
     show_notes: on("rff-show-notes"),
+    // Custom restaurant wording is shown verbatim and in one language. A
+    // blank value keeps the bundled, guest-translated placeholder.
+    notes_placeholder:
+      String(document.getElementById("rff-notes-placeholder")?.value || "")
+        .trim()
+        .slice(0, RESERVATION_NOTES_PLACEHOLDER_MAX) || null,
     show_company: on("rff-show-company"),
     show_capacity: on("rff-show-capacity"),
     // English values, never the translated label: a setting saved while the
