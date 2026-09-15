@@ -6460,20 +6460,6 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                 you feature, and where the full menu lives
               </p>
             </div>
-            <button onclick="openDishModal()" class="btn-primary manager-only-ui">
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              <span data-i18n>Add Dish</span>
-            </button>
           </div>
 
 
@@ -6859,6 +6845,15 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             </div>
           </div>
 
+          <div class="flex items-center justify-end mb-4">
+            <button onclick="openDishModal()" class="btn-primary manager-only-ui">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span data-i18n>Add Dish</span>
+            </button>
+          </div>
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div class="card p-5">
               <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)] mb-1" data-i18n>
@@ -6903,8 +6898,8 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               Where the "View Full Menu" / "Lihat Menu Lengkap" button sends guests on both public
               pages — a PDF, a dedicated menu page, wherever the full menu lives.
             </p>
-            <div class="flex items-end gap-3 flex-wrap">
-              <div class="flex-1 min-w-[260px]">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+              <div>
                 <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n
                   >Full menu URL</label
                 >
@@ -6915,6 +6910,17 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
                   class="form-input"
                 />
               </div>
+              <div>
+                <label class="block text-xs font-medium text-[#555] mb-1.5" data-i18n
+                  >Address link URL</label
+                >
+                <input id="set-address-url" type="url" placeholder="https://maps.google.com/..." class="form-input" />
+              </div>
+            </div>
+            <p class="text-[11px] text-[#999] mb-4" data-i18n>
+              Leave either link empty to hide that option from the online reservation form.
+            </p>
+            <div class="flex justify-end">
               <button
                 onclick="saveFullMenuLink()"
                 class="btn-primary px-6 py-2.5 manager-only-ui"

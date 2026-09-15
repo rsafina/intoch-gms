@@ -14046,8 +14046,10 @@ function removeDishImageByUrl(url) {
 // points on BOTH public pages.
 function renderFullMenuLink() {
   const fm = APP_SETTINGS.full_menu || {};
-  const el = document.getElementById("set-full-menu-url");
-  if (el) el.value = fm.url ?? "";
+  const menu = document.getElementById("set-full-menu-url");
+  const address = document.getElementById("set-address-url");
+  if (menu) menu.value = fm.url ?? "";
+  if (address) address.value = fm.address_url ?? "";
 }
 
 async function saveFullMenuLink() {
@@ -14056,19 +14058,31 @@ async function saveFullMenuLink() {
     return;
   }
   const url = document.getElementById("set-full-menu-url")?.value.trim() || "";
-  if (url && !/^https?:\/\//i.test(url)) {
+  const addressUrl = document.getElementById("set-address-url")?.value.trim() || "";
+  if (url && !/^https?:\/\/\S+$/i.test(url)) {
     toast(t("Full menu link must start with http:// or https://"), "error");
+    return;
+  }
+  if (addressUrl && !/^https?:\/\/\S+$/i.test(addressUrl)) {
+    toast(t("Address link must start with http:// or https://"), "error");
     return;
   }
 
   loader(true);
-  const { error } = await supabaseQuery(
+  const { data, error } = await supabaseQuery(
     () =>
-      db.from("app_settings").upsert({
-        key: "full_menu",
-        value: { url },
-        updated_at: new Date().toISOString(),
-      }),
+      db
+        .from("app_settings")
+        .upsert({
+          key: "full_menu",
+          value: {
+            ...(APP_SETTINGS.full_menu || {}),
+            url: url || null,
+            address_url: addressUrl || null,
+          },
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "key" })
+        .select(),
     "Failed to save settings",
   );
   loader(false);
@@ -14076,8 +14090,15 @@ async function saveFullMenuLink() {
     toast(error.message || t("Unable to save settings"), "error");
     return;
   }
-
-  await loadAppSettings();
+  if (!Array.isArray(data) || !data.length) {
+    toast(t("Nothing was saved. Check with your administrator."), "error");
+    return;
+  }
+  APP_SETTINGS.full_menu = data[0].value || {
+    url: url || null,
+    address_url: addressUrl || null,
+  };
+  renderFullMenuLink();
   toast(t("Settings saved"));
 }
 

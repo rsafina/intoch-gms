@@ -751,6 +751,10 @@
         text-align: center;
         font-size: 12px;
       }
+      .quick-links a[hidden],
+      .btn-fullmenu[hidden] {
+        display: none;
+      }
       .quick-links .icon {
         width: 56px;
         height: 56px;
@@ -1088,10 +1092,13 @@
         </form>
       </div>
 
-      <!-- Quick links — EDIT THE 3 HREFs BELOW (placeholders) -->
+      <!-- Guest links. Location stays hidden until configured; the menu
+           stays hidden until at least one active dish loads. -->
       <div class="quick-links">
         <a
-          href="https://maps.google.com/"
+          id="btn-location"
+          href=""
+          hidden
           target="_blank"
           rel="noopener"
         >
@@ -1110,7 +1117,7 @@
           </span>
           Lokasi
         </a>
-        <a href="#" onclick="openMenuSheet(event)">
+        <a id="btn-menu-sheet" href="#" onclick="openMenuSheet(event)" hidden>
           <span class="icon">
             <svg
               viewBox="0 0 24 24"
@@ -1173,49 +1180,13 @@
       </div>
       <p class="sheet-sub" data-i18n>Guest favourites, plate after plate.</p>
 
-      <!-- Managed in the staff app: Settings > Reservation Configuration.
-           The two dishes below are the static fallback shown if the
-           featured_dishes fetch fails or the table is empty. -->
-      <div id="dish-list">
-        <div class="dish">
-          <img
-            src="assets/sirloin-wagyu-web.jpg"
-            alt="Sirloin Wagyu MB5"
-            loading="lazy"
-          />
-          <div>
-            <span class="badge">Best Seller</span>
-            <h3>Sirloin Wagyu MB5</h3>
-            <p>
-              Grilled irloin wagyu marbling 5, disajikan dengan garlic convit,
-              sauteed mushroom, pilihan kentang pendamping, sayuran dan saus.
-            </p>
-          </div>
-        </div>
-        <div class="dish">
-          <img
-            src="assets/butter-salmon-web.jpg"
-            alt="Butter Salmon"
-            loading="lazy"
-          />
-          <div>
-            <span class="badge">Chef's Recommendation</span>
-            <h3>Butter Salmon</h3>
-            <p>
-              Grilled Norwegian Salmon yang dimasak dengan bawang merah, bawang
-              putih, cabai pilihan, smoked beef dan butter
-            </p>
-          </div>
-        </div>
-      </div>
+      <div id="dish-list"></div>
 
-      <!-- href is the hardcoded fallback; loadFullMenuLink() below swaps it
-           for app_settings.full_menu.url once that's set in Settings >
-           Menu & Dishes (shared with the landing page). -->
       <a
         id="btn-fullmenu"
         class="btn-fullmenu"
-        href="https://drive.google.com/file/d/1A2M5iYbCJC_H9hD-793q4k3O49TpAsBH/view"
+        href=""
+        hidden
         target="_blank"
         rel="noopener"
         data-i18n
@@ -1782,7 +1753,7 @@
           await loadAreas();
           loadAvailability(); // not awaited — the conditions render without it
           loadFeaturedDishes(); // not awaited — the sheet is below the fold
-          loadFullMenuLink(); // not awaited — hardcoded href works until this resolves
+          loadFullMenuLink(); // not awaited; links stay hidden until configured
         } finally {
           // Also runs for paused bookings: reveal their message in the saved design.
           const results = await presentationReady;
@@ -1923,10 +1894,20 @@
             .select("value")
             .eq("key", "full_menu")
             .maybeSingle();
-          const url = data?.value?.url;
-          if (url) $("btn-fullmenu").href = url;
+          const validUrl = (value) =>
+            typeof value === "string" && /^https?:\/\/\S+$/i.test(value.trim());
+          const menuUrl = data?.value?.url;
+          const addressUrl = data?.value?.address_url;
+          if (validUrl(menuUrl)) {
+            $("btn-fullmenu").href = menuUrl.trim();
+            $("btn-fullmenu").hidden = false;
+          }
+          if (validUrl(addressUrl)) {
+            $("btn-location").href = addressUrl.trim();
+            $("btn-location").hidden = false;
+          }
         } catch (_) {
-          /* keep hardcoded fallback href */
+          /* links remain safely hidden */
         }
       }
 
@@ -2001,9 +1982,8 @@
       }
 
       // ---- Featured dishes (managed in staff app Settings > Reservation Form) ----
-      // Replaces the static fallback in #dish-list only when the fetch
-      // succeeds AND returns at least one active dish; any failure keeps
-      // the hardcoded pair, so the sheet never renders empty.
+      // Empty or failed data leaves the menu option hidden. A client must
+      // never inherit another restaurant's dishes as fallback content.
       const DISH_BADGES = {
         signature: "Signature",
         chef_recommendation: "Chef's Recommendation",
@@ -2023,7 +2003,7 @@
             .order("category")
             .order("display_order")
             .order("created_at");
-          if (error || !data || !data.length) return; // keep fallback
+          if (error || !data || !data.length) return;
           // Signature dishes first, then chef recommendations, then best sellers
           const ordered = [
             ...data.filter((d) => d.category === "signature"),
@@ -2043,8 +2023,9 @@
             </div>`,
             )
             .join("");
+          $("btn-menu-sheet").hidden = false;
         } catch (_) {
-          /* keep fallback */
+          /* keep the menu option hidden */
         }
       }
 

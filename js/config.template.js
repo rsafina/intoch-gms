@@ -607,6 +607,11 @@ const ID_DICT = {
   "Signature dishes and chef recommendations shown to guests on the online reservation page":
     "Signature Dishes dan Chef's Recommendation yang ditampilkan ke tamu di halaman reservasi online",
   "Add Dish": "Tambah Menu",
+  "Address link URL": "URL tautan alamat",
+  "Leave either link empty to hide that option from the online reservation form.":
+    "Kosongkan salah satu tautan untuk menyembunyikan pilihan tersebut dari formulir reservasi online.",
+  "Address link must start with http:// or https://":
+    "Tautan alamat harus diawali http:// atau https://",
   "Edit Dish": "Ubah Menu",
   "Signature Dishes": "Signature Dishes",
   "The dishes this restaurant is known for":

@@ -28,6 +28,13 @@ the handoff is committed and replace it with the resulting commit when known.
 
 ## Implemented in current code
 
+Reservation-form guest links (local, not deployed): Settings > Reservation Form now accepts
+both a full-menu URL and an address/location URL. Either may be blank; its public control is
+then hidden. The booking template no longer contains Blue Heron's menu URL, featured dishes,
+or a generic Maps fallback. The Add Dish button now sits directly above the three dish groups,
+whose existing empty states remain available. No SQL change is required because the URLs use
+the existing `app_settings.full_menu` JSON row.
+
 Manager dashboard visibility (local, not deployed): Manager now always uses the Staff
 Dashboard. The management Restaurant Overview and Reservation Outlook are visible only to
 Admin and Owner; Admin retains its separate Staff Dashboard link. This is a frontend role
