@@ -4,13 +4,19 @@ const {JSDOM}=require('jsdom');
 const ticketHtml=fs.readFileSync('reservation-ticket.html','utf8');
 const w=new JSDOM(ticketHtml,{runScripts:'outside-only',url:'https://demo.test/reservation-ticket.html?t=11111111-1111-4111-a111-111111111111'}).window;
 let data={name:'<img src=x onerror=alert(1)>',restaurant:'Restaurant',reference:'RSV-123',date:'2026-09-30',time:'19:00:00',pax:4,area:'Indoor',status:'Reserved'};
-w.db={rpc:async()=>({data})};w.restaurantName=()=> 'Restaurant';
+w.db={
+ rpc:async()=>({data}),
+ from:()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:{value:{accent:'#F4EDE3',ink:'#173A60'}}})})})}),
+};w.restaurantName=()=> 'Restaurant';
 let brandingLoaded=0;w.initBranding=async()=>{brandingLoaded++;};
 w.eval(fs.readFileSync('js/reservation-ticket.js','utf8').replace(/loadReservationTicket\(\);\s*$/,''));
 (async()=>{
  await w.loadReservationTicket();
  const el=id=>w.document.getElementById(id);
  assert.equal(brandingLoaded,1);assert.ok(ticketHtml.includes('data-brand-logo="full"'));
+ assert.equal(w.document.documentElement.style.getPropertyValue('--ticket-header'),'#F4EDE3');
+ assert.equal(w.document.documentElement.style.getPropertyValue('--ticket-header-text'),'#173A60');
+ assert.match(fs.readFileSync('js/reservation-ticket.js','utf8'),/fillStyle=ticketHeaderColor/);
  assert.equal(el('ticket-name').textContent,data.name);assert.equal(el('ticket-name').querySelector('img'),null);
  assert.equal(el('ticket-actions').hidden,false);assert.ok(el('ticket-fields').textContent.includes('19:00 WIB'));
  w.setTicketLanguage('id');assert.equal(el('ticket-download').textContent,'Unduh tiket');
