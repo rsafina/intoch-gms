@@ -397,6 +397,7 @@ function bcCloseEditor() {
 function bcEditorAllowed(key) {
   if (["large_party", "waitlist_review"].includes(key)) return BC_PLACEHOLDERS.follow_up;
   if (key === "deposit_request") return [...BC_PLACEHOLDERS.follow_up, "dp", "batas", "invoice"];
+  if (key === "payment_confirmation_guest") return ["nama", "resto"];
   if (["invoice_send", "deposit_big"].includes(key)) return ["nama", "resto", "nomor", "jumlah", "invoice"];
   if (key === "reservation_ticket") return [...BC_PLACEHOLDERS.follow_up, "ticket"];
   if (key === "thank_you") return BC_PLACEHOLDERS.thank_you;
