@@ -60,6 +60,9 @@ ok("a fetch failure gets its own message",
 ok("only a genuinely missing row is treated as dead", /if \(!row\) return show\("dead"\)/.test(page));
 
 console.log("\nThe amount tells the whole truth");
+ok("the payment explanation is welcoming rather than saying the booking is held",
+   /Reservasi meja Anda akan dikonfirmasi setelah pembayaran diterima/.test(page) &&
+   !/Reservasi Anda kami tahan/.test(page));
 ok("it shows the outstanding balance", /row\.outstanding/.test(page));
 ok("a part payment is shown too", /Sudah diterima/.test(page),
    "Otherwise a guest who paid half sees a smaller figure and thinks the first transfer vanished.");
