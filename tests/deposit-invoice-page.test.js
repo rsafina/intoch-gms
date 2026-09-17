@@ -76,6 +76,13 @@ ok("the QRIS can be downloaded from the invoice",
    /id="qris-download"/.test(page) && /function downloadQris/.test(page) && /download = "deposit-qris\.png"/.test(page));
 ok("a blank WhatsApp number hides the button rather than building a broken link",
    /digits\.length < 8\) return null/.test(page));
+ok("the transfer-confirmation button loads its editable WhatsApp template",
+   /payment_confirmation_guest/.test(page) &&
+   /paymentConfirmationMessage\(paymentConfirmationBody, row\)/.test(page));
+ok("a missing saved template keeps a useful built-in message",
+   /PAYMENT_CONFIRMATION_FALLBACK/.test(page) &&
+   /Saya sudah transfer DP/.test(page) &&
+   /Berikut bukti transfer yang saya lampirkan/.test(page));
 
 console.log("\nThe settings that feed it");
 ok("it reads the shared reservation appearance row",

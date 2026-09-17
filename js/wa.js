@@ -108,6 +108,16 @@ const WA_DEFAULT_TEMPLATES = {
       "Detail pembayaran ada di sini:\n{invoice}\n\n" +
       "Setelah transfer, mohon balas pesan ini ya. Terima kasih!",
   },
+  // Written by the guest, not by staff: this opens WhatsApp from the public
+  // deposit page after the guest has transferred. Restaurants can adjust the
+  // tone in Settings > WhatsApp Messages without rebuilding the public page.
+  payment_confirmation_guest: {
+    label: "Deposit payment confirmation (guest button)",
+    is_broadcast: false,
+    body:
+      "Halo, saya {nama}. Saya sudah transfer DP untuk reservasi saya di {resto}. " +
+      "Berikut bukti transfer yang saya lampirkan. Mohon dibantu konfirmasi, terima kasih.",
+  },
   // The saved invoice. {invoice} is the ONLY way the guest reaches the
   // document: there is no login and no lookup by phone number. NOT {link},
   // which belongs to the broadcast campaign page and is treated as such by

@@ -287,6 +287,21 @@
         return "https://wa.me/" + digits + "?text=" + encodeURIComponent(text);
       }
 
+      const PAYMENT_CONFIRMATION_FALLBACK =
+        "Halo, saya {nama}. Saya sudah transfer DP untuk reservasi saya di {resto}. " +
+        "Berikut bukti transfer yang saya lampirkan. Mohon dibantu konfirmasi, terima kasih.";
+
+      function paymentConfirmationMessage(body, row) {
+        const values = {
+          nama: (row && row.bill_to_name) || "",
+          resto: "__RESTAURANT_NAME__",
+        };
+        return String(body || PAYMENT_CONFIRMATION_FALLBACK).replace(
+          /\{(nama|resto)\}/g,
+          (_, key) => values[key],
+        );
+      }
+
       async function downloadQris(url) {
         try {
           const res = await fetch(url, { mode: "cors" });
@@ -442,9 +457,23 @@
 
         if (row.note) { $("note").textContent = row.note; $("note").classList.remove("hidden"); }
 
+        let paymentConfirmationBody = PAYMENT_CONFIRMATION_FALLBACK;
+        try {
+          const { data: paymentTemplate } = await db
+            .from("wa_templates")
+            .select("body")
+            .eq("key", "payment_confirmation_guest")
+            .maybeSingle();
+          if (paymentTemplate && paymentTemplate.body)
+            paymentConfirmationBody = paymentTemplate.body;
+        } catch (_) {
+          // The hardcoded default keeps this guest action available on clients
+          // that have not saved the new optional template yet.
+        }
+
         const link = waLink(
           (window.__PAY || {}).wa,
-          "Halo, saya " + (row.bill_to_name || "") + ". Saya sudah transfer DP untuk reservasi saya.",
+          paymentConfirmationMessage(paymentConfirmationBody, row),
         );
         if (link && outstanding > 0) { $("wa").href = link; $("wa").classList.remove("hidden"); }
         const deadLink = waLink((window.__PAY || {}).wa, "Halo, saya ingin menanyakan pembayaran DP reservasi saya.");

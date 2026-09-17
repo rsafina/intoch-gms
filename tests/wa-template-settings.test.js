@@ -7,12 +7,13 @@ for(const file of ['js/wa.js','js/broadcast.js'])vm.runInContext(fs.readFileSync
 (async()=>{
  vm.runInContext('waTemplatesCache = { invoice_send: {body:"Custom {nama} {invoice}"}, birthday:{body:"Happy {nama}",is_broadcast:true} }; waLoadTemplates=async()=>waTemplatesCache;',ctx);
  ctx.bcRenderEditor('transactional');
- for(const key of ['thank_you','follow_up','voucher_ready','birthday','large_party','waitlist_review','deposit_request','deposit_big','invoice_send','reservation_ticket','standalone_voucher']){
+ for(const key of ['thank_you','follow_up','voucher_ready','birthday','large_party','waitlist_review','deposit_request','payment_confirmation_guest','deposit_big','invoice_send','reservation_ticket','standalone_voucher']){
   assert.ok(document.querySelector('#wa-settings-editor-list #bc-body-'+key),key);
   assert.equal(ctx.bcValidateBody(key,document.getElementById('bc-body-'+key).value),null,key+' placeholders');
  }
  assert.equal(document.querySelector('#wa-settings-editor-list #bc-body-at_risk'),null);
  assert.equal(document.getElementById('bc-body-deposit_big').value,'Custom {nama} {invoice}');
+ assert.ok(document.getElementById('bc-body-payment_confirmation_guest').value.includes('{nama}'));
  await ctx.bcSaveTemplate('birthday'); assert.equal(stored.is_broadcast,false);
  ctx.bcRenderEditor('broadcast');
  assert.ok(document.querySelector('#bc-editor-list #bc-body-at_risk'));

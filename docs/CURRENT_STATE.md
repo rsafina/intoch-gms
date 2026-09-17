@@ -28,6 +28,12 @@ the handoff is committed and replace it with the resulting commit when known.
 
 ## Implemented in current code
 
+Guest deposit confirmation wording (local, not deployed): Settings > WhatsApp Messages now
+includes an editable `Deposit payment confirmation (guest button)` template for the public
+invoice's “Saya sudah transfer” action. It supports `{nama}` and `{resto}` and retains a
+built-in fallback until a client saves its own wording. No SQL migration is required because
+the existing template editor upserts the row when saved.
+
 Branding and issued-document consistency (local, not deployed): uploaded Branding logos now
 drive the detailed invoice (including existing guest links), simple deposit invoice,
 reservation ticket and their browser-tab icons. Issued detailed invoices snapshot the active
