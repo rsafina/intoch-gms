@@ -14,9 +14,11 @@ w.eval(fs.readFileSync('js/reservation-ticket.js','utf8').replace(/loadReservati
  await w.loadReservationTicket();
  const el=id=>w.document.getElementById(id);
  assert.equal(brandingLoaded,1);assert.ok(ticketHtml.includes('data-brand-logo="full"'));
+ assert.ok(!ticketHtml.includes('id="ticket-restaurant"'));
  assert.equal(w.document.documentElement.style.getPropertyValue('--ticket-header'),'#F4EDE3');
  assert.equal(w.document.documentElement.style.getPropertyValue('--ticket-header-text'),'#173A60');
- assert.match(fs.readFileSync('js/reservation-ticket.js','utf8'),/fillStyle=ticketHeaderColor/);
+ const ticketJs=fs.readFileSync('js/reservation-ticket.js','utf8'),ticketCss=fs.readFileSync('css/reservation-ticket.css','utf8');
+ assert.match(ticketJs,/fillStyle=ticketHeaderColor/);assert.ok(!/fillRect\(500-width\/2-10/.test(ticketJs));assert.ok(!/header img[^}]*background:white/.test(ticketCss));
  assert.equal(el('ticket-name').textContent,data.name);assert.equal(el('ticket-name').querySelector('img'),null);
  assert.equal(el('ticket-actions').hidden,false);assert.ok(el('ticket-fields').textContent.includes('19:00 WIB'));
  w.setTicketLanguage('id');assert.equal(el('ticket-download').textContent,'Unduh tiket');

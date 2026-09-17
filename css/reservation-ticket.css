@@ -7,8 +7,7 @@ button:focus-visible { outline:3px solid #b78a46; outline-offset:3px; }
 main { max-width:480px; margin:auto; }
 article { background:#fff; border:1px solid #ddd6c8; border-radius:22px; overflow:hidden; box-shadow:0 16px 45px #173a6012; }
 header { text-align:center; padding:35px 26px 30px; background:var(--ticket-header); color:var(--ticket-header-text); }
-header img { display:block; max-width:150px; max-height:60px; object-fit:contain; margin:0 auto 12px; background:white; border-radius:6px; padding:6px; }
-#ticket-restaurant { margin:0 0 28px; font-size:15px; }
+header img { display:block; max-width:150px; max-height:60px; object-fit:contain; margin:0 auto 28px; }
 #ticket-eyebrow { color:var(--ticket-header-text); opacity:.82; letter-spacing:2px; font-size:10px; }
 h1 { font-family:Georgia,serif; font-size:30px; font-weight:400; line-height:1.2; margin:14px 0 0; }
 .ticket-body { padding:30px; }

@@ -40,9 +40,9 @@ readable text such as `Rere (Resa)`. The sheet no longer escapes the interactive
 `<span>` markup into visible text. Canonical names, aliases and HTML escaping remain intact.
 
 Reservation ticket appearance (local, not deployed): the on-screen and downloaded ticket
-header now follows Invoice Design's editable Accent colour. Header text automatically switches
-between light text and the configured invoice ink for contrast. The download button follows
-the same colour, so the public page and exported ticket stay consistent.
+header follows Invoice Design's editable Bars colour, with automatic contrasting text. The
+download button matches it. The uploaded logo sits directly on the colour without a white
+plate, padding or a duplicate restaurant-name line.
 
 Reservation-form guest links (local, not deployed): Settings > Reservation Form now accepts
 both a full-menu URL and an address/location URL. Either may be blank; its public control is
