@@ -165,7 +165,7 @@ const GUEST_DICT = {
   "We need to review your request": "Permintaan Anda perlu kami tinjau",
   "Status: waiting for staff to confirm": "Status: menunggu konfirmasi staff",
   "We will send the payment details on WhatsApp. Your reservation is held until the deposit arrives.":
-    "Kami akan mengirimkan detail pembayaran lewat WhatsApp. Reservasi Anda kami tahan sampai DP diterima.",
+    "Kami akan mengirimkan detail pembayaran lewat WhatsApp. Reservasi meja Anda akan dikonfirmasi setelah DP diterima.",
   "Chat with us on WhatsApp": "Chat dengan kami di WhatsApp",
   // The large-party handoff. Whole sentences, because a translator cannot
   // reorder "Name" + ":" + value, and Indonesian would not put them in the
