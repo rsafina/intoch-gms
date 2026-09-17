@@ -28,6 +28,17 @@ the handoff is committed and replace it with the resulting commit when known.
 
 ## Implemented in current code
 
+Branding and issued-document consistency (local, not deployed): uploaded Branding logos now
+drive the detailed invoice (including existing guest links), simple deposit invoice,
+reservation ticket and their browser-tab icons. Issued detailed invoices snapshot the active
+Invoice Design, and the shared renderer applies that same appearance on the staff preview,
+guest page and PDF; older invoices fall back to the current saved design. No SQL change is
+required. Generated client HTML was not hand-edited and must be rebuilt for deployment.
+
+Day run sheet guest names (local, not deployed): online-booking aliases now print as plain
+readable text such as `Rere (Resa)`. The sheet no longer escapes the interactive guest-name
+`<span>` markup into visible text. Canonical names, aliases and HTML escaping remain intact.
+
 Reservation-form guest links (local, not deployed): Settings > Reservation Form now accepts
 both a full-menu URL and an address/location URL. Either may be blank; its public control is
 then hidden. The booking template no longer contains Blue Heron's menu URL, featured dishes,

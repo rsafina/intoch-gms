@@ -1,4 +1,5 @@
 let ticketData = null;
+const ticketBrandingReady = typeof initBranding === 'function' ? initBranding() : Promise.resolve();
 let ticketLang = new URLSearchParams(location.search).get("lang") === "id" ? "id" : "en";
 const ticketWords = {
   en:{eyebrow:"RESERVATION CONFIRMATION",title:"You're on the guest list.",name:"RESERVED FOR",date:"Date",time:"Time",pax:"Guests",area:"Area",download:"Download ticket",help:"Save your confirmation to show when you arrive.",note:"We look forward to welcoming you. Please contact the restaurant if your plans change.",invalid:"This booking is no longer Reserved. Please contact the restaurant for confirmation.",loading:"Loading your confirmation...",error:"We couldn't load this ticket. Please retry or contact the restaurant.",retry:"Retry"},
@@ -34,6 +35,7 @@ async function loadReservationTicket() {
   document.getElementById('guest-ticket').hidden=true;document.getElementById('ticket-actions').hidden=true;
   ticketData=null;
   try {
+    await ticketBrandingReady;
     const token=new URLSearchParams(location.search).get('t');
     if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token||'')) throw new Error('Invalid ticket');
     const {data,error}=await db.rpc('reservation_ticket_by_token',{p_token:token});

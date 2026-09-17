@@ -137,7 +137,7 @@ function invPctLabel(n) {
 function invSheetMarkup() {
   return `
     <div class="inv-frame">
-      <img class="inv-logo" data-brand-logo="full" src="assets/full-logo.png" alt="Logo" />
+      <img class="inv-logo" data-brand-logo="full" crossorigin="anonymous" src="assets/full-logo.png" alt="Logo" />
       <div class="inv-rule-top"></div>
 
       <div class="inv-billto">BILL TO :</div>
@@ -160,7 +160,7 @@ function invSheetMarkup() {
       </div>
 
       <div class="inv-footer">
-        <img class="inv-heron" data-brand-logo="small" src="assets/small-logo.png" alt="" />
+        <img class="inv-heron" data-brand-logo="small" crossorigin="anonymous" src="assets/small-logo.png" alt="" />
         <div class="inv-welcome">
           We look forward to welcoming you :)
         </div>
@@ -266,6 +266,105 @@ function invSheetRender(snap) {
     totalsHtml += `<div class="inv-tbar"><span>Settlement</span><span>${invRupiah(settle)}</span></div>`;
   }
   if (el("inv-p-totals")) el("inv-p-totals").innerHTML = totalsHtml;
+}
+
+// Apply the appearance snapshot that was active when the invoice was issued.
+// Kept in this shared renderer so the staff preview, guest page and PDF use
+// exactly the same rules. Older invoices have no `style`; their public page
+// supplies the restaurant's current invoice_style setting instead.
+const INV_SHEET_STYLE_DEFAULTS = {
+  ink: "#173B64",
+  accent: "#173B64",
+  frame: "#A3C4EB",
+  row_fill: "#DCEBFB",
+  muted: "#2F5F92",
+  logo_width: 172,
+  mark_width: 62,
+  address: "",
+  phone: "",
+  instagram: "",
+};
+
+function invSheetStyle(raw) {
+  const cfg = { ...INV_SHEET_STYLE_DEFAULTS, ...(raw || {}) };
+  const hex = (value, fallback) =>
+    /^#[0-9a-f]{6}$/i.test(String(value || "").trim())
+      ? String(value).trim()
+      : fallback;
+  ["ink", "accent", "frame", "row_fill", "muted"].forEach((key) => {
+    cfg[key] = hex(cfg[key], INV_SHEET_STYLE_DEFAULTS[key]);
+  });
+  const size = (value, fallback, min, max) => {
+    const number = Number(value);
+    return isFinite(number) && number >= min && number <= max
+      ? Math.round(number)
+      : fallback;
+  };
+  cfg.logo_width = size(cfg.logo_width, 172, 80, 320);
+  cfg.mark_width = size(cfg.mark_width, 62, 24, 140);
+  ["address", "phone", "instagram"].forEach((key) => {
+    cfg[key] = String(cfg[key] || "").trim();
+  });
+  return cfg;
+}
+
+function invSheetBarText(fill, ink) {
+  const channels = [1, 3, 5].map((index) => {
+    const value = parseInt(fill.slice(index, index + 2), 16) / 255;
+    return value <= 0.03928
+      ? value / 12.92
+      : Math.pow((value + 0.055) / 1.055, 2.4);
+  });
+  const luminance =
+    0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+  return luminance > 0.6 ? ink : "#FFFFFF";
+}
+
+function invSheetFooterText(cfg) {
+  const parts = [];
+  if (cfg.address) parts.push(cfg.address);
+  if (cfg.phone) parts.push(`Reservation: ${cfg.phone}`);
+  if (cfg.instagram) {
+    const handle = cfg.instagram.startsWith("@")
+      ? cfg.instagram
+      : "@" + cfg.instagram;
+    parts.push(`Instagram: ${handle}`);
+  }
+  return parts.join(". ");
+}
+
+function invSheetApplyStyle(raw) {
+  const cfg = invSheetStyle(raw);
+  const barText = invSheetBarText(cfg.accent, cfg.ink);
+  const paidText = invSheetBarText(cfg.row_fill, cfg.ink);
+  let style = document.getElementById("inv-style-overrides");
+  if (!style) {
+    style = document.createElement("style");
+    style.id = "inv-style-overrides";
+    document.head.appendChild(style);
+  }
+  style.textContent = `
+    #inv-sheet { color: ${cfg.ink}; }
+    #inv-sheet .inv-frame { border-color: ${cfg.frame}; }
+    #inv-sheet .inv-logo { width: ${cfg.logo_width}px; }
+    #inv-sheet .inv-heron { width: ${cfg.mark_width}px; }
+    #inv-sheet .inv-rule-top { background: ${cfg.accent}; }
+    #inv-sheet .inv-meta-row { color: ${cfg.ink}; }
+    #inv-sheet .inv-thead { background: ${cfg.accent}; color: ${barText}; }
+    #inv-sheet .inv-row { background: ${cfg.row_fill}; color: ${cfg.ink}; }
+    #inv-sheet .inv-note { color: ${cfg.ink}; }
+    #inv-sheet .inv-trow { color: ${cfg.muted}; }
+    #inv-sheet .inv-trow span:last-child { color: ${cfg.ink}; }
+    #inv-sheet .inv-tbar { background: ${cfg.accent}; color: ${barText}; }
+    #inv-sheet .inv-tbar-paid { background: ${cfg.row_fill}; color: ${paidText}; }
+    #inv-sheet .inv-welcome { color: ${cfg.muted}; }
+    #inv-sheet .inv-rule-a { background: ${cfg.accent}; }
+    #inv-sheet .inv-rule-b { background: ${cfg.frame}; }
+    #inv-sheet .inv-address { color: ${cfg.muted}; }
+  `;
+  const address = document.querySelector("#inv-sheet .inv-address");
+  if (address) address.textContent = invSheetFooterText(cfg);
+  return cfg;
 }
 
 // A row counts as filled if it has a name OR an amount. A priced line with no

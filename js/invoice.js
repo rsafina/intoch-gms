@@ -618,6 +618,10 @@ function invSnapshot() {
     settleOn: invEl("inv-settle-on").checked,
     settle: invVal("inv-settle"),
     note: invVal("inv-note"),
+    // Financial documents keep the design staff previewed when they issued
+    // them. Branding images remain live so a newly uploaded restaurant logo
+    // replaces the old one everywhere, including existing invoice links.
+    style: invStyle(),
     locked: { ...invLocked },
   };
 }
@@ -1072,19 +1076,9 @@ function invFooterText(cfg) {
 
 function applyInvoiceStyle(override) {
   const cfg = override || invStyle();
-  let el = document.getElementById("inv-style-overrides");
-  if (!el) {
-    el = document.createElement("style");
-    el.id = "inv-style-overrides";
-    // Appended last so it wins over the base rules without !important, which
-    // html2canvas handles more predictably than specificity tricks.
-    document.head.appendChild(el);
-  }
-  el.textContent = invStyleCss(cfg);
-
-  const addr = document.querySelector("#inv-sheet .inv-address");
-  if (addr) addr.textContent = invFooterText(cfg);
-  return cfg;
+  // The guest page calls this same shared implementation. Keeping the actual
+  // DOM styling in invoice-sheet.js prevents another staff/guest drift.
+  return invSheetApplyStyle(cfg);
 }
 
 // ============================================================

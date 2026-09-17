@@ -11,7 +11,8 @@
          that in a group chat before anyone opened it. -->
     <meta name="robots" content="noindex, nofollow" />
     <link rel="canonical" href="__SITE_URL__/deposit-invoice" />
-    <link rel="icon" href="assets/intoch-favicon.png" />
+    <link rel="icon" href="assets/small-logo.png" />
+    <link rel="apple-touch-icon" href="assets/small-logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -363,12 +364,17 @@
           const { data } = await db
             .from("app_settings")
             .select("key, value")
-            .in("key", ["reserve_appearance", "reservation_form"]);
+            .in("key", ["reserve_appearance", "reservation_form", "branding"]);
           const byKey = Object.fromEntries((data || []).map((r) => [r.key, r.value || {}]));
           const ra = byKey.reserve_appearance || {};
           applyReserveAppearance(ra);
-          if (typeof ra.logo_url === "string" && /^https?:\/\//i.test(ra.logo_url))
-            $("brand-logo").src = ra.logo_url;
+          const branding = byKey.branding || {};
+          if (typeof branding.logo_url === "string" && /^https?:\/\//i.test(branding.logo_url))
+            $("brand-logo").src = branding.logo_url;
+          if (typeof branding.small_logo_url === "string" && /^https?:\/\//i.test(branding.small_logo_url)) {
+            document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]')
+              .forEach((el) => el.href = branding.small_logo_url);
+          }
 
           const rf = byKey.reservation_form || {};
           window.__PAY = {

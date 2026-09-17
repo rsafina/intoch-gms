@@ -126,7 +126,14 @@ function runSheetDepositCell(r) {
 }
 
 function runSheetRow(r) {
-  const name = r.guests ? formatGuestName(r.guests) : "—";
+  // formatGuestName() returns HTML for interactive screens, including a
+  // dimmed <span> around an online-booking alias. The printable table needs
+  // plain text; escaping that HTML again made the literal tag visible.
+  const name = r.guests
+    ? (typeof guestDisplayName === "function"
+        ? guestDisplayName(r.guests)
+        : r.guests.name || "—")
+    : "—";
   const area =
     (r.areas && r.areas.name) ||
     (r.assigned_area ? "—" : `<span class="rs-muted">${t("Not yet placed")}</span>`);

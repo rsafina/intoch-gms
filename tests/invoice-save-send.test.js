@@ -101,6 +101,22 @@ ok(
   "the guest page renders the stored doc, not a rebuild",
   /invSheetRender\(SNAP\)/.test(guest) && /row\.doc/.test(guest),
 );
+ok(
+  "the issued document snapshots the Invoice Design",
+  /style:\s*invStyle\(\)/.test(invoiceJs),
+);
+ok(
+  "the guest page applies that same design before display and PDF",
+  /invSheetApplyStyle\(SNAP\.style \|\| settings\.invoice_style/.test(guest) &&
+    /function invSheetApplyStyle/.test(sheetJs),
+);
+ok(
+  "the guest page loads live branding for both logos and its tab icon",
+  /\["branding", "invoice_style"\]/.test(guest) &&
+    /data-brand-logo="full"/.test(sheetJs) &&
+    /data-brand-logo="small"/.test(sheetJs) &&
+    /apple-touch-icon/.test(guest),
+);
 
 console.log("\nSaving cannot silently do nothing");
 const save = invoiceJs.slice(invoiceJs.indexOf("async function invSaveInvoice"), invoiceJs.indexOf("// ── Local history"));
@@ -180,10 +196,11 @@ ok(
 console.log("\nThe guest page");
 ok("it reads through the token function only", /invoice_by_token/.test(guest));
 ok(
-  "it never queries a table directly",
-  !/\.from\(/.test(guest),
-  "The anon key is public. A direct table read from this page is a way to " +
-    "walk every invoice the restaurant has issued.",
+  "it never queries the invoice tables directly",
+  !/\.from\(["']invoices["']\)/.test(guest) &&
+    !/\.from\(["']invoice_payments["']\)/.test(guest),
+  "The anon key is public. Invoice data must only come through the token RPC; " +
+    "the public app_settings read is limited to branding and design.",
 );
 ok(
   "a network failure is not reported as a dead link",

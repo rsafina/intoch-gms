@@ -76,7 +76,11 @@ ok("a blank WhatsApp number hides the button rather than building a broken link"
 
 console.log("\nThe settings that feed it");
 ok("it reads the shared reservation appearance row",
-   /\.in\("key", \["reserve_appearance", "reservation_form"\]\)/.test(page));
+   /\.in\("key", \["reserve_appearance", "reservation_form", "branding"\]\)/.test(page));
+ok("the logo and tab icon come from Branding, not a stale appearance copy",
+   /byKey\.branding/.test(page) && /branding\.logo_url/.test(page) &&
+   /branding\.small_logo_url/.test(page) &&
+   !/ra\.logo_url/.test(page));
 ok("it applies the reservation form background mode",
    /function applyReserveAppearance\(ra\)/.test(page) &&
    /data-rf-bg/.test(page) &&

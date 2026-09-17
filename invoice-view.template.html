@@ -13,7 +13,8 @@
          the URL is the only thing protecting it. -->
     <meta name="robots" content="noindex, nofollow" />
     <link rel="canonical" href="__SITE_URL__/invoice-view" />
-    <link rel="icon" href="assets/intoch-favicon.png" />
+    <link rel="icon" href="assets/small-logo.png" />
+    <link rel="apple-touch-icon" href="assets/small-logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -138,6 +139,21 @@
 
       let SNAP = null;
 
+      function publicBrandUrl(value) {
+        return typeof value === "string" && /^https?:\/\/\S+$/i.test(value.trim())
+          ? value.trim()
+          : null;
+      }
+
+      function applyPublicBranding(branding) {
+        const full = publicBrandUrl(branding && branding.logo_url) || "assets/full-logo.png";
+        const small = publicBrandUrl(branding && branding.small_logo_url) || "assets/small-logo.png";
+        document.querySelectorAll('[data-brand-logo="full"]').forEach((el) => el.src = full);
+        document.querySelectorAll('[data-brand-logo="small"]').forEach((el) => el.src = small);
+        document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]')
+          .forEach((el) => el.href = small);
+      }
+
       function rupiah(n) {
         const v = Number(n);
         return isFinite(v) ? "Rp " + v.toLocaleString("id-ID") : "";
@@ -148,12 +164,17 @@
         if (!token) return show("dead");
 
         let row;
+        let settings = {};
         try {
-          const { data, error } = await db.rpc("invoice_by_token", {
-            p_token: token,
-          });
-          if (error) throw error;
-          row = Array.isArray(data) ? data[0] : data;
+          const [invoiceResult, settingsResult] = await Promise.all([
+            db.rpc("invoice_by_token", { p_token: token }),
+            db.from("app_settings").select("key, value").in("key", ["branding", "invoice_style"]),
+          ]);
+          if (invoiceResult.error) throw invoiceResult.error;
+          row = Array.isArray(invoiceResult.data) ? invoiceResult.data[0] : invoiceResult.data;
+          settings = Object.fromEntries(
+            ((settingsResult && settingsResult.data) || []).map((item) => [item.key, item.value || {}]),
+          );
         } catch (_) {
           // A network failure is NOT a dead link. Telling a guest their invoice
           // has been cancelled because their wifi dropped is the worse of the
@@ -177,6 +198,8 @@
 
         $("inv-sheet").innerHTML = invSheetMarkup();
         invSheetRender(SNAP);
+        applyPublicBranding(settings.branding || {});
+        invSheetApplyStyle(SNAP.style || settings.invoice_style || {});
         show("invoice");
         // After the sheet is visible: a hidden element has no width, so fitting
         // it while the page still showed the loader would scale it to zero.

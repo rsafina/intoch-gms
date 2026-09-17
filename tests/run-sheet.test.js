@@ -51,7 +51,11 @@ const load = new Function(
   var CURRENT_LANG = "en";
   var t = function (s) { return s; };
   var allAreas = [];
-  function formatGuestName(g) { return g && g.name ? g.name : "—"; }
+  function guestDisplayName(g) {
+    if (!g || !g.name) return "Unknown Guest";
+    var alias = String(g.booking_alias || "").trim();
+    return g.name + (alias && alias !== g.name ? " (" + alias + ")" : "");
+  }
   ${lift(rsSrc, "runSheetEscape")}
   ${lift(rsSrc, "runSheetRupiah")}
   ${lift(rsSrc, "runSheetNote")}
@@ -149,6 +153,15 @@ const nastyRow = sandbox.runSheetRow({
 ok("guest name is escaped", !nastyRow.includes("<b>Anung"));
 ok("notes are escaped", !nastyRow.includes("<script>"));
 ok("time is trimmed to HH:MM", nastyRow.includes(">19:30<"));
+
+const aliasRow = sandbox.runSheetRow({
+  reservation_time: "11:00:00",
+  pax: 2,
+  guests: { name: "Rere", booking_alias: "Resa" },
+  areas: { name: "Indoor" },
+});
+ok("online booking alias prints as plain readable text", aliasRow.includes("Rere (Resa)"));
+ok("guest-name decoration markup never prints literally", !aliasRow.includes("&lt;span"));
 
 // ── Wiring ─────────────────────────────────────────────────────────
 const statusLine = /const RES_OCCUPANCY_STATUSES = \[([^\]]*)\]/.exec(appSrc);
