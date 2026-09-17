@@ -1,5 +1,11 @@
 let ticketData = null;
 const ticketBrandingReady = typeof initBranding === 'function' ? initBranding() : Promise.resolve();
+let ticketHeaderColor = '#173A60';
+let ticketHeaderTextColor = '#FFFFFF';
+function ticketColor(value,fallback) {return /^#[0-9a-f]{6}$/i.test(String(value||'').trim())?String(value).trim():fallback;}
+function ticketReadableText(fill,ink) {const channels=[1,3,5].map(i=>{const value=parseInt(fill.slice(i,i+2),16)/255;return value<=.03928?value/12.92:Math.pow((value+.055)/1.055,2.4);});const luminance=.2126*channels[0]+.7152*channels[1]+.0722*channels[2];return luminance>.6?ink:'#FFFFFF';}
+async function loadTicketAppearance() {try {const {data}=await db.from('app_settings').select('value').eq('key','invoice_style').maybeSingle();const style=(data&&data.value)||{};ticketHeaderColor=ticketColor(style.accent,'#173A60');ticketHeaderTextColor=ticketReadableText(ticketHeaderColor,ticketColor(style.ink,'#173A60'));} catch (_) {ticketHeaderColor='#173A60';ticketHeaderTextColor='#FFFFFF';}document.documentElement.style.setProperty('--ticket-header',ticketHeaderColor);document.documentElement.style.setProperty('--ticket-header-text',ticketHeaderTextColor);}
+const ticketAppearanceReady=loadTicketAppearance();
 let ticketLang = new URLSearchParams(location.search).get("lang") === "id" ? "id" : "en";
 const ticketWords = {
   en:{eyebrow:"RESERVATION CONFIRMATION",title:"You're on the guest list.",name:"RESERVED FOR",date:"Date",time:"Time",pax:"Guests",area:"Area",download:"Download ticket",help:"Save your confirmation to show when you arrive.",note:"We look forward to welcoming you. Please contact the restaurant if your plans change.",invalid:"This booking is no longer Reserved. Please contact the restaurant for confirmation.",loading:"Loading your confirmation...",error:"We couldn't load this ticket. Please retry or contact the restaurant.",retry:"Retry"},
@@ -17,7 +23,7 @@ function renderReservationTicket() {
   const w=ticketWords[ticketLang], r=ticketData;
   document.documentElement.lang=ticketLang;
   const text=(id,value)=>{document.getElementById(id).textContent=value;};
-  text('ticket-restaurant',r.restaurant || restaurantName());text('ticket-eyebrow',w.eyebrow);
+  text('ticket-eyebrow',w.eyebrow);
   text('ticket-title',r.status==='Reserved'?w.title:(ticketLang==='id'?'Status reservasi berubah':'Reservation status changed'));
   text('ticket-name-label',w.name);text('ticket-name',r.name);text('ticket-reference',r.reference);
   text('ticket-status',r.status);text('ticket-note',r.status==='Reserved'?w.note:w.invalid);
@@ -35,7 +41,7 @@ async function loadReservationTicket() {
   document.getElementById('guest-ticket').hidden=true;document.getElementById('ticket-actions').hidden=true;
   ticketData=null;
   try {
-    await ticketBrandingReady;
+    await Promise.all([ticketBrandingReady,ticketAppearanceReady]);
     const token=new URLSearchParams(location.search).get('t');
     if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token||'')) throw new Error('Invalid ticket');
     const {data,error}=await db.rpc('reservation_ticket_by_token',{p_token:token});
@@ -52,16 +58,14 @@ async function downloadReservationTicket() {
     const c=canvas.getContext('2d');
     const wrap=(text,width,font)=>{c.font=font;const lines=[];let line='';for(const word of String(text).split(/\s+/)){if(c.measureText(line+' '+word).width>width && line){lines.push(line);line='';} if(c.measureText(word).width>width){for(const letter of word){if(c.measureText(line+letter).width>width){lines.push(line);line='';}line+=letter;}}else line+=(line?' ':'')+word;}if(line)lines.push(line);return lines;};
     const nameLines=wrap(r.name,840,'48px Georgia'),fields=ticketDisplayFields(r).map(([label,value])=>({label,lines:wrap(value,840,'30px Arial')}));
-    const restaurantLines=wrap(r.restaurant || restaurantName(),840,'30px Georgia');
     const logo=document.querySelector('#guest-ticket header img');
     const hasLogo=logo?.complete && logo.naturalWidth>0;
     const logoHeight=hasLogo ? 100 : 0;
-    const headerHeight=180+restaurantLines.length*38+logoHeight;
+    const headerHeight=160+logoHeight;
     canvas.height=headerHeight+200+nameLines.length*58+fields.reduce((n,f)=>n+70+f.lines.length*38,0)+150;
-    c.fillStyle='#ffffff';c.fillRect(0,0,1000,canvas.height);c.fillStyle='#173a60';c.fillRect(0,0,1000,headerHeight);
-    if(hasLogo) {const scale=Math.min(280/logo.naturalWidth,80/logo.naturalHeight);const width=logo.naturalWidth*scale,height=logo.naturalHeight*scale;c.fillStyle='#ffffff';c.fillRect(500-width/2-10,20,width+20,height+12);c.drawImage(logo,500-width/2,26,width,height);}
-    c.textAlign='center';c.fillStyle='#ffffff';c.font='30px Georgia';restaurantLines.forEach((line,i)=>c.fillText(line,500,65+logoHeight+i*38));
-    c.font='20px Arial';c.fillStyle='#ecd6ae';c.fillText(w.eyebrow,500,headerHeight-70);
+    c.fillStyle='#ffffff';c.fillRect(0,0,1000,canvas.height);c.fillStyle=ticketHeaderColor;c.fillRect(0,0,1000,headerHeight);
+    if(hasLogo) {const scale=Math.min(280/logo.naturalWidth,80/logo.naturalHeight);const width=logo.naturalWidth*scale,height=logo.naturalHeight*scale;c.drawImage(logo,500-width/2,26,width,height);}
+    c.textAlign='center';c.font='20px Arial';c.fillStyle=ticketHeaderTextColor;c.fillText(w.eyebrow,500,headerHeight-70);
     c.textAlign='left';let y=headerHeight+65;c.fillStyle='#707b87';c.font='18px Arial';c.fillText(w.name,80,y);y+=60;
     c.fillStyle='#173a60';c.font='48px Georgia';nameLines.forEach(line=>{c.fillText(line,80,y);y+=58;});y+=25;
     fields.forEach(f=>{c.font='20px Arial';c.fillStyle='#707b87';c.fillText(f.label,80,y);y+=42;c.font='30px Arial';c.fillStyle='#173a60';f.lines.forEach(line=>{c.fillText(line,80,y);y+=38;});y+=28;});

@@ -39,6 +39,11 @@ Day run sheet guest names (local, not deployed): online-booking aliases now prin
 readable text such as `Rere (Resa)`. The sheet no longer escapes the interactive guest-name
 `<span>` markup into visible text. Canonical names, aliases and HTML escaping remain intact.
 
+Reservation ticket appearance (local, not deployed): the on-screen and downloaded ticket
+header follows Invoice Design's editable Bars colour, with automatic contrasting text. The
+download button matches it. The uploaded logo sits directly on the colour without a white
+plate, padding or a duplicate restaurant-name line.
+
 Reservation-form guest links (local, not deployed): Settings > Reservation Form now accepts
 both a full-menu URL and an address/location URL. Either may be blank; its public control is
 then hidden. The booking template no longer contains Blue Heron's menu URL, featured dishes,

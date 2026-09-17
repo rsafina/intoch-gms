@@ -252,7 +252,8 @@ const ID_DICT = {
   Ink: "Tinta",
   "Headings, figures, guest details": "Judul, angka, dan data tamu",
   Bars: "Bar",
-  "Table header, totals bar, rules": "Kepala tabel, bar total, dan garis",
+  "Table header, totals bar, rules, reservation ticket header":
+    "Kepala tabel, bar total, garis, dan kepala tiket reservasi",
   Frame: "Bingkai",
   "The border around the page": "Garis tepi halaman",
   "Row fill": "Isi baris",
