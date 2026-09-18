@@ -28,6 +28,11 @@ the handoff is committed and replace it with the resulting commit when known.
 
 ## Implemented in current code
 
+Dashboard large-party deposit choice (local, not deployed): New Reservation now reveals the
+existing simple-versus-detailed invoice-format choice when pax exceeds the configured regular
+maximum and a deposit is requested. The chosen format is saved on creation; online-form and
+older unselected bookings retain the existing post-creation choice. No SQL change is required.
+
 Guest deposit confirmation wording (local, not deployed): Settings > WhatsApp Messages now
 includes an editable `Deposit payment confirmation (guest button)` template for the public
 invoice's “Saya sudah transfer” action. It supports `{nama}` and `{resto}` and retains a
