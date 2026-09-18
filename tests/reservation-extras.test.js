@@ -6,6 +6,7 @@ w.eval(fs.readFileSync('js/deposit-policy.js','utf8'));
 w.eval(fs.readFileSync('js/reservation-extras.js','utf8')+'\nwindow.leaveOnline=()=>{dashboardOnlineView=false; ++dashboardOnlineRequest;};');
 Object.assign(w,{CURRENT_LANG:'en',APP_SETTINGS:{reservation_hours:{max_pax:20}},allAreas:[{id:'a',deposit_amount:50000},{id:'b',deposit_amount:0}],
  areaParseRupiah:s=>Number(String(s||'').replaceAll('.','')),toast:()=>{},refreshResTableOccupancy:()=>{},
+ t:s=>s,
  updateDashboardReservationTabs:()=>{},dashboardReservationRequest:0,getDashboardDate:n=>n===0?'2026-09-09':'2026-09-22',escapeHtml:s=>String(s),
  clearResSearch:()=>{},loadReservations:()=>{},navigateTo:p=>{w.destination=p;},supabaseQuery:fn=>fn(),
 });
@@ -16,12 +17,12 @@ w.updateStaffDepositDefaults(true);assert.equal(el('res-request-deposit').checke
 let deposit=w.readStaffDeposit();assert.equal(deposit.status,'Incoming');assert.equal(deposit.deposit_expected,50000);assert.equal(deposit.deposit_due_at,'2026-09-10T12:00:00.000Z');
 el('res-area').value='b';w.updateStaffDepositDefaults(true);assert.equal(el('res-request-deposit').checked,false);
 el('res-request-deposit').checked=true;el('res-deposit-amount').value='75.000';w.onStaffDepositChange();assert.equal(w.readStaffDeposit().deposit_expected,75000);
-el('res-pax').value='40';w.updateStaffDepositDefaults(true);assert.equal(el('res-request-deposit').checked,true);assert.equal(w.readStaffDeposit(),false);
+el('res-pax').value='40';w.updateStaffDepositDefaults(true);assert.equal(el('res-request-deposit').checked,true);assert.equal(el('res-deposit-format-wrap').classList.contains('hidden'),false);assert.equal(w.readStaffDeposit(),false);
  w.APP_SETTINGS.reservation_form={deposit_basis:'pax',deposit_free_pax:1,deposit_regular_max_pax:20};
  el('res-pax').value='2';w.updateStaffDepositDefaults(true);assert.equal(w.readStaffDeposit().status,'Incoming');assert.equal(w.readStaffDeposit().deposit_expected,null);assert.equal(w.readStaffDeposit().deposit_due_at,null);
- el('res-pax').value='21';w.updateStaffDepositDefaults(true);assert.equal(w.readStaffDeposit().status,'Waitlist');assert.equal(w.readStaffDeposit().deposit_invoice_format,'unselected');
+ el('res-pax').value='21';w.updateStaffDepositDefaults(true);assert.equal(w.readStaffDeposit(),false);el('res-deposit-format').value='simple';assert.equal(w.readStaffDeposit().status,'Waitlist');assert.equal(w.readStaffDeposit().deposit_invoice_format,'simple');
  w.APP_SETTINGS.reservation_form={};
-el('res-deposit-amount').value='2.500.000';w.onStaffDepositChange();deposit=w.readStaffDeposit();assert.equal(deposit.status,'Waitlist');assert.equal(deposit.deposit_due_at,null);assert.equal(deposit.is_large_party,true);
+el('res-deposit-amount').value='2.500.000';el('res-deposit-format').value='detailed';w.onStaffDepositChange();deposit=w.readStaffDeposit();assert.equal(deposit.status,'Waitlist');assert.equal(deposit.deposit_due_at,null);assert.equal(deposit.is_large_party,true);assert.equal(deposit.deposit_invoice_format,'detailed');
 el('res-request-deposit').checked=false;w.onStaffDepositChange();assert.equal(w.readStaffDeposit().deposit_required,false);
 el('res-edit-id').value='existing';w.updateStaffDepositDefaults(true);assert.equal(w.readStaffDeposit(),null);assert.equal(el('res-staff-deposit').hidden,true);
 assert.equal(w.reservationTicketButton({status:'Waitlist'}),'');assert.ok(w.reservationTicketButton({id:'r',status:'Reserved'}).includes('Issue ticket'));
@@ -38,8 +39,8 @@ const summary=w.onlineReservationDays(rows)[0];assert.equal(summary.count,2);ass
  w.db={from:()=>({insert:async payload=>{saved=payload;return {error:null};}})};
  el('res-edit-id').value='';el('res-area').value='a';el('res-pax').value='4';w.updateStaffDepositDefaults(true);
  await w.saveReservation();assert.equal(saved.deposit_expected,50000);assert.equal(saved.status,'Incoming');assert.equal(saved.reservation_source,'WhatsApp');
- el('res-area').value='b';el('res-pax').value='40';w.updateStaffDepositDefaults(true);el('res-deposit-amount').value='2.500.000';w.onStaffDepositChange();
- await w.saveReservation();assert.equal(saved.status,'Waitlist');assert.equal(saved.deposit_due_at,null);assert.equal(saved.is_large_party,true);
+ el('res-area').value='b';el('res-pax').value='40';w.updateStaffDepositDefaults(true);el('res-deposit-amount').value='2.500.000';el('res-deposit-format').value='simple';w.onStaffDepositChange();
+ await w.saveReservation();assert.equal(saved.status,'Waitlist');assert.equal(saved.deposit_due_at,null);assert.equal(saved.is_large_party,true);assert.equal(saved.deposit_invoice_format,'simple');
  let calls=0,fail=false;const filters=[];
  w.db={from:()=>{const q={select:()=>q,eq:(...a)=>{filters.push(a);return q;},gte:(...a)=>{filters.push(a);return q;},lte:(...a)=>{filters.push(a);return q;},order:()=>q,range:async()=>{calls++;return fail?{error:true}:{data:rows};}};return q;}};
  await w.showDashboardOnlineReservations();assert.equal(calls,1);assert.ok(el('dashboard-reservations-list').textContent.includes('25 pax pending'));

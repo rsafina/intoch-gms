@@ -8081,6 +8081,14 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
               <input id="res-deposit-amount" class="form-input" type="text" inputmode="numeric" placeholder="50.000" aria-label="Requested deposit" oninput="onAreaMoneyInput(this); onStaffDepositChange()" onkeydown="onAreaMoneyKeydown(this,event)" />
               <button type="button" class="btn-ghost text-xs whitespace-nowrap" onclick="updateStaffDepositDefaults(true)" data-i18n>Use defaults</button>
             </div>
+            <label id="res-deposit-format-wrap" class="hidden block text-sm mt-3" for="res-deposit-format">
+              <span data-i18n>Invoice format</span>
+              <select id="res-deposit-format" class="form-input mt-1" onchange="onStaffDepositChange()">
+                <option value="" data-i18n>Choose a format</option>
+                <option value="simple" data-i18n>Simple deposit</option>
+                <option value="detailed" data-i18n>Detailed invoice: deposit and settlement</option>
+              </select>
+            </label>
             <p id="res-staff-deposit-help" class="text-xs text-[#586572] mt-2"></p>
           </div>
           <input type="hidden" id="res-table-id" />

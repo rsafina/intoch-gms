@@ -100,11 +100,17 @@ function updateStaffDepositDefaults(reset = false) {
   const defaults = staffDepositDefaults(area, document.getElementById("res-pax")?.value, APP_SETTINGS.reservation_hours?.max_pax);
   const enabled = document.getElementById("res-request-deposit");
   const amount = document.getElementById("res-deposit-amount");
+  const formatWrap = document.getElementById("res-deposit-format-wrap");
+  const format = document.getElementById("res-deposit-format");
   if (!staffDepositEdited) {
     enabled.checked = defaults.enabled;
     amount.value = defaults.amount > 0 ? Number(defaults.amount).toLocaleString("id-ID") : "";
   }
+  if (reset && format) format.value = "";
   amount.disabled = !enabled.checked;
+  const chooseFormat = defaults.large && enabled.checked;
+  formatWrap?.classList.toggle("hidden", !chooseFormat);
+  if (format) format.disabled = !chooseFormat;
   const status = document.getElementById("res-status");
   if (status) {
     const next = enabled.checked ? (defaults.large ? "Waitlist" : "Incoming") : (staffDepositManagedStatus ? "Reserved" : status.value);
@@ -138,6 +144,11 @@ function readStaffDeposit() {
     return false;
   }
   const large = Number(document.getElementById("res-pax")?.value) > policy.max;
+  const format = document.getElementById("res-deposit-format")?.value || "";
+  if (enabled && large && !["simple", "detailed"].includes(format)) {
+    toast(t("Choose a deposit invoice format"), "error");
+    return false;
+  }
   const date = document.getElementById("res-date")?.value;
   const time = document.getElementById("res-time")?.value;
   const due = enabled && !large && policy.basis === "area" ? new Date(`${date}T${time}+07:00`) : null;
@@ -148,7 +159,7 @@ function readStaffDeposit() {
   return {
     is_large_party:large, deposit_required:enabled, deposit_expected:enabled && !quoteLater ? amount : null,
     deposit_basis:policy.basis, deposit_quote_required:enabled && policy.basis === "pax",
-    deposit_invoice_format:large ? "unselected" : "simple",
+    deposit_invoice_format:large ? format : "simple",
     deposit_due_at:due ? due.toISOString() : null,
     ...(enabled ? {status:large ? "Waitlist" : "Incoming"} : {}),
   };
