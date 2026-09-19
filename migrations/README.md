@@ -3,6 +3,11 @@
 This is the canonical sequence for the current repository (audit 2026-09-14).
 No SQL is run by reading this document or by deploying frontend files.
 
+> If migration terminology or the number of files is unfamiliar, first read
+> [Intoch database migrations, explained simply](../docs/MIGRATIONS_EXPLAINED_SIMPLY.md).
+> The short version: do not delete anything, do not run files by filename order, and inventory
+> an existing database before applying any SQL.
+
 ## Never apply filename order blindly
 
 Latest arrival fix: on the affected project only, review/run
