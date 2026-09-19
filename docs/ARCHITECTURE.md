@@ -41,6 +41,11 @@ There is no general application backend proxy. Postgres owns critical concurrenc
 authorization, payment/status and membership rules. `app_settings` stores JSON settings.
 The `financial_tracking` row independently controls deposit and spending tracking; missing keys default to enabled for existing clients. Disabling a feature preserves historical rows while PostgreSQL prevents new financial state.
 
+For a non-technical introduction, start with
+[Supabase in Intoch, explained simply](SUPABASE_EXPLAINED_SIMPLY.md). For connection setup,
+query syntax, direct queries versus RPCs, Auth/RLS boundaries, Storage, Realtime, Edge
+Functions and debugging, see [How Intoch connects to Supabase](SUPABASE_GUIDE.md).
+
 | Data | Main objects |
 |---|---|
 | Identity/configuration | `staff_users`, `app_settings`, `areas`, `tables`, `reservation_exceptions` |

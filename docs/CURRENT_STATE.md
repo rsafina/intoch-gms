@@ -5,6 +5,19 @@ Implementation claims were checked against code, migrations, Git and existing te
 No live Supabase/Cloudflare inspection, migration, deployment or push was performed for this
 documentation task. **Committed code is not proof of deployed SQL or Edge Functions.**
 
+Supabase developer guide (local documentation, 2026-09-19): added
+`docs/SUPABASE_EXPLAINED_SIMPLY.md` as the non-technical starting point and
+`docs/SUPABASE_GUIDE.md` as the developer reference. Together they explain the
+browser-to-Supabase architecture, connection/build configuration, Auth session path,
+PostgREST queries, RPCs, RLS, Storage, Realtime, the `staff-account` Edge Function,
+migration/deployment separation and safe debugging. Linked them from
+`docs/ARCHITECTURE.md`. No runtime, SQL, configuration or deployment change was made.
+
+Migration orientation (local documentation, 2026-09-19): added
+`docs/MIGRATIONS_EXPLAINED_SIMPLY.md` to separate the fresh-client sequence, existing-client
+inventory path and consolidated historical files in non-technical language. No migration was
+deleted or applied and no live database was accessed.
+
 ## Repository snapshot
 
 - Working branch: `main`, HEAD `d89252c`; local `origin/main` points to the same commit.
