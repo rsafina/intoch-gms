@@ -902,15 +902,8 @@
             <span class="nav-label" data-i18n-skip>Dashboard</span>
             <span
               id="nav-dashboard-dot"
-              class="hidden ml-auto"
+              class="nav-alert-dot hidden"
               title="Birthdays coming up"
-              style="
-                width: 8px;
-                height: 8px;
-                border-radius: 50%;
-                background: #c0392b;
-                flex-shrink: 0;
-              "
             ></span>
           </button>
           <button
@@ -1039,15 +1032,8 @@
             <span class="nav-label" data-i18n>Reports</span>
             <span
               id="nav-reports-dot"
-              class="hidden ml-auto"
+              class="nav-alert-dot hidden"
               title="Birthdays coming up"
-              style="
-                width: 8px;
-                height: 8px;
-                border-radius: 50%;
-                background: #c0392b;
-                flex-shrink: 0;
-              "
             ></span>
           </button>
           <button
@@ -1150,27 +1136,7 @@
         </div>
       </nav>
 
-      <div class="px-4 py-3 border-t border-[#EDE9E3] flex items-center justify-center gap-1">
-        <button
-          id="lang-toggle-id"
-          onclick="setLanguage('id')"
-          title="Bahasa Indonesia"
-          class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[color:var(--brand-ink)] text-white transition-colors"
-        >
-          ID
-        </button>
-        <span class="text-[#D6D2C9] text-[11px]">|</span>
-        <button
-          id="lang-toggle-en"
-          onclick="setLanguage('en')"
-          title="English"
-          class="px-2 py-0.5 rounded-full text-[11px] font-semibold text-[#999] hover:text-[#555] transition-colors"
-        >
-          EN
-        </button>
-      </div>
-
-      <div class="px-4 py-3 border-t border-[#EDE9E3]">
+      <div id="sidebar-account" class="px-4 py-3 border-t border-[#EDE9E3]">
         <div class="mb-2 text-center">
           <p
             class="font-display text-lg text-[color:var(--brand-ink)] leading-tight"
@@ -1198,6 +1164,31 @@
           <span class="font-display font-semibold" id="clock">—</span>
           <span class="text-[#999]"> · </span>
           <span class="text-[11px] text-[#999]" id="clock-date">—</span>
+        </div>
+      </div>
+
+      <!-- Segmented pill: one track, the selected half filled. aria-pressed is
+           both the state and the style hook (see updateLangToggleUI). -->
+      <div id="sidebar-language" class="px-4 py-3 border-t border-[#EDE9E3]">
+        <div class="lang-switch" role="group" aria-label="Language">
+          <button
+            id="lang-toggle-id"
+            type="button"
+            onclick="setLanguage('id')"
+            title="Bahasa Indonesia"
+            aria-pressed="true"
+          >
+            ID
+          </button>
+          <button
+            id="lang-toggle-en"
+            type="button"
+            onclick="setLanguage('en')"
+            title="English"
+            aria-pressed="false"
+          >
+            EN
+          </button>
         </div>
       </div>
     </aside>

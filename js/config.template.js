@@ -1656,12 +1656,10 @@ function updateLangToggleUI() {
   const idBtn = document.getElementById("lang-toggle-id");
   const enBtn = document.getElementById("lang-toggle-en");
   if (!idBtn || !enBtn) return;
-  const activeClass =
-    "px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[color:var(--brand-ink)] text-white transition-colors";
-  const inactiveClass =
-    "px-2 py-0.5 rounded-full text-[11px] font-semibold text-[#999] hover:text-[#555] transition-colors";
-  idBtn.className = CURRENT_LANG === "id" ? activeClass : inactiveClass;
-  enBtn.className = CURRENT_LANG === "en" ? activeClass : inactiveClass;
+  // The segmented pill is painted in css/settings-navigation.css off
+  // aria-pressed, so the state flag and the style hook stay the same thing.
+  idBtn.setAttribute("aria-pressed", String(CURRENT_LANG === "id"));
+  enBtn.setAttribute("aria-pressed", String(CURRENT_LANG === "en"));
 }
 
 // setLanguage() lives in js/i18n.js (loaded right after this file) — it

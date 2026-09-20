@@ -1,25 +1,33 @@
 /* Full and compact desktop navigation; phones use a drawer. */
-#app-sidebar { width: 252px; }
+#app-sidebar { width: 252px; overflow: visible; }
 #app-main { margin-left: 252px; }
-#app-sidebar > div:first-of-type { padding: 22px 24px 12px; }
+#app-sidebar > div:first-of-type { padding: 22px 24px 14px; }
 #app-sidebar .sidebar-logo { width: 100%; height: 58px; }
 #app-sidebar .sidebar-logo img { width: 100%; max-width: 150px; }
 #app-sidebar .sidebar-logo .sidebar-compact-logo { display: none; }
 #app-sidebar .nav-label { display: inline; }
 #app-sidebar [data-nav] { min-height: 42px; }
 #app-sidebar [data-nav] > svg { flex-shrink: 0; }
-/* Panel icon rather than an arrow: the same mark in both states, so it reads as
-   "the sidebar" instead of a direction. State lives in aria-label/title. */
-#sidebar-size-toggle { align-self: flex-end; margin: 8px 12px -14px; z-index: 1; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid #e1e5eb; border-radius: 8px; color: var(--brand-ink); background: white; }
-#sidebar-size-toggle:hover { background: #f4f7fa; }
-#sidebar-size-toggle::before { content: ''; width: 17px; height: 17px; background: currentColor; -webkit-mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='2'/%3E%3Cline x1='9' y1='4' x2='9' y2='20'/%3E%3C/svg%3E") center/17px no-repeat; mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='2'/%3E%3Cline x1='9' y1='4' x2='9' y2='20'/%3E%3C/svg%3E") center/17px no-repeat; }
+.nav-alert-dot { width: 8px; height: 8px; margin-left: auto; border-radius: 50%; background: #c0392b; flex-shrink: 0; }
+/* Round chip riding the sidebar's outer edge, so collapsing is a control of
+   the panel rather than another item inside it. The chevron points the way
+   the panel will move; aria-expanded drives both the flip and the label. */
+#sidebar-size-toggle { position: absolute; top: 28px; right: -15px; z-index: 41; display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border: 1px solid #e1e5eb; border-radius: 50%; color: var(--brand-ink); background: white; box-shadow: 0 2px 8px #172b4d1f; transition: background .15s ease, box-shadow .15s ease; }
+#sidebar-size-toggle:hover { background: #f4f7fa; box-shadow: 0 3px 10px #172b4d29; }
+#sidebar-size-toggle::before { content: ''; width: 16px; height: 16px; background: currentColor; -webkit-mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='15 6 9 12 15 18'/%3E%3C/svg%3E") center/16px no-repeat; mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='15 6 9 12 15 18'/%3E%3C/svg%3E") center/16px no-repeat; transition: transform .2s ease; }
+#sidebar-size-toggle[aria-expanded="false"]::before { transform: rotate(180deg); }
 #settings-children[hidden], #sidebar-backdrop[hidden] { display: none !important; }
 #settings-children { border-left: 1px solid #dce3eb; margin: 6px 0 10px 20px; padding-left: 10px; }
-.settings-child { display: block; width: 100%; text-align: left; padding: 10px 9px; border-radius: 8px; font-size: 12px; color: #526174; min-height: 40px; }
+.settings-child { position: relative; display: block; width: 100%; text-align: left; padding: 10px 9px; border-radius: 8px; font-size: 12px; color: #526174; min-height: 40px; }
+.settings-child::before { content: ''; position: absolute; left: -10px; top: 50%; width: 7px; border-top: 1px solid #dce3eb; }
 .settings-child:hover { background: #f4f7fa; }
 .settings-child.is-active { color: var(--brand-ink); background: var(--brand-tint); font-weight: 600; }
 [data-nav="settings"]::after { content: ''; margin-left: auto; width: 14px; height: 14px; flex-shrink: 0; background: currentColor; -webkit-mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") center/14px no-repeat; mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") center/14px no-repeat; transition: transform .18s ease; }
 [data-nav="settings"][aria-expanded="true"]::after { transform: rotate(180deg); }
+.lang-switch { display: flex; padding: 2px; gap: 2px; border: 1px solid #e6e2da; border-radius: 999px; background: #f6f4f0; }
+.lang-switch button { flex: 1; padding: 4px 0; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: .04em; color: #8a8a8a; transition: background .15s ease, color .15s ease; }
+.lang-switch button:hover { color: #555; }
+.lang-switch button[aria-pressed="true"] { background: var(--brand-ink); color: white; }
 .settings-breadcrumb { font-size: 13px; color: #65748a; margin: 0 0 20px; }
 .settings-local-tabs { display: flex; gap: 6px; overflow-x: auto; border-bottom: 1px solid #dce3eb; padding-bottom: 1px; }
 .settings-local-tabs button { flex-shrink: 0; padding: 12px 16px; color: #526174; font-size: 14px; border-bottom: 3px solid transparent; min-height: 44px; }
@@ -33,18 +41,21 @@
   body.sidebar-compact #app-sidebar { width: 72px; }
   body.sidebar-compact #app-main { margin-left: 72px; }
   body.sidebar-compact #app-sidebar .nav-label, body.sidebar-compact #app-sidebar [data-nav="settings"]::after { display: none; }
-  body.sidebar-compact #app-sidebar > div:first-of-type { padding: 20px 8px 10px; }
+  body.sidebar-compact #app-sidebar > div:first-of-type { padding: 22px 8px 12px; }
   body.sidebar-compact #app-sidebar .sidebar-logo { height: 30px; }
   body.sidebar-compact #app-sidebar .sidebar-logo img:not(.sidebar-compact-logo) { display: none; }
   body.sidebar-compact #app-sidebar .sidebar-logo .sidebar-compact-logo { display: block; width: 30px; height: 30px; }
   body.sidebar-compact #app-sidebar nav { padding-left: 10px; padding-right: 10px; }
   body.sidebar-compact #app-sidebar [data-nav] { justify-content: center; padding-left: 10px; padding-right: 10px; }
+  body.sidebar-compact #app-sidebar .nav-alert-dot { position: absolute; top: 8px; right: 11px; width: 6px; height: 6px; margin: 0; }
   body.sidebar-compact #app-sidebar [data-nav="broadcast"] > span:not(.nav-label) { display: none; }
   body.sidebar-compact #staff-display-name, body.sidebar-compact #current-time { display: none; }
-  body.sidebar-compact #app-sidebar > div:last-child { padding: 8px 4px; }
+  body.sidebar-compact #sidebar-account { padding: 8px 4px; }
   body.sidebar-compact #app-sidebar button[onclick="logoutStaff()"] { padding: 8px 2px; font-size: 11px; }
-  body.sidebar-compact #app-sidebar > div:nth-last-child(2) { padding: 8px 2px; gap: 0; }
-  body.sidebar-compact #settings-children { position: fixed; left: 80px; bottom: 100px; width: 235px; max-height: calc(100dvh - 130px); overflow-y: auto; margin: 0; padding: 10px; background: white; border: 1px solid #dce3eb; border-radius: 12px; box-shadow: 0 12px 36px #172b4d26; z-index: 60; }
+  body.sidebar-compact #sidebar-language { padding: 8px 6px; }
+  body.sidebar-compact .lang-switch button { padding: 4px 2px; font-size: 10px; }
+  body.sidebar-compact #settings-children { position: fixed; left: 80px; bottom: auto; width: 235px; max-height: calc(100dvh - 130px); overflow-y: auto; margin: 0; padding: 8px; background: white; border: 1px solid #dce3eb; border-radius: 12px; box-shadow: 0 12px 36px #172b4d26; z-index: 60; }
+  body.sidebar-compact .settings-child::before { display: none; }
 }
 @media(max-width: 640px) {
   #app-sidebar, body.summary-dashboard-active #app-sidebar { display: none; width: min(290px, 85vw); }
@@ -57,3 +68,9 @@
   .settings-local-tabs button { padding: 12px; }
   #app-sidebar .nav-label { display: inline; }
 }
+
+/* Hover label for the collapsed rail. Positioned by JS on <body> because the
+   nav scrolls, and anything absolute inside it gets clipped at the edge. */
+#sidebar-tooltip { position: fixed; z-index: 90; padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 500; color: white; background: var(--brand-ink); box-shadow: 0 6px 18px #172b4d2e; pointer-events: none; opacity: 0; transform: translateX(-4px); transition: opacity .12s ease, transform .12s ease; white-space: nowrap; }
+#sidebar-tooltip.is-visible { opacity: 1; transform: none; }
+#sidebar-tooltip[hidden] { display: none; }
