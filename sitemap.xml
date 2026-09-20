@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Pages we want Google to list. Only the public landing page: the staff
+     dashboard and each restaurant's booking form stay out on purpose.
+     When a new public page is added (e.g. a blog), add a <url> for it and
+     update <lastmod>. Submitted in Search Console > Peta Situs. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://intoch.app/</loc>
+    <lastmod>2026-09-20</lastmod>
+  </url>
+</urlset>

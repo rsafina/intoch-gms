@@ -11,10 +11,12 @@
       content="Aplikasi reservasi restoran untuk mencatat booking online, walk-in, dan member dalam satu dashboard. Kenali pelanggan setia dan follow up lewat WhatsApp."
     />
     <!-- SEO (2026-09-20). canonical = the one address Google should list.
-         The page also opens at intoch.app/ and /landing.html; this stops
-         them competing. If the main address changes, change it here AND in
+         The same page also opens at /landing and /landing.html; this tells
+         Google those are copies of intoch.app/. Search Console had already
+         picked intoch.app/ on its own, so we agree with it rather than fight.
+         If the main address changes, change it here AND in
          og:url AND in the JSON-LD "url" fields below. -->
-    <link rel="canonical" href="https://intoch.app/landing" />
+    <link rel="canonical" href="https://intoch.app/" />
     <!-- Share preview (WhatsApp, LinkedIn, Facebook, X). og:url and
          og:image MUST be absolute URLs or the preview comes out blank. -->
     <meta property="og:type" content="website" />
@@ -22,7 +24,7 @@
     <meta property="og:locale" content="id_ID" />
     <meta property="og:title" content="Intoch | Aplikasi Reservasi, Walk-in & Membership Restoran" />
     <meta property="og:description" content="Aplikasi reservasi restoran untuk mencatat booking online, walk-in, dan member dalam satu dashboard. Kenali pelanggan setia dan follow up lewat WhatsApp." />
-    <meta property="og:url" content="https://intoch.app/landing" />
+    <meta property="og:url" content="https://intoch.app/" />
     <meta property="og:image" content="https://intoch.app/assets/intoch-share.jpg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -40,7 +42,7 @@
             "@type": "Organization",
             "@id": "https://intoch.app/#org",
             "name": "Intoch",
-            "url": "https://intoch.app/landing",
+            "url": "https://intoch.app/",
             "logo": "https://intoch.app/assets/intoch-logo.png",
             "email": "sito@intoch.app",
             "contactPoint": {
@@ -55,7 +57,7 @@
           {
             "@type": "SoftwareApplication",
             "name": "Intoch",
-            "url": "https://intoch.app/landing",
+            "url": "https://intoch.app/",
             "image": "https://intoch.app/assets/intoch-share.jpg",
             "applicationCategory": "BusinessApplication",
             "operatingSystem": "Web",
