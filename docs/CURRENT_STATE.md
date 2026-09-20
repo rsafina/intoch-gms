@@ -41,6 +41,32 @@ the handoff is committed and replace it with the resulting commit when known.
 
 ## Implemented in current code
 
+Settings navigation redesign (local, 2026-09-20; not deployed): Settings now expands
+into Reservations, Deposits & Payments, Guest Spending, Membership & Rewards,
+WhatsApp Messages, Branding and Staff & Access, with category-specific content tabs.
+Booking rules, spending rules, membership rules, deposit policy and payment instructions
+have separate screens and scoped saves. Outlook configuration sits inside Reservations.
+Area deposit amounts remain edited once in Areas & tables. Spin Wheel Prizes and its
+existing history remain together under Membership & Rewards. The sidebar supports a
+device-persisted icon view, click/tap Settings flyout, and a phone drawer with keyboard
+focus handling. Reorganized rule/payment screens warn before discarding unsaved edits;
+older appearance, message and catalogue editors retain their existing save behaviour.
+Existing roles, Admin-only payment destination controls, and database permissions remain.
+No migration is required; rebuild generated config for the new Indonesian translations.
+Verification: new jsdom navigation/role/scoped-save tests, threshold save tests, form fields,
+guest links, financial tracking, reservation gate, staff auth roles, page loading, loading
+sequence and WA settings passed. Desktop, compact/tablet-width and 390px phone/drawer
+screenshots used a local synthetic fixture with no backend. In-app browser startup failed
+(`sandboxPolicy` missing); headless Chrome was used instead. Three existing settings-screen
+test failures (role options, notification source assertion, management page widths) were
+reproduced against HEAD; no full-suite or live Supabase verification was performed.
+
+Reservation modal tablet spacing (local, not deployed): iPad-sized touch viewports now use
+a wider gutter between the new-guest name and phone fields and more vertical space between
+Expected Duration and Reservation Hours. Desktop and phone spacing remain unchanged. The
+focused new-guest form test passes; automated browser visual verification was unavailable in
+the implementation session, so confirm on an iPad Air before deployment.
+
 Dashboard large-party deposit choice (local, not deployed): New Reservation now reveals the
 existing simple-versus-detailed invoice-format choice when pax exceeds the configured regular
 maximum and a deposit is requested. The chosen format is saved on creation; online-form and

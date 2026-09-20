@@ -631,6 +631,9 @@ function showLoginPage() {
   document.getElementById("login-page")?.classList.remove("hidden");
   document.getElementById("app-sidebar")?.classList.add("hidden");
   document.getElementById("app-main")?.classList.add("hidden");
+  document.getElementById("sidebar-mobile-toggle")?.classList.add("hidden");
+  document.body.classList.remove("sidebar-drawer-open");
+  if (document.getElementById("sidebar-backdrop")) document.getElementById("sidebar-backdrop").hidden = true;
   document.getElementById("bd-alert-wrap")?.classList.add("hidden");
   setTimeout(() => document.getElementById("login-username")?.focus(), 50);
 }
@@ -639,6 +642,7 @@ function showAppShell() {
   document.getElementById("login-page")?.classList.add("hidden");
   document.getElementById("app-sidebar")?.classList.remove("hidden");
   document.getElementById("app-main")?.classList.remove("hidden");
+  document.getElementById("sidebar-mobile-toggle")?.classList.remove("hidden");
   document.getElementById("bd-alert-wrap")?.classList.remove("hidden");
   // Sidebar/nav text only exists in the DOM once the shell is shown, so
   // cache + apply the current language right after it becomes visible.
@@ -780,9 +784,8 @@ function startClock() {
 // ============================================================
 // NAVIGATION
 // ============================================================
-// Settings is a group of subpages sharing one sidebar entry + tab bar.
-// Areas and Prizes moved here from the main nav (2026-07-21); their
-// section ids and load functions are unchanged.
+// Settings subpages share category children in the sidebar and local content tabs.
+// Stable page ids preserve remembered destinations and existing feature loaders.
 const SETTINGS_SUBPAGES = [
   "areas",
   "prizes",
@@ -792,12 +795,16 @@ const SETTINGS_SUBPAGES = [
   "settings-branding",
   "settings-staff",
   "settings-financial",
+  "settings-spending",
+  "settings-membership",
+  "settings-payments",
+  "settings-outlook",
 ];
 
 function defaultSettingsTab() {
   const last = localStorage.getItem("lastSettingsTab");
   if (last && SETTINGS_SUBPAGES.includes(last) && hasAccess(last)) return last;
-  return "areas"; // every role can see Areas
+  return "settings-thresholds";
 }
 
 // `bootToken` is handed in ONLY by initializeApplication(), and it is what
@@ -811,6 +818,7 @@ function defaultSettingsTab() {
 // same lightweight spinner every other data fetch uses, which leaves the
 // shell and the skeleton on screen.
 async function navigateTo(page, bootToken = null) {
+  if (bootToken === null && typeof settingsMayNavigate === "function" && !settingsMayNavigate()) return;
   const pendingLoads = [];
   let spinning = false;
   try {
@@ -859,6 +867,7 @@ async function navigateTo(page, bootToken = null) {
     }
 
     currentPage = page;
+    if (typeof settingsNavigationChanged === "function") settingsNavigationChanged(page);
     localStorage.setItem("lastPage", page);
 
     if (page === "guests") {
@@ -894,8 +903,9 @@ async function navigateTo(page, bootToken = null) {
       pendingLoads.push(renderReservationFormFields());
     }
     if (page === "settings-wa") pendingLoads.push(loadWaTemplateSettings());
-    if (page === "settings-thresholds") pendingLoads.push(renderThresholdSettings());
-    if (page === "settings-financial") pendingLoads.push(renderFinancialTrackingSettings());
+    if (["settings-thresholds", "settings-spending", "settings-membership", "settings-outlook"].includes(page)) pendingLoads.push(renderThresholdSettings());
+    if (["settings-financial", "settings-payments", "settings-spending"].includes(page)) pendingLoads.push(renderFinancialTrackingSettings());
+    if (["settings-financial", "settings-payments"].includes(page)) pendingLoads.push(renderReservationFormFields());
     if (page === "settings-branding") pendingLoads.push(renderBrandingSettings());
     // Always re-read from the database rather than trusting a cached list:
     // this screen is the one place where "who can log in" is decided, and a
@@ -922,6 +932,7 @@ async function navigateTo(page, bootToken = null) {
       loader(true);
     }
     await Promise.all(pendingLoads);
+    if (typeof settingsCaptureBaseline === "function") settingsCaptureBaseline(document.getElementById(`page-${page}`));
     if (bootToken !== null) PageLoading.finish(bootToken);
   } catch (error) {
     console.error("Page navigation failed", error);
@@ -13190,32 +13201,7 @@ async function quickAddWalkIn() {
 
 // ── Shared tab bar (rendered into every [data-settings-tabs]) ─────────
 function renderSettingsTabs(activePage) {
-  const tabs = [
-    { page: "areas", label: t("Areas"), managerOnly: false },
-    { page: "settings-menu", label: t("Reservation Form"), managerOnly: false },
-    { page: "prizes", label: t("Prizes"), managerOnly: true },
-    { page: "settings-wa", label: "WA Templates", managerOnly: false },
-    { page: "settings-thresholds", label: t("Thresholds"), managerOnly: true },
-    { page: "settings-financial", label: t("Financial Tracking"), managerOnly: true },
-    { page: "settings-branding", label: t("Branding"), managerOnly: true },
-    // Staff is admin-only, so it is filtered OUT of the list below rather
-    // than hidden with a CSS class. A hidden-but-present tab would still be
-    // in the DOM for a manager to find, and this tab decides who can log in.
-    { page: "settings-staff", label: t("Staff"), adminOnly: true },
-  ].filter((tab) => !tab.adminOnly || currentStaffRole() === "admin");
-  const activeCls =
-    "px-4 py-2 rounded-full text-sm font-medium bg-[color:var(--brand-ink)] text-white transition";
-  const idleCls =
-    "px-4 py-2 rounded-full text-sm font-medium bg-white text-[#555] border border-[#E6E2DC] hover:bg-[#F8F6F2] transition";
-  const html = tabs
-    .map(
-      (tab) =>
-        `<button onclick="navigateTo('${tab.page}')" class="${tab.page === activePage ? activeCls : idleCls}${tab.managerOnly ? " manager-only-ui" : ""}">${tab.label}</button>`,
-    )
-    .join("");
-  document.querySelectorAll("[data-settings-tabs]").forEach((el) => {
-    el.innerHTML = `<div class="flex flex-wrap items-center gap-2">${html}</div>`;
-  });
+  if (typeof renderSettingsNavigation === "function") renderSettingsNavigation(activePage);
   applyManagerOnlyUI();
 }
 
@@ -13240,9 +13226,15 @@ function renderFinancialTrackingSettings() {
   if (spending) spending.checked = cfg.spendingEnabled;
 }
 
-async function saveFinancialTrackingSettings() {
+async function saveFinancialTrackingSettings(key = null) {
   if (!isManagerOrAdmin()) return;
   const value = { deposit_enabled: !!document.getElementById("set-deposit-tracking")?.checked, spending_enabled: !!document.getElementById("set-spending-tracking")?.checked };
+  if (key) {
+    if (!["deposit_enabled", "spending_enabled"].includes(key)) return;
+    const saved = financialTrackingSettings();
+    if (key !== "deposit_enabled") value.deposit_enabled = saved.depositEnabled;
+    if (key !== "spending_enabled") value.spending_enabled = saved.spendingEnabled;
+  }
   loader(true);
   const { data, error } = await supabaseQuery(
     () => db.from("app_settings").update({ value }).eq("key", "financial_tracking").select("value"),
@@ -13251,6 +13243,7 @@ async function saveFinancialTrackingSettings() {
   loader(false);
   if (error || !data?.length) { toast("Failed to save. Please try again.", "error"); return; }
   APP_SETTINGS.financial_tracking = data[0].value || value;
+  if (typeof settingsCaptureBaseline === "function") settingsCaptureBaseline(document.getElementById(key === "spending_enabled" ? "set-spending-tracking" : "set-deposit-tracking")?.closest(".card"));
   applyFinancialTrackingUI();
   toast("Financial tracking settings saved");
 }
@@ -13585,7 +13578,8 @@ function settingsNum(id) {
   return Number.isFinite(v) ? v : null;
 }
 
-async function saveThresholdSettings() {
+async function saveThresholdSettings(scope = null) {
+  if (scope && !["spending_tier", "membership", "reservation_hours"].includes(scope)) return;
   if (!isManagerOrAdmin()) {
     toast("Only a manager can change settings", "error");
     return;
@@ -13603,10 +13597,10 @@ async function saveThresholdSettings() {
   const comCap = settingsNum("set-com-cap");
   // Returns null (having said why) when the grid is unusable, so the save
   // has to bail before it writes anything.
-  const resWeek = readReservationWeek();
+  const resWeek = !scope || scope === "reservation_hours" ? readReservationWeek() : {};
   if (!resWeek) return;
   const resDuration = Number(document.getElementById("set-res-duration")?.value || 180);
-  if (!Number.isInteger(resDuration) || resDuration < 15 || resDuration > 1440) {
+  if ((!scope || scope === "reservation_hours") && (!Number.isInteger(resDuration) || resDuration < 15 || resDuration > 1440)) {
     toast(t("Duration must be a whole number between 15 and 1440 minutes."), "error");
     return;
   }
@@ -13628,11 +13622,14 @@ async function saveThresholdSettings() {
   // These numbers drive money logic — validate strictly, reject silently
   // fixing anything. First problem is shown to the manager.
   const problems = [];
+  if (!scope || scope === "spending_tier") {
   if (!(highTotal > 0)) problems.push(t("High spender visit total must be > 0"));
   if (!(highPax > 0)) problems.push(t("High spender per-pax must be > 0"));
   if (highTotal > 0 && highPax > 0 && highPax > highTotal)
     problems.push(t("Per-pax threshold should not exceed the visit total threshold"));
   if (!(stickyDays >= 1)) problems.push(t("Sticky days must be at least 1"));
+  }
+  if (!scope || scope === "membership") {
   if (!(spv >= 1) || !Number.isInteger(spv))
     problems.push(t("Stickers per voucher must be a whole number of at least 1"));
   // The DB trigger stamps expires_at from this number. A zero or a typo
@@ -13648,6 +13645,7 @@ async function saveThresholdSettings() {
     problems.push(t("Family cap must be a whole number of at least 1, or empty for no cap"));
   if (comCap !== null && (!Number.isInteger(comCap) || comCap < 1))
     problems.push(t("Company cap must be a whole number of at least 1, or empty for no cap"));
+  }
   if (problems.length) {
     toast(problems[0], "error");
     return;
@@ -13711,8 +13709,9 @@ async function saveThresholdSettings() {
   ];
 
   loader(true);
-  const { error } = await supabaseQuery(
-    () => db.from("app_settings").upsert(rows),
+  const selectedRows = scope ? rows.filter(row => row.key === scope) : rows;
+  const { data, error } = await supabaseQuery(
+    () => db.from("app_settings").upsert(selectedRows).select("key,value"),
     "Failed to save settings",
   );
   loader(false);
@@ -13721,11 +13720,16 @@ async function saveThresholdSettings() {
     return;
   }
 
+  if (!Array.isArray(data) || selectedRows.some(row => !data.some(saved => saved.key === row.key))) {
+    toast(t("Nothing was saved. Check with your administrator."), "error");
+    return;
+  }
   await loadAppSettings();
+  if (typeof settingsCaptureBaseline === "function") settingsCaptureBaseline(document.getElementById(scope === "membership" ? "set-spv" : scope === "reservation_hours" ? "set-res-paused" : "set-high-total")?.closest(".card"));
   toast(t("Settings saved"));
   // New tier thresholds only apply when a guest's visits change —
   // surface the recalc option so the manager can apply them now.
-  document.getElementById("settings-recalc-hint")?.classList.remove("hidden");
+  if (!scope || scope === "spending_tier") document.getElementById("settings-recalc-hint")?.classList.remove("hidden");
 }
 
 async function recalcAllTiersNow() {
@@ -14827,7 +14831,8 @@ function renderDepositPolicySettings() {
   if(options) { options[0].textContent=id?"Berdasarkan area":"By area"; options[1].textContent=id?"Berdasarkan jumlah tamu":"By guest count"; }
 }
 
-async function saveReservationFormFields() {
+async function saveReservationFormFields(scope = "form") {
+  if (!["form", "deposits", "payments"].includes(scope)) return;
   if (!isManagerOrAdmin()) {
     toast(t("Only a manager can change settings"), "error");
     return;
@@ -14836,7 +14841,7 @@ async function saveReservationFormFields() {
   const basis = document.getElementById("rff-deposit-basis")?.value || "area";
   const freePax = Number(document.getElementById("rff-deposit-free-pax")?.value ?? 1);
   const regularPax = Number(document.getElementById("rff-deposit-max-pax")?.value ?? 20);
-  if (basis === "pax" && (!Number.isInteger(freePax) || !Number.isInteger(regularPax) || freePax < 0 || regularPax < 1 || freePax > regularPax)) {
+  if (scope === "deposits" && basis === "pax" && (!Number.isInteger(freePax) || !Number.isInteger(regularPax) || freePax < 0 || regularPax < 1 || freePax > regularPax)) {
     toast(CURRENT_LANG === "id" ? "Batas tanpa deposit harus antara 0 dan batas reservasi reguler." : "No-deposit threshold must be between 0 and the regular booking maximum.", "error"); return;
   }
   const raw = String(document.getElementById("rff-welcome")?.value || "")
@@ -14901,6 +14906,19 @@ async function saveReservationFormFields() {
     // would blank it on every save.
   };
 
+  // The three screens share one JSON setting; only write fields owned by this screen.
+  const depositKeys = ["deposit_basis", "deposit_free_pax", "deposit_regular_max_pax"];
+  const paymentKeys = ["bank_details", "wa_number"];
+  const existingForm = APP_SETTINGS.reservation_form || {};
+  for (const field of Object.keys(value)) {
+    const belongs = scope === "deposits" ? depositKeys.includes(field)
+      : scope === "payments" ? paymentKeys.includes(field)
+      : !depositKeys.includes(field) && !paymentKeys.includes(field);
+    if (!belongs) {
+      if (Object.prototype.hasOwnProperty.call(existingForm, field)) value[field] = existingForm[field];
+      else delete value[field];
+    }
+  }
   if (!canManagePaymentSettings()) value.bank_details = APP_SETTINGS.reservation_form?.bank_details || null;
   loader(true);
   // .select() is not decoration. With no staff auth every request is the anon
@@ -14935,7 +14953,8 @@ async function saveReservationFormFields() {
 
   APP_SETTINGS.reservation_form = data[0].value || value;
   renderReservationFormFields();
-  toast(t("Form fields saved"));
+  toast(t(scope === "form" ? "Form fields saved" : "Settings saved"));
+  if (typeof settingsCaptureBaseline === "function") settingsCaptureBaseline(document.getElementById(scope === "payments" ? "rff-bank" : "rff-deposit-basis")?.closest(".card"));
 }
 
 

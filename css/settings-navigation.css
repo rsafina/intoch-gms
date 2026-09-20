@@ -1,0 +1,55 @@
+/* Full and compact desktop navigation; phones use a drawer. */
+#app-sidebar { width: 252px; }
+#app-main { margin-left: 252px; }
+#app-sidebar > div:first-of-type { padding: 22px 24px 12px; }
+#app-sidebar .sidebar-logo { width: 100%; height: 58px; }
+#app-sidebar .sidebar-logo img { width: 100%; max-width: 150px; }
+#app-sidebar .sidebar-logo .sidebar-compact-logo { display: none; }
+#app-sidebar .nav-label { display: inline; }
+#app-sidebar [data-nav] { min-height: 42px; }
+#app-sidebar [data-nav] > svg { flex-shrink: 0; }
+#sidebar-size-toggle { align-self: flex-end; margin: 8px 12px -14px; z-index: 1; width: 32px; height: 32px; border: 1px solid #e1e5eb; border-radius: 8px; font-size: 25px; color: var(--brand-ink); background: white; }
+#settings-children[hidden], #sidebar-backdrop[hidden] { display: none !important; }
+#settings-children { border-left: 1px solid #dce3eb; margin: 6px 0 10px 20px; padding-left: 10px; }
+.settings-child { display: block; width: 100%; text-align: left; padding: 10px 9px; border-radius: 8px; font-size: 12px; color: #526174; min-height: 40px; }
+.settings-child:hover { background: #f4f7fa; }
+.settings-child.is-active { color: var(--brand-ink); background: var(--brand-tint); font-weight: 600; }
+[data-nav="settings"]::after { content: '⌄'; margin-left: auto; }
+[data-nav="settings"][aria-expanded="true"]::after { transform: rotate(180deg); }
+.settings-breadcrumb { font-size: 13px; color: #65748a; margin: 0 0 20px; }
+.settings-local-tabs { display: flex; gap: 6px; overflow-x: auto; border-bottom: 1px solid #dce3eb; padding-bottom: 1px; }
+.settings-local-tabs button { flex-shrink: 0; padding: 12px 16px; color: #526174; font-size: 14px; border-bottom: 3px solid transparent; min-height: 44px; }
+.settings-local-tabs button[aria-current="page"] { color: var(--brand-ink); border-bottom-color: var(--brand); font-weight: 600; }
+.settings-intro { color: #65748a; margin-bottom: 24px; }
+.settings-dirty-notice { color: var(--accent-strong); font-size: 13px; margin-bottom: 16px; }
+.settings-tabs ~ h1 { color: var(--brand-ink); }
+#sidebar-mobile-toggle { display: none; }
+#app-sidebar button:focus-visible, .settings-local-tabs button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+@media(min-width: 641px) {
+  body.sidebar-compact #app-sidebar { width: 72px; }
+  body.sidebar-compact #app-main { margin-left: 72px; }
+  body.sidebar-compact #app-sidebar .nav-label, body.sidebar-compact #app-sidebar [data-nav="settings"]::after { display: none; }
+  body.sidebar-compact #app-sidebar > div:first-of-type { padding: 20px 8px 10px; }
+  body.sidebar-compact #app-sidebar .sidebar-logo { height: 30px; }
+  body.sidebar-compact #app-sidebar .sidebar-logo img:not(.sidebar-compact-logo) { display: none; }
+  body.sidebar-compact #app-sidebar .sidebar-logo .sidebar-compact-logo { display: block; width: 30px; height: 30px; }
+  body.sidebar-compact #app-sidebar nav { padding-left: 10px; padding-right: 10px; }
+  body.sidebar-compact #app-sidebar [data-nav] { justify-content: center; padding-left: 10px; padding-right: 10px; }
+  body.sidebar-compact #app-sidebar [data-nav="broadcast"] > span:not(.nav-label) { display: none; }
+  body.sidebar-compact #staff-display-name, body.sidebar-compact #current-time { display: none; }
+  body.sidebar-compact #app-sidebar > div:last-child { padding: 8px 4px; }
+  body.sidebar-compact #app-sidebar button[onclick="logoutStaff()"] { padding: 8px 2px; font-size: 11px; }
+  body.sidebar-compact #app-sidebar > div:nth-last-child(2) { padding: 8px 2px; gap: 0; }
+  body.sidebar-compact #settings-children { position: fixed; left: 80px; bottom: 100px; width: 235px; max-height: calc(100dvh - 130px); overflow-y: auto; margin: 0; padding: 10px; background: white; border: 1px solid #dce3eb; border-radius: 12px; box-shadow: 0 12px 36px #172b4d26; z-index: 60; }
+}
+@media(max-width: 640px) {
+  #app-sidebar, body.summary-dashboard-active #app-sidebar { display: none; width: min(290px, 85vw); }
+  body.sidebar-drawer-open #app-sidebar:not(.hidden) { display: flex; z-index: 80; }
+  #app-main { margin-left: 0; padding-top: 50px; }
+  #sidebar-mobile-toggle:not(.hidden) { display: block; position: fixed; top: 10px; left: 12px; width: 40px; height: 36px; border: 1px solid #dce3eb; border-radius: 8px; color: var(--brand-ink); background: white; z-index: 50; }
+  #sidebar-backdrop { position: fixed; inset: 0; background: #172b4d66; z-index: 75; }
+  body.sidebar-drawer-open { overflow: hidden; }
+  .page-section[id^="page-settings-"] { padding: 24px 16px; }
+  .settings-local-tabs button { padding: 12px; }
+  #app-sidebar .nav-label { display: inline; }
+}
