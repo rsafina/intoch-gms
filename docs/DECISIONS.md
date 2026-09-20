@@ -5,6 +5,7 @@ This records material decisions and their consequences, not a list of every UI e
 
 | Decision | Reason | Implications / constraints |
 |---|---|---|
+| Settings grouped by task, with sidebar children and category-local tabs | Booking, payment, spending and loyalty controls need predictable homes | Keep existing role gates; saves update only their section, even when sections share a JSON settings row. Area deposit amounts have one editor. Compact sidebar preference is device-local. |
 | One client, one Cloudflare deployment and Supabase project | Isolation and manageable per-client configuration | No shared multi-tenant database. Never point a preview/client at another client's DB. Separate origins avoid shared browser storage. |
 | One private codebase; configuration at build time | Avoid divergent per-client forks | Source remains private but published frontend is inspectable. License/ownership arrangements do not hide JS. Server-only privileges/logic stay server-side. |
 | `main` for development, deliberate promotion to `release` | Prevent work-in-progress reaching restaurant service accidentally | Verify each host's actual branch before push; branch names are not database environments. Release hotfixes must be brought back to main. |

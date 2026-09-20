@@ -251,6 +251,7 @@ async function odSaveThreshold(button) {
     if(identity!==odIdentity())return;
     if(error||!data?.length)throw new Error('Save failed');
     APP_SETTINGS.management_dashboard=data[0].value;
+    if(typeof settingsCaptureBaseline==='function')settingsCaptureBaseline(document.getElementById('management-threshold-settings'));
     result.textContent=odText('Outlook threshold saved.','Ambang agenda disimpan.');
   } catch(error) { if(identity===odIdentity())result.textContent=odText('Could not save. Please retry.','Gagal menyimpan. Coba lagi.'); }
   finally { if(button)button.disabled=false; }

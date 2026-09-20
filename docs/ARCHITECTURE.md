@@ -14,6 +14,7 @@ matters. Tailwind/CDN libraries and local feature CSS coexist; there is no frame
 | Location | Responsibility |
 |---|---|
 | `js/app.js` | Staff dashboard, reservations, guests, walk-ins, reports, settings, completion/spending |
+| `js/settings-navigation.js`, `css/settings-navigation.css` | Settings categories and local tabs, compact sidebar/phone drawer, unsaved-change guards for reorganized settings |
 | `js/config.template.js` | Supabase client, settings, translations, branding, role/page controls, date helpers |
 | `js/staff-auth.js` | Username/PIN mapping, verified session restoration and session monitor |
 | `js/owner-dashboard.js` | Owner/Admin overview, Reservation Outlook, financial history and management threshold |

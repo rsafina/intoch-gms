@@ -11,7 +11,7 @@ let saved, writes = 0, reloaded = 0, error = null;
 const messages = [];
 const ctx = vm.createContext({ document, isManagerOrAdmin:()=>true, t:s=>s, toast:s=>messages.push(s),
   readReservationWeek:()=>week, APP_SETTINGS:{reservation_hours:{custom:true}}, loader:()=>{},
-  supabaseQuery:fn=>fn(), db:{from:()=>({upsert:async rows=>{saved=rows;writes++;return {error};}})},
+  supabaseQuery:fn=>fn(), db:{from:()=>({upsert:rows=>({select:async()=>{saved=rows;writes++;return {error,data:error?null:rows};}})})},
   loadAppSettings:async()=>{reloaded++;}
 });
 vm.runInContext(src.slice(src.indexOf('function settingsNum('),src.indexOf('async function recalcAllTiersNow(')),ctx);
@@ -32,5 +32,18 @@ vm.runInContext(src.slice(src.indexOf('function settingsNum('),src.indexOf('asyn
   ctx.readReservationWeek=()=>week;
   error={message:'Save failed'};
   await ctx.saveThresholdSettings(); assert.equal(reloaded,1); assert.equal(messages.at(-1),'Save failed');
+  error=null;
+  document.getElementById('set-high-total').value='0';
+  ctx.readReservationWeek=()=>null;
+  await ctx.saveThresholdSettings('membership');
+  assert.equal(saved.length,1); assert.equal(saved[0].key,'membership');
+  document.getElementById('set-high-total').value='500000';
+  document.getElementById('set-spv').value='0';
+  await ctx.saveThresholdSettings('spending_tier');
+  assert.equal(saved.length,1); assert.equal(saved[0].key,'spending_tier');
+  ctx.readReservationWeek=()=>week;
+  await ctx.saveThresholdSettings('reservation_hours');
+  assert.equal(saved.length,1); assert.equal(saved[0].key,'reservation_hours');
+  assert.equal(saved[0].value.custom,true);
   console.log('Threshold save, validation, weekly hours and database failure checks passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});
