@@ -5,11 +5,67 @@
     <link rel="stylesheet" href="css/page-loading.css?v=2" />
     <script src="js/page-loading.js?v=2"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Intoch, Sistem Manajemen Tamu & Membership untuk Restoran</title>
+    <title>Intoch | Aplikasi Reservasi, Walk-in & Membership Restoran</title>
     <meta
       name="description"
-      content="Intoch membantu restoran mengelola reservasi, walk-in, dan program membership dalam satu dashboard. Hubungi tim kami untuk demo."
+      content="Aplikasi reservasi restoran untuk mencatat booking online, walk-in, dan member dalam satu dashboard. Kenali pelanggan setia dan follow up lewat WhatsApp."
     />
+    <!-- SEO (2026-09-20). canonical = the one address Google should list.
+         The page also opens at intoch.app/ and /landing.html; this stops
+         them competing. If the main address changes, change it here AND in
+         og:url AND in the JSON-LD "url" fields below. -->
+    <link rel="canonical" href="https://intoch.app/landing" />
+    <!-- Share preview (WhatsApp, LinkedIn, Facebook, X). og:url and
+         og:image MUST be absolute URLs or the preview comes out blank. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Intoch" />
+    <meta property="og:locale" content="id_ID" />
+    <meta property="og:title" content="Intoch | Aplikasi Reservasi, Walk-in & Membership Restoran" />
+    <meta property="og:description" content="Aplikasi reservasi restoran untuk mencatat booking online, walk-in, dan member dalam satu dashboard. Kenali pelanggan setia dan follow up lewat WhatsApp." />
+    <meta property="og:url" content="https://intoch.app/landing" />
+    <meta property="og:image" content="https://intoch.app/assets/intoch-share.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Intoch, Kenali Pelanggan Resto Anda" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Intoch | Aplikasi Reservasi, Walk-in & Membership Restoran" />
+    <meta name="twitter:description" content="Aplikasi reservasi restoran untuk mencatat booking online, walk-in, dan member dalam satu dashboard. Kenali pelanggan setia dan follow up lewat WhatsApp." />
+    <meta name="twitter:image" content="https://intoch.app/assets/intoch-share.jpg" />
+    <!-- Business info for search engines (not shown on the page). -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://intoch.app/#org",
+            "name": "Intoch",
+            "url": "https://intoch.app/landing",
+            "logo": "https://intoch.app/assets/intoch-logo.png",
+            "email": "sito@intoch.app",
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "contactType": "sales",
+              "telephone": "+62-813-2506-3362",
+              "email": "sito@intoch.app",
+              "availableLanguage": ["id", "en"],
+              "areaServed": "ID"
+            }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "Intoch",
+            "url": "https://intoch.app/landing",
+            "image": "https://intoch.app/assets/intoch-share.jpg",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "inLanguage": "id",
+            "description": "Aplikasi reservasi restoran untuk mencatat booking online, walk-in, dan member dalam satu dashboard. Kenali pelanggan setia dan follow up lewat WhatsApp.",
+            "publisher": { "@id": "https://intoch.app/#org" }
+          }
+        ]
+      }
+    </script>
     <link
       rel="icon"
       href="assets/intoch-favicon.png"
@@ -28,7 +84,8 @@
     </script>
     <style>
       :root {
-        /* ── Brand tokens (2026-09-05). ONE PLACE. ───────────────────
+        /* ── Brand tokens (2026-09-05; landing switched from purple to the
+           logo blue #114FA1 / #3A56A5 on 2026-09-20). ONE PLACE. ───────────────────
            Every brand colour in the app resolves here. Before this, 728
            values were hardcoded across 20 files, which is why the colours
            could not be changed. Status colours (green, red, amber) are NOT
@@ -39,15 +96,15 @@
            than to look pleasant. Two of these fix long-standing failures:
            the old button blue (5596CE) under white text was 3.16:1 and the
            old gold (C8A96B) on cream was 2.08:1, against a 4.5 bar. */
-        --brand: #5B4CBD;          /* primary fill. white on it: 6.54 */
-        --brand-hover: #4A3DA3;    /* pressed/hover. white on it: 8.44 */
-        --brand-ink: #4F41A8;      /* headings. on cream: 7.33, matched to the old navy */
-        --brand-deep: #453897;     /* dark panels. on cream: 8.59 */
-        --brand-deepest: #3C3084;  /* deepest. on cream: 9.99 */
-        --brand-muted: #7565D6;    /* de-emphasised */
-        --brand-soft: #A99BF0;     /* soft accents on dark */
-        --brand-tint: #E4E0F8;     /* selected row / chip background */
-        --brand-tint2: #F4F2FD;    /* faintest wash */
+        --brand: #114FA1;          /* primary fill = logo blue. white on it: 8.3 */
+        --brand-hover: #0D3C7C;    /* pressed/hover. white on it: 11.0 */
+        --brand-ink: #114FA1;      /* headings. on white: 8.3 */
+        --brand-deep: #0D3C7C;     /* dark panels */
+        --brand-deepest: #0B3470;  /* deepest */
+        --brand-muted: #3A56A5;    /* de-emphasised = second logo blue. white on it: 6.9 */
+        --brand-soft: #9DB8E8;     /* soft accents on dark */
+        --brand-tint: #DFE9F7;     /* selected row / chip background */
+        --brand-tint2: #F1F6FD;    /* faintest wash */
         --accent: #E24701;         /* FILLS ONLY. 3.79 on cream, so never small text */
         --accent-hover: #C63D01;   /* also the text-safe orange: 4.78 on cream */
         --accent-strong: #B23600;  /* 5.69 on cream */
@@ -57,12 +114,12 @@
            rgb(var(--brand-ink-rgb) / 0.12). A settings screen that changes
            --brand MUST set --brand-rgb in the same write, or a shadow keeps
            the old hue while everything around it moves. */
-        --brand-rgb: 91 76 189;
-        --brand-ink-rgb: 79 65 168;
-        --brand-hover-rgb: 74 61 163;
-        --brand-deep-rgb: 69 56 151;
-        --brand-deepest-rgb: 60 48 132;
-        --brand-soft-rgb: 169 155 240;
+        --brand-rgb: 17 79 161;
+        --brand-ink-rgb: 17 79 161;
+        --brand-hover-rgb: 13 60 124;
+        --brand-deep-rgb: 13 60 124;
+        --brand-deepest-rgb: 11 52 112;
+        --brand-soft-rgb: 157 184 232;
         --accent-rgb: 226 71 1;
         --accent-hover-rgb: 198 61 1;
         --accent-strong-rgb: 178 54 0;
@@ -344,6 +401,25 @@
       .btn-gold:hover {
         background: var(--gold-dark);
       }
+      /* WhatsApp button (2026-09-20). WhatsApp green with DARK text, the way
+         whatsapp.com styles its own buttons: white on #25D366 is only 2:1
+         contrast and unreadable for many people, dark text is 8.8:1.
+         Generic chat-bubble icon on purpose, not the WhatsApp logo. */
+      .btn-wa {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        background: #25d366;
+        color: #0b2e1a !important;
+      }
+      .btn-wa:hover {
+        background: #1fbf5b;
+      }
+      .btn-wa-icon {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+      }
       .nav-links .btn {
         padding: 10px 22px;
         font-size: 0.9rem;
@@ -363,11 +439,11 @@
         background-image:
           linear-gradient(
             to bottom,
-            rgba(237, 231, 250, 0) 0%,
-            rgba(237, 231, 250, 0) 38%,
-            rgba(232, 224, 248, 0.35) 58%,
-            rgba(238, 232, 248, 0.72) 72%,
-            rgba(246, 242, 250, 0.93) 85%,
+            rgba(231, 238, 250, 0) 0%,
+            rgba(231, 238, 250, 0) 38%,
+            rgba(224, 234, 248, 0.35) 58%,
+            rgba(232, 239, 250, 0.72) 72%,
+            rgba(242, 246, 252, 0.93) 85%,
             #fbfcfe 100%
           ),
           url("assets/holographic-abstract-background.avif");
@@ -499,7 +575,7 @@
         background: linear-gradient(
           135deg,
           rgba(155, 232, 214, 0.82),
-          rgba(205, 190, 248, 0.62)
+          rgba(180, 205, 248, 0.62)
         );
         transform: rotate(-2deg);
         box-shadow: 0 28px 80px rgb(var(--brand-ink-rgb) / 0.16);
@@ -596,7 +672,7 @@
       .hero-metric.top {
         top: 44px;
         right: -14px;
-        background: rgba(227, 213, 255, 0.82);
+        background: rgba(213, 228, 255, 0.82);
       }
       .hero-metric.bottom {
         left: -8px;
@@ -1040,7 +1116,7 @@
          (assets/holographic-abstract-background.avif):
            cyan       #AFF0FF
            periwinkle #B3C9FE
-           lavender   #D5C7FF
+           soft blue  #C7DAFF (was lavender #D5C7FF; page moved to logo blue 2026-09-20)
          The hero shows them at full strength; everything below runs the same
          family at a tenth of that, so the page feels of a piece with the hero
          without ever competing with it. No gold here: gold stays on buttons
@@ -1064,7 +1140,7 @@
       [data-fx="mix"] .fx-layer {
         background-image: linear-gradient(
           150deg,
-          rgba(213, 199, 255, 0.09) 0%,
+          rgba(199, 218, 255, 0.09) 0%,
           rgba(179, 201, 254, 0.06) 50%,
           rgba(255, 255, 255, 0) 80%
         );
@@ -1072,7 +1148,7 @@
       [data-fx="warm"] .fx-layer {
         background-image: linear-gradient(
           190deg,
-          rgba(213, 199, 255, 0.085) 0%,
+          rgba(199, 218, 255, 0.085) 0%,
           rgba(175, 240, 255, 0.055) 48%,
           rgba(255, 255, 255, 0) 80%
         );
@@ -1081,7 +1157,7 @@
         background-image: linear-gradient(
           160deg,
           rgba(179, 201, 254, 0.12) 0%,
-          rgba(213, 199, 255, 0.08) 46%,
+          rgba(199, 218, 255, 0.08) 46%,
           rgba(255, 255, 255, 0) 82%
         );
       }
@@ -2028,8 +2104,50 @@
         font-size: 1.2rem; font-weight: 700; color: var(--primary-dark); line-height: 1.5;
       }
       .v2-punch em { color: var(--accent-hover); font-style: normal; }
-      .v2-benefits { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
-      .v2-benefits .benefit-item { flex-direction: column; gap: 10px; padding: 20px; }
+      /* Benefit cards (redesigned 2026-09-20): centred cards in one row, icon
+         on top. The card under the pointer lifts and fills with the logo
+         blue (--primary / --primary-hover). The gradient sits on a ::before layer because a background
+         gradient cannot fade in with a transition, but a layer's opacity can. */
+      .v2-benefits {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+        align-items: stretch; padding-top: 12px;
+      }
+      .v2-benefits .v2-benefit {
+        position: relative; isolation: isolate; overflow: hidden;
+        display: flex; flex-direction: column; align-items: center;
+        text-align: center; gap: 16px;
+        background: #ffffff; border: 1px solid rgb(var(--brand-ink-rgb) / 0.1);
+        border-radius: 22px; padding: 30px 22px 28px;
+        box-shadow: 0 12px 32px rgb(var(--brand-ink-rgb) / 0.07);
+        backdrop-filter: none;
+        transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+      }
+      .v2-benefits .v2-benefit::before {
+        content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+        background:
+          radial-gradient(circle at 85% 0%, rgba(175, 240, 255, 0.28), rgba(175, 240, 255, 0) 45%),
+          linear-gradient(165deg, var(--primary-dark) 0%, var(--primary) 55%, var(--primary-hover) 100%);
+        opacity: 0; transition: opacity 0.35s ease;
+      }
+      .v2-benefit-icon {
+        width: 60px; height: 60px; border-radius: 18px; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        background: var(--brand-tint2); border: 1px solid var(--brand-tint); color: var(--brand);
+        transition: background 0.35s ease, border-color 0.35s ease, color 0.35s ease;
+      }
+      .v2-benefit-icon svg { width: 28px; height: 28px; }
+      .v2-benefits .v2-benefit h3 { font-size: 1.15rem; margin-bottom: 10px; transition: color 0.35s ease; }
+      .v2-benefits .v2-benefit p { font-size: 0.92rem; line-height: 1.6; transition: color 0.35s ease; }
+      .v2-benefits .v2-benefit:hover {
+        transform: translateY(-10px); border-color: transparent;
+        box-shadow: 0 26px 60px rgba(17, 79, 161, 0.35);
+      }
+      .v2-benefits .v2-benefit:hover::before { opacity: 1; }
+      .v2-benefits .v2-benefit:hover h3 { color: #ffffff; }
+      .v2-benefits .v2-benefit:hover p { color: rgba(255, 255, 255, 0.9); }
+      .v2-benefits .v2-benefit:hover .v2-benefit-icon {
+        background: rgba(255, 255, 255, 0.16); border-color: rgba(255, 255, 255, 0.3); color: #ffffff;
+      }
 
       /* ---------- 2. FITUR: 3 PILLARS ---------- */
       .v2-pillars { background: var(--bg-soft); }
@@ -2420,6 +2538,7 @@
 
       @media (max-width: 1020px) {
         .v2-benefits { grid-template-columns: repeat(2, 1fr); }
+        .v2-benefits .v2-benefit:hover { transform: translateY(-4px); }
         .v2-panel { grid-template-columns: 1fr; gap: 26px; }
         .v2-pillar-grid { grid-template-columns: 1fr; max-width: 560px; margin: 0 auto; }
         .v2-pillar:not(:last-child)::after { content: "↓"; right: auto; left: 50%; top: auto; bottom: -24px; transform: translateX(-50%); }
@@ -2555,9 +2674,14 @@
           <!-- Hero portrait visual with floating product metrics. -->
           <div class="hero-media">
             <div class="img-placeholder hero-visual">
+              <!-- webp copy of hero-new-group.png at 860px wide: ~80 KB
+                   instead of 1.5 MB. The original stays in assets. -->
               <img
-                src="assets/hero-new-group.png"
-                alt="Pengguna Intoch membawa laptop dengan dashboard restoran"
+                src="assets/hero-new-group.webp"
+                width="860"
+                height="1292"
+                fetchpriority="high"
+                alt="Pelayan restoran menyambut dua tamu yang sedang duduk di meja"
               />
             </div>
             <div class="hero-metric risk">
@@ -2665,11 +2789,8 @@
       <div class="container">
         <div class="section-head">
           <p class="eyebrow" data-i18n="why.eyebrow">Kenapa Intoch</p>
-          <h2 data-decode="1" data-i18n="why2.title">Masih Nyatat Tamu di Buku?</h2>
-          <p data-i18n="why2.sub">
-            Kebanyakan restoran masih begini. Booking masuk lewat chat, walk-in
-            nggak dicatat, dan tamu langganan nggak ada yang ingat. Coba bandingkan.
-          </p>
+          <h2 data-decode="1" data-i18n="why2.title">Masih Mencatat Tamu Secara Manual?</h2>
+          <p data-i18n="why2.sub">Sebagian besar restoran masih mengandalkan chat, buku catatan, dan ingatan staf. Akibatnya, data tamu tercecer dan peluang untuk membuat mereka kembali ikut hilang.</p>
         </div>
 
         <div class="v2-compare">
@@ -2678,8 +2799,8 @@
             <header>
               <span class="v2-badge old" aria-hidden="true">✕</span>
               <div>
-                <h3 data-i18n="why2.oldT">Cara Lama</h3>
-                <p data-i18n="why2.oldS">Chat, buku, dan ingatan staf</p>
+                <h3 data-i18n="why2.oldT">Cara Manual</h3>
+                <p data-i18n="why2.oldS">Chat, buku catatan, dan ingatan staf</p>
               </div>
             </header>
             <div class="v2-vis v2-vis-old" aria-hidden="true">
@@ -2711,15 +2832,15 @@
             <ul class="v2-rows">
               <li>
                 <span class="v2-stagechip" data-i18n="stage.res">Reservasi</span>
-                <p data-i18n="why2.o1"><span class="mk">✕</span><strong>Booking masuk dari mana-mana.</strong> Chat, telepon, DM. Dicatat di buku, kadang lupa dibalas, kadang malah dobel.</p>
+                <p data-i18n="why2.o1"><span class="mk">✕</span><strong>Reservasi tersebar di berbagai saluran.</strong> Pesan WhatsApp, telepon, dan DM dicatat secara manual, sehingga rawan terlewat dibalas atau tercatat ganda.</p>
               </li>
               <li>
                 <span class="v2-stagechip" data-i18n="stage.walk">Walk-in</span>
-                <p data-i18n="why2.o2"><span class="mk">✕</span><strong>Lagi ramai, nggak sempat nanya nama.</strong> Tamunya datang, makan, pulang, dan nggak ada jejaknya.</p>
+                <p data-i18n="why2.o2"><span class="mk">✕</span><strong>Tamu walk-in tidak tercatat.</strong> Saat restoran ramai, tidak ada waktu untuk menanyakan data, sehingga kunjungan mereka hilang tanpa jejak.</p>
               </li>
               <li>
                 <span class="v2-stagechip" data-i18n="stage.ret">Tamu Kembali</span>
-                <p data-i18n="why2.o3"><span class="mk">✕</span><strong>Tamu yang sudah 8 kali datang disambut kayak orang baru.</strong> Yang lama nggak datang juga nggak ada yang sadar.</p>
+                <p data-i18n="why2.o3"><span class="mk">✕</span><strong>Pelanggan setia tidak dikenali.</strong> Tamu yang sudah berkali-kali datang disambut layaknya tamu baru, dan tamu yang berhenti datang tidak pernah disadari.</p>
               </li>
             </ul>
           </article>
@@ -2729,8 +2850,8 @@
             <header>
               <span class="v2-badge new" aria-hidden="true">✓</span>
               <div>
-                <h3 data-i18n="why2.newT">Pakai Intoch</h3>
-                <p data-i18n="why2.newS">Semua tamu tercatat di satu tempat</p>
+                <h3 data-i18n="why2.newT">Dengan Intoch</h3>
+                <p data-i18n="why2.newS">Seluruh data tamu tersimpan di satu tempat</p>
               </div>
             </header>
             <div class="v2-vis v2-vis-new" aria-hidden="true">
@@ -2760,49 +2881,46 @@
             <ul class="v2-rows">
               <li>
                 <span class="v2-stagechip" data-i18n="stage.res">Reservasi</span>
-                <p data-i18n="why2.n1"><span class="mk">✓</span><strong>Tamu isi form booking sendiri.</strong> Semua masuk ke satu daftar, dan ada notifikasinya.</p>
+                <p data-i18n="why2.n1"><span class="mk">✓</span><strong>Tamu melakukan reservasi sendiri secara online.</strong> Setiap reservasi masuk ke satu daftar dan langsung disertai notifikasi.</p>
               </li>
               <li>
                 <span class="v2-stagechip" data-i18n="stage.walk">Walk-in</span>
-                <p data-i18n="why2.n2"><span class="mk">✓</span><strong>Cukup ketik nama tamunya.</strong> Nomor HP bisa ditanya belakangan.</p>
+                <p data-i18n="why2.n2"><span class="mk">✓</span><strong>Walk-in tercatat dalam hitungan detik.</strong> Cukup masukkan nama tamu, data lainnya dapat dilengkapi kemudian.</p>
               </li>
               <li>
                 <span class="v2-stagechip" data-i18n="stage.ret">Tamu Kembali</span>
-                <p data-i18n="why2.n3"><span class="mk">✓</span><strong>Kelihatan sudah berapa kali datang,</strong> belanja berapa, ulang tahunnya kapan. Mau kirim pesan tinggal pakai template.</p>
+                <p data-i18n="why2.n3"><span class="mk">✓</span><strong>Setiap tamu memiliki profil lengkap.</strong> Jumlah kunjungan, total belanja, dan tanggal ulang tahun terlihat jelas, siap ditindaklanjuti melalui WhatsApp.</p>
               </li>
             </ul>
           </article>
         </div>
 
-        <p class="v2-punch" data-i18n="why2.punch">
-          Mau datang lewat booking atau langsung walk-in,
-          <em>datanya masuk ke profil yang sama.</em>
-        </p>
+        <p class="v2-punch" data-i18n="why2.punch">Baik melalui reservasi maupun walk-in, <em>setiap kunjungan tercatat di profil tamu yang sama.</em></p>
 
         <div class="v2-benefits">
-          <div class="benefit-item">
-            <div class="benefit-check">✓</div>
+          <div class="benefit-item v2-benefit">
+            <div class="v2-benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="m16 11 2 2 4-4" /></svg></div>
             <div>
               <h3 data-i18n="why.b1t">Sederhana untuk Staf</h3>
               <p data-i18n="why.b1p">Didesain untuk operasional yang serba cepat. Tidak butuh pelatihan berminggu-minggu untuk mulai dipakai.</p>
             </div>
           </div>
-          <div class="benefit-item">
-            <div class="benefit-check">✓</div>
+          <div class="benefit-item v2-benefit">
+            <div class="v2-benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 10 5-10 5L2 7l10-5Z" /><path d="m2 12 10 5 10-5" /><path d="m2 17 10 5 10-5" /></svg></div>
             <div>
               <h3 data-i18n="why.b2t">Satu Sistem, Bukan Lima</h3>
               <p data-i18n="why.b2p">Reservasi, walk-in, membership, dan laporan tergabung dalam satu platform, tidak perlu berpindah-pindah aplikasi.</p>
             </div>
           </div>
-          <div class="benefit-item">
-            <div class="benefit-check">✓</div>
+          <div class="benefit-item v2-benefit">
+            <div class="v2-benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path d="m9 12 2 2 4-4" /></svg></div>
             <div>
               <h3 data-i18n="why.b3t">Data Tamu Milik Anda</h3>
               <p data-i18n="why.b3p">Seluruh riwayat tamu dan member adalah aset restoran Anda sendiri, tersimpan aman dan bisa diakses kapan saja.</p>
             </div>
           </div>
-          <div class="benefit-item">
-            <div class="benefit-check">✓</div>
+          <div class="benefit-item v2-benefit">
+            <div class="v2-benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14v-3a9 9 0 0 1 18 0v3" /><path d="M21 14a2 2 0 0 1-2 2h-1v-6h1a2 2 0 0 1 2 2Z" /><path d="M3 14a2 2 0 0 0 2 2h1v-6H5a2 2 0 0 0-2 2Z" /><path d="M18 16v1a4 4 0 0 1-4 4h-2" /></svg></div>
             <div>
               <h3 data-i18n="why.b4t">Didampingi Tim Lokal</h3>
               <p data-i18n="why.b4p">Onboarding, pelatihan staf, dan support dalam Bahasa Indonesia, kami memahami operasional restoran di sini.</p>
@@ -2818,11 +2936,8 @@
       <div class="container">
         <div class="section-head">
           <p class="eyebrow" data-i18n="features.eyebrow">Fitur Utama</p>
-          <h2 data-decode="1" data-i18n="pill.title">Dari Booking sampai Jadi Langganan</h2>
-          <p data-i18n="pill.sub">
-            Intoch nemenin tamu Anda dari pertama kali booking sampai jadi
-            pelanggan tetap.
-          </p>
+          <h2 data-decode="1" data-i18n="pill.title">Dari Reservasi Pertama hingga Menjadi Pelanggan Setia</h2>
+          <p data-i18n="pill.sub">Aplikasi reservasi dan membership restoran yang membantu Anda mencatat, mengenali, dan mempertahankan setiap tamu.</p>
         </div>
 
         <div class="v2-pillar-grid">
@@ -2835,13 +2950,13 @@
               <div class="v2-mini-row"><b>20:00 Sari W.</b><small>2 pax</small></div>
             </div>
             <h3 data-i18n="pill.t1">Reservasi Online</h3>
-            <p data-i18n="pill.p1">Tamu bisa booking kapan saja tanpa nunggu chat dibalas. Staf tinggal cek dan konfirmasi.</p>
+            <p data-i18n="pill.p1">Tamu dapat melakukan reservasi kapan saja tanpa menunggu balasan chat. Staf cukup memeriksa dan mengonfirmasi.</p>
             <ul>
-              <li data-i18n="pill.l1a">Tamu pilih sendiri area, jam, dan jumlah orang</li>
-              <li data-i18n="pill.l1b">Ada notifikasi tiap booking baru masuk</li>
-              <li data-i18n="pill.l1c">Konfirmasi lewat WhatsApp, tamu dapat tiket reservasi</li>
-              <li data-i18n="pill.l1d">Daftar tamu hari ini sudah siap sebelum buka</li>
-              <li class="soft" data-i18n="pill.l1e">Bisa pasang deposit untuk area tertentu atau rombongan besar</li>
+              <li data-i18n="pill.l1a">Tamu memilih area, jam, dan jumlah orang secara mandiri</li>
+              <li data-i18n="pill.l1b">Notifikasi otomatis untuk setiap reservasi baru</li>
+              <li data-i18n="pill.l1c">Konfirmasi melalui WhatsApp beserta tiket reservasi untuk tamu</li>
+              <li data-i18n="pill.l1d">Daftar tamu hari ini tersedia sebelum restoran buka</li>
+              <li class="soft" data-i18n="pill.l1e">Pengaturan deposit untuk area tertentu atau rombongan besar</li>
             </ul>
           </article>
 
@@ -2851,14 +2966,14 @@
               <div class="v2-mini-h">Quick Walk-In</div>
               <div class="v2-mini-field"><span class="v2-typed">Rangga Adi</span><span class="v2-caret"></span></div>
               <span class="v2-saved">✓ Tersimpan · 3 pax · Teras</span>
-              <div class="v2-mini-sub">Nomor HP bisa nyusul</div>
+              <div class="v2-mini-sub">Nomor ponsel dapat dilengkapi kemudian</div>
             </div>
-            <h3 data-i18n="pill.t2">Walk-in Cepat</h3>
-            <p data-i18n="pill.p2">Pas antre panjang pun tamu tetap tercatat. Cukup nama, sisanya nanti.</p>
+            <h3 data-i18n="pill.t2">Pencatatan Walk-in Cepat</h3>
+            <p data-i18n="pill.p2">Di jam tersibuk sekalipun, setiap tamu tetap tercatat. Cukup nama, detail lainnya dapat menyusul.</p>
             <ul>
-              <li data-i18n="pill.l2a">Ketik nama, tamu langsung masuk</li>
-              <li data-i18n="pill.l2b">Daftar walk-in dan okupansi meja di satu layar</li>
-              <li data-i18n="pill.l2c">Bisa dari tablet, komputer kasir, atau HP</li>
+              <li data-i18n="pill.l2a">Masukkan nama, tamu langsung tercatat</li>
+              <li data-i18n="pill.l2b">Daftar walk-in dan okupansi meja dalam satu layar</li>
+              <li data-i18n="pill.l2c">Dapat diakses dari tablet, komputer kasir, maupun ponsel</li>
             </ul>
           </article>
 
@@ -2873,13 +2988,13 @@
               <span class="v2-dots"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="pop"></i><i></i><i></i><i></i><i></i></span>
               <div class="v2-mini-sub">8/15 stiker · 🎂 ulang tahun 29 Sep</div>
             </div>
-            <h3 data-i18n="pill.t3">Kenali Tamu Langganan</h3>
-            <p data-i18n="pill.p3">Makin sering tamu datang, makin lengkap catatannya. Jadi kelihatan siapa yang perlu diapresiasi, dan siapa yang perlu disapa lagi.</p>
+            <h3 data-i18n="pill.t3">Kenali Pelanggan Setia</h3>
+            <p data-i18n="pill.p3">Semakin sering tamu berkunjung, semakin lengkap profilnya. Anda tahu siapa yang layak diapresiasi dan siapa yang perlu diajak kembali.</p>
             <ul>
               <li data-i18n="pill.l3a">Riwayat kunjungan, total belanja, dan menu favorit</li>
-              <li data-i18n="pill.l3b">Kartu member keluarga dan perusahaan, stiker, voucher</li>
-              <li data-i18n="pill.l3c">Pengingat ulang tahun dan daftar tamu yang lama nggak datang</li>
-              <li data-i18n="pill.l3d">Kirim pesan WhatsApp pakai template yang sudah ada</li>
+              <li data-i18n="pill.l3b">Kartu member keluarga dan perusahaan, stiker, serta voucher</li>
+              <li data-i18n="pill.l3c">Pengingat ulang tahun dan daftar tamu yang lama tidak berkunjung</li>
+              <li data-i18n="pill.l3d">Pesan WhatsApp dengan template yang siap digunakan</li>
             </ul>
           </article>
         </div>
@@ -2893,31 +3008,31 @@
       <div class="container">
         <div class="section-head">
           <p class="eyebrow" data-i18n="uc.eyebrow">Momen Tamu</p>
-          <h2 data-decode="1" data-i18n="uc.title">Begini Intoch Dipakai Sehari-hari</h2>
-          <p data-i18n="uc.sub">Klik tiap tab untuk lihat alurnya.</p>
+          <h2 data-decode="1" data-i18n="uc.title">Intoch dalam Operasional Sehari-hari</h2>
+          <p data-i18n="uc.sub">Pilih setiap tab untuk melihat alurnya.</p>
         </div>
 
         <div class="v2-tabgroups" aria-hidden="true">
           <span data-i18n="stage.res">Reservasi</span><span data-i18n="stage.walk">Walk-in</span><span data-i18n="stage.ret">Tamu Kembali</span>
         </div>
         <div class="v2-tabbar" role="tablist" aria-label="Momen tamu">
-          <button class="v2-tab" role="tab" id="uc-t1" aria-controls="uc-p1" aria-selected="true" tabindex="0" data-i18n="uc.t1"><span class="g">Reservasi</span><span class="n">1</span>Tamu Booking Sendiri</button>
+          <button class="v2-tab" role="tab" id="uc-t1" aria-controls="uc-p1" aria-selected="true" tabindex="0" data-i18n="uc.t1"><span class="g">Reservasi</span><span class="n">1</span>Reservasi Mandiri</button>
           <button class="v2-tab" role="tab" id="uc-t2" aria-controls="uc-p2" aria-selected="false" tabindex="-1" data-i18n="uc.t2"><span class="g">Reservasi</span><span class="n">2</span>Follow Up dengan Mudah</button>
           <button class="v2-tab" role="tab" id="uc-t3" aria-controls="uc-p3" aria-selected="false" tabindex="-1" data-i18n="uc.t3"><span class="g">Walk-in</span><span class="n">3</span>Walk-in Saat Ramai</button>
-          <button class="v2-tab" role="tab" id="uc-t4" aria-controls="uc-p4" aria-selected="false" tabindex="-1" data-i18n="uc.t4"><span class="g">Tamu Kembali</span><span class="n">4</span>Tamu Langganan Datang Lagi</button>
+          <button class="v2-tab" role="tab" id="uc-t4" aria-controls="uc-p4" aria-selected="false" tabindex="-1" data-i18n="uc.t4"><span class="g">Tamu Kembali</span><span class="n">4</span>Pelanggan Setia Kembali</button>
         </div>
 
         <!-- ---------- TAB 1 · Tamu Booking Sendiri ---------- -->
         <div class="v2-panel" id="uc-p1" role="tabpanel" aria-labelledby="uc-t1" data-phase="1" data-dur="4700,3800,3600">
           <div class="v2-panel-copy">
             <span class="v2-stagetag" data-i18n="uc.tag1">Reservasi · Langkah 1 dari 2</span>
-            <h3 data-i18n="uc.h1">Booking Masuk Sendiri, Nggak Perlu Dicatat Ulang</h3>
+            <h3 data-i18n="uc.h1">Reservasi Masuk Otomatis, Tanpa Pencatatan Ulang</h3>
             <ol class="v2-steps">
-              <li data-step="1"><button type="button"><span class="n">1</span><span data-i18n="uc.s11">Tamu buka link booking di HP, lalu pilih tanggal, area, jam, dan jumlah orang.</span></button></li>
-              <li data-step="2"><button type="button"><span class="n">2</span><span data-i18n="uc.s12">Booking-nya langsung muncul di dashboard, ada notifikasinya juga.</span></button></li>
-              <li data-step="3"><button type="button"><span class="n">3</span><span data-i18n="uc.s13">Data tamu tersimpan otomatis. Staf nggak perlu nyalin dari chat.</span></button></li>
+              <li data-step="1"><button type="button"><span class="n">1</span><span data-i18n="uc.s11">Tamu membuka tautan reservasi di ponsel, lalu memilih tanggal, area, jam, dan jumlah orang.</span></button></li>
+              <li data-step="2"><button type="button"><span class="n">2</span><span data-i18n="uc.s12">Reservasi langsung tampil di dashboard, lengkap dengan notifikasi.</span></button></li>
+              <li data-step="3"><button type="button"><span class="n">3</span><span data-i18n="uc.s13">Data tamu tersimpan otomatis. Staf tidak perlu lagi menyalin dari chat.</span></button></li>
             </ol>
-            <p class="v2-note"><span aria-hidden="true">💳</span><span data-i18n="uc.note1">Kalau perlu deposit untuk area tertentu atau rombongan besar, form booking-nya juga bisa.</span></p>
+            <p class="v2-note"><span aria-hidden="true">💳</span><span data-i18n="uc.note1">Membutuhkan deposit untuk area tertentu atau rombongan besar? Form reservasi Intoch juga mendukungnya.</span></p>
           </div>
           <div class="v2-stage" aria-hidden="true">
             <div class="v2-devices">
@@ -2965,11 +3080,11 @@
         <div class="v2-panel" id="uc-p2" role="tabpanel" aria-labelledby="uc-t2" data-phase="1" data-dur="4200,3600,3800" hidden>
           <div class="v2-panel-copy">
             <span class="v2-stagetag" data-i18n="uc.tag2">Reservasi · Langkah 2 dari 2</span>
-            <h3 data-i18n="uc.h2">Konfirmasi Tamu, Tinggal Kirim</h3>
+            <h3 data-i18n="uc.h2">Konfirmasi Tamu Cukup dengan Satu Pesan</h3>
             <ol class="v2-steps">
-              <li data-step="1"><button type="button"><span class="n">1</span><span data-i18n="uc.s21">Klik tombol WhatsApp, pesan konfirmasinya sudah jadi. Tinggal kirim.</span></button></li>
-              <li data-step="2"><button type="button"><span class="n">2</span><span data-i18n="uc.s22">Tamu dapat tiket reservasi yang bisa dibuka dan diunduh sendiri.</span></button></li>
-              <li data-step="3"><button type="button"><span class="n">3</span><span data-i18n="uc.s23">Pas harinya, daftar tamu sudah siap. Tamu datang, tinggal tandai Arrived.</span></button></li>
+              <li data-step="1"><button type="button"><span class="n">1</span><span data-i18n="uc.s21">Tekan tombol WhatsApp, pesan konfirmasi sudah tersusun dan siap dikirim.</span></button></li>
+              <li data-step="2"><button type="button"><span class="n">2</span><span data-i18n="uc.s22">Tamu menerima tiket reservasi yang dapat dibuka dan diunduh sendiri.</span></button></li>
+              <li data-step="3"><button type="button"><span class="n">3</span><span data-i18n="uc.s23">Pada hari kedatangan, daftar tamu sudah siap. Saat tamu tiba, cukup tandai Arrived.</span></button></li>
             </ol>
           </div>
           <div class="v2-stage" aria-hidden="true">
@@ -3033,11 +3148,11 @@ Jumlah: 4 orang<time>10:12</time></div>
         <div class="v2-panel" id="uc-p3" role="tabpanel" aria-labelledby="uc-t3" data-phase="1" data-dur="3800,3400,4000" hidden>
           <div class="v2-panel-copy">
             <span class="v2-stagetag" data-i18n="stage.walk">Walk-in</span>
-            <h3 data-i18n="uc.h3">Lagi Antre Panjang? Ketik Namanya Saja.</h3>
+            <h3 data-i18n="uc.h3">Antrean Panjang? Cukup Masukkan Nama Tamu.</h3>
             <ol class="v2-steps">
-              <li data-step="1"><button type="button"><span class="n">1</span><span data-i18n="uc.s31">Tamu datang tanpa booking. Host cukup ketik nama, nomor HP bisa nyusul.</span></button></li>
-              <li data-step="2"><button type="button"><span class="n">2</span><span data-i18n="uc.s32">Tamu langsung masuk daftar walk-in hari ini, okupansi meja ikut ke-update.</span></button></li>
-              <li data-step="3"><button type="button"><span class="n">3</span><span data-i18n="uc.s33">Setelah tamu pulang, kirim ucapan terima kasih lewat WhatsApp.</span></button></li>
+              <li data-step="1"><button type="button"><span class="n">1</span><span data-i18n="uc.s31">Tamu datang tanpa reservasi. Host cukup memasukkan nama, nomor ponsel dapat dilengkapi kemudian.</span></button></li>
+              <li data-step="2"><button type="button"><span class="n">2</span><span data-i18n="uc.s32">Tamu langsung masuk ke daftar walk-in hari ini, dan okupansi meja ikut diperbarui.</span></button></li>
+              <li data-step="3"><button type="button"><span class="n">3</span><span data-i18n="uc.s33">Setelah kunjungan, kirimkan ucapan terima kasih melalui WhatsApp.</span></button></li>
             </ol>
           </div>
           <div class="v2-stage" aria-hidden="true">
@@ -3082,11 +3197,11 @@ Jumlah: 4 orang<time>10:12</time></div>
         <div class="v2-panel" id="uc-p4" role="tabpanel" aria-labelledby="uc-t4" data-phase="1" data-dur="4000,3400,4200" hidden>
           <div class="v2-panel-copy">
             <span class="v2-stagetag" data-i18n="stage.ret">Tamu Kembali</span>
-            <h3 data-i18n="uc.h4">Tamu Langganan Datang, Anda Langsung Tahu</h3>
+            <h3 data-i18n="uc.h4">Pelanggan Setia Datang, Anda Langsung Mengenalinya</h3>
             <ol class="v2-steps">
-              <li data-step="1"><button type="button"><span class="n">1</span><span data-i18n="uc.s41">Booking dan walk-in masuk ke satu profil. Kelihatan sudah berapa kali datang, belanja berapa, dan menu favoritnya.</span></button></li>
-              <li data-step="2"><button type="button"><span class="n">2</span><span data-i18n="uc.s42">Tiap kunjungan dapat stiker. Kartunya penuh, voucher-nya siap.</span></button></li>
-              <li data-step="3"><button type="button"><span class="n">3</span><span data-i18n="uc.s43">Pas tamu ulang tahun, atau sudah lama nggak datang, kirim pesan lewat WhatsApp.</span></button></li>
+              <li data-step="1"><button type="button"><span class="n">1</span><span data-i18n="uc.s41">Reservasi dan walk-in tergabung dalam satu profil: jumlah kunjungan, total belanja, dan menu favorit.</span></button></li>
+              <li data-step="2"><button type="button"><span class="n">2</span><span data-i18n="uc.s42">Setiap kunjungan menambah stiker. Saat kartu penuh, voucher siap diberikan.</span></button></li>
+              <li data-step="3"><button type="button"><span class="n">3</span><span data-i18n="uc.s43">Saat tamu berulang tahun atau lama tidak berkunjung, kirimkan pesan melalui WhatsApp.</span></button></li>
             </ol>
           </div>
           <div class="v2-stage" aria-hidden="true">
@@ -3158,8 +3273,8 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
           <div class="more-item"><div class="more-icon">📊</div><div><h4 data-i18n="more.i1t">Laporan Marketing, Operasional & Spending</h4><p data-i18n="more.i1p">Pola kunjungan, tamu baru vs. kembali, leaderboard top spender, sampai performa promo.</p></div></div>
           <div class="more-item"><div class="more-icon">💳</div><div><h4 data-i18n="more.depT">Deposit Reservasi</h4><p data-i18n="more.depP">Minta deposit untuk area tertentu atau rombongan besar, lalu catat pembayarannya.</p></div></div>
           <div class="more-item"><div class="more-icon">🎁</div><div><h4 data-i18n="more.i2t">Promosi & Hadiah</h4><p data-i18n="more.i2p">Buat promo dengan hadiah tertentu untuk mendorong kunjungan di jam atau musim yang lebih sepi.</p></div></div>
-          <div class="more-item"><div class="more-icon">⭐</div><div><h4 data-i18n="more.revT">Review Google yang Seru</h4><p data-i18n="more.revP">Ajak pelanggan mengisi review di Google lewat cara yang fun dan menarik.</p></div></div>
-          <div class="more-item"><div class="more-icon">🔐</div><div><h4 data-i18n="more.roleT">Hak Akses per Peran</h4><p data-i18n="more.roleP">Staf, manajer, dan finance melihat apa yang memang jadi tugasnya.</p></div></div>
+          <div class="more-item"><div class="more-icon">⭐</div><div><h4 data-i18n="more.revT">Tingkatkan Ulasan Google</h4><p data-i18n="more.revP">Ajak pelanggan memberikan ulasan di Google melalui pengalaman yang menyenangkan.</p></div></div>
+          <div class="more-item"><div class="more-icon">🔐</div><div><h4 data-i18n="more.roleT">Hak Akses per Peran</h4><p data-i18n="more.roleP">Staf, manajer, dan tim keuangan hanya melihat data yang sesuai dengan perannya.</p></div></div>
           <div class="more-item"><div class="more-icon">📱</div><div><h4 data-i18n="more.i6t">Akses dari Mana Saja</h4><p data-i18n="more.i6p">Berbasis web dan responsif, terbuka dari tablet host, komputer kasir, maupun ponsel manajer.</p></div></div>
         </div>
       </div>
@@ -3229,11 +3344,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
                 >Berapa lama staf butuh untuk terbiasa memakai Intoch?</span
               ><span class="arrow">▾</span>
             </summary>
-            <p data-i18n="faq.a2">
-              Alur inti, Quick Walk-In dan input reservasi, dirancang sederhana,
-              biasanya staf sudah nyaman dalam sekali shift pelatihan. Tim kami
-              mendampingi sampai staf percaya diri.
-            </p>
+            <p data-i18n="faq.a2">Alur inti, yaitu Quick Walk-In dan input reservasi, dirancang sederhana. Umumnya staf sudah terbiasa dalam satu sesi pelatihan, dan tim kami mendampingi hingga staf percaya diri.</p>
           </details>
           <details class="faq-item">
             <summary>
@@ -3278,9 +3389,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
     <section id="kontak" style="padding-top: 24px" data-fx="cta">
       <div class="container">
         <div class="cta-section">
-          <h2 data-decode="1" data-i18n="cta.title">
-            Siap Nggak Pernah Lagi Kehilangan Jejak Tamu?
-          </h2>
+          <h2 data-decode="1" data-i18n="cta.title">Pastikan Tidak Ada Lagi Tamu yang Terlewat</h2>
           <p data-i18n="cta.sub">
             Ceritakan kebutuhan restoran Anda kepada tim kami. Kami akan
             menyiapkan demo dan penawaran yang disesuaikan dengan skala bisnis
@@ -3292,12 +3401,12 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
                  META.id.wa dan META.en.wa di blok script paling bawah. Kalau
                  nomor berubah, ganti ketiganya. -->
             <a
-              class="btn btn-gold"
+              class="btn btn-wa"
               id="waLink"
               href="https://wa.me/6281325063362?text=Halo%2C%20saya%20tertarik%20dengan%20Intoch%20untuk%20restoran%20saya."
               target="_blank"
               rel="noopener"
-              >Chat via WhatsApp</a
+              ><svg class="btn-wa-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /></svg>Chat via WhatsApp</a
             >
             <a
               class="btn btn-outline"
@@ -3494,7 +3603,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
             "Reservation, walk-in, and member data is stored in your restaurant's own database, never shared with third parties. Staff access is controlled by role.",
           "faq.q2": "How long does it take staff to get used to Intoch?",
           "faq.a2":
-            "The core flows, Quick Walk-In and reservation entry, are designed to be simple, most staff are comfortable within one training shift. Our team stays with you until they're confident.",
+            "The core flows, Quick Walk-In and reservation entry, are designed to be simple. Staff are usually comfortable after one training session, and our team stays with you until they are confident.",
           "faq.q3": "Can it be used on multiple devices at once?",
           "faq.a3":
             "Yes. Intoch is web-based, so it can be open simultaneously on the host's tablet, the cashier's computer, and the manager's phone, with data synced in real time.",
@@ -3504,83 +3613,83 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
           "faq.q5": "How much does Intoch cost?",
           "faq.a5":
             "Pricing depends on your restaurant's scale and needs. Contact our team for a consultation and a tailored quote.",
-          "cta.title": "Ready to Never Lose Track of a Guest Again?",
+          "cta.title": "Make Sure No Guest Is Missed Again",
           "cta.sub":
             "Tell our team about your restaurant's needs. We'll prepare a demo and a proposal tailored to your business scale.",
           "cta.email": "Email Our Team",
           "nav.why": "Why Intoch",
           "nav.usecase": "Guest Moments",
-          "why2.title": "Still Writing Guests Down in a Notebook?",
-          "why2.sub": "Most restaurants still work like this. Bookings come in through chat, walk-ins go unrecorded, and nobody remembers the regulars. See the difference.",
-          "why2.oldT": "The Old Way",
+          "why2.title": "Still Recording Guests by Hand?",
+          "why2.sub": "Most restaurants still rely on chats, notebooks, and staff memory. As a result, guest data gets scattered and the chance to bring guests back is lost.",
+          "why2.oldT": "The Manual Way",
           "why2.oldS": "Chats, notebooks, and staff memory",
           "why2.newT": "With Intoch",
-          "why2.newS": "Every guest recorded in one place",
+          "why2.newS": "All guest data in one place",
           "stage.res": "Reservation",
           "stage.walk": "Walk-in",
           "stage.ret": "Regulars",
-          "why2.o1": "<span class=\"mk\">✕</span><strong>Bookings come in from everywhere.</strong> Chat, phone, DMs. Written in a notebook, sometimes left unanswered, sometimes double-booked.",
-          "why2.o2": "<span class=\"mk\">✕</span><strong>Too busy to ask for a name.</strong> The guest comes, eats, leaves, and there is no trace of them.",
-          "why2.o3": "<span class=\"mk\">✕</span><strong>A guest on their 8th visit gets greeted like a stranger.</strong> And nobody notices the ones who stopped coming.",
-          "why2.n1": "<span class=\"mk\">✓</span><strong>Guests fill in the booking form themselves.</strong> Everything lands in one list, with a notification.",
-          "why2.n2": "<span class=\"mk\">✓</span><strong>Just type the guest's name.</strong> The phone number can wait.",
-          "why2.n3": "<span class=\"mk\">✓</span><strong>See how often they have visited,</strong> how much they spend, and when their birthday is. Sending a message is just a template away.",
-          "why2.punch": "Whether they booked ahead or walked in, <em>it all goes into the same guest profile.</em>",
-          "pill.title": "From First Booking to Regular",
-          "pill.sub": "Intoch stays with your guests from their first booking until they become regulars.",
+          "why2.o1": "<span class=\"mk\">✕</span><strong>Reservations are scattered across channels.</strong> WhatsApp messages, calls, and DMs are logged by hand, so replies get missed and bookings get duplicated.",
+          "why2.o2": "<span class=\"mk\">✕</span><strong>Walk-in guests go unrecorded.</strong> When the restaurant is busy, there is no time to ask for details, so their visits leave no trace.",
+          "why2.o3": "<span class=\"mk\">✕</span><strong>Loyal customers go unrecognized.</strong> Guests who have visited many times are greeted like first-timers, and those who stop coming go unnoticed.",
+          "why2.n1": "<span class=\"mk\">✓</span><strong>Guests book online by themselves.</strong> Every reservation lands in one list, with an instant notification.",
+          "why2.n2": "<span class=\"mk\">✓</span><strong>Walk-ins are recorded in seconds.</strong> Just enter the guest's name; other details can be completed later.",
+          "why2.n3": "<span class=\"mk\">✓</span><strong>Every guest has a complete profile.</strong> Visit count, total spend, and birthday are clearly visible, ready for a WhatsApp follow-up.",
+          "why2.punch": "Whether through a reservation or a walk-in, <em>every visit is recorded in the same guest profile.</em>",
+          "pill.title": "From First Reservation to Loyal Customer",
+          "pill.sub": "A restaurant reservation and membership app that helps you record, recognize, and retain every guest.",
           "pill.n1": "01 · Reservations",
           "pill.n2": "02 · Walk-in",
           "pill.n3": "03 · Returning Guests",
           "pill.t1": "Online Reservations",
-          "pill.p1": "Guests can book anytime without waiting for a chat reply. Staff just check and confirm.",
+          "pill.p1": "Guests can book anytime without waiting for a chat reply. Staff simply review and confirm.",
           "pill.l1a": "Guests choose their own area, time, and party size",
-          "pill.l1b": "Get notified every time a new booking comes in",
-          "pill.l1c": "Confirm over WhatsApp, guests get a reservation ticket",
-          "pill.l1d": "Today's guest list is ready before you open",
-          "pill.l1e": "Set a deposit for specific areas or large groups",
-          "pill.t2": "Fast Walk-ins",
-          "pill.p2": "Even with a long queue, every guest gets recorded. Just a name, the rest can come later.",
-          "pill.l2a": "Type a name, the guest is in",
+          "pill.l1b": "Automatic notification for every new reservation",
+          "pill.l1c": "WhatsApp confirmation with a reservation ticket for the guest",
+          "pill.l1d": "Today's guest list is ready before opening",
+          "pill.l1e": "Deposit settings for specific areas or large groups",
+          "pill.t2": "Fast Walk-in Recording",
+          "pill.p2": "Even at peak hours, every guest is recorded. A name is enough; other details can follow.",
+          "pill.l2a": "Enter a name and the guest is recorded",
           "pill.l2b": "Walk-in list and table occupancy on one screen",
-          "pill.l2c": "Works on a tablet, the cashier's computer, or a phone",
-          "pill.t3": "Know Your Regulars",
-          "pill.p3": "The more often a guest visits, the fuller their record gets. So you can see who deserves a thank-you, and who needs a nudge to come back.",
+          "pill.l2c": "Accessible from a tablet, the cashier's computer, or a phone",
+          "pill.t3": "Recognize Loyal Customers",
+          "pill.p3": "The more often a guest visits, the richer their profile. You know who deserves appreciation and who needs an invitation to return.",
           "pill.l3a": "Visit history, total spend, and favorite dishes",
-          "pill.l3b": "Family and company member cards, stickers, vouchers",
-          "pill.l3c": "Birthday reminders and a list of guests who haven't been back in a while",
-          "pill.l3d": "Send WhatsApp messages with ready-made templates",
+          "pill.l3b": "Family and corporate member cards, stickers, and vouchers",
+          "pill.l3c": "Birthday reminders and a list of guests who have not visited in a while",
+          "pill.l3d": "WhatsApp messages with ready-to-use templates",
           "uc.eyebrow": "Guest Moments",
-          "uc.title": "How Intoch Works Day to Day",
-          "uc.sub": "Click each tab to see the flow.",
-          "uc.t1": "<span class=\"g\">Reservation</span><span class=\"n\">1</span>Guests Book Themselves",
+          "uc.title": "Intoch in Daily Operations",
+          "uc.sub": "Select each tab to see the flow.",
+          "uc.t1": "<span class=\"g\">Reservation</span><span class=\"n\">1</span>Self-Service Reservations",
           "uc.t2": "<span class=\"g\">Reservation</span><span class=\"n\">2</span>Easy Follow-Ups",
           "uc.t3": "<span class=\"g\">Walk-in</span><span class=\"n\">3</span>Walk-ins at Rush Hour",
-          "uc.t4": "<span class=\"g\">Returning Guests</span><span class=\"n\">4</span>Regulars Come Back",
+          "uc.t4": "<span class=\"g\">Regulars</span><span class=\"n\">4</span>Loyal Customers Return",
           "uc.tag1": "Reservation · Step 1 of 2",
           "uc.tag2": "Reservation · Step 2 of 2",
-          "uc.h1": "Bookings Come In on Their Own, No Retyping",
-          "uc.h2": "Confirming Guests? Just Hit Send",
-          "uc.h3": "Long Queue? Just Type the Name.",
-          "uc.h4": "When a Regular Comes In, You Know Right Away",
-          "uc.s11": "The guest opens the booking link on their phone and picks the date, area, time, and party size.",
-          "uc.s12": "The booking shows up on the dashboard right away, with a notification.",
-          "uc.s13": "Guest details are saved automatically. No copying from chats.",
-          "uc.note1": "Need a deposit for certain areas or large groups? The booking form handles that too.",
-          "uc.s21": "Tap the WhatsApp button and the confirmation message is ready. Just send it.",
-          "uc.s22": "The guest gets a reservation ticket they can open and download themselves.",
-          "uc.s23": "On the day, the guest list is ready. When the guest arrives, mark them Arrived.",
-          "uc.s31": "A guest walks in without booking. The host types their name, the phone number can come later.",
-          "uc.s32": "They go straight into today's walk-in list, and table occupancy updates too.",
-          "uc.s33": "After they leave, send a thank-you over WhatsApp.",
-          "uc.s41": "Bookings and walk-ins go into one profile. See how often they have come, how much they spend, and their favorite dish.",
-          "uc.s42": "Every visit earns a sticker. When the card is full, the voucher is ready.",
-          "uc.s43": "On their birthday, or when they haven't been back in a while, send them a message over WhatsApp.",
+          "uc.h1": "Reservations Arrive Automatically, No Re-entry Needed",
+          "uc.h2": "Confirm Guests with a Single Message",
+          "uc.h3": "Long Queue? Just Enter the Guest's Name.",
+          "uc.h4": "When Loyal Customers Return, You Recognize Them Instantly",
+          "uc.s11": "The guest opens the booking link on their phone and selects the date, area, time, and party size.",
+          "uc.s12": "The reservation appears on the dashboard immediately, complete with a notification.",
+          "uc.s13": "Guest data is saved automatically. Staff no longer need to copy details from chats.",
+          "uc.note1": "Need a deposit for specific areas or large groups? The Intoch booking form supports that as well.",
+          "uc.s21": "Press the WhatsApp button and the confirmation message is already written and ready to send.",
+          "uc.s22": "The guest receives a reservation ticket they can open and download themselves.",
+          "uc.s23": "On the day of the visit, the guest list is ready. When the guest arrives, simply mark them Arrived.",
+          "uc.s31": "A guest arrives without a reservation. The host enters their name; the phone number can be added later.",
+          "uc.s32": "The guest goes straight into today's walk-in list, and table occupancy updates accordingly.",
+          "uc.s33": "After the visit, send a thank-you message via WhatsApp.",
+          "uc.s41": "Reservations and walk-ins are combined in one profile: visit count, total spend, and favorite dish.",
+          "uc.s42": "Every visit adds a sticker. When the card is full, the voucher is ready.",
+          "uc.s43": "When a guest has a birthday or has not visited in a while, send them a message via WhatsApp.",
           "more.depT": "Reservation Deposits",
           "more.depP": "Ask for a deposit for specific areas or large groups, then record the payment.",
-          "more.revT": "Fun Google Reviews",
-          "more.revP": "Get customers to leave a Google review in a fun, engaging way.",
+          "more.revT": "Grow Your Google Reviews",
+          "more.revP": "Invite customers to leave a Google review through an enjoyable experience.",
           "more.roleT": "Role-Based Access",
-          "more.roleP": "Staff, managers, and finance each see what their job needs.",
+          "more.roleP": "Staff, managers, and finance see only the data relevant to their role.",
           "footer.copy": "© 2026 Intoch. All rights reserved.",
         };
 
@@ -3588,14 +3697,13 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
         // tombol WhatsApp di atas harus selalu sama.
         var META = {
           id: {
-            title: "Intoch, Sistem Manajemen Tamu & Membership untuk Restoran",
-            desc: "Intoch membantu restoran mengelola reservasi, walk-in, dan program membership dalam satu dashboard. Hubungi tim kami untuk demo.",
+            title: "Intoch | Aplikasi Reservasi, Walk-in & Membership Restoran",
+            desc: "Aplikasi reservasi restoran untuk mencatat booking online, walk-in, dan member dalam satu dashboard. Kenali pelanggan setia dan follow up lewat WhatsApp.",
             wa: "https://wa.me/6281325063362?text=Halo%2C%20saya%20tertarik%20dengan%20Intoch%20untuk%20restoran%20saya.",
           },
           en: {
-            title:
-              "Intoch, Guest & Membership Management System for Restaurants",
-            desc: "Intoch helps restaurants manage reservations, walk-ins, and membership programs in one dashboard. Contact our team for a demo.",
+            title: "Intoch | Restaurant Reservation, Walk-in & Membership App",
+            desc: "Restaurant reservation software that records online bookings, walk-ins, and members in one dashboard. Know your regulars and follow up over WhatsApp.",
             wa: "https://wa.me/6281325063362?text=Hello%2C%20I%27m%20interested%20in%20Intoch%20for%20my%20restaurant.",
           },
         };
