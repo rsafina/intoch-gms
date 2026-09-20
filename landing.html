@@ -438,25 +438,14 @@
       /* ===== Hero ===== */
       .hero-wrap {
         position: relative;
+        /* 2026-09-20: plain near-white with a very faint logo-blue wash
+           (replaces the lavender/cyan holographic image, which stays in
+           assets but is no longer used). Alphas are kept at 3-6% on purpose. */
         background-image:
-          linear-gradient(
-            to bottom,
-            rgba(231, 238, 250, 0) 0%,
-            rgba(231, 238, 250, 0) 38%,
-            rgba(224, 234, 248, 0.35) 58%,
-            rgba(232, 239, 250, 0.72) 72%,
-            rgba(242, 246, 252, 0.93) 85%,
-            #fbfcfe 100%
-          ),
-          url("assets/holographic-abstract-background.avif");
-        background-position:
-          center top,
-          center top;
-        background-size:
-          100% 100%,
-          cover;
-        background-repeat: no-repeat, no-repeat;
-        background-color: #f8f5ed;
+          radial-gradient(ellipse 55% 60% at 78% 32%, rgba(17, 79, 161, 0.06), rgba(17, 79, 161, 0) 70%),
+          radial-gradient(ellipse 50% 45% at 8% 0%, rgba(17, 79, 161, 0.035), rgba(17, 79, 161, 0) 70%);
+        background-repeat: no-repeat;
+        background-color: #fbfcfe;
       }
       .hero-wrap::before {
         content: "";
@@ -570,6 +559,7 @@
         transform: none;
       }
       .hero-media::before {
+        display: none; /* 2026-09-20: replaced by the photo stack */
         content: "";
         position: absolute;
         inset: 3% 16% 8% 13%;
@@ -582,11 +572,47 @@
         transform: rotate(-2deg);
         box-shadow: 0 28px 80px rgb(var(--brand-ink-rgb) / 0.16);
       }
-      .hero-visual {
+      /* Photo stack (2026-09-20): two tilted photos peek out behind the main
+         one. The wrapper owns the size, so the back photos always match the
+         front photo at every screen width. */
+      .hero-stack-wrap {
+        position: relative;
         width: min(430px, 78%);
         aspect-ratio: 0.82;
+        z-index: 1;
+      }
+      .hero-stack {
+        position: absolute;
+        inset: 0;
+        border-radius: 32px;
+        overflow: hidden;
+        border: 6px solid #ffffff;
+        background: #eef3fb;
+        box-shadow: 0 18px 40px rgb(var(--brand-ink-rgb) / 0.14);
+        z-index: 0;
+      }
+      .hero-stack img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: saturate(0.85);
+      }
+      /* white veil so the back photos recede and the front one stays the focus */
+      .hero-stack::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.4);
+      }
+      .hero-stack.s1 { transform: translate(-8%, 3%) rotate(-6deg); }
+      .hero-stack.s2 { transform: translate(7%, -2%) rotate(5deg); }
+      .hero-visual {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        aspect-ratio: 0.82;
         background: rgba(255, 255, 255, 0.48);
-        border-radius: 42px 42px 120px 42px;
+        border-radius: 32px; /* was 42/42/120/42; all four corners equal since 2026-09-20 */
         box-shadow:
           0 26px 56px rgb(var(--brand-ink-rgb) / 0.2),
           0 10px 28px rgba(185, 133, 54, 0.14);
@@ -1738,9 +1764,12 @@
           inset: 4% 14% 6% 12%;
           border-radius: 30px 30px 82px 30px;
         }
-        .hero-visual {
+        .hero-stack-wrap {
           width: min(66vw, 300px);
-          border-radius: 32px 32px 92px 32px;
+        }
+        .hero-stack { border-radius: 24px; border-width: 5px; }
+        .hero-visual {
+          border-radius: 24px;
         }
         /* Tidy compact pill on mobile: [icon] [label] [number]
            in a single neat row, icons kept */
@@ -1907,7 +1936,7 @@
           width: 100%;
           justify-content: center;
         }
-        .hero-visual {
+        .hero-stack-wrap {
           width: min(62vw, 250px);
         }
         .hero-metric {
@@ -2675,16 +2704,21 @@
           </div>
           <!-- Hero portrait visual with floating product metrics. -->
           <div class="hero-media">
-            <div class="img-placeholder hero-visual">
-              <!-- webp copy of hero-new-group.png at 860px wide: ~80 KB
-                   instead of 1.5 MB. The original stays in assets. -->
-              <img
-                src="assets/hero-new-group.webp"
-                width="860"
-                height="1292"
-                fetchpriority="high"
-                alt="Pelayan restoran menyambut dua tamu yang sedang duduk di meja"
-              />
+            <div class="hero-stack-wrap">
+              <!-- back photos: decorative, so empty alt -->
+              <div class="hero-stack s1" aria-hidden="true"><img src="assets/hero-stack-1.webp" alt="" decoding="async" width="600" height="800" /></div>
+              <div class="hero-stack s2" aria-hidden="true"><img src="assets/hero-stack-2.webp" alt="" decoding="async" width="415" height="739" /></div>
+              <div class="img-placeholder hero-visual">
+                <!-- webp copy of hero-new-group.png at 860px wide: ~80 KB
+                     instead of 1.5 MB. The original stays in assets. -->
+                <img
+                  src="assets/hero-new-group.webp"
+                  width="860"
+                  height="1292"
+                  fetchpriority="high"
+                  alt="Pelayan restoran menyambut dua tamu yang sedang duduk di meja"
+                />
+              </div>
             </div>
             <div class="hero-metric risk">
               <div class="metric-head">
