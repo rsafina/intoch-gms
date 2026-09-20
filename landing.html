@@ -86,8 +86,8 @@
     </script>
     <style>
       :root {
-        /* ── Brand tokens (2026-09-05; landing switched from purple to the
-           logo blue #114FA1 / #3A56A5 on 2026-09-20). ONE PLACE. ───────────────────
+        /* ── Brand tokens (2026-09-05; landing moved to the cream / sand /
+           sky / indigo / plum palette on 2026-09-20). ONE PLACE. ───────────────────
            Every brand colour in the app resolves here. Before this, 728
            values were hardcoded across 20 files, which is why the colours
            could not be changed. Status colours (green, red, amber) are NOT
@@ -98,48 +98,56 @@
            than to look pleasant. Two of these fix long-standing failures:
            the old button blue (5596CE) under white text was 3.16:1 and the
            old gold (C8A96B) on cream was 2.08:1, against a 4.5 bar. */
-        --brand: #114FA1;          /* primary fill = logo blue. white on it: 8.3 */
-        --brand-hover: #0D3C7C;    /* pressed/hover. white on it: 11.0 */
-        --brand-ink: #114FA1;      /* headings. on white: 8.3 */
-        --brand-deep: #0D3C7C;     /* dark panels */
-        --brand-deepest: #0B3470;  /* deepest */
-        --brand-muted: #3A56A5;    /* de-emphasised = second logo blue. white on it: 6.9 */
-        --brand-soft: #9DB8E8;     /* soft accents on dark */
-        --brand-tint: #DFE9F7;     /* selected row / chip background */
-        --brand-tint2: #F1F6FD;    /* faintest wash */
-        --accent: #E24701;         /* FILLS ONLY. 3.79 on cream, so never small text */
-        --accent-hover: #C63D01;   /* also the text-safe orange: 4.78 on cream */
-        --accent-strong: #B23600;  /* 5.69 on cream */
-        --accent-tint: #F7C9AF;
-        --accent-tint2: #FBEDE4;
-        /* RGB triplets for the few places that need alpha, e.g.
-           rgb(var(--brand-ink-rgb) / 0.12). A settings screen that changes
-           --brand MUST set --brand-rgb in the same write, or a shadow keeps
-           the old hue while everything around it moves. */
-        --brand-rgb: 17 79 161;
-        --brand-ink-rgb: 17 79 161;
-        --brand-hover-rgb: 13 60 124;
-        --brand-deep-rgb: 13 60 124;
-        --brand-deepest-rgb: 11 52 112;
-        --brand-soft-rgb: 157 184 232;
-        --accent-rgb: 226 71 1;
-        --accent-hover-rgb: 198 61 1;
-        --accent-strong-rgb: 178 54 0;
+        /* 2026-09-20 palette (from the design brief):
+             cream #FFF5EC  page background
+             sand  #EACD9D  fills: number badges, pills, icon tiles
+             sky   #83B9DD  second headline tone, secondary button, pills
+             indigo #3E4B8F primary: buttons, headings, body text family
+             plum  #3E1535  dark panels only (CTA box, footer)
+           Rere chose to use the exact sky #83B9DD for headline text as in the
+           mockup (2026-09-20), knowing it is below the 3:1 contrast bar. */
+        --cream: #FFF5EC;
+        --sand: #EACD9D;
+        --sky: #83B9DD;
+        --sky-rgb: 131 185 221;
+        --plum: #3E1535;
+        --brand: #3E4B8F;          /* indigo. white on it: 8.05 */
+        --brand-hover: #313C74;
+        --brand-ink: #3E4B8F;      /* headings. on cream: 7.49 */
+        --brand-deep: #313C74;
+        --brand-deepest: #262F5C;
+        --brand-muted: #5E6BA8;    /* white on it: 5.07 */
+        --brand-soft: #83B9DD;
+        --brand-tint: #DCEAF5;     /* light sky: chips, selected rows */
+        --brand-tint2: #EEF5FB;
+        --accent: #EACD9D;         /* sand. FILLS ONLY, never text */
+        --accent-hover: #8A6424;   /* text-safe bronze for small labels: 4.97 on cream */
+        --accent-strong: #6B4A12;
+        --accent-tint: #F3E0BF;
+        --accent-tint2: #FBF0DD;
+        --brand-rgb: 62 75 143;
+        --brand-ink-rgb: 62 75 143;
+        --brand-hover-rgb: 49 60 116;
+        --brand-deep-rgb: 49 60 116;
+        --brand-deepest-rgb: 38 47 92;
+        --brand-soft-rgb: 131 185 221;
+        --accent-rgb: 234 205 157;
+        --accent-hover-rgb: 138 100 36;
+        --accent-strong-rgb: 107 74 18;
 
-
-        --bg: #fbfcfe;
-        --bg-alt: #eef1fb;
-        --bg-soft: #f5f7fd;
+        --bg: #FFF5EC;
+        --bg-alt: #FCEDDF;
+        --bg-soft: #FFF5EC;
         --card: rgba(255, 255, 255, 0.94);
-        --line: var(--brand-tint);
+        --line: #EFE2D3;
         --gold: var(--accent);
         --gold-dark: var(--accent-hover);
-        --primary: #114fa1;
-        --primary-dark: #0d3c7c;
-        --primary-hover: #3a56a5;
+        --primary: #3E4B8F;
+        --primary-dark: #313C74;
+        --primary-hover: #5E6BA8;
         --success: #5f8d4e;
-        --text: #17222e;
-        --text-sec: #5a6675;
+        --text: #2A3366;
+        --text-sec: #4F5A8C;
         --warning: #d4a017;
         --danger: #c0554a;
       }
@@ -153,7 +161,7 @@
       }
       body {
         font-family: "Plus Jakarta Sans", sans-serif;
-        background: #fbfcfe;
+        background: var(--cream);
         color: var(--text);
         line-height: 1.6;
       }
@@ -257,7 +265,7 @@
           background 0.3s ease;
       }
       nav.scrolled {
-        box-shadow: 0 8px 24px rgba(17, 79, 161, 0.08);
+        box-shadow: 0 8px 24px rgba(62, 75, 143, 0.08);
         background: rgba(255, 255, 255, 0.97);
       }
 
@@ -442,10 +450,10 @@
            (replaces the lavender/cyan holographic image, which stays in
            assets but is no longer used). Alphas are kept at 3-6% on purpose. */
         background-image:
-          radial-gradient(ellipse 55% 60% at 78% 32%, rgba(17, 79, 161, 0.06), rgba(17, 79, 161, 0) 70%),
-          radial-gradient(ellipse 50% 45% at 8% 0%, rgba(17, 79, 161, 0.035), rgba(17, 79, 161, 0) 70%);
+          radial-gradient(ellipse 55% 60% at 78% 32%, rgba(131, 185, 221, 0.16), rgba(131, 185, 221, 0) 70%),
+          radial-gradient(ellipse 45% 45% at 8% 100%, rgba(234, 205, 157, 0.22), rgba(234, 205, 157, 0) 70%);
         background-repeat: no-repeat;
-        background-color: #fbfcfe;
+        background-color: var(--cream);
       }
       .hero-wrap::before {
         content: "";
@@ -462,7 +470,7 @@
         right: 0;
         bottom: -1px;
         height: 3px;
-        background: #fbfcfe;
+        background: var(--cream);
         z-index: 2;
         pointer-events: none;
       }
@@ -508,7 +516,7 @@
         text-shadow: 0 2px 18px rgba(255, 255, 255, 0.28);
       }
       .hero h1 em {
-        color: var(--accent-strong);
+        color: var(--sky);
         font-style: normal;
       }
       .hero-title-lock {
@@ -517,7 +525,7 @@
       .hero h2 {
         max-width: 520px;
         margin: 0 0 22px;
-        color: rgba(48, 91, 130, 0.9);
+        color: var(--brand-ink);
         font-family: "Plus Jakarta Sans", sans-serif;
         font-size: 1.28rem;
         font-weight: 700;
@@ -526,7 +534,7 @@
         text-shadow: 0 1px 10px rgba(255, 255, 255, 0.24);
       }
       .hero p.lead {
-        color: rgba(47, 77, 105, 0.88);
+        color: var(--text-sec);
         font-size: 1.12rem;
         margin-bottom: 30px;
         max-width: 500px;
@@ -587,7 +595,7 @@
         border-radius: 32px;
         overflow: hidden;
         border: 6px solid #ffffff;
-        background: #eef3fb;
+        background: var(--bg-alt);
         box-shadow: 0 18px 40px rgb(var(--brand-ink-rgb) / 0.14);
         z-index: 0;
       }
@@ -650,7 +658,7 @@
         min-width: 0;
         padding: 11px 18px 11px 12px;
         border-radius: 999px;
-        color: #22313f;
+        color: var(--text);
         background: rgba(255, 255, 255, 0.72);
         border: 1px solid rgba(255, 255, 255, 0.86);
         box-shadow:
@@ -687,7 +695,7 @@
         height: 17px;
       }
       .hero-metric .metric-label {
-        color: rgba(48, 91, 130, 0.72);
+        color: var(--text-sec);
         font-size: 0.74rem;
         font-weight: 700;
       }
@@ -700,22 +708,22 @@
       .hero-metric.top {
         top: 44px;
         right: -14px;
-        background: rgba(213, 228, 255, 0.82);
+        background: rgba(214, 232, 244, 0.92);
       }
       .hero-metric.bottom {
         left: -8px;
         bottom: 86px;
-        background: rgba(255, 229, 190, 0.82);
+        background: rgba(246, 230, 200, 0.94);
       }
       .hero-metric.side {
         right: -6px;
         bottom: 40px;
-        background: rgba(221, 247, 241, 0.82);
+        background: rgba(228, 240, 248, 0.94);
       }
       .hero-metric.risk {
         left: -20px;
         top: 168px;
-        background: rgba(255, 218, 232, 0.84);
+        background: rgba(250, 239, 220, 0.94);
       }
 
       /* ===== Seamless section transitions =====
@@ -1152,40 +1160,40 @@
       [data-fx="cool"] .fx-layer {
         background-image: linear-gradient(
           168deg,
-          rgba(179, 201, 254, 0.1) 0%,
-          rgba(175, 240, 255, 0.05) 44%,
+          rgba(131, 185, 221, 0.1) 0%,
+          rgba(131, 185, 221, 0.05) 44%,
           rgba(255, 255, 255, 0) 74%
         );
       }
       [data-fx="soft"] .fx-layer {
         background-image: linear-gradient(
           200deg,
-          rgba(175, 240, 255, 0.1) 0%,
-          rgba(179, 201, 254, 0.06) 46%,
+          rgba(131, 185, 221, 0.1) 0%,
+          rgba(131, 185, 221, 0.06) 46%,
           rgba(255, 255, 255, 0) 78%
         );
       }
       [data-fx="mix"] .fx-layer {
         background-image: linear-gradient(
           150deg,
-          rgba(199, 218, 255, 0.09) 0%,
-          rgba(179, 201, 254, 0.06) 50%,
+          rgba(234, 205, 157, 0.09) 0%,
+          rgba(131, 185, 221, 0.06) 50%,
           rgba(255, 255, 255, 0) 80%
         );
       }
       [data-fx="warm"] .fx-layer {
         background-image: linear-gradient(
           190deg,
-          rgba(199, 218, 255, 0.085) 0%,
-          rgba(175, 240, 255, 0.055) 48%,
+          rgba(234, 205, 157, 0.085) 0%,
+          rgba(131, 185, 221, 0.055) 48%,
           rgba(255, 255, 255, 0) 80%
         );
       }
       [data-fx="cta"] .fx-layer {
         background-image: linear-gradient(
           160deg,
-          rgba(179, 201, 254, 0.12) 0%,
-          rgba(199, 218, 255, 0.08) 46%,
+          rgba(131, 185, 221, 0.12) 0%,
+          rgba(234, 205, 157, 0.08) 46%,
           rgba(255, 255, 255, 0) 82%
         );
       }
@@ -1262,8 +1270,8 @@
       .section-head .eyebrow,
       .problem .eyebrow {
         color: var(--primary);
-        background: rgba(17, 79, 161, 0.07);
-        border: 1px solid rgba(17, 79, 161, 0.16);
+        background: rgba(62, 75, 143, 0.07);
+        border: 1px solid rgba(62, 75, 143, 0.16);
         backdrop-filter: none;
       }
 
@@ -1279,7 +1287,7 @@
         border-radius: 14px;
         background: #ffffff;
         border: 1px solid var(--line);
-        box-shadow: 0 18px 46px rgba(17, 79, 161, 0.1);
+        box-shadow: 0 18px 46px rgba(62, 75, 143, 0.1);
         overflow: hidden;
         font-size: 11px;
         line-height: 1.35;
@@ -1518,10 +1526,10 @@
         pointer-events: none;
         opacity: 0;
         transition: opacity 0.55s ease;
-        box-shadow: 0 0 0 2px var(--primary), 0 10px 26px rgba(17, 79, 161, 0.2);
+        box-shadow: 0 0 0 2px var(--primary), 0 10px 26px rgba(62, 75, 143, 0.2);
         background: linear-gradient(
           120deg,
-          rgba(17, 79, 161, 0.06),
+          rgba(62, 75, 143, 0.06),
           rgb(var(--accent-rgb) / 0.08)
         );
       }
@@ -1643,7 +1651,7 @@
 
       /* ===== CTA / Contact ===== */
       .cta-section {
-        background: var(--primary-dark);
+        background: var(--plum);
         color: #fff;
         border-radius: 26px;
         padding: 60px 40px;
@@ -1676,7 +1684,7 @@
       /* ===== Footer ===== */
       footer {
         padding: 44px 0 32px;
-        background: #ffffff;
+        background: var(--plum);
       }
       .footer-inner {
         display: flex;
@@ -1684,7 +1692,7 @@
         justify-content: space-between;
         flex-wrap: wrap;
         gap: 16px;
-        border-top: 1px solid #e8e2d6;
+        border-top: 1px solid rgba(255, 245, 236, 0.14);
         padding-top: 28px;
       }
       .footer-inner img {
@@ -1696,12 +1704,12 @@
       }
       footer p,
       footer a {
-        color: var(--text-sec);
+        color: rgba(255, 245, 236, 0.82);
         font-size: 0.88rem;
         text-decoration: none;
       }
       footer a:hover {
-        color: var(--primary);
+        color: var(--sand);
       }
       .footer-links {
         display: flex;
@@ -2097,12 +2105,12 @@
       .v2-gc-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--line); padding-top: 10px; }
       .v2-dots { display: inline-flex; gap: 3px; }
       .v2-dots i { width: 9px; height: 9px; border-radius: 50%; background: #e2e6ef; display: block; }
-      .v2-dots i.f { background: var(--accent); }
-      .v2-dots i.pop { background: var(--accent); animation: v2dotPop 9s ease-out infinite both; animation-delay: 2.4s; }
+      .v2-dots i.f { background: var(--brand); }
+      .v2-dots i.pop { background: var(--brand); animation: v2dotPop 9s ease-out infinite both; animation-delay: 2.4s; }
       @keyframes v2dotPop {
         0% { background: #e2e6ef; transform: scale(1); }
-        4% { background: var(--accent); transform: scale(1.5); }
-        8%, 100% { background: var(--accent); transform: scale(1); }
+        4% { background: var(--brand); transform: scale(1.5); }
+        8%, 100% { background: var(--brand); transform: scale(1); }
       }
       .v2-wa-btn {
         background: #1f9d57; color: #fff; border-radius: 8px; padding: 5px 10px;
@@ -2156,7 +2164,7 @@
       .v2-benefits .v2-benefit::before {
         content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
         background:
-          radial-gradient(circle at 85% 0%, rgba(175, 240, 255, 0.28), rgba(175, 240, 255, 0) 45%),
+          radial-gradient(circle at 85% 0%, rgba(131, 185, 221, 0.28), rgba(131, 185, 221, 0) 45%),
           linear-gradient(165deg, var(--primary-dark) 0%, var(--primary) 55%, var(--primary-hover) 100%);
         opacity: 0; transition: opacity 0.35s ease;
       }
@@ -2171,7 +2179,7 @@
       .v2-benefits .v2-benefit p { font-size: 0.92rem; line-height: 1.6; transition: color 0.35s ease; }
       .v2-benefits .v2-benefit:hover {
         transform: translateY(-10px); border-color: transparent;
-        box-shadow: 0 26px 60px rgba(17, 79, 161, 0.35);
+        box-shadow: 0 26px 60px rgba(62, 75, 143, 0.35);
       }
       .v2-benefits .v2-benefit:hover::before { opacity: 1; }
       .v2-benefits .v2-benefit:hover h3 { color: #ffffff; }
@@ -2259,8 +2267,8 @@
       .v2-mini-kembali .v2-dots i.pop { animation: v2dotPop2 6s ease-out infinite both; }
       @keyframes v2dotPop2 {
         0%, 38% { background: #e2e6ef; transform: scale(1); }
-        44% { background: var(--accent); transform: scale(1.5); }
-        50%, 100% { background: var(--accent); transform: scale(1); }
+        44% { background: var(--brand); transform: scale(1.5); }
+        50%, 100% { background: var(--brand); transform: scale(1); }
       }
 
       /* ---------- 3. USE CASE TABS ---------- */
@@ -2557,15 +2565,70 @@
       .gp-stk { display: flex; align-items: center; justify-content: space-between; gap: 0.6em; margin-top: 0.1em; }
       .gp-stk .dotz { display: flex; gap: 0.25em; flex-wrap: wrap; }
       .gp-stk .dotz i { width: 0.75em; height: 0.75em; border-radius: 50%; background: #e2e6ef; display: block; }
-      .gp-stk .dotz i.f { background: var(--accent); }
+      .gp-stk .dotz i.f { background: var(--brand); }
       .v2-panel[data-phase="2"] .gp-stk .dotz i.new { animation: v2dotIn 0.7s ease 0.6s both; }
-      @keyframes v2dotIn { 0% { background: #e2e6ef; transform: scale(1); } 60% { background: var(--accent); transform: scale(1.7); } 100% { background: var(--accent); transform: scale(1); } }
+      @keyframes v2dotIn { 0% { background: #e2e6ef; transform: scale(1); } 60% { background: var(--brand); transform: scale(1.7); } 100% { background: var(--brand); transform: scale(1); } }
       .v2-panel[data-phase="1"] .gp-stk .dotz i.new { background: #e2e6ef; }
       .gp-card.lit { transition: box-shadow 0.4s, border-color 0.4s; }
       .v2-panel[data-phase="2"] .gp-card.lit2,
       .v2-panel[data-phase="3"] .gp-card.lit3,
       .v2-panel[data-phase="1"] .gp-card.lit1 { border-color: rgb(var(--brand-rgb) / 0.6); box-shadow: 0 0 0 2px rgb(var(--brand-rgb) / 0.18); }
       .v2-panel[data-phase="3"] .bday { animation: v2pulse 1.1s ease-in-out 0.2s 3; }
+
+      /* ===== 2026-09-20 palette pass + restructure ===== */
+      .tone { color: var(--sky); }
+      .section-head .eyebrow, .problem .eyebrow {
+        color: var(--brand-ink);
+        background: rgb(var(--accent-rgb) / 0.35);
+        border: 1px solid rgb(var(--accent-rgb) / 0.9);
+      }
+      /* secondary hero button: sky fill like the mockup; dark text because
+         white on sky is 2.1:1 and unreadable */
+      .hero-ctas .btn-outline {
+        background: var(--sky);
+        border-color: var(--sky);
+        color: var(--brand-deepest) !important;
+      }
+      .hero-ctas .btn-outline:hover { background: #6FA9D2; border-color: #6FA9D2; color: var(--brand-deepest) !important; }
+      /* plum text on sand fills (white on sand is 1.5:1) */
+      .qw-add, .mock-btn.gold, .v2-bell i, .app-bell i { color: var(--plum) !important; }
+      .v2-pillar li::before { background: var(--sky); color: var(--brand-deepest); font-weight: 800; }
+      .v2-pillar li.soft::before { background: var(--sand); color: var(--plum); }
+      .v2-pillar li b { color: var(--brand-ink); }
+      .cta-section h2, .cta-section p { color: var(--cream); }
+      .cta-section .btn-outline { border-color: var(--cream); color: var(--cream) !important; }
+
+      /* section rhythm: cream and a slightly deeper cream, alternating */
+      .v2-problem { background: var(--bg-alt); }
+      .v2-solution { background: var(--bg); }
+      .v2-pillars { background: var(--bg-alt); }
+      .v2-uc { background: var(--bg); }
+      .more-features { background: var(--bg-alt); }
+      .v2-reasons { background: var(--bg); }
+      .how { background: var(--bg-alt); }
+      #faq { background: var(--bg); }
+
+      /* A and B: one card per section, same card design as the old comparison */
+      .v2-single { max-width: 720px; margin: 0 auto; }
+
+      /* pillar 1 source tags, pillar 2 message mock */
+      .v2-tag-staff { background: var(--accent-tint); color: var(--accent-strong); border-radius: 5px; padding: 1px 6px; font-size: 9px; font-weight: 700; }
+      .v2-tag-walk { background: #ECE7F0; color: #4a4460; border-radius: 5px; padding: 1px 6px; font-size: 9px; font-weight: 700; }
+      .v2-pillar li { align-items: flex-start; }
+      .v2-bubble {
+        background: #d9fdd3; border-radius: 10px 3px 10px 10px; padding: 9px 11px;
+        font-size: 11px; line-height: 1.45; color: #1d2b1f; margin-left: 18%;
+        box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06);
+        animation: v2factIn 6s ease-out infinite both;
+      }
+      .v2-mini-chips { display: flex; gap: 5px; margin-top: 12px; flex-wrap: wrap; }
+      .v2-mini-chips span {
+        border-radius: 999px; padding: 3px 9px; font-size: 9.5px; font-weight: 700;
+        background: #ffffff; border: 1px solid var(--line); color: var(--brand-ink);
+      }
+      .v2-mini-chips span:nth-child(1) { background: var(--brand-tint); border-color: var(--brand-tint); }
+      .v2-mini-chips span:nth-child(3) { background: var(--accent-tint2); border-color: var(--accent-tint); }
+      .v2-mini { background: #ffffff; }
 
       @media (max-width: 1020px) {
         .v2-benefits { grid-template-columns: repeat(2, 1fr); }
@@ -2617,9 +2680,9 @@
           <img src="assets/intoch-logo.png" alt="Intoch logo" />
         </div>
         <div class="nav-links" id="navLinks">
-          <a href="#kenapa" data-i18n="nav.why">Kenapa Intoch</a>
           <a href="#fitur" data-i18n="nav.features">Fitur</a>
           <a href="#use-case" data-i18n="nav.usecase">Momen Tamu</a>
+          <a href="#kenapa" data-i18n="nav.why">Kenapa Intoch</a>
           <a href="#cara-kerja" data-i18n="nav.how">Cara Kerja</a>
           <a href="#faq">FAQ</a>
           <a href="#kontak" class="btn" data-i18n="nav.contact">Hubungi Kami</a>
@@ -2817,28 +2880,24 @@
     </div>
     <!-- /.hero-wrap -->
 
-    <!-- ===== V2 · KENAPA INTOCH (comparison) =====
-         Replaces the old Problem section AND the old Keunggulan section:
-         the 4 problems became the "Cara Lama" rows, the 4 benefits sit
-         underneath. Rows follow the timeline Reservasi -> Walk-in -> Kembali. -->
-    <section id="kenapa" class="v2-why" data-fx="cool" data-v2-anim>
+    <!-- ===== A · MASALAH (2026-09-20 restructure, per "Konstruksi Website")
+         Same "Cara Manual" card as before (header, picture, list), now on its
+         own with the 4 problem points, and no comparison yet. The "Dengan
+         Intoch" card in the next section answers the same 4 points in order. -->
+    <section id="masalah" class="v2-problem" data-fx="cool" data-v2-anim>
       <div class="container">
         <div class="section-head">
-          <p class="eyebrow" data-i18n="why.eyebrow">Kenapa Intoch</p>
-          <h2 data-decode="1" data-i18n="why2.title">Masih Mencatat Tamu Secara Manual?</h2>
-          <p data-i18n="why2.sub">Sebagian besar restoran masih mengandalkan chat, buku catatan, dan ingatan staf. Akibatnya, data tamu tercecer dan peluang untuk membuat mereka kembali ikut hilang.</p>
+          <h2 data-decode="1" data-i18n="prob.title">Masih Mencatat Tamu <span class="tone">Secara Manual?</span></h2>
+          <p data-i18n="prob.sub">Mungkin restoran Anda masih mencatat kunjungan walk-in atau reservasi melalui buku tamu atau spreadsheet. Kelihatannya tidak ada masalah di awal, sampai Anda mengalami hal berikut:</p>
         </div>
-
-        <div class="v2-compare">
-          <!-- CARA LAMA -->
-          <article class="v2-col v2-old">
-            <header>
-              <span class="v2-badge old" aria-hidden="true">✕</span>
-              <div>
-                <h3 data-i18n="why2.oldT">Cara Manual</h3>
-                <p data-i18n="why2.oldS">Chat, buku catatan, dan ingatan staf</p>
-              </div>
-            </header>
+        <article class="v2-col v2-old v2-single">
+          <header>
+            <span class="v2-badge old" aria-hidden="true">✕</span>
+            <div>
+              <h3 data-i18n="card.oldT">Cara Manual</h3>
+              <p data-i18n="card.oldS">Chat, buku catatan, dan ingatan staf</p>
+            </div>
+          </header>
             <div class="v2-vis v2-vis-old" aria-hidden="true">
               <div class="v2-chatlist">
                 <div class="v2-chat incoming">
@@ -2867,29 +2926,41 @@
             </div>
             <ul class="v2-rows">
               <li>
-                <span class="v2-stagechip" data-i18n="stage.res">Reservasi</span>
-                <p data-i18n="why2.o1"><span class="mk">✕</span><strong>Reservasi tersebar di berbagai saluran.</strong> Pesan WhatsApp, telepon, dan DM dicatat secara manual, sehingga rawan terlewat dibalas atau tercatat ganda.</p>
+                <span class="v2-stagechip" data-i18n="chip.rec">Pencatatan</span>
+                <p data-i18n="prob.i1"><span class="mk">✕</span><strong>Data reservasi dan walk-in tersebar</strong>, sebagian di WhatsApp, di spreadsheet, atau di buku tamu. Saat data leads mulai dibutuhkan, Anda harus menyortirnya satu per satu.</p>
               </li>
               <li>
-                <span class="v2-stagechip" data-i18n="stage.walk">Walk-in</span>
-                <p data-i18n="why2.o2"><span class="mk">✕</span><strong>Tamu walk-in tidak tercatat.</strong> Saat restoran ramai, tidak ada waktu untuk menanyakan data, sehingga kunjungan mereka hilang tanpa jejak.</p>
+                <span class="v2-stagechip" data-i18n="chip.loy">Loyalitas</span>
+                <p data-i18n="prob.i2"><span class="mk">✕</span><strong>Pelanggan loyal diperlakukan layaknya pelanggan baru</strong>, karena waiter dan manajer hanya mengandalkan ingatan.</p>
               </li>
               <li>
-                <span class="v2-stagechip" data-i18n="stage.ret">Tamu Kembali</span>
-                <p data-i18n="why2.o3"><span class="mk">✕</span><strong>Pelanggan setia tidak dikenali.</strong> Tamu yang sudah berkali-kali datang disambut layaknya tamu baru, dan tamu yang berhenti datang tidak pernah disadari.</p>
+                <span class="v2-stagechip" data-i18n="chip.fu">Follow Up</span>
+                <p data-i18n="prob.i3"><span class="mk">✕</span><strong>Sebagian pelanggan tidak kembali</strong>, dan Anda tidak memiliki pengingat untuk melakukan follow up. Anda tidak tahu siapa mereka dan kapan kunjungan terakhirnya.</p>
+              </li>
+              <li>
+                <span class="v2-stagechip" data-i18n="chip.mkt">Marketing</span>
+                <p data-i18n="prob.i4"><span class="mk">✕</span><strong>Anda memiliki ribuan leads untuk strategi marketing</strong>, tetapi tidak ada riwayat spending pelanggan untuk membidik target yang tepat.</p>
               </li>
             </ul>
-          </article>
+        </article>
+      </div>
+    </section>
 
-          <!-- DENGAN INTOCH -->
-          <article class="v2-col v2-new">
-            <header>
-              <span class="v2-badge new" aria-hidden="true">✓</span>
-              <div>
-                <h3 data-i18n="why2.newT">Dengan Intoch</h3>
-                <p data-i18n="why2.newS">Seluruh data tamu tersimpan di satu tempat</p>
-              </div>
-            </header>
+    <!-- ===== B · SOLUSI: answers the 4 problems above, point for point ===== -->
+    <section id="solusi" class="v2-solution" data-fx="soft" data-v2-anim>
+      <div class="container">
+        <div class="section-head">
+          <h2 data-decode="1" data-i18n="sol.title">Semua Data Pelanggan, <span class="tone">Tersimpan di Satu Tempat</span></h2>
+          <p data-i18n="sol.sub">Dengan Intoch, semua data perjalanan pelanggan tersimpan dan ditampilkan kembali saat Anda membutuhkannya.</p>
+        </div>
+        <article class="v2-col v2-new v2-single">
+          <header>
+            <span class="v2-badge new" aria-hidden="true">✓</span>
+            <div>
+              <h3 data-i18n="card.newT">Dengan Intoch</h3>
+              <p data-i18n="card.newS">Seluruh data tamu tersimpan di satu tempat</p>
+            </div>
+          </header>
             <div class="v2-vis v2-vis-new" aria-hidden="true">
               <div class="v2-guestcard">
                 <div class="v2-gc-top">
@@ -2916,105 +2987,72 @@
             </div>
             <ul class="v2-rows">
               <li>
-                <span class="v2-stagechip" data-i18n="stage.res">Reservasi</span>
-                <p data-i18n="why2.n1"><span class="mk">✓</span><strong>Tamu melakukan reservasi sendiri secara online.</strong> Setiap reservasi masuk ke satu daftar dan langsung disertai notifikasi.</p>
+                <span class="v2-stagechip" data-i18n="chip.rec">Pencatatan</span>
+                <p data-i18n="sol.i1"><span class="mk">✓</span><strong>Data reservasi dan walk-in terkelola di satu tempat.</strong> Tidak ada lagi data yang harus dikumpulkan dari chat, spreadsheet, dan buku tamu.</p>
               </li>
               <li>
-                <span class="v2-stagechip" data-i18n="stage.walk">Walk-in</span>
-                <p data-i18n="why2.n2"><span class="mk">✓</span><strong>Walk-in tercatat dalam hitungan detik.</strong> Cukup masukkan nama tamu, data lainnya dapat dilengkapi kemudian.</p>
+                <span class="v2-stagechip" data-i18n="chip.loy">Loyalitas</span>
+                <p data-i18n="sol.i2"><span class="mk">✓</span><strong>Setiap pelanggan kembali, kunjungannya langsung tercatat</strong>, disertai notifikasi jumlah kunjungan, membership, dan catatan tambahan untuk mengenali pelanggan lebih baik.</p>
               </li>
               <li>
-                <span class="v2-stagechip" data-i18n="stage.ret">Tamu Kembali</span>
-                <p data-i18n="why2.n3"><span class="mk">✓</span><strong>Setiap tamu memiliki profil lengkap.</strong> Jumlah kunjungan, total belanja, dan tanggal ulang tahun terlihat jelas, siap ditindaklanjuti melalui WhatsApp.</p>
+                <span class="v2-stagechip" data-i18n="chip.fu">Follow Up</span>
+                <p data-i18n="sol.i3"><span class="mk">✓</span><strong>Riwayat kunjungan terakhir dalam kurun 60 hari</strong> dikelola menjadi laporan dan pengingat, sehingga pelanggan dapat segera ditindaklanjuti.</p>
+              </li>
+              <li>
+                <span class="v2-stagechip" data-i18n="chip.mkt">Marketing</span>
+                <p data-i18n="sol.i4"><span class="mk">✓</span><strong>Setiap kunjungan dilengkapi data spending dan pesanan favorit</strong> untuk strategi marketing yang lebih tepat sasaran.</p>
               </li>
             </ul>
-          </article>
-        </div>
-
-        <p class="v2-punch" data-i18n="why2.punch">Baik melalui reservasi maupun walk-in, <em>setiap kunjungan tercatat di profil tamu yang sama.</em></p>
-
-        <div class="v2-benefits">
-          <div class="benefit-item v2-benefit">
-            <div class="v2-benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="m16 11 2 2 4-4" /></svg></div>
-            <div>
-              <h3 data-i18n="why.b1t">Sederhana untuk Staf</h3>
-              <p data-i18n="why.b1p">Didesain untuk operasional yang serba cepat. Tidak butuh pelatihan berminggu-minggu untuk mulai dipakai.</p>
-            </div>
-          </div>
-          <div class="benefit-item v2-benefit">
-            <div class="v2-benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 10 5-10 5L2 7l10-5Z" /><path d="m2 12 10 5 10-5" /><path d="m2 17 10 5 10-5" /></svg></div>
-            <div>
-              <h3 data-i18n="why.b2t">Satu Sistem, Bukan Lima</h3>
-              <p data-i18n="why.b2p">Reservasi, walk-in, membership, dan laporan tergabung dalam satu platform, tidak perlu berpindah-pindah aplikasi.</p>
-            </div>
-          </div>
-          <div class="benefit-item v2-benefit">
-            <div class="v2-benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path d="m9 12 2 2 4-4" /></svg></div>
-            <div>
-              <h3 data-i18n="why.b3t">Data Tamu Milik Anda</h3>
-              <p data-i18n="why.b3p">Seluruh riwayat tamu dan member adalah aset restoran Anda sendiri, tersimpan aman dan bisa diakses kapan saja.</p>
-            </div>
-          </div>
-          <div class="benefit-item v2-benefit">
-            <div class="v2-benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14v-3a9 9 0 0 1 18 0v3" /><path d="M21 14a2 2 0 0 1-2 2h-1v-6h1a2 2 0 0 1 2 2Z" /><path d="M3 14a2 2 0 0 0 2 2h1v-6H5a2 2 0 0 0-2 2Z" /><path d="M18 16v1a4 4 0 0 1-4 4h-2" /></svg></div>
-            <div>
-              <h3 data-i18n="why.b4t">Didampingi Tim Lokal</h3>
-              <p data-i18n="why.b4p">Onboarding, pelatihan staf, dan support dalam Bahasa Indonesia, kami memahami operasional restoran di sini.</p>
-            </div>
-          </div>
-        </div>
+        </article>
       </div>
     </section>
 
-    <!-- ===== V2 · FITUR: 3 pillars, same timeline =====
-         Replaces "Fitur Utama" (4 cards) and "Tampilan" (3 spotlights). -->
-    <section id="fitur" class="v2-pillars seam seam-from-white" data-fx="soft" data-v2-anim>
+    <!-- ===== C · FITUR: 3 pillars, first visit to loyal customer ===== -->
+    <section id="fitur" class="v2-pillars" data-fx="soft" data-v2-anim>
       <div class="container">
         <div class="section-head">
           <p class="eyebrow" data-i18n="features.eyebrow">Fitur Utama</p>
-          <h2 data-decode="1" data-i18n="pill.title">Dari Reservasi Pertama hingga Menjadi Pelanggan Setia</h2>
-          <p data-i18n="pill.sub">Aplikasi reservasi dan membership restoran yang membantu Anda mencatat, mengenali, dan mempertahankan setiap tamu.</p>
+          <h2 data-decode="1" data-i18n="pill.title">Ubah Visit Pertama <span class="tone">Jadi Pelanggan Setia</span></h2>
+          <p data-i18n="pill.sub">Lebih dari sekadar pencatatan kunjungan, Intoch memudahkan Anda menjaga relasi dengan setiap pelanggan.</p>
         </div>
 
         <div class="v2-pillar-grid">
           <article class="v2-pillar">
-            <div class="v2-pillar-num" data-i18n="pill.n1">01 · Reservasi</div>
+            <div class="v2-pillar-num" data-i18n="pill.n1">01 · Pencatatan</div>
             <div class="v2-mini v2-mini-res" aria-hidden="true">
-              <div class="v2-mini-h">Reservasi Mendatang <span class="v2-bell">🔔<i>1</i></span></div>
+              <div class="v2-mini-h">Kunjungan Hari Ini <span class="v2-bell">🔔<i>1</i></span></div>
               <div class="v2-mini-row new"><b>19:00 Dewi L.</b><span class="v2-tag-online">Online</span><small>4 pax</small></div>
-              <div class="v2-mini-row"><b>18:30 Bayu P.</b><small>8 pax</small></div>
-              <div class="v2-mini-row"><b>20:00 Sari W.</b><small>2 pax</small></div>
+              <div class="v2-mini-row"><b>18:30 Bayu P.</b><span class="v2-tag-staff">Staf</span><small>8 pax</small></div>
+              <div class="v2-mini-row"><b>20:10 Rangga A.</b><span class="v2-tag-walk">Walk-in</span><small>3 pax</small></div>
             </div>
-            <h3 data-i18n="pill.t1">Reservasi Online</h3>
-            <p data-i18n="pill.p1">Tamu dapat melakukan reservasi kapan saja tanpa menunggu balasan chat. Staf cukup memeriksa dan mengonfirmasi.</p>
+            <h3 data-i18n="pill.t1">Record Kunjungan Fleksibel</h3>
+            <p data-i18n="pill.p1">Setiap tamu tercatat, apa pun cara mereka datang ke restoran Anda.</p>
             <ul>
-              <li data-i18n="pill.l1a">Tamu memilih area, jam, dan jumlah orang secara mandiri</li>
-              <li data-i18n="pill.l1b">Notifikasi otomatis untuk setiap reservasi baru</li>
-              <li data-i18n="pill.l1c">Konfirmasi melalui WhatsApp beserta tiket reservasi untuk tamu</li>
-              <li data-i18n="pill.l1d">Daftar tamu hari ini tersedia sebelum restoran buka</li>
-              <li class="soft" data-i18n="pill.l1e">Pengaturan deposit untuk area tertentu atau rombongan besar</li>
+              <li data-i18n="pill.l1a"><span><b>Online Form:</b> tamu melakukan reservasi sendiri kapan saja</span></li>
+              <li data-i18n="pill.l1b"><span><b>Reservation by Assistance:</b> staf mencatat reservasi yang masuk lewat telepon atau WhatsApp</span></li>
+              <li data-i18n="pill.l1c"><span><b>Quick Walk-in:</b> tamu tanpa reservasi tercatat cukup dengan nama</span></li>
+              <li class="soft" data-i18n="pill.l1d"><span>Mendukung deposit untuk area tertentu atau rombongan besar</span></li>
             </ul>
           </article>
 
           <article class="v2-pillar">
-            <div class="v2-pillar-num" data-i18n="pill.n2">02 · Walk-in</div>
-            <div class="v2-mini v2-mini-walkin" aria-hidden="true">
-              <div class="v2-mini-h">Quick Walk-In</div>
-              <div class="v2-mini-field"><span class="v2-typed">Rangga Adi</span><span class="v2-caret"></span></div>
-              <span class="v2-saved">✓ Tersimpan · 3 pax · Teras</span>
-              <div class="v2-mini-sub">Nomor ponsel dapat dilengkapi kemudian</div>
+            <div class="v2-pillar-num" data-i18n="pill.n2">02 · Komunikasi</div>
+            <div class="v2-mini v2-mini-comm" aria-hidden="true">
+              <div class="v2-mini-h">WhatsApp <span class="v2-tag-online">Template</span></div>
+              <div class="v2-bubble">Terima kasih atas kunjungan Bapak/Ibu hari ini. Kami nantikan kedatangannya kembali!</div>
+              <div class="v2-mini-chips"><span>WA Thanks</span><span>Follow Up</span><span>Broadcast</span></div>
             </div>
-            <h3 data-i18n="pill.t2">Pencatatan Walk-in Cepat</h3>
-            <p data-i18n="pill.p2">Di jam tersibuk sekalipun, setiap tamu tetap tercatat. Cukup nama, detail lainnya dapat menyusul.</p>
+            <h3 data-i18n="pill.t2">Maintain Komunikasi dengan Pelanggan</h3>
+            <p data-i18n="pill.p2">Tetap terhubung dengan pelanggan setelah mereka pulang, tanpa perlu menyusun pesan dari awal.</p>
             <ul>
-              <li data-i18n="pill.l2a">Masukkan nama, tamu langsung tercatat</li>
-              <li data-i18n="pill.l2b">Daftar walk-in dan okupansi meja dalam satu layar</li>
-              <li data-i18n="pill.l2c">Dapat diakses dari tablet, komputer kasir, maupun ponsel</li>
+              <li data-i18n="pill.l2a"><span><b>WA Thanks:</b> ucapan terima kasih setelah kunjungan</span></li>
+              <li data-i18n="pill.l2b"><span><b>Follow Up:</b> konfirmasi reservasi dan sapaan untuk tamu yang lama tidak berkunjung</span></li>
+              <li data-i18n="pill.l2c"><span><b>Broadcast:</b> kirim promo ke segmen pelanggan tertentu</span></li>
             </ul>
           </article>
 
           <article class="v2-pillar">
-            <div class="v2-pillar-num" data-i18n="pill.n3">03 · Tamu Kembali</div>
+            <div class="v2-pillar-num" data-i18n="pill.n3">03 · Membership</div>
             <div class="v2-mini v2-mini-kembali" aria-hidden="true">
               <div class="v2-mini-h">Dewi Lestari <span class="v2-tag-online" style="background: var(--accent-tint2); color: var(--accent-strong)">High Spender</span></div>
               <div style="display: flex; align-items: flex-end; gap: 10px; margin-bottom: 10px">
@@ -3024,13 +3062,13 @@
               <span class="v2-dots"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="pop"></i><i></i><i></i><i></i><i></i></span>
               <div class="v2-mini-sub">8/15 stiker · 🎂 ulang tahun 29 Sep</div>
             </div>
-            <h3 data-i18n="pill.t3">Kenali Pelanggan Setia</h3>
-            <p data-i18n="pill.p3">Semakin sering tamu berkunjung, semakin lengkap profilnya. Anda tahu siapa yang layak diapresiasi dan siapa yang perlu diajak kembali.</p>
+            <h3 data-i18n="pill.t3">Jadikan Pelanggan Bagian dari Brand Melalui Membership</h3>
+            <p data-i18n="pill.p3">Beri pelanggan setia alasan untuk terus kembali ke restoran Anda.</p>
             <ul>
-              <li data-i18n="pill.l3a">Riwayat kunjungan, total belanja, dan menu favorit</li>
-              <li data-i18n="pill.l3b">Kartu member keluarga dan perusahaan, stiker, serta voucher</li>
-              <li data-i18n="pill.l3c">Pengingat ulang tahun dan daftar tamu yang lama tidak berkunjung</li>
-              <li data-i18n="pill.l3d">Pesan WhatsApp dengan template yang siap digunakan</li>
+              <li data-i18n="pill.l3a"><span>Kartu member keluarga dan perusahaan</span></li>
+              <li data-i18n="pill.l3b"><span>Stiker di setiap kunjungan, voucher saat kartu penuh</span></li>
+              <li data-i18n="pill.l3c"><span>Pengingat ulang tahun untuk sentuhan personal</span></li>
+              <li data-i18n="pill.l3d"><span>Riwayat kunjungan dan menu favorit setiap member</span></li>
             </ul>
           </article>
         </div>
@@ -3044,7 +3082,7 @@
       <div class="container">
         <div class="section-head">
           <p class="eyebrow" data-i18n="uc.eyebrow">Momen Tamu</p>
-          <h2 data-decode="1" data-i18n="uc.title">Intoch dalam Operasional Sehari-hari</h2>
+          <h2 data-decode="1" data-i18n="uc.title">Intoch dalam <span class="tone">Operasional Sehari-hari</span></h2>
           <p data-i18n="uc.sub">Pilih setiap tab untuk melihat alurnya.</p>
         </div>
 
@@ -3302,7 +3340,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
       <div class="container">
         <div class="section-head">
           <p class="eyebrow" data-i18n="more.eyebrow">Selengkapnya</p>
-          <h2 data-decode="1" data-i18n="more.title">Dan Masih Banyak Lagi</h2>
+          <h2 data-decode="1" data-i18n="more.title">Dan Masih <span class="tone">Banyak Lagi</span></h2>
           <p data-i18n="more.sub">Fitur pendukung supaya operasional dan keputusan bisnis Anda lebih terarah.</p>
         </div>
         <div class="more-grid">
@@ -3316,11 +3354,51 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
       </div>
     </section>
 
+    <!-- ===== F · KENAPA INTOCH: the 4 benefit cards on their own ===== -->
+    <section id="kenapa" class="v2-reasons" data-fx="warm" data-v2-anim>
+      <div class="container">
+        <div class="section-head">
+          <h2 data-decode="1" data-i18n="why3.title">Kenapa <span class="tone">Intoch?</span></h2>
+          <p data-i18n="why3.sub">Dirancang mengikuti cara kerja restoran, dan didampingi tim yang memahami operasional Anda.</p>
+        </div>
+        <div class="v2-benefits">
+          <div class="benefit-item v2-benefit">
+            <div class="v2-benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="m16 11 2 2 4-4" /></svg></div>
+            <div>
+              <h3 data-i18n="why.b1t">Sederhana untuk Staf</h3>
+              <p data-i18n="why.b1p">Didesain untuk operasional yang serba cepat. Tidak butuh pelatihan berminggu-minggu untuk mulai dipakai.</p>
+            </div>
+          </div>
+          <div class="benefit-item v2-benefit">
+            <div class="v2-benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 10 5-10 5L2 7l10-5Z" /><path d="m2 12 10 5 10-5" /><path d="m2 17 10 5 10-5" /></svg></div>
+            <div>
+              <h3 data-i18n="why.b2t">Satu Sistem, Bukan Lima</h3>
+              <p data-i18n="why.b2p">Reservasi, walk-in, membership, dan laporan tergabung dalam satu platform, tidak perlu berpindah-pindah aplikasi.</p>
+            </div>
+          </div>
+          <div class="benefit-item v2-benefit">
+            <div class="v2-benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path d="m9 12 2 2 4-4" /></svg></div>
+            <div>
+              <h3 data-i18n="why.b3t">Data Tamu Milik Anda</h3>
+              <p data-i18n="why.b3p">Seluruh riwayat tamu dan member adalah aset restoran Anda sendiri, tersimpan aman dan bisa diakses kapan saja.</p>
+            </div>
+          </div>
+          <div class="benefit-item v2-benefit">
+            <div class="v2-benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14v-3a9 9 0 0 1 18 0v3" /><path d="M21 14a2 2 0 0 1-2 2h-1v-6h1a2 2 0 0 1 2 2Z" /><path d="M3 14a2 2 0 0 0 2 2h1v-6H5a2 2 0 0 0-2 2Z" /><path d="M18 16v1a4 4 0 0 1-4 4h-2" /></svg></div>
+            <div>
+              <h3 data-i18n="why.b4t">Didampingi Tim Lokal</h3>
+              <p data-i18n="why.b4p">Onboarding, pelatihan staf, dan support dalam Bahasa Indonesia, kami memahami operasional restoran di sini.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="cara-kerja" class="how seam seam-from-bg-alt">
       <div class="container">
         <div class="section-head">
           <p class="eyebrow" data-i18n="how.eyebrow">Cara Kerja</p>
-          <h2 data-decode="1" data-i18n="how.title">Mulai dalam 3 Langkah</h2>
+          <h2 data-decode="1" data-i18n="how.title">Mulai dalam <span class="tone">3 Langkah</span></h2>
           <p data-i18n="how.sub">
             Tanpa instalasi rumit. Tim kami mendampingi proses onboarding Anda.
           </p>
@@ -3360,7 +3438,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
       <div class="container">
         <div class="section-head">
           <p class="eyebrow">FAQ</p>
-          <h2 data-decode="1" data-i18n="faq.title">Pertanyaan yang Sering Ditanyakan</h2>
+          <h2 data-decode="1" data-i18n="faq.title">Pertanyaan yang <span class="tone">Sering Ditanyakan</span></h2>
         </div>
         <div class="faq-list">
           <details class="faq-item" open>
@@ -3425,7 +3503,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
     <section id="kontak" style="padding-top: 24px" data-fx="cta">
       <div class="container">
         <div class="cta-section">
-          <h2 data-decode="1" data-i18n="cta.title">Pastikan Tidak Ada Lagi Tamu yang Terlewat</h2>
+          <h2 data-decode="1" data-i18n="cta.title">Kenali Pelanggan, Buat Mereka Kembali</h2>
           <p data-i18n="cta.sub">
             Ceritakan kebutuhan restoran Anda kepada tim kami. Kami akan
             menyiapkan demo dan penawaran yang disesuaikan dengan skala bisnis
@@ -3458,11 +3536,11 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
     <!-- ===== FOOTER ===== -->
     <footer>
       <div class="container footer-inner">
-        <img src="assets/intoch-logo.png" alt="Intoch logo" />
+        <img src="assets/intoch-logo-white.png" alt="Intoch logo" />
         <div class="footer-links">
-          <a href="#kenapa" data-i18n="nav.why">Kenapa Intoch</a>
           <a href="#fitur" data-i18n="nav.features">Fitur</a>
           <a href="#use-case" data-i18n="nav.usecase">Momen Tamu</a>
+          <a href="#kenapa" data-i18n="nav.why">Kenapa Intoch</a>
           <a href="#cara-kerja" data-i18n="nav.how">Cara Kerja</a>
           <a href="#faq">FAQ</a>
           <a href="#kontak" data-i18n="nav.kontak">Kontak</a>
@@ -3595,7 +3673,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
           "metric.birthday": "guests this week",
           "features.eyebrow": "Core Features",
           "more.eyebrow": "More",
-          "more.title": "And There's More",
+          "more.title": "And There's <span class=\"tone\">More</span>",
           "more.sub":
             "Supporting features to keep your operations and business decisions on track.",
           "more.i1t": "Marketing, Operations & Spending Reports",
@@ -3608,7 +3686,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
           "more.i6p":
             "Web-based and responsive, open it from the host's tablet, the cashier's computer, or the manager's phone.",
           "how.eyebrow": "How It Works",
-          "how.title": "Get Started in 3 Steps",
+          "how.title": "Get Started in <span class=\"tone\">3 Steps</span>",
           "how.sub":
             "No complicated installation. Our team guides your onboarding.",
           "how.s1t": "Consultation",
@@ -3620,7 +3698,6 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
           "how.s3t": "Go-Live",
           "how.s3p":
             "Your restaurant starts running on Intoch, backed by our support team, ready to help whenever needed.",
-          "why.eyebrow": "Why Intoch",
           "why.b1t": "Simple for Staff",
           "why.b1p":
             "Designed for fast-paced operations. No weeks of training needed to get started.",
@@ -3633,7 +3710,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
           "why.b4t": "Local Team by Your Side",
           "why.b4p":
             "Onboarding, staff training, and support from a team that understands how restaurants here operate.",
-          "faq.title": "Frequently Asked Questions",
+          "faq.title": "Frequently <span class=\"tone\">Asked Questions</span>",
           "faq.q1": "Is our guest data safe?",
           "faq.a1":
             "Reservation, walk-in, and member data is stored in your restaurant's own database, never shared with third parties. Staff access is controlled by role.",
@@ -3649,53 +3726,39 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
           "faq.q5": "How much does Intoch cost?",
           "faq.a5":
             "Pricing depends on your restaurant's scale and needs. Contact our team for a consultation and a tailored quote.",
-          "cta.title": "Make Sure No Guest Is Missed Again",
+          "cta.title": "Know Your Customers, Bring Them Back",
           "cta.sub":
             "Tell our team about your restaurant's needs. We'll prepare a demo and a proposal tailored to your business scale.",
           "cta.email": "Email Our Team",
           "nav.why": "Why Intoch",
           "nav.usecase": "Guest Moments",
-          "why2.title": "Still Recording Guests by Hand?",
-          "why2.sub": "Most restaurants still rely on chats, notebooks, and staff memory. As a result, guest data gets scattered and the chance to bring guests back is lost.",
-          "why2.oldT": "The Manual Way",
-          "why2.oldS": "Chats, notebooks, and staff memory",
-          "why2.newT": "With Intoch",
-          "why2.newS": "All guest data in one place",
           "stage.res": "Reservation",
           "stage.walk": "Walk-in",
           "stage.ret": "Regulars",
-          "why2.o1": "<span class=\"mk\">✕</span><strong>Reservations are scattered across channels.</strong> WhatsApp messages, calls, and DMs are logged by hand, so replies get missed and bookings get duplicated.",
-          "why2.o2": "<span class=\"mk\">✕</span><strong>Walk-in guests go unrecorded.</strong> When the restaurant is busy, there is no time to ask for details, so their visits leave no trace.",
-          "why2.o3": "<span class=\"mk\">✕</span><strong>Loyal customers go unrecognized.</strong> Guests who have visited many times are greeted like first-timers, and those who stop coming go unnoticed.",
-          "why2.n1": "<span class=\"mk\">✓</span><strong>Guests book online by themselves.</strong> Every reservation lands in one list, with an instant notification.",
-          "why2.n2": "<span class=\"mk\">✓</span><strong>Walk-ins are recorded in seconds.</strong> Just enter the guest's name; other details can be completed later.",
-          "why2.n3": "<span class=\"mk\">✓</span><strong>Every guest has a complete profile.</strong> Visit count, total spend, and birthday are clearly visible, ready for a WhatsApp follow-up.",
-          "why2.punch": "Whether through a reservation or a walk-in, <em>every visit is recorded in the same guest profile.</em>",
-          "pill.title": "From First Reservation to Loyal Customer",
-          "pill.sub": "A restaurant reservation and membership app that helps you record, recognize, and retain every guest.",
-          "pill.n1": "01 · Reservations",
-          "pill.n2": "02 · Walk-in",
-          "pill.n3": "03 · Returning Guests",
-          "pill.t1": "Online Reservations",
-          "pill.p1": "Guests can book anytime without waiting for a chat reply. Staff simply review and confirm.",
-          "pill.l1a": "Guests choose their own area, time, and party size",
-          "pill.l1b": "Automatic notification for every new reservation",
-          "pill.l1c": "WhatsApp confirmation with a reservation ticket for the guest",
-          "pill.l1d": "Today's guest list is ready before opening",
-          "pill.l1e": "Deposit settings for specific areas or large groups",
-          "pill.t2": "Fast Walk-in Recording",
-          "pill.p2": "Even at peak hours, every guest is recorded. A name is enough; other details can follow.",
-          "pill.l2a": "Enter a name and the guest is recorded",
-          "pill.l2b": "Walk-in list and table occupancy on one screen",
-          "pill.l2c": "Accessible from a tablet, the cashier's computer, or a phone",
-          "pill.t3": "Recognize Loyal Customers",
-          "pill.p3": "The more often a guest visits, the richer their profile. You know who deserves appreciation and who needs an invitation to return.",
-          "pill.l3a": "Visit history, total spend, and favorite dishes",
-          "pill.l3b": "Family and corporate member cards, stickers, and vouchers",
-          "pill.l3c": "Birthday reminders and a list of guests who have not visited in a while",
-          "pill.l3d": "WhatsApp messages with ready-to-use templates",
+          "pill.title": "Turn a First Visit <span class=\"tone\">into a Loyal Customer</span>",
+          "pill.sub": "More than recording visits, Intoch makes it easy to keep a relationship with every customer.",
+          "pill.n1": "01 · Recording",
+          "pill.n2": "02 · Communication",
+          "pill.n3": "03 · Membership",
+          "pill.t1": "Flexible Visit Recording",
+          "pill.p1": "Every guest is recorded, however they come to your restaurant.",
+          "pill.l1a": "<span><b>Online Form:</b> guests book by themselves anytime</span>",
+          "pill.l1b": "<span><b>Reservation by Assistance:</b> staff record bookings that come in by phone or WhatsApp</span>",
+          "pill.l1c": "<span><b>Quick Walk-in:</b> guests without a booking are recorded with just a name</span>",
+          "pill.l1d": "<span>Supports deposits for specific areas or large groups</span>",
+          "pill.t2": "Stay in Touch with Customers",
+          "pill.p2": "Keep in touch with customers after they leave, without writing messages from scratch.",
+          "pill.l2a": "<span><b>WA Thanks:</b> a thank-you message after each visit</span>",
+          "pill.l2b": "<span><b>Follow Up:</b> reservation confirmations and check-ins with guests who have not visited in a while</span>",
+          "pill.l2c": "<span><b>Broadcast:</b> send promotions to a chosen customer segment</span>",
+          "pill.t3": "Make Customers Part of Your Brand Through Membership",
+          "pill.p3": "Give loyal customers a reason to keep coming back to your restaurant.",
+          "pill.l3a": "<span>Family and corporate member cards</span>",
+          "pill.l3b": "<span>A sticker every visit, a voucher when the card is full</span>",
+          "pill.l3c": "<span>Birthday reminders for a personal touch</span>",
+          "pill.l3d": "<span>Visit history and favorite dishes for every member</span>",
           "uc.eyebrow": "Guest Moments",
-          "uc.title": "Intoch in Daily Operations",
+          "uc.title": "Intoch in <span class=\"tone\">Daily Operations</span>",
           "uc.sub": "Select each tab to see the flow.",
           "uc.t1": "<span class=\"g\">Reservation</span><span class=\"n\">1</span>Self-Service Reservations",
           "uc.t2": "<span class=\"g\">Reservation</span><span class=\"n\">2</span>Easy Follow-Ups",
@@ -3726,6 +3789,28 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
           "more.revP": "Invite customers to leave a Google review through an enjoyable experience.",
           "more.roleT": "Role-Based Access",
           "more.roleP": "Staff, managers, and finance see only the data relevant to their role.",
+          "prob.title": "Still Recording Guests <span class=\"tone\">by Hand?</span>",
+          "prob.sub": "Your restaurant may still record walk-ins and reservations in a guest book or a spreadsheet. It seems fine at first, until you run into this:",
+          "prob.i1": "<span class=\"mk\">✕</span><strong>Reservation and walk-in data is scattered</strong> across WhatsApp, spreadsheets, and the guest book. When you finally need the leads, you have to sort them one by one.",
+          "prob.i2": "<span class=\"mk\">✕</span><strong>Loyal customers are treated like new ones</strong>, because waiters and managers can only rely on memory.",
+          "prob.i3": "<span class=\"mk\">✕</span><strong>Some customers stop coming back</strong>, and you have no reminder to follow up. You do not know who they are or when they last visited.",
+          "prob.i4": "<span class=\"mk\">✕</span><strong>You have thousands of leads for your marketing strategy</strong>, but no customer spending history to target the right people.",
+          "sol.title": "All Customer Data, <span class=\"tone\">In One Place</span>",
+          "sol.sub": "With Intoch, every step of the customer journey is saved and brought back whenever you need it.",
+          "sol.i1": "<span class=\"mk\">✓</span><strong>Reservation and walk-in data are managed in one place.</strong> No more collecting data from chats, spreadsheets, and the guest book.",
+          "sol.i2": "<span class=\"mk\">✓</span><strong>Every returning customer is recorded right away</strong>, with a notice showing their visit count, membership, and notes that help you recognize them better.",
+          "sol.i3": "<span class=\"mk\">✓</span><strong>Last visits within the past 60 days</strong> are turned into reports and reminders, so customers can be followed up quickly.",
+          "sol.i4": "<span class=\"mk\">✓</span><strong>Every visit includes spending and favorite orders</strong>, for more targeted marketing.",
+          "why3.title": "Why <span class=\"tone\">Intoch?</span>",
+          "why3.sub": "Built around how restaurants actually work, with a team that understands your operations.",
+          "card.oldT": "The Manual Way",
+          "card.oldS": "Chats, notebooks, and staff memory",
+          "card.newT": "With Intoch",
+          "card.newS": "All guest data in one place",
+          "chip.rec": "Recording",
+          "chip.loy": "Loyalty",
+          "chip.fu": "Follow Up",
+          "chip.mkt": "Marketing",
           "footer.copy": "© 2026 Intoch. All rights reserved.",
         };
 
