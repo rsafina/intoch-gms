@@ -167,7 +167,7 @@ const translated = new Set(Object.values(w.__probe.dict));
   check("Sub Total", /Sub Total/.test(sheet), "true");
   check("Service Charge", /Service Charge/.test(sheet), "true");
   check("Down Payment", /Down Payment/.test(sheet), "true");
-  check("closing line", /We look forward to welcome you at Restoran/.test(sheet), "true");
+  check("closing line", /We look forward to welcoming you :\)/.test(sheet), "true");
   check("no Indonesian leaked in", /Pajak|Catatan|Perhitungan|Unduh/.test(sheet), "false");
 
   console.log("\n== 5. Every visible form string is accounted for ==");

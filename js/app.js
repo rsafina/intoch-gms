@@ -11994,13 +11994,7 @@ function updateBirthdayReportBadge() {
 // dots go out, even though the list is still full of names.
 function updateBirthdayNavDots() {
   const hasUpcoming = birthdayDueCount() > 0;
-  [
-    "nav-reports-dot",
-    "nav-reports-cake",
-    "nav-dashboard-dot",
-    "nav-dashboard-cake",
-    "tab-marketing-dot",
-  ].forEach((id) => {
+  ["nav-reports-dot", "nav-dashboard-dot", "tab-marketing-dot"].forEach((id) => {
     document.getElementById(id)?.classList.toggle("hidden", !hasUpcoming);
   });
 }

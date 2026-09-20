@@ -38,7 +38,9 @@ function renderSettingsNavigation(page) {
   });
   document.querySelectorAll('#app-sidebar [data-nav]').forEach(el => {
     const label = el.querySelector('.nav-label')?.textContent.trim();
-    if (label) { el.title = label; el.setAttribute('aria-label', label); }
+    // No title attribute: the collapsed rail names icons through the styled
+    // tooltip below, and two tooltips on one hover reads as a bug.
+    if (label) el.setAttribute('aria-label', label);
   });
   const mobile = document.getElementById('sidebar-mobile-toggle');
   mobile?.classList.toggle('hidden', document.getElementById('app-main')?.classList.contains('hidden'));
@@ -49,6 +51,19 @@ function setSettingsExpanded(open) {
   if (!children) return;
   children.hidden = !open;
   document.querySelector('[data-nav="settings"]')?.setAttribute('aria-expanded', String(open));
+  if (open && sidebarUsesIcons()) positionSettingsFlyout();
+  else children.style.top = '';
+}
+
+// Collapsed, the settings list is a flyout rather than an indent, so it opens
+// level with the icon it belongs to — and slides up if it would run off screen.
+function positionSettingsFlyout() {
+  const children = document.getElementById('settings-children');
+  const button = document.querySelector('[data-nav="settings"]');
+  if (!children || !button) return;
+  const top = button.getBoundingClientRect().top;
+  const lowest = Math.max(8, window.innerHeight - children.offsetHeight - 8);
+  children.style.top = `${Math.min(top, lowest)}px`;
 }
 
 function toggleSettingsNavigation() {
@@ -66,9 +81,9 @@ function toggleSidebarSize() {
 
 function applySidebarSize(compact) {
   document.body.classList.toggle('sidebar-compact', compact);
+  hideSidebarTooltip();
   const button = document.getElementById('sidebar-size-toggle');
   if (button) {
-    button.textContent = compact ? '›' : '‹';
     button.setAttribute('aria-expanded', String(!compact));
     button.setAttribute('aria-label', t(compact ? 'Expand sidebar' : 'Collapse sidebar'));
     button.title = button.getAttribute('aria-label');
@@ -159,3 +174,44 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('change', settingsUpdateDirtyState);
   window.addEventListener('beforeunload', event => { if (settingsIsDirty()) { event.preventDefault(); event.returnValue = ''; } });
 });
+
+// ============================================================
+// COLLAPSED RAIL TOOLTIPS
+// ============================================================
+// Icons alone don't say where they go. The label lives on <body> rather than
+// inside the button because the nav scrolls, and an absolutely positioned
+// child would be clipped at the 72px edge.
+
+function showSidebarTooltip(button) {
+  if (!sidebarUsesIcons()) return hideSidebarTooltip();
+  const label = button.getAttribute('aria-label');
+  if (!label) return hideSidebarTooltip();
+  let el = document.getElementById('sidebar-tooltip');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'sidebar-tooltip';
+    el.setAttribute('role', 'presentation');
+    document.body.appendChild(el);
+  }
+  const rect = button.getBoundingClientRect();
+  el.textContent = label;
+  el.hidden = false;
+  el.style.left = `${rect.right + 12}px`;
+  el.style.top = `${rect.top + (rect.height - el.offsetHeight) / 2}px`;
+  requestAnimationFrame(() => el.classList.add('is-visible'));
+}
+
+function hideSidebarTooltip() {
+  const el = document.getElementById('sidebar-tooltip');
+  if (!el) return;
+  el.classList.remove('is-visible');
+  el.hidden = true;
+}
+
+document.addEventListener('pointerover', (event) => {
+  const button = event.target?.closest?.('#app-sidebar [data-nav]');
+  if (button) showSidebarTooltip(button);
+  else hideSidebarTooltip();
+});
+document.addEventListener('pointerdown', hideSidebarTooltip, true);
+window.addEventListener('blur', hideSidebarTooltip);

@@ -5,8 +5,8 @@
 // HOW TO USE IT
 //
 //   1. Open the target project in the Supabase SQL Editor. For a NEW client
-//      that means: run migrations/ALL_IN_ONE.sql there first, on the empty
-//      project, exactly as the client setup does.
+//      follow the complete fresh-client sequence in migrations/README.md.
+//      Existing secured projects need targeted upgrades, never a bootstrap rerun.
 //   2. Run scripts/schema-dump.sql in the same editor. It returns one row,
 //      one column, containing JSON.
 //   3. Save that JSON to a file, e.g. catalog.json.

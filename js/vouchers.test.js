@@ -44,7 +44,7 @@ const store = { rows: [], nextId: 1, guests: [] };
 
 function applyDefaults(row) {
   const r = { ...row, id: store.nextId++ };
-  if (!r.voucher_code) r.voucher_code = "VCH-" + String(r.id).padStart(5, "0");
+  if (!r.voucher_code) r.voucher_code = "BHV-" + String(r.id).padStart(5, "0");
   if (!r.issued_at) r.issued_at = new Date().toISOString();
   r.redeemed = !!r.redeemed;
   r.voided = !!r.voided;
@@ -93,6 +93,8 @@ const fakeDb = {
         if (table === "guests") return store.guests;
         if (table === "app_settings")
           return [{ key: "vouchers", value: { standalone_validity_days: 60 } }];
+        if (table === "wa_templates")
+          return [{ key: "standalone_voucher", body: "Halo {nama}, Nilai: {nominal}, Kode: {kode}, {resto}, berlaku {berlaku}" }];
         return store.rows;
       },
       _match() {
@@ -180,6 +182,8 @@ w.vcRenderVoucher = async (data) => {
   c.toDataURL = () => "data:image/png;base64,AA";
   return c;
 };
+w.restaurantName = () => "Regression Restaurant";
+w.eval(read("js/wa.js"));
 w.waOpenChat = (phone, message) => {
   w.__lastWa = { phone, message };
 };
@@ -253,12 +257,12 @@ const ymdIn = (days) => {
   await new Promise((r) => setTimeout(r, 20));
   check("one row written", store.rows.length, 1);
   const v1 = store.rows[0];
-  check("code generated", v1.voucher_code, "VCH-00001");
+  check("code generated", v1.voucher_code, "BHV-00001");
   check("amount parsed from a dotted figure", v1.value_idr, 100000);
   check("minimum spend stored", v1.min_spend_idr, 500000);
   check("expiry is end of day Jakarta", /T16:59:59/.test(v1.expires_at), "true");
   check("issuer recorded", v1.issued_by, "staff-1");
-  check("card opened for a single voucher", w.__lastCard?.code, "VCH-00001");
+  check("card opened for a single voucher", w.__lastCard?.code, "BHV-00001");
   check("card shows the rupiah value", w.__lastCard?.valueText, "Rp 100.000");
   check("form cleared", $("vch-name").value, "");
 
@@ -306,7 +310,7 @@ const ymdIn = (days) => {
   console.log("\n== 5. Redeeming ==");
   set("vch-redeem-code", "bhv-00001"); // lower case, as typed off a phone
   await w.vchLookup();
-  check("found despite the case", w.__probe.lookedUp?.voucher_code, "VCH-00001");
+  check("found despite the case", w.__probe.lookedUp?.voucher_code, "BHV-00001");
   check("status is open", w.vchStatus(w.__probe.lookedUp), "open");
   check(
     "minimum spend surfaced before redeeming",
@@ -317,7 +321,7 @@ const ymdIn = (days) => {
   await new Promise((r) => setTimeout(r, 20));
   check("redeemed", store.rows[0].redeemed, "true");
   check("who redeemed it recorded", store.rows[0].redeemed_by, "staff-1");
-  check("confirmation shown", /Redeemed VCH-00001/.test(lastToast().msg), "true");
+  check("confirmation shown", /Redeemed BHV-00001/.test(lastToast().msg), "true");
 
   await w.vchRedeem(false);
   await new Promise((r) => setTimeout(r, 20));
@@ -375,7 +379,7 @@ const ymdIn = (days) => {
   );
 
   console.log("\n== 8. Unknown codes explain themselves ==");
-  set("vch-redeem-code", "VCH-99999");
+  set("vch-redeem-code", "BHV-99999");
   await w.vchLookup();
   check("says so plainly", /Nothing found for/.test($("vch-redeem-result").innerHTML), "true");
   set("vch-redeem-code", "BH-F21-0007");
@@ -427,6 +431,7 @@ const ymdIn = (days) => {
   await w.vchSendCardWA();
   check("message carries the code", w.__lastWa.message.includes(withPhone.voucher_code), "true");
   check("message carries the value", /Nilai:/.test(w.__lastWa.message), "true");
+  check("message renders the actual value", w.__lastWa.message.includes(w.vchValueText(withPhone)), "true");
   // Redeemed under the modal, which is what a busy front desk does.
   withPhone.redeemed = true;
   await w.vchSendCardWA();
@@ -460,7 +465,7 @@ const ymdIn = (days) => {
     "open",
   );
   w.vchPickMatch(0);
-  check("picking one opens it", w.__probe.lookedUp.voucher_code.startsWith("VCH-"), "true");
+  check("picking one opens it", w.__probe.lookedUp.voucher_code.startsWith("BHV-"), "true");
   check(
     "and offers a way back to the list",
     /Back to the/.test($("vch-redeem-result").innerHTML),
