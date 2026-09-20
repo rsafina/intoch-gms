@@ -14,6 +14,7 @@ const extract = (name) => app.match(new RegExp(`^async function ${name}\\([\\s\\
         const ctx = vm.createContext({
           invoicePaymentContext: null, confirmWaitlistOverflow: async () => true, depositActionResId: 'booking', TODAY: '2026-09-07',
           reservationDataRevision: 0,
+          refreshDepositWaiverPermission: async () => {}, canWaiveDeposit: () => true,
           document: { getElementById: () => ({ value: '50000' }) },
           loader() {}, toast() {}, hideModal() {
             if (action === 'submitDepositPayment') {

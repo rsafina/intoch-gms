@@ -7,6 +7,9 @@
     "build": "node build-config.js",
     "serve": "python3 -m http.server 8080",
     "test": "node scripts/run-tests.js",
+    "test:demo:check": "node scripts/demo-regression/run.js --check",
+    "test:demo:public": "node scripts/demo-regression/run.js --public",
+    "test:demo:access": "node scripts/demo-regression/run.js",
     "schema-check": "node scripts/schema-check.js"
   },
   "devDependencies": {

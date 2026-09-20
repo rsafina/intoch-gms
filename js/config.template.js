@@ -112,6 +112,8 @@ const I18N_EXCEPTION_TERMS = new Set([
 
 // Indonesian translations, keyed by the English source string.
 const ID_DICT = {
+  "Could not record the request": "Permintaan tidak dapat dicatat",
+  "No payment is due until this request is accepted. Its saved deposit rule applies after acceptance.": "Belum ada pembayaran yang perlu dilakukan sebelum permintaan ini diterima. Aturan deposit yang tersimpan berlaku setelah permintaan diterima.",
   "Unsaved changes": "Perubahan belum disimpan",
   "Leave this page and discard unsaved changes?": "Tinggalkan halaman ini dan buang perubahan yang belum disimpan?",
   "Booking rules": "Aturan reservasi",

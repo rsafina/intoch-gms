@@ -228,8 +228,7 @@ check("the defaults are what the pages did before the setting existed", () => {
 });
 
 check("the stored value is English, whatever language staff are in", () => {
-  const i = app.indexOf("async function saveReservationFormFields");
-  const body = app.slice(i, i + 2200);
+  const body = app.match(/^async function saveReservationFormFields\([^]*?^}/m)[0];
   assert.ok(/guest_language:/.test(body), "the language is never saved");
   assert.ok(
     /\["id", "en", "auto"\]\.includes\(/.test(body),

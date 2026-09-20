@@ -28,6 +28,7 @@ const flush = () => new Promise(resolve => setImmediate(resolve));
         loadAreas: async () => events.push('areas'),
         loadAvailability() {}, loadFeaturedDishes() {}, loadFullMenuLink() {},
         buildTimeSlots() {}, renderPaxNote() {},
+        DEPOSIT_FORM: {}, MAX_PAX: 30, depositPolicy: (_, hours) => ({ max: hours.max_pax }),
         $: () => ({ addEventListener() {} }),
         todayLocal: () => '2026-09-07', earliestDate: () => '', nextOpenDate: () => '', addDays: () => '',
         DATE_EXCEPTIONS: {}, MAX_DAYS_AHEAD: 30, ERR_ID: { paused: 'paused' },

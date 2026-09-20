@@ -4,7 +4,7 @@
 //
 // TZ is forced to Asia/Jakarta because date logic reads the browser's local
 // clock, and several suites only hold at UTC+7. Under UTC they fail, which is
-// correct behaviour, not a broken test. See CLAUDE.md, "Dates".
+// correct behaviour, not a broken test. See docs/DEVELOPMENT_RULES.md, "Dates".
 const { execFileSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
@@ -26,16 +26,14 @@ for (const f of files) {
     execFileSync(process.execPath, [f], {
       cwd: root,
       stdio: "pipe",
+      timeout: 120000,
       env: { ...process.env, TZ: "Asia/Jakarta" },
     });
     console.log("PASS");
   } catch (e) {
     const out = (e.stdout || "").toString() + (e.stderr || "").toString();
-    if (/Cannot find module 'jsdom'/.test(out)) {
-      console.log("SKIP  (needs jsdom: npm install)");
-      continue;
-    }
     console.log("FAIL");
+    if (e.code === "ETIMEDOUT") console.log("  Suite exceeded the 120-second timeout");
     console.log(out.split("\n").filter((l) => /FAIL|Error/.test(l)).slice(0, 6).join("\n"));
     failed++;
   }

@@ -9,6 +9,8 @@ vouchers, WhatsApp follow-up and reports. One codebase, isolated deployment per 
 - [Decisions](docs/DECISIONS.md)
 - [Current state/backlog](docs/CURRENT_STATE.md)
 - [Development rules](docs/DEVELOPMENT_RULES.md)
+- [Folder guide and housekeeping inventory](docs/REPOSITORY_GUIDE.md)
+- [Documentation index](docs/README.md) and [tooling guide](scripts/README.md)
 - [Client deployment](docs/deployment/CLIENT_DEPLOY.md) and [database migration sequence](migrations/README.md)
 
 ## Local development
@@ -49,10 +51,12 @@ See CLIENT_DEPLOY before configuring branches or promoting a release.
 `npm test` discovers `js/*.test.js` and `tests/*.test.js`, setting `TZ=Asia/Jakarta`.
 Tests use Node/vm, jsdom and PGlite. Run focused suites for changed behavior; read known
 failures in CURRENT_STATE before claiming a clean baseline. The runner continues after
-failures but has no per-suite timeout. No test run proves an external deployment is current.
+failures, fails missing dependencies, and limits each suite to 120 seconds. No test run
+proves an external deployment is current. Opt-in deployed demo checks are documented in
+[Demo regression](docs/DEMO_REGRESSION.md); they never run as part of `npm test`.
 
 ## Historical specifications
 
-Root `*_SPEC.md` and deposit scope/phase documents preserve design discussions. Their
+[Historical specifications](docs/history/) preserve design discussions. Their
 pre-Auth security assumptions and old migration instructions are explicitly superseded.
 Current architecture/decisions and actual code take priority. `reference/` is not runtime.

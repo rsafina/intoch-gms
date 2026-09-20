@@ -35,6 +35,8 @@ w.t = (s) => s;
 // the arithmetic under test isolated from the branding settings.
 w.restaurantName = () => "Restoran";
 w.currentPage = "invoice";
+w.currentStaffRole = () => "admin";
+w.reservationFormSettings = () => ({ bank_details: "" });
 Object.defineProperty(w.HTMLElement.prototype, "clientWidth", { value: 900 });
 
 // Both files in ONE eval. In a browser these are two <script> tags sharing the

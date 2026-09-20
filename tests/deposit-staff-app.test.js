@@ -19,7 +19,21 @@ const notify = read("js/notify.js");
 const html = read("index.html");
 const sql = read("migrations/ALL_IN_ONE.sql");
 const cfgTpl = read("js/config.template.js");
-const cfgOut = read("js/config.js");
+// Execute the real build with in-memory writes: never read or overwrite a client's
+// ignored local config, and keep this test usable on a fresh checkout.
+const vm = require("node:vm");
+const built = new Map();
+vm.runInNewContext(read("build-config.js"), {
+  __dirname: root, Buffer,
+  console: { log() {}, warn() {}, error: console.error },
+  process: { env: { SUPABASE_URL: "https://regression.supabase.co", SUPABASE_ANON_KEY: "sb_publishable_regression", SITE_URL: "https://regression.example", RESTAURANT_NAME: "Regression" }, exit(code) { throw new Error("Build exited: " + code); } },
+  require(name) {
+    if (name === "fs") return { existsSync: fs.existsSync, readFileSync: fs.readFileSync, writeFileSync: (file, source) => built.set(path.relative(root, file).replace(/\\/g, "/"), source.replace(/\r\n/g, "\n")) };
+    if (name === "path") return path;
+    throw new Error("Unexpected build dependency: " + name);
+  },
+});
+const cfgOut = built.get("js/config.js");
 
 let pass = 0;
 let fail = 0;
@@ -372,7 +386,11 @@ console.log("\nEvery element the module touches exists in index.html");
 // writing a dead input into the markup just to satisfy a test.
 const RENDERED_IDS = new Set(["lp-agreed-amount"]);
 const ids = [...new Set([...mod.matchAll(/getElementById\("([^"]+)"\)/g)].map((m) => m[1]))]
-  .filter((id) => !RENDERED_IDS.has(id));
+  .filter((id) => !RENDERED_IDS.has(id) && id !== "lp-deposit-format");
+const formatContext = { CURRENT_LANG: "en" };
+vm.runInNewContext(read("js/deposit-policy.js"), formatContext);
+ok("deposit format control is rendered by the shared helper and used by the module",
+  mod.includes("depositFormatSelect()") && /id="lp-deposit-format"/.test(formatContext.depositFormatSelect()));
 for (const id of RENDERED_IDS) {
   ok(
     `#${id} is rendered by the module that reads it`,

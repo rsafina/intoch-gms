@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Fills per-client credentials into the two files that need them.
+ * Generates per-client configuration and guest pages from source templates.
  *
  * WHY THIS EXISTS
  * Every client runs byte-identical code against their own Supabase project.
@@ -12,8 +12,8 @@
  * WHAT IT IS NOT
  * This does not hide the anon key. It ends up in the published JavaScript,
  * readable by anyone, exactly as before. Supabase is designed that way. The
- * thing that protects a client's data is Row Level Security, which is NOT yet
- * enabled. See CLAUDE.md, "Must be fixed before the first sale".
+ * boundary is verified-role Row Level Security and protected RPCs. Follow
+ * migrations/README.md and verify their deployment for each client project.
  *
  * SITE_URL exists for a different reason. The Open Graph tags that produce
  * the WhatsApp link preview must carry ABSOLUTE urls. A relative one renders

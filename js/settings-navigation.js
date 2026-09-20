@@ -68,7 +68,6 @@ function applySidebarSize(compact) {
   document.body.classList.toggle('sidebar-compact', compact);
   const button = document.getElementById('sidebar-size-toggle');
   if (button) {
-    button.textContent = compact ? '›' : '‹';
     button.setAttribute('aria-expanded', String(!compact));
     button.setAttribute('aria-label', t(compact ? 'Expand sidebar' : 'Collapse sidebar'));
     button.title = button.getAttribute('aria-label');

@@ -221,7 +221,7 @@ check("every query that feeds an export fetches the three guest fields", () => {
   for (const fn of feeders) {
     const i = src.indexOf(fn);
     assert.ok(i > -1, "export feeder is gone or renamed: " + fn);
-    const body = src.slice(i, i + 2000);
+    const body = lift(fn.replace(/^async function /, "").replace(/\(\)$/, ""));
     const m = body.match(/guests\(([^)]*)\)/);
     assert.ok(m, fn + " no longer joins guests at all");
     for (const field of ["food_allergy", "favorite_menu", "last_order"]) {
@@ -250,10 +250,24 @@ check("a blank Date Time survives the flattening", () => {
 console.log("\nWhat gets exported is what is on screen");
 
 check("the list export follows an active search, and says so in the name", () => {
-  const body = src.slice(src.indexOf("function exportReservations()"), src.indexOf("function exportReservations()") + 900);
-  assert.ok(body.includes("allReservations.map"), "not exporting allReservations");
-  assert.ok(body.includes("resSearchActive"), "does not follow the search");
-  assert.ok(body.includes("resSelectedDate"), "filename ignores the viewed day");
+  const downloads = [];
+  Object.assign(ctx, {
+    TODAY: "2026-09-20", resSearchActive: null,
+    allReservations: [{ guests: {name:"Alia",phone:"0812"}, reservation_date:"2026-09-01", pax:4 }],
+    reservationDateRange: () => ({start:"2026-09-01",end:"2026-09-01"}),
+    downloadReservationSheet: (...args) => downloads.push(args),
+  });
+  vm.runInContext(lift("exportReservations"), ctx);
+  ctx.exportReservations();
+  assert.strictEqual(downloads[0][0], "export-reservations-2026-09-01");
+  assert.strictEqual(downloads[0][1][0][0], "Alia");
+  ctx.reservationDateRange = () => ({start:"2026-09-01",end:"2026-09-07"});
+  ctx.exportReservations();
+  assert.strictEqual(downloads[1][0], "export-reservations-2026-09-01_to_2026-09-07");
+  ctx.resSearchActive = {label:"Alia Family"};
+  ctx.exportReservations();
+  assert.strictEqual(downloads[2][0], "export-reservations-search-alia-family");
+  assert.strictEqual(downloads[2][2], "Search results");
 });
 
 check("the dashboard export takes the whole day, not the visible page", () => {

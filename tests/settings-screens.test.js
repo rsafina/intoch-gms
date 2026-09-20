@@ -110,7 +110,7 @@ const roleValues = [...w.document.querySelectorAll("#staff-form-role option")].m
 );
 ok(
   "role options match the DB constraint",
-  JSON.stringify(roleValues) === JSON.stringify(["staff", "manager", "admin"]),
+  JSON.stringify(roleValues) === JSON.stringify(["staff", "manager", "admin", "owner", "finance"]),
   JSON.stringify(roleValues),
 );
 
@@ -199,7 +199,7 @@ console.log("\nNotification panels survive a click that re-renders them");
 const notifySrc = fs.readFileSync(path.join(ROOT, "js", "notify.js"), "utf8");
 ok(
   "the reservation panel ignores clicks on detached nodes",
-  /res-alert-panel[\s\S]{0,600}?isConnected[\s\S]{0,200}?wrap\.contains/.test(notifySrc),
+  /document\.addEventListener\("click",[\s\S]*?if \(!wrap \|\| !e\.target\.isConnected\) return;[\s\S]*?wrap\.contains\(e\.target\)/.test(notifySrc),
 );
 ok(
   "the birthday panel does too",
@@ -228,10 +228,10 @@ console.log("\nEvery page is the same width and weight");
 const sections = [...w.document.querySelectorAll("section[id^='page-']")];
 ok("all 16 page sections found", sections.length >= 16, String(sections.length));
 
-// page-invoice is the one deliberate exception: the A4 sheet sits beside the
-// form at its true 794px, and narrowing the page shrinks the preview.
+// Invoice has an A4 preview beside its form. Management pages use their own
+// responsive .od-container layout in owner-dashboard.css, not the operational width.
 const widthOffenders = sections
-  .filter((sec) => sec.id !== "page-invoice")
+  .filter((sec) => !["page-invoice", "page-owner-dashboard", "page-reservation-outlook"].includes(sec.id))
   .map((sec) => {
     const wrap = sec.firstElementChild;
     const cls = wrap ? [...wrap.classList].find((c) => c.startsWith("max-w-")) : "(none)";
@@ -239,7 +239,7 @@ const widthOffenders = sections
   })
   .filter(([, cls]) => cls !== "max-w-5xl");
 ok(
-  "every page except Invoice is max-w-5xl",
+  "operational pages except Invoice are max-w-5xl (management has its own responsive layout)",
   widthOffenders.length === 0,
   widthOffenders.map((o) => o.join("=")).join(", "),
 );

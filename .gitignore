@@ -1,6 +1,6 @@
 # Generated at build time by build-config.js from the .template files.
 # Never commit them: js/config.js and reserve.html carry the client's
-# Supabase credentials, and all six carry that client's site URL and name.
+# public Supabase connection settings; generated pages contain client-specific values.
 # Edit the matching .template file instead, or the next build overwrites you.
 js/config.js
 reserve.html
