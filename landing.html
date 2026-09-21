@@ -98,56 +98,51 @@
            than to look pleasant. Two of these fix long-standing failures:
            the old button blue (5596CE) under white text was 3.16:1 and the
            old gold (C8A96B) on cream was 2.08:1, against a 4.5 bar. */
-        /* 2026-09-20 palette (from the design brief):
-             cream #FFF5EC  page background
-             sand  #EACD9D  fills: number badges, pills, icon tiles
-             sky   #83B9DD  second headline tone, secondary button, pills
-             indigo #3E4B8F primary: buttons, headings, body text family
-             plum  #3E1535  dark panels only (CTA box, footer)
-           Rere chose to use the exact sky #83B9DD for headline text as in the
-           mockup (2026-09-20), knowing it is below the 3:1 contrast bar. */
-        --cream: #FFF5EC;
-        --sand: #EACD9D;
-        --sky: #83B9DD;
-        --sky-rgb: 131 185 221;
-        --plum: #3E1535;
-        --brand: #3E4B8F;          /* indigo. white on it: 8.05 */
-        --brand-hover: #313C74;
-        --brand-ink: #3E4B8F;      /* headings. on cream: 7.49 */
-        --brand-deep: #313C74;
-        --brand-deepest: #262F5C;
-        --brand-muted: #5E6BA8;    /* white on it: 5.07 */
-        --brand-soft: #83B9DD;
+        /* White hero, warm linen and pale blue section bands.
+           Logo blue anchors actions; deep navy closes the page. */
+        --surface-white: #FFFFFF;
+        --surface-linen: #F7F0E6;
+        --surface-blue: #EDF3FB;
+        --navy: #20345D;
+        --sand: #E5CBA4;
+        --sky: #A4C8E3;
+        --heading-accent: #3F7BAE;
+        --sky-rgb: 164 200 227;
+
+        --brand: #3C56A6;
+        --brand-hover: #304687;
+        --brand-ink: #3C56A6;
+        --brand-deep: #304687;
+        --brand-deepest: #20345D;
+        --brand-muted: #6077AF;
+        --brand-soft: #A4C8E3;
         --brand-tint: #DCEAF5;     /* light sky: chips, selected rows */
         --brand-tint2: #EEF5FB;
-        --accent: #EACD9D;         /* sand. FILLS ONLY, never text */
+        --accent: #E5CBA4;         /* sand. FILLS ONLY, never text */
         --accent-hover: #8A6424;   /* text-safe bronze for small labels: 4.97 on cream */
         --accent-strong: #6B4A12;
-        --accent-tint: #F3E0BF;
-        --accent-tint2: #FBF0DD;
-        --brand-rgb: 62 75 143;
-        --brand-ink-rgb: 62 75 143;
-        --brand-hover-rgb: 49 60 116;
-        --brand-deep-rgb: 49 60 116;
-        --brand-deepest-rgb: 38 47 92;
-        --brand-soft-rgb: 131 185 221;
-        --accent-rgb: 234 205 157;
+        --accent-tint: #F7E9CE;   /* 2026-09-21 */
+        --accent-tint2: #FCF4E4;  /* 2026-09-21 */
+        --brand-rgb: 60 86 166;
+        --brand-ink-rgb: 60 86 166;
+        --brand-hover-rgb: 48 70 135;
+        --brand-deep-rgb: 48 70 135;
+        --brand-deepest-rgb: 32 52 93;
+        --brand-soft-rgb: 164 200 227;
+        --accent-rgb: 229 203 164;
         --accent-hover-rgb: 138 100 36;
         --accent-strong-rgb: 107 74 18;
 
-        --bg: #FFF5EC;
-        --bg-alt: #FCEDDF;
-        --bg-soft: #FFF5EC;
-        --card: rgba(255, 255, 255, 0.94);
-        --line: #EFE2D3;
+        --card: #ffffff;
+        --line: #DDE3EC;
         --gold: var(--accent);
         --gold-dark: var(--accent-hover);
-        --primary: #3E4B8F;
-        --primary-dark: #313C74;
-        --primary-hover: #5E6BA8;
+        --primary: var(--brand);
+        --primary-dark: var(--brand-deep);
+        --primary-hover: var(--brand-hover);
         --success: #5f8d4e;
-        --text: #2A3366;
-        --text-sec: #4F5A8C;
+        --text: #263858;
+        --text-sec: #52627B;
         --warning: #d4a017;
         --danger: #c0554a;
       }
@@ -156,12 +151,22 @@
         padding: 0;
         box-sizing: border-box;
       }
+      /* White base; explicit flat section fills below, without overlay layers. */
+      html,
+      html[data-page-loading],
+      body,
+      #page-loading {
+        background: #ffffff;
+      }
       html {
         scroll-behavior: smooth;
+        /* Safety net against sideways panning on phones: anything that pokes
+           past the screen edge is cut off instead of widening the page.
+           "clip" (not "hidden") so the sticky nav keeps working. */
+        overflow-x: clip;
       }
       body {
         font-family: "Plus Jakarta Sans", sans-serif;
-        background: var(--cream);
         color: var(--text);
         line-height: 1.6;
       }
@@ -446,33 +451,6 @@
       /* ===== Hero ===== */
       .hero-wrap {
         position: relative;
-        /* 2026-09-20: plain near-white with a very faint logo-blue wash
-           (replaces the lavender/cyan holographic image, which stays in
-           assets but is no longer used). Alphas are kept at 3-6% on purpose. */
-        background-image:
-          radial-gradient(ellipse 55% 60% at 78% 32%, rgba(131, 185, 221, 0.16), rgba(131, 185, 221, 0) 70%),
-          radial-gradient(ellipse 45% 45% at 8% 100%, rgba(234, 205, 157, 0.22), rgba(234, 205, 157, 0) 70%);
-        background-repeat: no-repeat;
-        background-color: var(--cream);
-      }
-      .hero-wrap::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: rgba(255, 255, 255, 0.1);
-        pointer-events: none;
-        z-index: 0;
-      }
-      .hero-wrap::after {
-        content: "";
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: -1px;
-        height: 3px;
-        background: var(--cream);
-        z-index: 2;
-        pointer-events: none;
       }
       .hero {
         padding: 82px 0 96px;
@@ -516,7 +494,7 @@
         text-shadow: 0 2px 18px rgba(255, 255, 255, 0.28);
       }
       .hero h1 em {
-        color: var(--sky);
+        color: var(--heading-accent);
         font-style: normal;
       }
       .hero-title-lock {
@@ -554,31 +532,6 @@
         justify-content: center;
         margin-left: -34px;
         padding: 18px 0 26px;
-        transition:
-          opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
-          transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
-      }
-      .js .hero-media {
-        opacity: 0;
-        transform: translateX(28px) scale(0.985);
-      }
-      .js .hero-media.is-visible {
-        opacity: 1;
-        transform: none;
-      }
-      .hero-media::before {
-        display: none; /* 2026-09-20: replaced by the photo stack */
-        content: "";
-        position: absolute;
-        inset: 3% 16% 8% 13%;
-        border-radius: 34% 24% 30% 18%;
-        background: linear-gradient(
-          135deg,
-          rgba(155, 232, 214, 0.82),
-          rgba(180, 205, 248, 0.62)
-        );
-        transform: rotate(-2deg);
-        box-shadow: 0 28px 80px rgb(var(--brand-ink-rgb) / 0.16);
       }
       /* Photo stack (2026-09-20): two tilted photos peek out behind the main
          one. The wrapper owns the size, so the back photos always match the
@@ -595,8 +548,7 @@
         border-radius: 32px;
         overflow: hidden;
         border: 6px solid #ffffff;
-        background: var(--bg-alt);
-        box-shadow: 0 18px 40px rgb(var(--brand-ink-rgb) / 0.14);
+        background: #ffffff;
         z-index: 0;
       }
       .hero-stack img {
@@ -621,23 +573,9 @@
         aspect-ratio: 0.82;
         background: rgba(255, 255, 255, 0.48);
         border-radius: 32px; /* was 42/42/120/42; all four corners equal since 2026-09-20 */
-        box-shadow:
-          0 26px 56px rgb(var(--brand-ink-rgb) / 0.2),
-          0 10px 28px rgba(185, 133, 54, 0.14);
         border: 1px solid rgba(255, 255, 255, 0.68);
         backdrop-filter: blur(8px);
         z-index: 1;
-      }
-      .hero-visual::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(
-          circle at 22% 78%,
-          rgba(255, 223, 122, 0.2),
-          rgba(255, 223, 122, 0) 38%
-        );
-        pointer-events: none;
       }
       .hero-visual img {
         object-position: center top;
@@ -661,9 +599,7 @@
         color: var(--text);
         background: rgba(255, 255, 255, 0.72);
         border: 1px solid rgba(255, 255, 255, 0.86);
-        box-shadow:
-          0 18px 42px rgb(var(--brand-ink-rgb) / 0.16),
-          inset 0 1px 0 rgba(255, 255, 255, 0.82);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
         backdrop-filter: blur(14px);
         -webkit-backdrop-filter: blur(14px);
         white-space: nowrap;
@@ -726,65 +662,44 @@
         background: rgba(250, 239, 220, 0.94);
       }
 
-      /* ===== Seamless section transitions =====
-         A short band straddles the boundary between two sections,
-         half sits over the end of the previous section, half over the
-         start of this one, and fades the previous section's colour
-         out. That keeps the blend centred right on the seam instead of
-         reading as its own big gradient block. Footer is excluded.
-         NOTE: gradient stops use matching RGB with alpha 0 at the end
-         (not the "transparent" keyword), mixing a solid colour with
-         literal "transparent" interpolates through transparent BLACK
-         in most browsers, which produces a muddy grey band. */
-      .seam {
-        position: relative;
+      /* Scatter the back photos, then reveal the pills. Only transforms and opacity animate;
+         the main photo keeps the top position and the canvas stays white. */
+      .hero-stack.s1 { --scatter-x: -8%; --scatter-y: 3%; --scatter-angle: -6deg; }
+      .hero-stack.s2 { --scatter-x: 7%; --scatter-y: -2%; --scatter-angle: 5deg; }
+      @keyframes hero-photo-scatter {
+        0% { transform: translate(0, 0) rotate(0); }
+        65% { transform: translate(calc(var(--scatter-x) * 1.35), calc(var(--scatter-y) * 1.35)) rotate(calc(var(--scatter-angle) * 1.4)); }
+        100% { transform: translate(var(--scatter-x), var(--scatter-y)) rotate(var(--scatter-angle)); }
       }
-      .seam::before {
-        content: "";
-        position: absolute;
-        top: -14px;
-        left: 0;
-        right: 0;
-        height: 28px;
-        z-index: 0;
-        pointer-events: none;
+      @keyframes hero-pill-enter {
+        0% { opacity: 0; transform: translateY(18px) scale(0.86); }
+        70% { opacity: 1; transform: translateY(-3px) scale(1.025); }
+        100% { opacity: 1; transform: none; }
       }
-      .seam > * {
-        position: relative;
-        z-index: 1;
-      }
-      .seam-from-cream::before {
-        background: none;
-      }
-      .seam-from-white::before {
-        background: none;
-      }
-      .seam-from-navy::before {
-        background: none;
-      }
-      .seam-from-bg-alt::before {
-        background: none;
-      }
-      /* Wider, softer variant, used where the two colours contrast a
-         lot (e.g. white <-> navy) so the eye still reads a gradual
-         wash of blue rather than a hard edge, without losing the
-         colour entirely. Eased stops keep it fuller for longer before
-         tapering off. */
-      .seam-wide::before {
-        top: -70px;
-        height: 140px;
-      }
-      .seam-wide.seam-from-white::before {
-        background: none;
-      }
-      .seam-wide.seam-from-navy::before {
-        background: none;
+      @media (prefers-reduced-motion: no-preference) {
+        .js .hero-media:not(.is-visible) .hero-stack { transform: none; }
+        .js .hero-media:not(.is-visible) .hero-metric { opacity: 0; }
+        .js .hero-media.is-visible .hero-stack {
+          animation: hero-photo-scatter 650ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+        }
+        .js .hero-media.is-visible .hero-metric {
+          animation: hero-pill-enter 480ms ease-out both;
+        }
+        .js .hero-media.is-visible .hero-metric.top { animation-delay: 700ms; }
+        .js .hero-media.is-visible .hero-metric.risk { animation-delay: 850ms; }
+        .js .hero-media.is-visible .hero-metric.bottom { animation-delay: 1000ms; }
+        .js .hero-media.is-visible .hero-metric.side { animation-delay: 1150ms; }
       }
 
       /* ===== Sections ===== */
       section {
         padding: 72px 0;
       }
+      /* A single map for page backgrounds: warm / white / cool. */
+      #masalah, .more-features, #kontak { background: var(--surface-linen); }
+      #fitur, #cara-kerja { background: var(--surface-blue); }
+      #solusi, #use-case, #kenapa, #faq { background: var(--surface-white); }
+      #kontak { padding: 72px 0; }
       .section-head {
         text-align: center;
         max-width: 640px;
@@ -1007,9 +922,6 @@
       }
 
       /* ===== More features grid ===== */
-      .more-features {
-        background: var(--bg-alt);
-      }
       .more-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -1045,9 +957,6 @@
       }
 
       /* ===== How it works ===== */
-      .how {
-        background: #ffffff;
-      }
       .how-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -1119,90 +1028,6 @@
       }
 
 
-      /* ============================================================
-         FX LAYER — soft gradient wash, nudged by scroll.
-         Replaces the canvas grid/contour/particle textures: same job
-         (stop sections reading flat) with far less visual noise and no
-         per-frame painting. The shift is deliberately small; it should
-         register as depth, not as movement.
-         ============================================================ */
-      section[data-fx] {
-        position: relative;
-        isolation: isolate;
-      }
-      section[data-fx] > *:not(.fx-layer) {
-        position: relative;
-        z-index: 1;
-      }
-      .fx-layer {
-        position: absolute;
-        inset: 0;
-        z-index: 0;
-        pointer-events: none;
-        background-size: 100% 240%;
-        background-repeat: no-repeat;
-        background-position: 50% calc(50% + var(--fx-shift, 0%));
-        opacity: 0;
-        transition: opacity 1s ease;
-      }
-      .fx-layer.on {
-        opacity: 1;
-      }
-      /* Hues sampled straight from the hero image
-         (assets/holographic-abstract-background.avif):
-           cyan       #AFF0FF
-           periwinkle #B3C9FE
-           soft blue  #C7DAFF (was lavender #D5C7FF; page moved to logo blue 2026-09-20)
-         The hero shows them at full strength; everything below runs the same
-         family at a tenth of that, so the page feels of a piece with the hero
-         without ever competing with it. No gold here: gold stays on buttons
-         and inside the product mockups. */
-      [data-fx="cool"] .fx-layer {
-        background-image: linear-gradient(
-          168deg,
-          rgba(131, 185, 221, 0.1) 0%,
-          rgba(131, 185, 221, 0.05) 44%,
-          rgba(255, 255, 255, 0) 74%
-        );
-      }
-      [data-fx="soft"] .fx-layer {
-        background-image: linear-gradient(
-          200deg,
-          rgba(131, 185, 221, 0.1) 0%,
-          rgba(131, 185, 221, 0.06) 46%,
-          rgba(255, 255, 255, 0) 78%
-        );
-      }
-      [data-fx="mix"] .fx-layer {
-        background-image: linear-gradient(
-          150deg,
-          rgba(234, 205, 157, 0.09) 0%,
-          rgba(131, 185, 221, 0.06) 50%,
-          rgba(255, 255, 255, 0) 80%
-        );
-      }
-      [data-fx="warm"] .fx-layer {
-        background-image: linear-gradient(
-          190deg,
-          rgba(234, 205, 157, 0.085) 0%,
-          rgba(131, 185, 221, 0.055) 48%,
-          rgba(255, 255, 255, 0) 80%
-        );
-      }
-      [data-fx="cta"] .fx-layer {
-        background-image: linear-gradient(
-          160deg,
-          rgba(131, 185, 221, 0.12) 0%,
-          rgba(234, 205, 157, 0.08) 46%,
-          rgba(255, 255, 255, 0) 82%
-        );
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .fx-layer {
-          background-position: 50% 50% !important;
-        }
-      }
-
       /* Decoder: height is locked in JS at arm time (see fx engine) so that
          resolving glyphs cannot reflow the layout. Deliberately NOT
          white-space: pre-wrap, which would render the source indentation. */
@@ -1214,29 +1039,6 @@
       /* Count-up: tabular figures stop the number jittering as it climbs. */
       [data-count] {
         font-variant-numeric: tabular-nums;
-      }
-
-      /* Glow bloom behind the metric cards. Radial tint, multiply-blended,
-         so it reads as coloured paper rather than emitted light. */
-      .fx-bloom {
-        position: absolute;
-        border-radius: 50%;
-        pointer-events: none;
-        z-index: 0;
-        mix-blend-mode: multiply;
-        filter: blur(38px);
-        opacity: 0;
-        transition: opacity 1.2s ease;
-      }
-      .fx-bloom.on {
-        opacity: 1;
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        .fx-layer,
-        .fx-bloom {
-          display: none !important;
-        }
       }
 
       /* ============ TITLES: Source Code Pro ============
@@ -1580,12 +1382,6 @@
         .mock-caret { animation: none; }
       }
 
-      #keunggulan {
-        background: var(--bg-soft);
-      }
-      #faq {
-        background: #ffffff;
-      }
       /* ===== FAQ ===== */
       .faq-list {
         max-width: 780px;
@@ -1651,7 +1447,7 @@
 
       /* ===== CTA / Contact ===== */
       .cta-section {
-        background: var(--plum);
+        background: var(--navy);
         color: #fff;
         border-radius: 26px;
         padding: 60px 40px;
@@ -1684,7 +1480,7 @@
       /* ===== Footer ===== */
       footer {
         padding: 44px 0 32px;
-        background: var(--plum);
+        background: var(--navy);
       }
       .footer-inner {
         display: flex;
@@ -1713,7 +1509,8 @@
       }
       .footer-links {
         display: flex;
-        gap: 20px;
+        flex-wrap: wrap; /* 6 links no longer fit one row on small phones (2026-09-20) */
+        gap: 10px 20px;
       }
 
       /* ===== Mobile ===== */
@@ -1764,13 +1561,6 @@
           margin-left: 0;
           padding: 10px 0 14px;
           width: 100%;
-        }
-        .js .hero-media {
-          transform: translateY(18px) scale(0.985);
-        }
-        .hero-media::before {
-          inset: 4% 14% 6% 12%;
-          border-radius: 30px 30px 82px 30px;
         }
         .hero-stack-wrap {
           width: min(66vw, 300px);
@@ -1948,7 +1738,7 @@
           width: min(62vw, 250px);
         }
         .hero-metric {
-          max-width: 46vw;
+          max-width: none; /* was 46vw: the number spilled past the pill and the screen edge */
         }
         .hero-metric strong {
           font-size: 1.05rem;
@@ -1973,7 +1763,7 @@
       }
 
       /* ---------- 1. KENAPA INTOCH ---------- */
-      .v2-why { background: #ffffff; padding: 110px 0 96px; }
+      .v2-why { padding: 110px 0 96px; }
       .v2-compare {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -2189,7 +1979,6 @@
       }
 
       /* ---------- 2. FITUR: 3 PILLARS ---------- */
-      .v2-pillars { background: var(--bg-soft); }
       .v2-pillar-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
       .v2-pillar {
         position: relative;
@@ -2272,7 +2061,6 @@
       }
 
       /* ---------- 3. USE CASE TABS ---------- */
-      .v2-uc { background: #ffffff; }
       .v2-tabbar {
         display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
         border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
@@ -2312,6 +2100,7 @@
         background: linear-gradient(150deg, #ffffff, var(--brand-tint2));
       }
       .v2-panel[hidden] { display: none; }
+      .v2-step-controls { display: none; }
       .v2-stagetag {
         display: inline-block; font-family: "Source Code Pro", monospace; font-size: 0.74rem; font-weight: 600;
         letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-hover); margin-bottom: 10px;
@@ -2576,37 +2365,27 @@
       .v2-panel[data-phase="3"] .bday { animation: v2pulse 1.1s ease-in-out 0.2s 3; }
 
       /* ===== 2026-09-20 palette pass + restructure ===== */
-      .tone { color: var(--sky); }
+      .tone { color: var(--heading-accent); }
       .section-head .eyebrow, .problem .eyebrow {
         color: var(--brand-ink);
         background: rgb(var(--accent-rgb) / 0.35);
         border: 1px solid rgb(var(--accent-rgb) / 0.9);
       }
-      /* secondary hero button: sky fill like the mockup; dark text because
-         white on sky is 2.1:1 and unreadable */
+      /* Pale sky fills use dark navy text. */
       .hero-ctas .btn-outline {
         background: var(--sky);
         border-color: var(--sky);
         color: var(--brand-deepest) !important;
       }
       .hero-ctas .btn-outline:hover { background: #6FA9D2; border-color: #6FA9D2; color: var(--brand-deepest) !important; }
-      /* plum text on sand fills (white on sand is 1.5:1) */
-      .qw-add, .mock-btn.gold, .v2-bell i, .app-bell i { color: var(--plum) !important; }
+      /* Navy text on sand fills. */
+      .qw-add, .mock-btn.gold, .v2-bell i, .app-bell i { color: var(--navy) !important; }
       .v2-pillar li::before { background: var(--sky); color: var(--brand-deepest); font-weight: 800; }
-      .v2-pillar li.soft::before { background: var(--sand); color: var(--plum); }
+      .v2-pillar li.soft::before { background: var(--sand); color: var(--navy); }
       .v2-pillar li b { color: var(--brand-ink); }
-      .cta-section h2, .cta-section p { color: var(--cream); }
-      .cta-section .btn-outline { border-color: var(--cream); color: var(--cream) !important; }
+      .cta-section h2, .cta-section p { color: #ffffff; }
+      .cta-section .btn-outline { border-color: #ffffff; color: #ffffff !important; }
 
-      /* section rhythm: cream and a slightly deeper cream, alternating */
-      .v2-problem { background: var(--bg-alt); }
-      .v2-solution { background: var(--bg); }
-      .v2-pillars { background: var(--bg-alt); }
-      .v2-uc { background: var(--bg); }
-      .more-features { background: var(--bg-alt); }
-      .v2-reasons { background: var(--bg); }
-      .how { background: var(--bg-alt); }
-      #faq { background: var(--bg); }
 
       /* A and B: one card per section, same card design as the old comparison */
       .v2-single { max-width: 720px; margin: 0 auto; }
@@ -2661,6 +2440,30 @@
         .v2-benefits { grid-template-columns: 1fr; }
         .v2-vis { height: 210px; }
         .v2-tab { flex-basis: 78%; }
+        /* Phone demo: a compact stage followed by one stable-height caption. */
+        .v2-panel { gap: 16px; padding: 18px 14px; scroll-margin-top: 80px; }
+        .v2-tabbar { margin-bottom: 12px; }
+        .v2-stage { order: -1; }
+        .v2-devices { height: clamp(220px, 32svh, 280px); padding: 0; max-width: 350px; margin: auto; }
+        .v2-devices .dev { position: absolute; }
+        .v2-devices .dev-laptop { width: 85%; left: 3%; top: 8%; }
+        .v2-devices .dev-tablet { width: 78%; left: 0; top: 0; }
+        .v2-devices .dev-phone { width: 38%; right: 0; bottom: 0; margin: 0; }
+        .v2-panel .v2-stagetag { display: none; }
+        .v2-panel h3 { font-size: 1.15rem; line-height: 1.25; margin-bottom: 12px; }
+        .usecase-ready .v2-steps { display: grid; gap: 0; }
+        .usecase-ready .v2-steps li { grid-area: 1 / 1; visibility: hidden; pointer-events: none; }
+        .usecase-ready .v2-steps li.current { visibility: visible; pointer-events: auto; animation: v2-caption-in 240ms ease-out; }
+        .v2-steps button { font-size: 0.86rem; padding: 10px; gap: 8px; }
+        .v2-step-controls { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; }
+        .v2-step-controls button { width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 50%; background: #fff; color: var(--brand-deep); font: inherit; font-size: 0.85rem; cursor: pointer; }
+        .v2-step-controls button[aria-current="step"] { background: var(--brand); border-color: var(--brand); color: #fff; }
+        .v2-step-controls button:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+        .v2-note { margin-top: 10px; padding: 8px 10px; font-size: 0.76rem; }
+      }
+      @keyframes v2-caption-in {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: none; }
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -2884,7 +2687,7 @@
          Same "Cara Manual" card as before (header, picture, list), now on its
          own with the 4 problem points, and no comparison yet. The "Dengan
          Intoch" card in the next section answers the same 4 points in order. -->
-    <section id="masalah" class="v2-problem" data-fx="cool" data-v2-anim>
+    <section id="masalah" class="v2-problem" data-v2-anim>
       <div class="container">
         <div class="section-head">
           <h2 data-decode="1" data-i18n="prob.title">Masih Mencatat Tamu <span class="tone">Secara Manual?</span></h2>
@@ -2947,7 +2750,7 @@
     </section>
 
     <!-- ===== B · SOLUSI: answers the 4 problems above, point for point ===== -->
-    <section id="solusi" class="v2-solution" data-fx="soft" data-v2-anim>
+    <section id="solusi" class="v2-solution" data-v2-anim>
       <div class="container">
         <div class="section-head">
           <h2 data-decode="1" data-i18n="sol.title">Semua Data Pelanggan, <span class="tone">Tersimpan di Satu Tempat</span></h2>
@@ -3008,7 +2811,7 @@
     </section>
 
     <!-- ===== C · FITUR: 3 pillars, first visit to loyal customer ===== -->
-    <section id="fitur" class="v2-pillars" data-fx="soft" data-v2-anim>
+    <section id="fitur" class="v2-pillars" data-v2-anim>
       <div class="container">
         <div class="section-head">
           <p class="eyebrow" data-i18n="features.eyebrow">Fitur Utama</p>
@@ -3078,7 +2881,7 @@
     <!-- ===== V2 · USE CASE (4 tabs, click only) =====
          Each panel loops 3 phases. data-dur = ms per phase. Devices carry
          f1/f2/f3 = "in focus during that phase"; the others dim. -->
-    <section id="use-case" class="v2-uc seam seam-from-bg-alt" data-v2-anim>
+    <section id="use-case" class="v2-uc" data-v2-anim>
       <div class="container">
         <div class="section-head">
           <p class="eyebrow" data-i18n="uc.eyebrow">Momen Tamu</p>
@@ -3336,7 +3139,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
     </section>
 
     <!-- ===== V2 · DAN MASIH BANYAK LAGI (trimmed: only what the pillars do not already say) ===== -->
-    <section class="more-features seam seam-from-white">
+    <section class="more-features">
       <div class="container">
         <div class="section-head">
           <p class="eyebrow" data-i18n="more.eyebrow">Selengkapnya</p>
@@ -3355,7 +3158,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
     </section>
 
     <!-- ===== F · KENAPA INTOCH: the 4 benefit cards on their own ===== -->
-    <section id="kenapa" class="v2-reasons" data-fx="warm" data-v2-anim>
+    <section id="kenapa" class="v2-reasons" data-v2-anim>
       <div class="container">
         <div class="section-head">
           <h2 data-decode="1" data-i18n="why3.title">Kenapa <span class="tone">Intoch?</span></h2>
@@ -3394,7 +3197,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
       </div>
     </section>
 
-    <section id="cara-kerja" class="how seam seam-from-bg-alt">
+    <section id="cara-kerja" class="how">
       <div class="container">
         <div class="section-head">
           <p class="eyebrow" data-i18n="how.eyebrow">Cara Kerja</p>
@@ -3434,7 +3237,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
     </section>
 
     <!-- ===== KEUNGGULAN ===== -->
-    <section id="faq" class="seam seam-from-bg-alt">
+    <section id="faq" class="seam-from-bg-alt">
       <div class="container">
         <div class="section-head">
           <p class="eyebrow">FAQ</p>
@@ -3500,7 +3303,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
     </section>
 
     <!-- ===== CTA / KONTAK ===== -->
-    <section id="kontak" style="padding-top: 24px" data-fx="cta">
+    <section id="kontak">
       <div class="container">
         <div class="cta-section">
           <h2 data-decode="1" data-i18n="cta.title">Kenali Pelanggan, Buat Mereka Kembali</h2>
@@ -3553,9 +3356,29 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
         document.documentElement.classList.add("js");
         var heroMedia = document.querySelector(".hero-media");
         if (heroMedia) {
-          window.setTimeout(function () {
+          var revealHero = function () {
             heroMedia.classList.add("is-visible");
-          }, 180);
+          };
+          if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            revealHero();
+          } else {
+            // Start in view (especially on phones), after the photos can paint.
+            var photosReady = Promise.all(Array.from(heroMedia.querySelectorAll("img"), function (img) {
+              return img.decode ? img.decode().catch(function () {}) : Promise.resolve();
+            }));
+            var ready = Promise.race([photosReady, new Promise(function (resolve) { window.setTimeout(resolve, 1800); })]);
+            if ("IntersectionObserver" in window) {
+              var heroObserver = new IntersectionObserver(function (entries) {
+                if (entries.some(function (entry) { return entry.isIntersecting; })) {
+                  heroObserver.disconnect();
+                  ready.then(revealHero);
+                }
+              }, { threshold: 0.25 });
+              heroObserver.observe(heroMedia);
+            } else {
+              ready.then(revealHero);
+            }
+          }
         }
 
         var toggle = document.getElementById("navToggle");
@@ -3883,8 +3706,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
     </script>
     <!-- ================================================================
          INTOCH FX ENGINE
-         Techniques ported from intoch-generator/lib/{backgrounds,theme}.js
-         and scenes/rolling-reveal.js.
+         Text and mockup animations ported from scenes/rolling-reveal.js.
 
          Two things are deliberately NOT copied from the generator:
 
@@ -3892,8 +3714,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
             destroy SEO, break the ID/EN toggle, and make the copy
             unselectable. The scramble ALGORITHM is ported; the renderer
             stays real DOM.
-         2. The generator's palettes are dark. Everything here is
-            multiply-composited for a cream page.
+         2. Background effects are omitted so the page stays plain white.
 
          This block must load AFTER the i18n script above: that script
          caches each element's innerHTML as the Indonesian source of
@@ -3908,71 +3729,6 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
           ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
           : false;
         if (reduce) return;
-
-        /* rgba() kept from lib/theme.js: still used by the hero bloom. */
-        function toRGB(hex) {
-          var h = String(hex).replace("#", "").trim();
-          var x = h.length === 3 ? h.split("").map(function (c) { return c + c; }).join("") : h;
-          var n = parseInt(x, 16);
-          return isFinite(n)
-            ? { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 }
-            : { r: 11, g: 14, b: 26 };
-        }
-        function rgba(hex, a) {
-          var c = toRGB(hex);
-          return "rgba(" + c.r + "," + c.g + "," + c.b + "," + a + ")";
-        }
-
-        var cs = getComputedStyle(document.documentElement);
-        var ACCENT = (cs.getPropertyValue("--primary") || "#114fa1").trim();
-        var ACCENT2 = (cs.getPropertyValue("--gold") || "var(--accent)").trim();
-
-        /* ---------- gradient layers, nudged by scroll ----------
-           One passive scroll listener, rAF-throttled, writing a single CSS
-           custom property per visible section. No canvas, no per-frame
-           painting. The travel is intentionally tiny (-14%..14% of a
-           background-size that is 240% tall) so it reads as depth rather
-           than as something sliding around. */
-        var layers = [];
-        Array.prototype.forEach.call(
-          document.querySelectorAll("section[data-fx]"),
-          function (host) {
-            var d = document.createElement("div");
-            d.className = "fx-layer";
-            d.setAttribute("aria-hidden", "true");
-            host.insertBefore(d, host.firstChild);
-            layers.push({ host: host, el: d, on: false });
-          }
-        );
-
-        var ticking = false;
-        function updateLayers() {
-          ticking = false;
-          var vh = window.innerHeight || 1;
-          for (var i = 0; i < layers.length; i++) {
-            var L = layers[i];
-            var r = L.host.getBoundingClientRect();
-            if (r.bottom < -200 || r.top > vh + 200) continue;
-            /* p: 0 when the section's top enters the bottom of the viewport,
-               1 when its bottom leaves the top. */
-            var p = (vh - r.top) / (vh + r.height);
-            p = p < 0 ? 0 : p > 1 ? 1 : p;
-            L.el.style.setProperty("--fx-shift", (p * 20 - 10).toFixed(2) + "%");
-            if (!L.on) {
-              L.on = true;
-              L.el.classList.add("on");
-            }
-          }
-        }
-        function onScroll() {
-          if (!ticking) {
-            ticking = true;
-            requestAnimationFrame(updateLayers);
-          }
-        }
-        window.addEventListener("scroll", onScroll, { passive: true });
-        window.addEventListener("resize", onScroll);
-        updateLayers();
 
         /* ================= DECODER =================
            Algorithm from scenes/rolling-reveal.js: every junk glyph is a
@@ -4174,7 +3930,9 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
             },
             { threshold: 0.6 }
           );
-          document.querySelectorAll("[data-count]").forEach(function (el) { cio.observe(el); });
+          document.querySelectorAll("[data-count]").forEach(function (el) {
+            if (!el.closest(".hero-media")) cio.observe(el);
+          });
         }
 
         /* ================= MOCKUP CHOREOGRAPHY =================
@@ -4252,20 +4010,6 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
           });
         }
 
-        /* ================= BLOOM behind hero metrics ================= */
-
-
-        var heroMedia = document.querySelector(".hero-media");
-        if (heroMedia) {
-          var b = document.createElement("div");
-          b.className = "fx-bloom";
-          b.setAttribute("aria-hidden", "true");
-          b.style.cssText +=
-            ";left:8%;top:14%;width:64%;height:64%;background:radial-gradient(circle," +
-            rgba(ACCENT, 0.22) + " 0%," + rgba(ACCENT2, 0.1) + " 45%,rgba(255,255,255,0) 70%);";
-          heroMedia.insertBefore(b, heroMedia.firstChild);
-          requestAnimationFrame(function () { b.classList.add("on"); });
-        }
       })();
     </script>
     <script>
@@ -4279,7 +4023,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
         var tabs = [].slice.call(document.querySelectorAll(".v2-tab"));
         var panels = tabs.map(function (t) { return document.getElementById(t.getAttribute("aria-controls")); });
         var section = document.getElementById("use-case");
-        var active = 0, phase = 1, timer = null, onScreen = false;
+        var active = 0, phase = 1, timer = null, onScreen = false, paused = false;
 
         function durs(p) {
           return (p.getAttribute("data-dur") || "4000,4000,4000").split(",").map(Number);
@@ -4289,6 +4033,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
           var d = durs(p)[ph - 1];
           [].forEach.call(p.querySelectorAll(".v2-steps li"), function (li) {
             var on = reduced ? true : Number(li.getAttribute("data-step")) === ph;
+            li.classList.toggle("current", Number(li.getAttribute("data-step")) === ph);
             li.classList.toggle("on", on);
             li.classList.remove("run");
             if (on && run) {
@@ -4297,18 +4042,31 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
               li.classList.add("run");
             }
           });
+          p.querySelectorAll("[data-phase-select]").forEach(function (button) {
+            var step = Number(button.getAttribute("data-phase-select"));
+            if (step === ph) button.setAttribute("aria-current", "step");
+            else button.removeAttribute("aria-current");
+            button.setAttribute("aria-label", p.querySelector('[data-step="' + step + '"]').textContent.trim());
+          });
+          panels.forEach(function (panel) {
+            var toggle = panel.querySelector("[data-phase-pause]");
+            if (!toggle) return;
+            toggle.textContent = paused ? "▶" : "Ⅱ";
+            toggle.setAttribute("aria-label", paused ? "Lanjutkan / Play" : "Jeda / Pause");
+            toggle.setAttribute("aria-pressed", String(paused));
+          });
         }
         function stop() { if (timer) { clearTimeout(timer); timer = null; } }
         function play(from) {
           stop();
           var p = panels[active];
-          if (reduced) { paint(p, 3, false); return; }
-          phase = from || 1;
+          phase = from || (reduced ? 3 : 1);
+          if (reduced) { paint(p, phase, false); return; }
           /* flip to 0 first so CSS animations bound to the phase restart */
           p.setAttribute("data-phase", "0");
           void p.offsetWidth;
-          paint(p, phase, onScreen);
-          if (!onScreen) return;
+          paint(p, phase, onScreen && !paused && !document.hidden);
+          if (!onScreen || paused || document.hidden) return;
           (function tick() {
             timer = setTimeout(function () {
               phase = phase % 3 + 1;
@@ -4332,7 +4090,7 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
           if (bar.scrollWidth > bar.clientWidth) {
             bar.scrollTo({ left: tabs[i].offsetLeft - 8, behavior: reduced ? "auto" : "smooth" });
           }
-          play(1);
+          play(reduced ? 3 : 1);
         }
         tabs.forEach(function (t, i) {
           t.addEventListener("click", function () { select(i, false); });
@@ -4346,12 +4104,32 @@ Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan
         });
         /* clicking a step jumps the animation to that step */
         panels.forEach(function (p) {
+          var controls = document.createElement("div");
+          controls.className = "v2-step-controls";
+          [1, 2, 3].forEach(function (step) {
+            var button = document.createElement("button");
+            button.type = "button";
+            button.textContent = String(step);
+            button.setAttribute("data-phase-select", String(step));
+            button.addEventListener("click", function () { paused = true; play(step); });
+            controls.appendChild(button);
+          });
+          if (!reduced) {
+            var pause = document.createElement("button");
+            pause.type = "button";
+            pause.setAttribute("data-phase-pause", "");
+            pause.addEventListener("click", function () { paused = !paused; play(phase); });
+            controls.appendChild(pause);
+          }
+          p.querySelector(".v2-steps").after(controls);
           [].forEach.call(p.querySelectorAll(".v2-steps li"), function (li) {
             li.querySelector("button").addEventListener("click", function () {
+              paused = false;
               play(Number(li.getAttribute("data-step")));
             });
           });
         });
+        section.classList.add("usecase-ready");
 
         /* Pause every v2 section's CSS loops while it is off screen. */
         var animSections = [].slice.call(document.querySelectorAll("[data-v2-anim]"));

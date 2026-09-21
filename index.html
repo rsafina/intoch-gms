@@ -366,17 +366,22 @@
         background: #bdb6ac;
         background-clip: padding-box;
       }
-      /* iPad-sized touch viewports need slightly more separation in the
-         reservation form. Keep the denser desktop layout unchanged. */
-      @media (min-width: 769px) and (max-width: 1180px) and (pointer: coarse) {
-        .res-guest-name-phone {
-          column-gap: 20px;
+      /* iPad-sized viewports need clearer separation in the reservation
+         form. Do not rely on pointer:coarse: iPadOS can report a fine pointer
+         when a mouse or trackpad is connected. */
+      @media (min-width: 769px) and (max-width: 1180px) {
+        .res-field-pair {
+          column-gap: 24px;
         }
         .res-duration-field {
-          margin-bottom: 20px;
+          margin-bottom: 24px;
         }
         .res-hours-row {
           margin-top: 0;
+        }
+        .res-hours-controls {
+          column-gap: 12px;
+          row-gap: 12px;
         }
       }
       /* Tag pills and suggestions */
@@ -8020,7 +8025,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
 
         <div id="res-new-guest" class="hidden">
           <button type="button" class="text-xs underline text-[color:var(--brand-ink)] mb-3" onclick="clearGuestSelection('res'); document.getElementById('res-guest-search').focus()">Search existing guest</button>
-          <div class="res-guest-name-phone grid grid-cols-2 gap-3 mb-3">
+          <div class="res-field-pair grid grid-cols-2 gap-3 mb-3">
             <div>
               <label class="block text-xs font-medium text-[#555] mb-1.5"
                 >Name *</label
@@ -8054,7 +8059,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
         </p>
         <fieldset id="res-details-fields" class="res-gated" disabled>
           <div class="divider my-4"></div>
-          <div class="grid grid-cols-2 gap-3 mb-3">
+          <div class="res-field-pair grid grid-cols-2 gap-3 mb-3">
             <div>
               <label class="block text-xs font-medium text-[#555] mb-1.5"
                 >Date *</label
@@ -8069,7 +8074,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-3 mb-3">
+          <div class="res-field-pair grid grid-cols-2 gap-3 mb-3">
             <div>
               <label class="block text-xs font-medium text-[#555] mb-1.5"
                 >Pax *</label
@@ -8117,7 +8122,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
           <label class="res-duration-field block text-xs mb-3">Expected duration if no end time (minutes)<input id="res-duration" onchange="refreshResTableOccupancy()" type="number" min="15" max="1440" step="1" value="180" class="form-input mt-1" /></label>
           <!-- End time overrides the expected duration for this reservation. -->
           <div id="res-endtime-wrap" class="res-hours-row mb-4 -mt-2">
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="res-hours-controls flex flex-wrap items-center gap-2">
               <span class="text-xs font-semibold text-[color:var(--accent-strong)] uppercase tracking-wide mr-1">Reservation hours</span>
               <span class="text-sm text-[#555]">from</span>
               <input id="res-vip-from" type="time" class="form-input" style="width:auto" oninput="syncVipFromTime(); refreshResTableOccupancy()" onchange="syncVipFromTime(); refreshResTableOccupancy()" />
@@ -8127,7 +8132,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             </div>
             <p id="res-vip-conflict" class="hidden text-xs text-red-500 mt-1.5"></p>
           </div>
-          <div class="grid grid-cols-2 gap-3 mb-3">
+          <div class="res-field-pair grid grid-cols-2 gap-3 mb-3">
             <div>
               <label class="block text-xs font-medium text-[#555] mb-1.5"
                 >Occasion</label
@@ -8218,7 +8223,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             Optional details for the new guest. Can be filled in later from the
             guest profile.
           </p>
-          <div class="grid grid-cols-2 gap-3 mb-4">
+          <div class="res-field-pair grid grid-cols-2 gap-3 mb-4">
             <div>
               <label class="block text-xs font-medium text-[#555] mb-1.5"
                 >Gender</label
