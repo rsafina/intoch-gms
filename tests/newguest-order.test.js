@@ -41,6 +41,17 @@ console.log("\nField order");
 ok("name comes before phone", before("res-name", "res-new-guest-phone"));
 ok("phone comes before the date", before("res-new-guest-phone", "res-date"));
 ok("date, time, pax and area stay together", before("res-date", "res-time") && before("res-time", "res-pax"));
+
+console.log("\nTablet reservation spacing");
+ok(
+  "tablet rule does not depend on the active pointer device",
+  /@media \(min-width: 769px\) and \(max-width: 1180px\)/.test(html) &&
+    !/@media[^\{]*pointer:\s*coarse[^\{]*\{[\s\S]*?\.res-field-pair/.test(html),
+);
+ok("name and phone use the tablet field-pair gutter", el("res-name")?.closest(".res-field-pair") === el("res-new-guest-phone")?.closest(".res-field-pair"));
+ok("date and time use the tablet field-pair gutter", el("res-date")?.closest(".res-field-pair") === el("res-time")?.closest(".res-field-pair"));
+ok("reservation hours use the tablet spacing hook", el("res-vip-from")?.closest(".res-hours-controls") === el("res-end-time")?.closest(".res-hours-controls"));
+
 ok("gender is below the booking details", before("res-pax", "res-gender"));
 ok("company is below the booking details", before("res-pax", "res-company"));
 

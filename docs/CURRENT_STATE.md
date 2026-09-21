@@ -110,6 +110,55 @@ its former working-diff list is no longer an outstanding task.
 
 ## Implemented in current code
 
+Landing phone use-case demos (2026-09-21; local, not deployed): at widths up to
+560px the device stage comes first, followed by a single animated step caption
+with stable height, numbered step buttons and pause/play. Manual numbered
+selection pauses the sequence; reduced motion supports manual navigation without
+autoplay. Tablet/desktop retain all steps; no-JavaScript fallback keeps the full
+list. Phone mockups overlap in a bounded stage instead of extending vertically.
+Verified all four panels in Chrome at 390/768/1440px with no horizontal overflow;
+phone panels measured 518px (602px with the deposit note). Step heights stayed
+equal; pause held phase 2 and resume advanced to phase 3. Reduced-motion manual
+selection worked. Inline syntax, stylesheet parsing and diff checks passed.
+No deployment performed.
+
+
+Landing palette exploration (2026-09-21; local, not deployed): supersedes the
+earlier all-white section request. Hero stays white; problem, additional features
+and contact sections use warm linen #F7F0E6; features and how-it-works use pale
+blue #EDF3FB, alternating with white sections. Actions use logo blue #3C56A6;
+contact panel/footer use navy #20345D instead of plum. Softer sand/sky fills,
+slate body text and darker blue heading accents complete the palette. Section
+fills are defined together; removed obsolete seam overlay CSS/classes.
+Scatter-only hero animation remains. Headless Chrome desktop (1440px) and phone
+(390px) captures confirmed section colours, visible pills and no horizontal
+overflow; reduced motion remains static. CSS parsing and diff checks passed.
+No deployment or generated configuration changes.
+
+
+Landing hero entrance (2026-09-21; local, not deployed): the two back photos scatter out from behind the stationary main photo.
+The initial drop and rebound were removed at the user?s request. Four metric pills appear in sequence after settling, with final
+numbers immediately readable. Entrance runs once when the hero enters view and
+waits briefly for image decoding; reduced motion and no-JavaScript keep the final
+composition visible. The white canvas is preserved. Verification: all four inline
+scripts passed `node --check`, jsdom parsed CSS, and `git diff --check` passed.
+Headless Chrome at 1440px and true 390px emulation confirmed visible final pills,
+no horizontal overflow, and white canvas; inspected desktop and phone screenshots.
+Reduced-motion styles confirmed no animations and full opacity. No deployment.
+
+
+Landing background cleanup (2026-09-21; local, not deployed): `landing.html` now
+uses one explicit white canvas, including its loading overlay. Removed the
+JavaScript-injected hero bloom, broad coloured hero photo/badge shadows, unused
+section gradient CSS/DOM creation/scroll listeners, obsolete background tokens
+and duplicate section fills. Existing local landing edits were preserved.
+Verification: four inline scripts passed `node --check`, stylesheet parsed in
+jsdom, and `git diff --check` passed. Headless Chrome desktop and narrow captures
+sampled RGB 255/255/255 in blank canvas areas. Narrow Chrome capture was clipped
+by its minimum viewport width, so it does not establish phone layout correctness.
+In-app browser was unavailable (`sandboxPolicy` missing). No deployment performed.
+
+
 Settings navigation redesign (local, 2026-09-20; not deployed): Settings now expands
 into Reservations, Deposits & Payments, Guest Spending, Membership & Rewards,
 WhatsApp Messages, Branding and Staff & Access, with category-specific content tabs.
@@ -130,11 +179,12 @@ screenshots used a local synthetic fixture with no backend. In-app browser start
 test failures (role options, notification source assertion, management page widths) were
 reproduced against HEAD; no full-suite or live Supabase verification was performed.
 
-Reservation modal tablet spacing (local, not deployed): iPad-sized touch viewports now use
-a wider gutter between the new-guest name and phone fields and more vertical space between
-Expected Duration and Reservation Hours. Desktop and phone spacing remain unchanged. The
-focused new-guest form test passes; automated browser visual verification was unavailable in
-the implementation session, so confirm on an iPad Air before deployment.
+Reservation modal tablet spacing (local, not deployed): iPad-sized viewports now use wider
+gutters across all paired reservation fields, more vertical space between Expected Duration
+and Reservation Hours, and more space within the hours row. The breakpoint deliberately does
+not depend on pointer type because iPadOS may expose a fine pointer when a mouse or trackpad is
+connected. Large desktop and phone spacing remain unchanged. Confirm on an iPad Air before
+deployment.
 
 Dashboard large-party deposit choice (local, not deployed): New Reservation now reveals the
 existing simple-versus-detailed invoice-format choice when pax exceeds the configured regular

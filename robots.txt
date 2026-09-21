@@ -1,0 +1,9 @@
+# Tells search engines what they may read. "Allow: /" is the same as having
+# no robots.txt at all; the only thing this file adds is the sitemap address.
+# NOTE: this file is served on every host that deploys this repo (intoch.app,
+# dashboard, reserve, client domains), so never add a Disallow here without
+# checking it against all of them.
+User-agent: *
+Allow: /
+
+Sitemap: https://intoch.app/sitemap.xml
