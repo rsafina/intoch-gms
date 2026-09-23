@@ -27,6 +27,10 @@ and retains its management dashboard; Staff and Finance retain their existing ac
   Date buttons follow the full report's presentation. Visits mean arrival records;
   diners/pax means the number of people served. The per-visit average is displayed
   as whole rupiah. Calculation notes are expandable, with coverage always visible.
+  Acquire and Retain show unique linked guests plus visits/pax for the selected period.
+  At Risk counts guests whose latest non-voided visit was 60–89 or 90+ calendar days
+  before today, independently of the selected period. Lean visit history is paginated;
+  no guest names or contact details are fetched for these aggregates.
 - Campaign returns are an explicitly illustrative example, excluded from totals.
   No actual campaign return amount is queried yet. Email/WhatsApp campaigns are
   described as an optional service; campaign management is hidden.

@@ -80,6 +80,35 @@ function demoMetrics(visits, priorGuestIds) {
     missing:rows.length-recorded.length, total, average:recorded.length ? total/recorded.length : null,
     returning, fresh:total-returning-unlinked, unlinked };
 }
+function demoGuestSegments(visits, history, from, today) {
+  const prior = new Set(), latest = new Map();
+  for (const row of history) {
+    if (!row.guest_id || row.voided_at || row.visit_date > today) continue;
+    if (row.visit_date < from) prior.add(row.guest_id);
+    if (!latest.has(row.guest_id) || row.visit_date > latest.get(row.guest_id)) latest.set(row.guest_id,row.visit_date);
+  }
+  const acquire={ids:new Set(),visits:0,pax:0}, retain={ids:new Set(),visits:0,pax:0};
+  for (const row of visits) {
+    if (!row.guest_id || row.voided_at) continue;
+    const group=prior.has(row.guest_id) ? retain : acquire;
+    group.ids.add(row.guest_id); group.visits++; group.pax+=Number(row.pax||0);
+  }
+  // Calendar-day arithmetic avoids local daylight-saving offsets.
+  const dayNumber=value=>{const [year,month,day]=value.split('-').map(Number);return Date.UTC(year,month-1,day)/86400000;};
+  let risk60=0,risk90=0;
+  for (const last of latest.values()) {
+    const days=dayNumber(today)-dayNumber(last);
+    if(days>=90)risk90++; else if(days>=60)risk60++;
+  }
+  return {prior,acquire,retain,risk60,risk90};
+}
+function renderDemoGuestSegments(groups,today) {
+  const cohort=(title,group,description,tone)=>`<article class="demo-segment demo-segment--${tone}"><h3>${title}</h3><strong>${group.ids.size}</strong><p class="demo-segment-unit">${demoText('unique guests','tamu unik')}</p><p class="demo-segment-description">${description}</p><dl><div><dt>${demoText('Visits','Kunjungan')}</dt><dd>${group.visits}</dd></div><div><dt>${demoText('Diners (pax)','Jumlah orang (pax)')}</dt><dd>${group.pax}</dd></div></dl></article>`;
+  return `<section class="demo-segments"><h2>${demoText('Know your guests','Kenali tamu Anda')}</h2><p class="demo-note">${demoText('Acquire and Retain count each guest profile once in the selected period.','Acquire dan Retain menghitung setiap profil tamu sekali dalam periode yang dipilih.')}</p><div class="demo-segment-grid">`+
+    cohort('Acquire',groups.acquire,demoText('First visit in this period.','Kunjungan pertama pada periode ini.'),'brand')+
+    cohort('Retain',groups.retain,demoText('Visited in this period and had visited before it.','Datang pada periode ini dan pernah berkunjung sebelumnya.'),'accent')+
+    `<article class="demo-segment demo-segment--risk"><h3>At Risk</h3><strong>${groups.risk60+groups.risk90}</strong><p class="demo-segment-unit">${demoText('guests not back in 60+ days','tamu belum kembali selama 60+ hari')}</p><p class="demo-segment-description">${demoText('Based on each guest’s latest visit, as of','Berdasarkan kunjungan terakhir setiap tamu, per')} ${fmt.date(today)}.</p><dl><div><dt>${demoText('60–89 days','60–89 hari')}</dt><dd>${groups.risk60}</dd></div><div><dt>${demoText('90+ days','90+ hari')}</dt><dd>${groups.risk90}</dd></div></dl><p class="demo-note">${demoText('All visit history, independent of the selected period.','Seluruh riwayat kunjungan, tidak mengikuti periode yang dipilih.')}</p></article></div></section>`;
+}
 async function loadDemoReports() {
   if (!demoEnabled() || !hasAccess('reports')) return;
   const root = document.getElementById('demo-report-content');
@@ -92,10 +121,11 @@ async function loadDemoReports() {
   try {
     const visits = await odRows('visits','id,guest_id,pax,spend_amount,voided_at',query=>query.is('voided_at',null).gte('visit_date',range.start).lte('visit_date',range.end));
     if (!valid()) return;
-    const ids = [...new Set(visits.map(row=>row.guest_id).filter(Boolean))];
-    const prior = await odByIds('visits','id,guest_id','guest_id',ids,query=>query.is('voided_at',null).lt('visit_date',range.start));
+    const today=odRange('today').end;
+    const history = await odRows('visits','id,guest_id,visit_date',query=>query.is('voided_at',null).lte('visit_date',today));
     if (!valid()) return;
-    const stats = demoMetrics(visits,new Set(prior.map(row=>row.guest_id)));
+    const groups=demoGuestSegments(visits,history,range.start,today);
+    const stats = demoMetrics(visits,groups.prior);
     const money = value => value==null ? '—' : fmt.currency(Math.round(value));
     root.innerHTML = `<div class="demo-metrics">`+
       demoCard(demoText('Visits','Kunjungan'),stats.visits,demoText('Each arrival counts, including repeat visits.','Setiap kedatangan dihitung, termasuk kunjungan ulang.'),'brand','visit')+
@@ -107,7 +137,8 @@ async function loadDemoReports() {
       `</div><div class="demo-report-coverage"><span>${stats.recorded}/${stats.visits} ${demoText('visits have spending recorded','kunjungan memiliki pengeluaran tercatat')}</span>`+
       (stats.missingPax ? `<span>${stats.missingPax} ${demoText('visits have no diner count','kunjungan belum mencatat jumlah orang')}</span>` : '')+
       `<details class="demo-method"><summary>${demoText('How this is calculated','Cara perhitungan')}</summary><p>${demoText('Missing spending is excluded; recorded zero is included. Deposits are not added again. Averages are rounded to the nearest rupiah. Repeat visits by a new guest in this period stay in the new-guest group.','Pengeluaran kosong tidak dihitung; nilai nol tetap dihitung. Deposit tidak ditambahkan lagi. Rata-rata dibulatkan ke rupiah terdekat. Kunjungan ulang tamu baru pada periode ini tetap masuk kelompok tamu baru.')}</p></details></div>`+
-      (stats.unlinked ? `<p class="demo-note">${demoText('Revenue without a linked guest','Pendapatan tanpa data tamu')}: ${money(stats.unlinked)}</p>` : '');
+      (stats.unlinked ? `<p class="demo-note">${demoText('Revenue without a linked guest','Pendapatan tanpa data tamu')}: ${money(stats.unlinked)}</p>` : '')+
+      renderDemoGuestSegments(groups,today);
   } catch (error) {
     if (valid()) root.innerHTML = `<p role="alert">${demoText('Report unavailable. Please retry.','Laporan tidak tersedia. Silakan coba lagi.')}</p><button class="btn-ghost" onclick="loadDemoReports()">${demoText('Retry','Coba lagi')}</button>`;
   }

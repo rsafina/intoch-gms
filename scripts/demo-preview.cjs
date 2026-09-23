@@ -13,7 +13,7 @@ for(const el of document.querySelectorAll('[id*="loading"], [id*="login"]'))el.s
 var CURRENT_LANG='${process.argv.includes('--id') ? 'id' : 'en'}',currentPage='reports',TODAY='2026-09-23';
 var hasAccess=()=>true,odIdentity=()=> 'fixture',odRange=()=>({start:'2026-09-01',end:TODAY});
 var fmt={currency:n=>'Rp '+Math.round(n).toLocaleString('id-ID'),date:s=>s};
-var odRows=async()=>Array.from({length:36},(_,i)=>({id:i,guest_id:i<20?'old':'new',pax:3,spend_amount:i<3?null:350000}));
+var odRows=async(table,columns)=>columns==='id,guest_id,visit_date' ? [...Array.from({length:12},(_,i)=>({id:i,guest_id:'old'+i,visit_date:'2026-08-01'})),...Array.from({length:9},(_,i)=>({id:20+i,guest_id:'risk'+i,visit_date:i<5?'2026-07-15':'2026-05-01'}))] : Array.from({length:36},(_,i)=>({id:i,guest_id:i<20?'old'+(i%12):'new'+i,pax:3,spend_amount:i<3?null:350000}));
 var odByIds=async()=>[{guest_id:'old'}];
 document.querySelectorAll('.page-section').forEach(el=>el.classList.remove('active'));
 document.getElementById('page-reports').classList.add('active');
@@ -23,7 +23,7 @@ initDemoPresentation();loadDemoReports();
 `;
 html=html.replace('</body>','<script>'+fs.readFileSync(path.join(root,'js/demo.js'),'utf8')+'</script><script>'+fixture+'</script></body>');
 const output=path.join(os.tmpdir(),'intoch-demo-preview.html');fs.writeFileSync(output,html);console.log(output);
-fs.writeFileSync(path.join(os.tmpdir(),'intoch-demo-phone.html'),'<html><body style="margin:0"><iframe style="border:0;width:390px;height:2100px" src="intoch-demo-preview.html"></iframe></body></html>');
+fs.writeFileSync(path.join(os.tmpdir(),'intoch-demo-phone.html'),'<html><body style="margin:0"><iframe style="border:0;width:390px;height:3500px" src="intoch-demo-preview.html"></iframe></body></html>');
 const dashboardFixture=`
 document.getElementById('page-reports').classList.remove('active');
 document.getElementById('page-dashboard').classList.add('active');

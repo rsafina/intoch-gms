@@ -43,8 +43,25 @@
 .demo-campaign-example > strong { display:block; margin:10px 0; color:var(--brand-ink); font-size:26px; letter-spacing:-.03em; }
 .demo-channel-tags { display:flex; gap:8px; margin-top:16px; }
 .demo-channel-tags span { font-size:11px; padding:5px 10px; border:1px solid var(--brand-tint); border-radius:20px; color:var(--brand-ink); }
+.demo-segments { margin:30px 0; color:var(--brand-ink); }
+.demo-segments > h2 { font-size:22px; font-weight:600; margin-bottom:6px; }
+.demo-segment-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; margin-top:18px; }
+.demo-segment { --segment-color:var(--brand-ink); padding:26px; background:white; border:1px solid var(--brand-tint); border-top:4px solid var(--segment-color); border-radius:18px; box-shadow:0 4px 16px color-mix(in srgb,var(--brand-ink) 5%,transparent); }
+.demo-segment--accent { --segment-color:var(--accent); }
+.demo-segment--risk { --segment-color:#C0392B; }
+.demo-segment h3 { font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--segment-color); }
+.demo-segment > strong { display:block; font-size:52px; font-weight:650; line-height:1.15; margin:22px 0 4px; color:var(--segment-color); }
+.demo-segment--accent h3,.demo-segment--accent > strong { color:var(--accent-strong); }
+.demo-segment-unit { font-size:14px; }
+.demo-segment-description { font-size:12px; line-height:1.7; min-height:42px; margin:12px 0 20px; }
+.demo-segment dl { margin-top:14px; }
+.demo-segment dl > div { display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-top:1px solid var(--brand-tint); font-size:12px; }
+.demo-segment dd { font-weight:600; }
+.demo-segment > .demo-note { margin-top:12px; opacity:.75; }
 .demo-booking { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; padding:12px 0; border-top:1px solid var(--brand-tint); }
 @media(max-width:640px) {
+  .demo-segment-grid { grid-template-columns:1fr; gap:14px; }
+  .demo-segment-description { min-height:0; }
   .demo-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
   .demo-metric { padding:18px; }
   .demo-metric:nth-child(n+3) { grid-column:1 / -1; }

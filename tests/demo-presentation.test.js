@@ -33,12 +33,12 @@ const source = fs.readFileSync(path.join(root,'js/demo.js'),'utf8');
     hasAccess:()=>true,currentPage:'reports',odIdentity:()=> 'session1',
     odRange:()=>({start:'2026-09-01',end:'2026-09-23'}),
     fmt:{currency:value=>`Rp ${value}`,date:value=>value},
-    odRows:async()=>[{guest_id:'old',pax:2,spend_amount:200}],
+    odRows:async(table,columns)=>columns==='id,guest_id,visit_date' ? [{guest_id:'old',visit_date:'2026-08-01'}] : [{guest_id:'old',pax:2,spend_amount:200}],
     odByIds:async()=>[{guest_id:'old'}]
   });
   await win.loadDemoReports();
   assert.match(win.document.getElementById('demo-report-content').textContent,/Rp 200/);
-  win.odRows=async()=>[{guest_id:'old',pax:4,spend_amount:200},{guest_id:'old',pax:2,spend_amount:201},{guest_id:'old',pax:1,spend_amount:201}];
+  win.odRows=async(table,columns)=>columns==='id,guest_id,visit_date' ? [{guest_id:'old',visit_date:'2026-08-01'}] : [{guest_id:'old',pax:4,spend_amount:200},{guest_id:'old',pax:2,spend_amount:201},{guest_id:'old',pax:1,spend_amount:201}];
   win.CURRENT_LANG='id';
   let selectedPeriod;
   win.odRange=period=>{selectedPeriod=period;return {start:'2026-09-23',end:'2026-09-23'};};
@@ -51,6 +51,24 @@ const source = fs.readFileSync(path.join(root,'js/demo.js'),'utf8');
   assert.equal(cards[0].querySelector('strong').textContent,'3');
   assert.equal(cards[1].querySelector('strong').textContent,'7');
   assert.equal(cards[3].querySelector('strong').textContent,'Rp 201');
+  assert.equal(win.document.querySelectorAll('.demo-segment').length,3);
+  const segments=win.demoGuestSegments([
+    {guest_id:'new',pax:2},{guest_id:'new',pax:3},{guest_id:'old',pax:4},
+    {guest_id:null,pax:9},{guest_id:'void',pax:4,voided_at:'2026-09-01'}
+  ],[
+    {guest_id:'old',visit_date:'2026-08-01'},
+    {guest_id:'new',visit_date:'2026-09-02'},
+    {guest_id:'sixty',visit_date:'2026-07-25'},
+    {guest_id:'eightyNine',visit_date:'2026-06-26'},
+    {guest_id:'ninety',visit_date:'2026-06-25'},
+    {guest_id:'recent',visit_date:'2026-06-01'},
+    {guest_id:'recent',visit_date:'2026-07-26'},
+    {guest_id:'void',visit_date:'2026-06-01',voided_at:'2026-06-02'},
+    {guest_id:'future',visit_date:'2026-10-01'}
+  ],'2026-09-01','2026-09-23');
+  assert.equal(segments.acquire.ids.size,1);assert.equal(segments.acquire.visits,2);assert.equal(segments.acquire.pax,5);
+  assert.equal(segments.retain.ids.size,1);assert.equal(segments.retain.pax,4);
+  assert.equal(segments.risk60,2);assert.equal(segments.risk90,1);
   win.CURRENT_LANG='en';
   win.odRows=async()=>{throw Error('RLS/network failure');};
   await win.loadDemoReports();

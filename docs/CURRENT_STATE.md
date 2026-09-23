@@ -1,5 +1,14 @@
 # Current state and operational handoff
 
+Demo guest segments (2026-09-23; local): added simplified Acquire, Retain and At Risk
+cards below report totals, without campaign/export controls. Acquire/Retain count unique
+linked guests in the selected period, with their visits and pax; At Risk uses the latest
+non-voided visit through today and shows 60–89 and 90+ calendar-day groups independently
+of the period. A paginated lean history query now supplies both revenue cohorts and risk.
+Targeted tests passed for unique counts, repeat visits, voided/future exclusion, latest
+visit and exact 60/89/90-day boundaries. Syntax/diff checks passed. Desktop and true 390px
+mobile Indonesian fixtures were visually checked in Chrome. No push or deployment.
+
 Demo report presentation (2026-09-23; local): replaced the period dropdown with
 Today / Last 7 days / This month buttons; added coloured card accents, icons and
 a separate illustrative marketing panel. Visits and diners (pax) are explicitly
