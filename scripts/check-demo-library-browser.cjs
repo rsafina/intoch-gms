@@ -79,6 +79,23 @@ async function main() {
     await delay(100);
   }
   assert.equal(await evaluate('document.getElementById("demo-root").dataset.beat'), '3', 'live reduced-motion change settles scene');
+  // Check a real pointer in motion, not only the step timer or a reduced-motion image.
+  await command('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+  await command('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
+  await navigate('/demo/reservation');
+  await delay(400);
+  const startPointer = await evaluate('document.querySelector(".demo-pointer").getBoundingClientRect().x');
+  await delay(500);
+  assert.notEqual(await evaluate('document.querySelector(".demo-pointer").getBoundingClientRect().x'), startPointer, 'pointer travels smoothly toward a real control');
+  await capture('reservation-cursor-moving-1440');
+  await evaluate('document.getElementById("pause").click()');
+  const pausedPointer = await evaluate('document.querySelector(".demo-pointer").getAnimations()[0].currentTime');
+  await delay(300);
+  assert.equal(await evaluate('document.querySelector(".demo-pointer").getAnimations()[0].currentTime'), pausedPointer, 'pause freezes the cursor mid-path');
+  await evaluate('document.getElementById("pause").click()');
+  await delay(300);
+  assert.ok(await evaluate('document.querySelector(".demo-pointer").getAnimations()[0].currentTime') > pausedPointer, 'resume continues cursor progress');
+  await command('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
   await command('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
   await command('Page.navigate', { url: base + '/landing' });
   for (let attempt = 0; attempt < 80; attempt++) { if (await evaluate('location.pathname === "/landing" && document.readyState === "complete" && !!document.getElementById("uc-t1")')) break; await delay(100); }

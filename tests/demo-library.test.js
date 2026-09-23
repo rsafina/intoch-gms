@@ -8,6 +8,12 @@ const html = read('demo-library.html');
 function fixture(slug, reduced = false) {
   const dom = new JSDOM(html, { url: `https://demo.invalid/demo/${slug}`, runScripts: 'outside-only', pretendToBeVisual: true });
   const window = dom.window;
+  const motionAnimations = [];
+  window.HTMLElement.prototype.animate = function () {
+    const animation = { element: this, playState: 'running', pause() { this.playState = 'paused'; }, play() { this.playState = 'running'; }, cancel() { this.playState = 'idle'; if (this.oncancel) this.oncancel(); } };
+    motionAnimations.push(animation);
+    return animation;
+  };
   const timers = new Map(); let id = 0; let motionListener; let observer;
   const media = { matches: reduced, addEventListener: (_, callback) => { motionListener = callback; } };
   window.matchMedia = () => media;
@@ -20,7 +26,7 @@ function fixture(slug, reduced = false) {
   window.eval(read('js/demo-library-data.js'));
   window.eval(read('js/demo-library.js'));
   const document = window.document;
-  return { window, document, timers,
+  return { window, document, timers, motionAnimations,
     click(selector) { document.querySelector(selector).click(); },
     tick() { const next = timers.entries().next().value; assert.ok(next, 'a single timer is pending'); timers.delete(next[0]); next[1](); assert.ok(timers.size <= 1); },
     motion(value) { media.matches = value; motionListener(); },
@@ -60,14 +66,35 @@ for (const slug of slugs) {
 }
 const risk = fixture('reactivation');
 risk.click('.demo-steps [data-step="1"]');
+const persistentGuest = risk.document.querySelector('[data-key="DL"]');
 assert.equal(risk.document.querySelectorAll('.guest-rows .app-row').length, 6);
 risk.tick(); risk.tick();
+assert.equal(risk.document.querySelector('[data-key="DL"]'), persistentGuest, 'retained guests update in place without remounting');
 assert.equal(risk.document.querySelectorAll('.guest-rows .app-row').length, 2);
 assert.match(risk.document.getElementById('scene').textContent, /Dewi Lestari/);
 assert.doesNotMatch(risk.document.getElementById('scene').textContent, /Sari Wulandari/);
 risk.click('.demo-steps [data-step="1"]');
 assert.equal(risk.document.querySelectorAll('.guest-rows .app-row').length, 6, 'reselection resets scene');
 risk.close();
+const paired = fixture('reservation');
+assert.ok(paired.document.querySelector('.companion-device.phone'), 'reservation has a separate guest phone');
+assert.match(paired.document.getElementById('scene').textContent, /Booking akan muncul/);
+const phoneFrame = paired.document.getElementById('companion-screen');
+const fieldNode = paired.document.querySelector('.companion .pf-in');
+paired.tick();
+assert.equal(paired.document.querySelector('.companion .pf-in'), fieldNode, 'form fields persist across beats');
+paired.click('#pause');
+assert.ok(paired.motionAnimations.filter(animation => animation.playState !== 'idle').every(animation => animation.playState === 'paused'), 'pause freezes active UI and cursor animations');
+paired.click('#pause');
+assert.ok(paired.motionAnimations.filter(animation => animation.playState !== 'idle').every(animation => animation.playState === 'running'), 'resume continues active animations');
+paired.tick(); paired.tick();
+assert.equal(paired.document.getElementById('companion-screen'), phoneFrame);
+assert.match(paired.document.getElementById('scene').textContent, /Reservasi online baru/);
+assert.match(phoneFrame.textContent, /Reservasi diterima/);
+paired.motion(true);
+assert.ok(paired.document.querySelector('.story-stage.reduced-motion'));
+assert.ok(paired.motionAnimations.every(animation => animation.playState === 'idle'), 'reduced motion cancels all active animation effects');
+paired.close();
 const fallback = fixture('does-not-exist');
 assert.match(fallback.document.body.textContent, /Demo ini belum tersedia/);
 assert.equal(fallback.document.querySelectorAll('.demo-flow-link').length, 9);
