@@ -9,6 +9,8 @@
 .demo-panel h2 { font-size:20px; font-weight:600; margin:0 0 8px; }
 .demo-panel p { font-size:13px; line-height:1.6; margin:6px 0; }
 .demo-panel summary { cursor:pointer; font-weight:600; }
+.demo-guide-steps { list-style:decimal outside; padding-left:22px; margin:12px 0; font-size:13px; line-height:1.6; }
+.demo-guide-steps li + li { margin-top:6px; }
 .demo-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
 .demo-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin:20px 0; }
 .demo-metric { padding:20px; border:1px solid var(--brand-tint); border-radius:14px; background:white; min-width:0; }

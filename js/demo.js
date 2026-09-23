@@ -20,8 +20,13 @@ function initDemoPresentation() {
   guide.open = sessionStorage.getItem('demo-guide-closed') !== 'yes';
   guide.innerHTML = `<summary>${demoText('Try Intoch in five minutes','Coba Intoch dalam lima menit')}</summary>
     <p>${demoText('Your restaurant, your guest relationships. Each restaurant uses its own guest database.','Restoran Anda, hubungan dengan tamu Anda. Setiap restoran menggunakan database tamunya sendiri.')}</p>
-    <p>${demoText('1. Add a quick walk-in below. 2. Make a reservation or try the online form. 3. Open a guest profile to explore deposits and detailed invoices. 4. View Reports.','1. Tambahkan walk-in di bawah. 2. Buat reservasi atau coba formulir online. 3. Buka profil tamu untuk melihat deposit dan invoice terperinci. 4. Buka Laporan.')}</p>
-    <p>${demoText('Use fictional guest details in this demo. Close this guide for a live presentation.','Gunakan data tamu fiktif dalam demo ini. Tutup panduan saat presentasi langsung.')}</p>
+    <ol class="demo-guide-steps">
+      <li>${demoText('Add a quick walk-in below.','Tambahkan walk-in di bawah.')}</li>
+      <li>${demoText('Make a reservation or try the online form.','Buat reservasi atau coba formulir online.')}</li>
+      <li>${demoText('Open a guest profile to explore deposits and detailed invoices.','Buka profil tamu untuk melihat deposit dan invoice terperinci.')}</li>
+      <li>${demoText('View Reports.','Buka Laporan.')}</li>
+    </ol>
+    <p>${demoText('Use fictional guest details in this demo.','Gunakan data tamu fiktif dalam demo ini.')}</p>
     <div class="demo-actions"><a href="reserve.html" target="_blank" rel="noopener" class="btn-ghost">${demoText('Try the online reservation form','Coba formulir reservasi online')}</a></div>`;
   guide.addEventListener('toggle', () => sessionStorage.setItem('demo-guide-closed', guide.open ? 'no' : 'yes'));
   dashboard.children[0].after(guide);

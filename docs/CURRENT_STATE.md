@@ -1,5 +1,9 @@
 # Current state and operational handoff
 
+Demo guide readability (2026-09-23; local): the four instructions now use a spaced
+numbered list in English and Indonesian. Removed the sentence about closing the
+guide during presentations. Bumped demo asset versions; no workflow changes.
+
 ## Simplified demo branch (2026-09-23; local, not deployed)
 
 Created `demo` from the current clean `release` checkout. Added a small presentation
