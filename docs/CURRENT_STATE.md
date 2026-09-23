@@ -1,5 +1,27 @@
 # Current state and operational handoff
 
+## Simplified demo branch (2026-09-23; local, not deployed)
+
+Created `demo` from the current clean `release` checkout. Added a small presentation
+layer retaining the current operational screens: Admin front-desk dashboard, collapsible
+guide and online form link, guest-profile reservation/deposit/invoice shortcuts, and
+six simplified report metrics. Advanced navigation and dashboard loyalty widgets are
+hidden. Campaign return is an explicitly labeled example, not live attribution.
+Deposits remain reservation-linked; a reusable guest wallet needs business clarification.
+See [demo presentation](DEMO_PRESENTATION.md) for metric definitions and provisioning.
+No Auth/SQL/role changes, live writes, generated configuration edits, push or deployment.
+The separate demo host must use a dedicated fictional-data Supabase project.
+
+Verification: existing full runner passed 89 suites; the added demo presentation suite
+passed separately (recorded zero/missing spending, revenue cohorts, voided exclusion,
+errors, role checks and stale-session protection). Syntax and diff checks passed.
+In-app browser startup failed with missing `sandboxPolicy`; headless Chrome verified
+the report at desktop and true 390px iframe width, plus dashboard and guest profile
+at 390px, using fictional fixtures with real markup/styles. Loading-sequence and
+settings-navigation tests also passed after the final hooks; the former emits its
+known jsdom unsupported-reload diagnostic. Live end-to-end testing remains a deployment
+obligation.
+
 Audited 2026-09-14. This file replaces conversation history as the task handoff.
 Implementation claims were checked against code, migrations, Git and existing tests/docs.
 No live Supabase/Cloudflare inspection, migration, deployment or push was performed for this

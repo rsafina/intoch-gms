@@ -1,0 +1,50 @@
+// Local visual fixture: real markup/styles, fictional data, no backend or live writes.
+const fs=require('fs'),path=require('path'),os=require('os');
+const {pathToFileURL}=require('url');
+const root=path.resolve(__dirname,'..');
+let html=fs.readFileSync(path.join(root,'index.html'),'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
+html=html.replace('<head>','<head><base href="'+pathToFileURL(root+path.sep).href+'"><script src="https://cdn.tailwindcss.com"></script>');
+html=html.replace('</head>',`<style>[data-page-loading] body{visibility:visible!important}#page-loading-overlay,#login-screen{display:none!important}#app-shell{display:flex!important}.page-section{display:none!important}.page-section.active{display:block!important}</style></head>`);
+const fixture=`
+document.documentElement.removeAttribute('data-page-loading');
+document.getElementById('app-main').classList.remove('hidden');
+document.getElementById('app-sidebar').classList.remove('hidden');
+for(const el of document.querySelectorAll('[id*="loading"], [id*="login"]'))el.style.display='none';
+var CURRENT_LANG='en',currentPage='reports',TODAY='2026-09-23';
+var hasAccess=()=>true,odIdentity=()=> 'fixture',odRange=()=>({start:'2026-09-01',end:TODAY});
+var fmt={currency:n=>'Rp '+Math.round(n).toLocaleString('id-ID'),date:s=>s};
+var odRows=async()=>Array.from({length:36},(_,i)=>({id:i,guest_id:i<20?'old':'new',pax:3,spend_amount:i<3?null:350000}));
+var odByIds=async()=>[{guest_id:'old'}];
+document.querySelectorAll('.page-section').forEach(el=>el.classList.remove('active'));
+document.getElementById('page-reports').classList.add('active');
+document.querySelectorAll('[data-nav]').forEach(el=>el.classList.toggle('nav-active',el.dataset.nav==='reports'));
+document.getElementById('page-reports').closest('main')?.style.removeProperty('display');
+initDemoPresentation();loadDemoReports();
+`;
+html=html.replace('</body>','<script>'+fs.readFileSync(path.join(root,'js/demo.js'),'utf8')+'</script><script>'+fixture+'</script></body>');
+const output=path.join(os.tmpdir(),'intoch-demo-preview.html');fs.writeFileSync(output,html);console.log(output);
+fs.writeFileSync(path.join(os.tmpdir(),'intoch-demo-phone.html'),'<html><body style="margin:0"><iframe style="border:0;width:390px;height:1200px" src="intoch-demo-preview.html"></iframe></body></html>');
+const dashboardFixture=`
+document.getElementById('page-reports').classList.remove('active');
+document.getElementById('page-dashboard').classList.add('active');
+document.getElementById('dashboard-date-label').textContent='Wednesday, 23 September 2026';
+document.getElementById('dashboard-reservations-list').innerHTML='<p class="text-sm">19:00 · Maya · 4 pax · Reserved</p>';
+document.getElementById('dashboard-walkins-list').innerHTML='<p class="text-sm">18:30 · Alex · 2 pax · Arrived</p>';
+document.getElementById('dashboard-area-occupancy').innerHTML='<div class="stat-card"><h2>Main dining</h2><p>6 / 40 pax</p></div>';
+loadDemoTraffic();
+`;
+fs.writeFileSync(path.join(os.tmpdir(),'intoch-demo-dashboard.html'),html.replace('</body>','<script>'+dashboardFixture+'</script></body>'));
+const app=fs.readFileSync(path.join(root,'js/app.js'),'utf8');
+const profileFunction=app.slice(app.indexOf('async function viewGuestProfile('),app.indexOf('// Lets staff/managers edit a guest'));
+const profileFixture=`
+var memberBadgeMap={},t=s=>s,formatSpendingTierBadge=()=>'<span>High Spender</span>',escapeHtml=s=>String(s),financialTrackingSettings=()=>({spendingEnabled:true});
+fmt.pax=n=>n+' pax';
+var showModal=id=>document.getElementById(id).classList.remove('hidden');
+var fixtureGuest={id:'demo-guest',name:'Maya',phone:'Demo contact',created_at:'2026-08-01',food_allergy:'Peanuts',preference:'Quiet table'};
+var profileResponses=[{data:fixtureGuest},{data:[{id:'v1',visit_date:'2026-09-20',visit_type:'Reservation',pax:4,spend_amount:800000,areas:{name:'Main dining'}}]},{data:[{spend_amount:800000}]}];
+var supabaseQuery=async()=>profileResponses.shift();
+var db={from:()=>({select(){return this},eq(){return this},order(){return this},limit:async()=>({data:[{id:'r1',reservation_date:'2026-09-24',pax:20,status:'Waitlist'}]})})};
+viewGuestProfile('demo-guest');
+`;
+fs.writeFileSync(path.join(os.tmpdir(),'intoch-demo-profile.html'),html.replace('</body>','<script>'+profileFunction+profileFixture+'</script></body>'));
+if(process.argv.includes('--flows'))fs.writeFileSync(path.join(os.tmpdir(),'intoch-demo-phone.html'),'<html><body style="margin:0;display:flex;gap:20px"><iframe style="border:0;width:390px;height:1250px" src="intoch-demo-dashboard.html"></iframe><iframe style="border:0;width:390px;height:1250px" src="intoch-demo-profile.html"></iframe></body></html>');

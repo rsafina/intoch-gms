@@ -730,6 +730,7 @@ async function loginStaff(event) {
 }
 
 async function logoutStaff() {
+  if (typeof resetDemoPresentation === "function") resetDemoPresentation();
   if (typeof odReset === "function") odReset();
   stopStaffSessionMonitor();
   await db.auth.signOut({scope:'local'});
@@ -824,6 +825,7 @@ async function navigateTo(page, bootToken = null) {
   try {
     // "settings" resolves to the last-used (allowed) settings tab
     if (page === "settings") page = defaultSettingsTab();
+    if (typeof demoRoute === "function") page = demoRoute(page);
 
     // Role enforcement: redirect unauthorized access to dashboard
     if (!hasAccess(page)) {
@@ -832,7 +834,8 @@ async function navigateTo(page, bootToken = null) {
     }
 
     // Only Admin and Owner land on the read-only management overview.
-    const isAdminDashboard = page === "dashboard" && ["admin", "owner"].includes(currentStaffRole());
+    const isAdminDashboard = page === "dashboard" && ["admin", "owner"].includes(currentStaffRole()) &&
+      !(typeof demoEnabled === "function" && demoEnabled() && currentStaffRole() === "admin");
     if (typeof odInvalidate === "function") odInvalidate();
     // "staff-dashboard" lets Admin open the front-desk view; Manager uses
     // "dashboard" for that view directly. It is a separate nav entry so the
@@ -883,9 +886,12 @@ async function navigateTo(page, bootToken = null) {
     if (page === "walkins") pendingLoads.push(loadWalkIns());
     if (page === "areas") pendingLoads.push(renderAreas());
     if (page === "reports") {
-      pendingLoads.push(loadReports());
-      pendingLoads.push(loadOperationsReports());
-      pendingLoads.push(initBirthdayView());
+      if (typeof demoEnabled === "function" && demoEnabled()) pendingLoads.push(loadDemoReports());
+      else {
+        pendingLoads.push(loadReports());
+        pendingLoads.push(loadOperationsReports());
+        pendingLoads.push(initBirthdayView());
+      }
     }
     if (page === "prizes") pendingLoads.push(loadPrizeAdmin());
     // Invoice is a self-contained document generator: no data load, but the
@@ -913,7 +919,10 @@ async function navigateTo(page, bootToken = null) {
     if (page === "settings-staff") pendingLoads.push(loadStaffUsers());
     if (page === "membership") pendingLoads.push(loadMembership());
     if (page === "broadcast") pendingLoads.push(loadBroadcast());
-    if (page === "dashboard" && !isAdminDashboard) pendingLoads.push(loadDashboard());
+    if (page === "dashboard" && !isAdminDashboard) {
+      pendingLoads.push(loadDashboard());
+      setStaffDashboardDateLabel();
+    }
     if (isAdminDashboard) pendingLoads.push(loadOwnerDashboard());
     if (page === "reservation-outlook") pendingLoads.push(loadReservationOutlook());
     if (isStaffDashboardView) {
@@ -2917,7 +2926,8 @@ async function loadDashboard() {
     if (request !== dashboardLoadRequest || revision !== reservationDataRevision) return;
     updateDashboardReservationTabs();
     await loadDashboardReservations(dashboardReservationOffset, resData);
-    if (!finance) { loadDashboardPrizeRedemptions(); loadDashboardBirthdays(); }
+    if (typeof demoEnabled === "function" && demoEnabled()) await loadDemoTraffic();
+    else if (!finance) { loadDashboardPrizeRedemptions(); loadDashboardBirthdays(); }
   } catch (error) {
     console.error("Dashboard load failed", error);
     toast("Dashboard load failed", "error");
@@ -4725,7 +4735,7 @@ async function viewGuestProfile(guestId) {
                 .join("")}</div>`
             : ""
         }
-        <div class="mt-2 flex flex-wrap items-center gap-2">
+        <div class="mt-2 flex flex-wrap items-center gap-2" data-demo-advanced>
           ${formatSpendingTierBadge(guest.spending_tier)}
           ${guest.tier_source === "manual" ? '<span class="text-[11px] text-[#999]">Manual override</span>' : '<span class="text-[11px] text-[#999]">Auto-calculated</span>'}
         </div>
@@ -4798,6 +4808,7 @@ async function viewGuestProfile(guestId) {
     </div>
   `;
   showModal("modal-profile");
+  if (typeof demoEnabled === "function" && demoEnabled()) renderDemoGuestActions(guest);
 }
 
 // Lets staff/managers edit a guest's saved favorite menu / recent order

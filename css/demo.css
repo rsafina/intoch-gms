@@ -1,0 +1,27 @@
+/* Demo presentation only. Database roles and operational workflows are unchanged. */
+.demo-mode [data-nav]:not([data-nav="dashboard"]):not([data-nav="reservations"]):not([data-nav="walkins"]):not([data-nav="guests"]):not([data-nav="reports"]):not([data-nav="invoice"]),
+.demo-mode #page-dashboard .card:has(#dash-prize-table-body),
+.demo-mode #page-dashboard .card:has(#dash-bd-table-body),
+.demo-mode #page-dashboard .grid:has(#stat-walkins),
+.demo-mode #page-reports > :not(#demo-reports),
+.demo-mode #profile-content [data-demo-advanced] { display:none !important; }
+.demo-panel { padding:20px; margin-bottom:24px; border:1px solid var(--brand-tint); border-radius:16px; background:white; color:var(--brand-ink); }
+.demo-panel h2 { font-size:20px; font-weight:600; margin:0 0 8px; }
+.demo-panel p { font-size:13px; line-height:1.6; margin:6px 0; }
+.demo-panel summary { cursor:pointer; font-weight:600; }
+.demo-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+.demo-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin:20px 0; }
+.demo-metric { padding:20px; border:1px solid var(--brand-tint); border-radius:14px; background:white; min-width:0; }
+.demo-metric h2 { font-size:13px; font-weight:500; }
+.demo-metric strong { display:block; font-size:26px; margin:10px 0; overflow-wrap:anywhere; }
+.demo-metric p,.demo-note { font-size:12px; line-height:1.6; }
+#demo-reports { max-width:1024px; margin:auto; }
+#demo-reports h1 { font-size:30px; font-weight:600; color:var(--brand-ink); }
+.demo-booking { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; padding:12px 0; border-top:1px solid var(--brand-tint); }
+@media(max-width:640px) {
+  .demo-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .demo-metric { padding:14px; }
+  .demo-metric strong { font-size:21px; }
+  .demo-mode #page-dashboard > div > div:first-child { flex-wrap:wrap; gap:16px; }
+  .demo-mode #page-dashboard,.demo-mode #page-reports { padding:18px; }
+}
