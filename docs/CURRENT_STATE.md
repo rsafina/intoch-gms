@@ -5,6 +5,46 @@ Implementation claims were checked against code, migrations, Git and existing te
 No live Supabase/Cloudflare inspection, migration, deployment or push was performed for this
 documentation task. **Committed code is not proof of deployed SQL or Edge Functions.**
 
+## Deposit tracking save incident (2026-09-23; live recovery unconfirmed)
+
+User reported Settings > Deposits & Payments > Deposit rules > uncheck Deposit
+Tracking > Save tracking failing on `dashboard.intoch.app` with "Failed to save.
+Please try again." Network evidence showed the PATCH to
+`app_settings?key=eq.financial_tracking&select=value` returned `[]`, with intended
+value `{deposit_enabled:false, spending_enabled:true}`. HTTP status was not captured.
+
+Confirmed through user-run SQL Editor screenshots on the affected database:
+- `app_settings` had no `financial_tracking` row.
+- `public.app_session_valid()` and `app_private.net_reservation_deposit(uuid)` existed.
+- `app_private.financial_tracking_enabled(text)` and
+  `visits.spend_recording_status` were absent.
+
+Cause: frontend exposed the tracking switch before the corresponding database
+update was installed. `saveFinancialTrackingSettings()` uses UPDATE, so a missing
+row returns no updated rows and correctly fails confirmation. Missing settings
+default to enabled in the UI. CSS/Tailwind console warnings were not the cause.
+An empty PATCH response alone can also indicate RLS filtering; the SQL inventory
+was what established the missing row and tracking objects in this incident.
+
+Recovery advised: apply the full `migrations/20260919_financial_tracking.sql` to
+the affected Supabase project after checking prerequisites, then refresh the app,
+disable Deposit Tracking and save. The migration starts both toggles enabled and
+preserves historical financial records. Do not merely insert the setting or change
+the frontend to upsert: that would not install the database tracking behavior.
+Never rerun `ALL_IN_ONE.sql` or `20260911_roles_enforce.sql` for this issue.
+Stop on SQL errors. The user has not yet confirmed applying the migration or a
+successful save; no live SQL, deployment or runtime-code changes were performed
+by the agent. Local settings-navigation and financial-tracking tests passed.
+
+Release check: frontend deployment does not apply SQL. For each target Supabase
+project, follow `migrations/README.md` dependency order and verify this migration's
+settings row, functions and trigger before releasing tracking controls. Existing
+session/spending function names alone do not prove all prerequisites or their
+definitions. After rollout, verify disabling survives reload, new bookings do not
+require deposits, spending remains enabled when only deposits were disabled, and
+historical financial records remain accessible. Branch names do not establish
+database migration state.
+
 Supabase developer guide (local documentation, 2026-09-19): added
 `docs/SUPABASE_EXPLAINED_SIMPLY.md` as the non-technical starting point and
 `docs/SUPABASE_GUIDE.md` as the developer reference. Together they explain the
