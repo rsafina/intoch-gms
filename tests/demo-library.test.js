@@ -76,6 +76,25 @@ const library = fixture('');
 assert.equal(library.document.querySelectorAll('.demo-flow-link').length, 9);
 library.close();
 assert.doesNotMatch(html, /(?:config|staff-auth|supabase|app)\.js/);
-assert.match(read('_redirects'), /^\/demo\/\* \/demo-library.html 200$/m);
+assert.match(read('_redirects'), /^\/demo\/\* \/demo-library 200$/m);
 assert.match(read('.assetsignore'), /^demo$/m, 'private demo tooling remains excluded');
 console.log('PASS: nine stories, completion, restart, step reset, pause, background/offscreen, reduced motion, filtering, routing and isolation');
+// Check the response before following redirects: a final 200 alone hid the live bug.
+const server = require('../scripts/serve-demo-library.cjs');
+(async () => {
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const origin = 'http://127.0.0.1:' + server.address().port;
+  try {
+    for (const route of ['/demo', '/demo/', ...slugs.flatMap(slug => ['/demo/' + slug, '/demo/' + slug + '/'])]) {
+      const response = await fetch(origin + route, { redirect: 'manual' });
+      assert.equal(response.status, 200, route + ' must not redirect to the library');
+      assert.equal(response.headers.get('location'), null);
+      assert.equal(response.url, origin + route);
+      assert.match(await response.text(), /\/js\/demo-library.js/);
+    }
+    const canonical = await fetch(origin + '/demo-library.html', { redirect: 'manual' });
+    assert.equal(canonical.status, 307, 'preview models the canonicalization that caused the incident');
+    assert.equal(canonical.headers.get('location'), '/demo-library');
+    console.log('PASS: all category URLs and trailing slashes serve directly without losing their pathname');
+  } finally { await new Promise(resolve => server.close(resolve)); }
+})().catch(error => { console.error(error); process.exitCode = 1; });

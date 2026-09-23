@@ -74,7 +74,11 @@ actions simulate state changes; they never open a customer's WhatsApp or send a 
 
 ## Hosting and expansion
 
-`_redirects` rewrites `/demo` and `/demo/*` to the shared shell. Absolute local asset URLs
+`_redirects` rewrites `/demo` and `/demo/*` to `/demo-library`, the extensionless shared shell.
+Do not target `/demo-library.html`: the deployed Cloudflare host returned a 307 to
+`/demo-library`, dropping the category pathname. The preview models that canonicalization
+and reads the actual rewrite file; HTTP regression tests disable redirect-following.
+Absolute local asset URLs
 make direct loading and refresh work under nested paths. Public assets live outside
 the private `demo/` folder; `.assetsignore` continues excluding that tooling and SQL.
 Before deployment, verify the actual host applies `_redirects` and exclusions, and that

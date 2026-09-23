@@ -1,5 +1,14 @@
 # Current state and operational handoff
 
+Demo link routing fix (2026-09-23; local on `demo`, pending deployment): live requests
+to `/demo/campaign` returned HTTP 307 with `Location: /demo-library`, losing the category.
+The `.html` rewrite target triggered Cloudflare HTML canonicalization. Changed `_redirects`
+to target `/demo-library` (extensionless). The preview now reads the actual rewrite file
+and models the observed canonical redirect; regression checks inspect unfollowed responses
+for all nine category paths and trailing slashes. Earlier final-200 checks missed this bug.
+No commit, push or deployment performed for this fix; redeploy `demo-intoch` after publishing
+the change, then verify both the initial response and the category displayed in the browser.
+
 IntoCh Demo Library (2026-09-23; local on `demo`): all nine `/demo/*` sales stories
 are implemented with one standalone configuration-driven player, shared fictional Senja
 data and reusable UI scenes. Landing tokens and product-story styles were extracted

@@ -1,3 +1,5 @@
 # Sales stories are separate from the private demo/ SQL and tooling directory.
-/demo /demo-library.html 200
-/demo/* /demo-library.html 200
+# Use the canonical extensionless target. An .html target triggers Cloudflare's
+# HTML-normalization redirect and loses the original category pathname.
+/demo /demo-library 200
+/demo/* /demo-library 200
