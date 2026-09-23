@@ -8,8 +8,21 @@ let demoReportRequest = 0;
 let demoTrafficRequest = 0;
 let demoGuestRequest = 0;
 const demoText = (en, id) => typeof CURRENT_LANG !== 'undefined' && CURRENT_LANG === 'id' ? id : en;
-function demoCard(label, value, note) {
-  return `<article class="demo-metric"><h2>${label}</h2><strong>${value}</strong><p>${note}</p></article>`;
+function demoCard(label, value, note, tone = 'brand', icon = 'visit') {
+  const paths = {
+    visit:'<path d="M8 2v4m8-4v4M3 10h18"/><rect x="3" y="4" width="18" height="17" rx="3"/><path d="m8 15 3 3 5-5"/>',
+    people:'<circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m1-16a3 3 0 0 1 0 6m3 10v-3a6 6 0 0 0-3-5"/>',
+    money:'<rect x="2" y="5" width="20" height="14" rx="3"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/>',
+    return:'<path d="M4 10h10a6 6 0 0 1 0 12M4 10l5-5M4 10l5 5"/>',
+    new:'<circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m4-15v6m-3-3h6"/>',
+  };
+  return `<article class="demo-metric demo-metric--${tone}"><div class="demo-metric-label"><h2>${label}</h2><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${paths[icon]}</svg></div><strong>${value}</strong><p>${note}</p></article>`;
+}
+async function setDemoReportPeriod(period) {
+  if (!['today','week','month'].includes(period)) return;
+  document.getElementById('demo-report-period').value = period;
+  document.querySelectorAll('[data-demo-period]').forEach(button => button.setAttribute('aria-pressed',String(button.dataset.demoPeriod===period)));
+  await loadDemoReports();
 }
 function initDemoPresentation() {
   if (!demoEnabled() || document.getElementById('demo-guide')) return;
@@ -38,13 +51,21 @@ function initDemoPresentation() {
   const reports = document.createElement('div');
   reports.id = 'demo-reports';
   reports.innerHTML = `<h1>${demoText('Reports','Laporan')}</h1><p class="demo-note">${demoText('A simple picture of your restaurant’s visits and recorded spending.','Ringkasan kunjungan dan pengeluaran yang tercatat di restoran Anda.')}</p>
-    <div class="demo-actions"><label>${demoText('Period','Periode')} <select id="demo-report-period" class="form-input" onchange="loadDemoReports()"><option value="month">${demoText('This month','Bulan ini')}</option><option value="week">${demoText('Last 7 days','7 hari terakhir')}</option><option value="today">${demoText('Today','Hari ini')}</option></select></label></div>
+    <div class="demo-range-bar"><span class="demo-eyebrow">${demoText('Date range','Rentang tanggal')}</span>
+      <input type="hidden" id="demo-report-period" value="month">
+      <div class="demo-range-buttons" role="group" aria-label="${demoText('Report period','Periode laporan')}">
+        <button type="button" data-demo-period="today" aria-pressed="false" onclick="setDemoReportPeriod('today')">${demoText('Today','Hari ini')}</button>
+        <button type="button" data-demo-period="week" aria-pressed="false" onclick="setDemoReportPeriod('week')">${demoText('Last 7 days','7 hari terakhir')}</button>
+        <button type="button" data-demo-period="month" aria-pressed="true" onclick="setDemoReportPeriod('month')">${demoText('This month','Bulan ini')}</button>
+      </div><span id="demo-report-range" class="demo-range-label"></span>
+    </div>
+    <p class="demo-definition">${demoText('One party of 4 dining once = 1 visit · 4 diners (pax).','Satu rombongan berisi 4 orang datang sekali = 1 kunjungan · 4 orang (pax).')}</p>
     <div id="demo-report-content" aria-live="polite"></div>
-    <aside class="demo-panel"><h2>${demoText('Bring your guests back','Ajak tamu Anda kembali')}</h2>
+    <aside class="demo-panel demo-campaign"><div class="demo-campaign-intro"><span class="demo-eyebrow">${demoText('Optional marketing support','Layanan pemasaran opsional')}</span><h2>${demoText('Bring your guests back','Ajak tamu Anda kembali')}</h2>
     <p>${demoText('We can also help you plan campaigns for your guests by email or WhatsApp. This is an optional service.','Kami juga dapat membantu merencanakan kampanye untuk tamu Anda melalui email atau WhatsApp. Ini adalah layanan opsional.')}</p>
-    <p><strong>${demoText('Campaign returns — illustrative example','Hasil kampanye — contoh ilustrasi')}</strong></p>
-    <p>${demoText('12 guests returned · Rp 2,400,000 in recorded spending after outreach.','12 tamu kembali · Rp 2.400.000 pengeluaran tercatat setelah dihubungi.')}</p>
-    <p class="demo-note">${demoText('Example only, excluded from the totals above. Spending after a message is not proof that the campaign caused the visit. Live campaign attribution is not connected in this demo.','Hanya contoh, tidak termasuk total di atas. Pengeluaran setelah pesan tidak membuktikan bahwa kampanye menyebabkan kunjungan. Atribusi kampanye belum terhubung dalam demo ini.')}</p></aside>`;
+    <div class="demo-channel-tags"><span>Email</span><span>WhatsApp</span></div></div>
+    <div class="demo-campaign-example"><span class="demo-eyebrow">${demoText('Illustrative example','Contoh ilustrasi')}</span><strong>Rp 2.400.000</strong><p>${demoText('Recorded spending from 12 guests who returned after outreach.','Pengeluaran tercatat dari 12 tamu yang kembali setelah dihubungi.')}</p><p class="demo-note">${demoText('Example only · Excluded from report totals','Hanya contoh · Tidak termasuk total laporan')}</p>
+    <details class="demo-method"><summary>${demoText('About campaign results','Tentang hasil kampanye')}</summary><p>${demoText('Spending after a message does not prove the campaign caused the visit. Live campaign attribution is not connected in this demo.','Pengeluaran setelah pesan tidak membuktikan kampanye menyebabkan kunjungan. Atribusi kampanye belum terhubung dalam demo ini.')}</p></details></div></aside>`;
   document.getElementById('page-reports').append(reports);
 }
 
@@ -66,6 +87,7 @@ async function loadDemoReports() {
   const request = ++demoReportRequest, identity = odIdentity();
   const valid = () => request===demoReportRequest && identity===odIdentity() && currentPage==='reports';
   const range = odRange(document.getElementById('demo-report-period').value);
+  document.getElementById('demo-report-range').textContent = `${fmt.date(range.start)} – ${fmt.date(range.end)}`;
   root.textContent = demoText('Loading report…','Memuat laporan…');
   try {
     const visits = await odRows('visits','id,guest_id,pax,spend_amount,voided_at',query=>query.is('voided_at',null).gte('visit_date',range.start).lte('visit_date',range.end));
@@ -74,15 +96,17 @@ async function loadDemoReports() {
     const prior = await odByIds('visits','id,guest_id','guest_id',ids,query=>query.is('voided_at',null).lt('visit_date',range.start));
     if (!valid()) return;
     const stats = demoMetrics(visits,new Set(prior.map(row=>row.guest_id)));
-    const money = value => value==null ? '—' : fmt.currency(value);
-    root.innerHTML = `<p class="demo-note">${fmt.date(range.start)} – ${fmt.date(range.end)}</p><div class="demo-metrics">`+
-      demoCard(demoText('Guest visits','Kunjungan tamu'),stats.visits,demoText('Actual visits, including repeat visits','Kunjungan aktual, termasuk kunjungan ulang'))+
-      demoCard('Pax',stats.pax,demoText('Recorded diners, not bookings','Jumlah orang tercatat, bukan pemesanan'))+
-      demoCard(demoText('Revenue','Pendapatan'),money(stats.recorded ? stats.total : null),demoText('Recorded visit spending; deposits are not added again','Pengeluaran kunjungan; deposit tidak ditambahkan lagi'))+
-      demoCard(demoText('Average guest spending','Rata-rata pengeluaran tamu'),money(stats.average),demoText('Per visit with spending recorded, not per diner','Per kunjungan dengan pengeluaran tercatat, bukan per orang'))+
-      demoCard(demoText('From returning guests','Dari tamu kembali'),money(stats.recorded ? stats.returning : null),demoText('Guests with a visit before this period','Tamu yang pernah berkunjung sebelum periode ini'))+
-      demoCard(demoText('From new guests','Dari tamu baru'),money(stats.recorded ? stats.fresh : null),demoText('First visit in this period, including subsequent visits','Kunjungan pertama pada periode ini, termasuk kunjungan berikutnya'))+
-      `</div><p class="demo-note">${stats.recorded}/${stats.visits} ${demoText('visits have spending recorded. Missing spending is excluded; recorded zero is included.','kunjungan memiliki pengeluaran tercatat. Data kosong tidak dihitung; nilai nol tetap dihitung.')} ${stats.missingPax} ${demoText('visits have no pax recorded.','kunjungan belum mencatat pax.')}</p>`+
+    const money = value => value==null ? '—' : fmt.currency(Math.round(value));
+    root.innerHTML = `<div class="demo-metrics">`+
+      demoCard(demoText('Visits','Kunjungan'),stats.visits,demoText('Each arrival counts, including repeat visits.','Setiap kedatangan dihitung, termasuk kunjungan ulang.'),'brand','visit')+
+      demoCard(demoText('Diners (pax)','Jumlah orang (pax)'),stats.pax,demoText('Total people served across those visits.','Total orang yang dilayani dalam kunjungan tersebut.'),'accent','people')+
+      demoCard(demoText('Revenue','Pendapatan'),money(stats.recorded ? stats.total : null),demoText('Total recorded visit spending.','Total pengeluaran kunjungan yang tercatat.'),'brand','money')+
+      demoCard(demoText('Average spend / visit','Rata-rata / kunjungan'),money(stats.average),demoText('Revenue ÷ visits with spending recorded.','Pendapatan ÷ kunjungan dengan pengeluaran tercatat.'),'soft','money')+
+      demoCard(demoText('Revenue · returning guests','Pendapatan · tamu kembali'),money(stats.recorded ? stats.returning : null),demoText('From guests who visited before this period.','Dari tamu yang pernah datang sebelum periode ini.'),'accent','return')+
+      demoCard(demoText('Revenue · new guests','Pendapatan · tamu baru'),money(stats.recorded ? stats.fresh : null),demoText('From guests whose first visit is in this period.','Dari tamu yang pertama kali datang pada periode ini.'),'brand','new')+
+      `</div><div class="demo-report-coverage"><span>${stats.recorded}/${stats.visits} ${demoText('visits have spending recorded','kunjungan memiliki pengeluaran tercatat')}</span>`+
+      (stats.missingPax ? `<span>${stats.missingPax} ${demoText('visits have no diner count','kunjungan belum mencatat jumlah orang')}</span>` : '')+
+      `<details class="demo-method"><summary>${demoText('How this is calculated','Cara perhitungan')}</summary><p>${demoText('Missing spending is excluded; recorded zero is included. Deposits are not added again. Averages are rounded to the nearest rupiah. Repeat visits by a new guest in this period stay in the new-guest group.','Pengeluaran kosong tidak dihitung; nilai nol tetap dihitung. Deposit tidak ditambahkan lagi. Rata-rata dibulatkan ke rupiah terdekat. Kunjungan ulang tamu baru pada periode ini tetap masuk kelompok tamu baru.')}</p></details></div>`+
       (stats.unlinked ? `<p class="demo-note">${demoText('Revenue without a linked guest','Pendapatan tanpa data tamu')}: ${money(stats.unlinked)}</p>` : '');
   } catch (error) {
     if (valid()) root.innerHTML = `<p role="alert">${demoText('Report unavailable. Please retry.','Laporan tidak tersedia. Silakan coba lagi.')}</p><button class="btn-ghost" onclick="loadDemoReports()">${demoText('Retry','Coba lagi')}</button>`;

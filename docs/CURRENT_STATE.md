@@ -1,5 +1,16 @@
 # Current state and operational handoff
 
+Demo report presentation (2026-09-23; local): replaced the period dropdown with
+Today / Last 7 days / This month buttons; added coloured card accents, icons and
+a separate illustrative marketing panel. Visits and diners (pax) are explicitly
+distinguished with a group-of-four example. Average spending is labeled per visit
+and rounded to whole rupiah for display. Revenue cohorts and underlying calculations
+are unchanged. Calculation notes are expandable; missing-data coverage stays visible.
+Targeted demo tests cover period switching, Indonesian labels, visit/pax counts and
+average rounding in addition to the existing error/session checks; all passed.
+Syntax and diff checks passed. Headless Chrome screenshots of the fictional Indonesian
+report were inspected at desktop and true 390px iframe width. Not pushed or deployed.
+
 Demo guide readability (2026-09-23; local): the four instructions now use a spaced
 numbered list in English and Indonesian. Removed the sentence about closing the
 guide during presentations. Bumped demo asset versions; no workflow changes.

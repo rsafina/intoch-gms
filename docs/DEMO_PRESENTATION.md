@@ -24,6 +24,9 @@ and retains its management dashboard; Staff and Finance retain their existing ac
   new-guest revenue. Zero spending counts; null spending does not. Returning means
   a non-voided visit before the reporting period. Subsequent visits by a newly
   acquired guest remain in the new-guest group. Unlinked revenue is disclosed separately.
+  Date buttons follow the full report's presentation. Visits mean arrival records;
+  diners/pax means the number of people served. The per-visit average is displayed
+  as whole rupiah. Calculation notes are expandable, with coverage always visible.
 - Campaign returns are an explicitly illustrative example, excluded from totals.
   No actual campaign return amount is queried yet. Email/WhatsApp campaigns are
   described as an optional service; campaign management is hidden.
