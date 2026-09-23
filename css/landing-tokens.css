@@ -1,0 +1,61 @@
+      :root {
+        /* ── Brand tokens (2026-09-05; landing moved to the cream / sand /
+           sky / indigo / plum palette on 2026-09-20). ONE PLACE. ───────────────────
+           Every brand colour in the app resolves here. Before this, 728
+           values were hardcoded across 20 files, which is why the colours
+           could not be changed. Status colours (green, red, amber) are NOT
+           here on purpose: they mean something and never follow the brand.
+
+           --brand and --accent are the two a restaurant sets. Everything
+           else is derived from them, and derived to PASS contrast rather
+           than to look pleasant. Two of these fix long-standing failures:
+           the old button blue (5596CE) under white text was 3.16:1 and the
+           old gold (C8A96B) on cream was 2.08:1, against a 4.5 bar. */
+        /* White hero, warm linen and pale blue section bands.
+           Logo blue anchors actions; deep navy closes the page. */
+        --surface-white: #FFFFFF;
+        --surface-linen: #F7F0E6;
+        --surface-blue: #EDF3FB;
+        --navy: #20345D;
+        --sand: #E5CBA4;
+        --sky: #A4C8E3;
+        --heading-accent: #3F7BAE;
+        --sky-rgb: 164 200 227;
+
+        --brand: #3C56A6;
+        --brand-hover: #304687;
+        --brand-ink: #3C56A6;
+        --brand-deep: #304687;
+        --brand-deepest: #20345D;
+        --brand-muted: #6077AF;
+        --brand-soft: #A4C8E3;
+        --brand-tint: #DCEAF5;     /* light sky: chips, selected rows */
+        --brand-tint2: #EEF5FB;
+        --accent: #E5CBA4;         /* sand. FILLS ONLY, never text */
+        --accent-hover: #8A6424;   /* text-safe bronze for small labels: 4.97 on cream */
+        --accent-strong: #6B4A12;
+        --accent-tint: #F7E9CE;   /* 2026-09-21 */
+        --accent-tint2: #FCF4E4;  /* 2026-09-21 */
+        --brand-rgb: 60 86 166;
+        --brand-ink-rgb: 60 86 166;
+        --brand-hover-rgb: 48 70 135;
+        --brand-deep-rgb: 48 70 135;
+        --brand-deepest-rgb: 32 52 93;
+        --brand-soft-rgb: 164 200 227;
+        --accent-rgb: 229 203 164;
+        --accent-hover-rgb: 138 100 36;
+        --accent-strong-rgb: 107 74 18;
+
+        --card: #ffffff;
+        --line: #DDE3EC;
+        --gold: var(--accent);
+        --gold-dark: var(--accent-hover);
+        --primary: var(--brand);
+        --primary-dark: var(--brand-deep);
+        --primary-hover: var(--brand-hover);
+        --success: #5f8d4e;
+        --text: #263858;
+        --text-sec: #52627B;
+        --warning: #d4a017;
+        --danger: #c0554a;
+      }

@@ -69,7 +69,11 @@ ok("no brand token is used without being defined", undef.length === 0, undef.joi
 
 // A page with its own <style> cannot borrow index.html's :root.
 for (const name of TOKEN_HOSTS) {
-  const src = read(path.join(ROOT, name));
+  let src = read(path.join(ROOT, name));
+  // Standalone pages may share a local token stylesheet (landing + sales demos).
+  for (const match of src.matchAll(/<link[^>]+href="(css\/[^"?]+\.css)(?:\?[^"]*)?"/g)) {
+    src += read(path.join(ROOT, match[1]));
+  }
   const usesToken = /var\(--(?:brand|accent)/.test(src);
   ok(`${name} defines its own tokens`, !usesToken || src.includes("--brand:"),
      `${name} uses brand tokens but has no --brand: of its own, so they resolve to nothing.`);

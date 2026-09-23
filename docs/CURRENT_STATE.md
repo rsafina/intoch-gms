@@ -1,5 +1,19 @@
 # Current state and operational handoff
 
+IntoCh Demo Library (2026-09-23; local on `demo`): all nine `/demo/*` sales stories
+are implemented with one standalone configuration-driven player, shared fictional Senja
+data and reusable UI scenes. Landing tokens and product-story styles were extracted
+verbatim into shared CSS, preserving cascade order and existing landing behavior.
+No app/Auth/config modules, database calls or storage are used. Follow-up is scoped to
+the existing reservation checklist; campaigns retain explicit staff WhatsApp sending.
+The private `demo/` tooling remains excluded from assets. `_redirects` routes public
+stories to a separate shell; actual host rewrite/exclusion behavior still needs deployment
+verification. Shared generic Open Graph metadata is a future route-specific refinement.
+All 91 suites passed; isolated seven-output build, syntax/diff checks and local Chrome
+direct-route/refresh/mobile checks passed. Screenshots inspected at desktop and 390px;
+overflow checked at 1440/390/320px. No push, merge, live SQL or deployment. See
+[Demo Library](DEMO_LIBRARY.md) for preview commands, architecture, fidelity and handoff.
+
 Demo guest segments (2026-09-23; local): added simplified Acquire, Retain and At Risk
 cards below report totals, without campaign/export controls. Acquire/Retain count unique
 linked guests in the selected period, with their visits and pax; At Risk uses the latest

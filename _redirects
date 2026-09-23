@@ -1,0 +1,3 @@
+# Sales stories are separate from the private demo/ SQL and tooling directory.
+/demo /demo-library.html 200
+/demo/* /demo-library.html 200

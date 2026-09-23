@@ -5,6 +5,7 @@ This records material decisions and their consequences, not a list of every UI e
 
 | Decision | Reason | Implications / constraints |
 |---|---|---|
+| Sales stories use a standalone, in-memory player on `demo` and shared landing CSS | Prospect URLs need deterministic, unauthenticated demonstrations without production data | Public assets stay outside private `demo/` tooling; `/demo/*` is rewritten to one shell. Add definitions/scenes, not duplicated pages. Verify host routing before publishing. |
 | Settings grouped by task, with sidebar children and category-local tabs | Booking, payment, spending and loyalty controls need predictable homes | Keep existing role gates; saves update only their section, even when sections share a JSON settings row. Area deposit amounts have one editor. Compact sidebar preference is device-local. |
 | One client, one Cloudflare deployment and Supabase project | Isolation and manageable per-client configuration | No shared multi-tenant database. Never point a preview/client at another client's DB. Separate origins avoid shared browser storage. |
 | One private codebase; configuration at build time | Avoid divergent per-client forks | Source remains private but published frontend is inspectable. License/ownership arrangements do not hide JS. Server-only privileges/logic stay server-side. |
