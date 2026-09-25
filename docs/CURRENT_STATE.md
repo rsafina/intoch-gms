@@ -1,5 +1,14 @@
 # Current state and operational handoff
 
+Compact demo layout (2026-09-25; local on `demo`, not pushed or deployed): replaced
+the tall mobile device stack with an overlapping laptop/phone stage, stable headline,
+one numbered caption and round controls matching the landing reference. Existing
+product rows, forms and status styles remain in the fictional scenes. The cursor keeps
+a visible size as devices scale. Browser checks cover all nine stories at 1440x900,
+1280x720, 393x852 and 320x640 with devices, caption and controls visible together.
+Targeted player/routing tests pass. This change does not modify landing or staff pages,
+Cloudflare configuration or authentication. Deploy through the demo branch only.
+
 Demo link routing fix (2026-09-23; local on `demo`, pending deployment): live requests
 to `/demo/campaign` returned HTTP 307 with `Location: /demo-library`, losing the category.
 The `.html` rewrite target triggered Cloudflare HTML canonicalization. Changed `_redirects`

@@ -47,8 +47,11 @@ three steps and 38 seconds for Full Journey. CSS provides cursor and result tran
 It stops at the result/CTA, with explicit replay. Step changes reset the scene. Pause
 survives step changes. Hidden tabs and offscreen product panels stop the timer. Reduced
 motion shows the completed state of each step with manual navigation and no animation;
-preference changes are handled while the page is open. Mobile playback controls stick
-near the bottom of the viewport. No hover is required.
+preference changes are handled while the page is open. The compact device stage in
+`css/demo-story-stage.css` overlaps a laptop and phone, followed on mobile by a stable
+headline, one active numbered caption and round playback controls. These remain visible
+together at the checked viewport sizes, including 320x640. Cursor motion uses Web Animations
+and pauses with playback. No hover is required.
 
 Only local in-memory state is used. There are no app scripts, Auth, Supabase clients,
 requests to customer services, writes, or local/session storage. External requests are
@@ -113,7 +116,8 @@ File inventory:
 - `node tests/demo-library.test.js`: all nine stories, end/replay, pause, step reset,
   visibility, reduced motion, audience narrowing, route fallback and state isolation.
 - `node scripts/check-demo-library-browser.cjs`: hidden local Chrome route/refresh,
-  every step at 1440, 390 and 320 pixels, overflow, motion controls and landing tabs.
+  every step at 1440x900, 1280x720, 393x852 and 320x640, viewport fit, overflow,
+  real cursor movement/pause/resume, motion controls and landing tabs.
   Run the preview server first. Screenshots are written to a new OS temporary directory.
 - All new JavaScript passes `node --check`; `git diff --check` passes.
 - The existing build command (`node build-config.js`) passed in an isolated temporary

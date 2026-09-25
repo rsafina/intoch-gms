@@ -52,7 +52,7 @@
     return `<div class="scene-heading"><h3>${beat >= 2 ? 'Workspace Campaign' : 'Buat Campaign'}</h3>${badge('Draft')}</div>
       ${card('Audiens terpilih', `<div class="audience-count"><b>${journey ? '1' : '2'}</b><span>dari ${guests.length} tamu<br><strong>${segment}</strong></span></div><div class="audience-names">${journey ? 'Bayu Pratama' : 'Dewi Lestari · Rina Putri'}</div>`)}
       ${field('Nama campaign', journey ? 'Terima kasih sudah datang' : 'Kembali ke Senja')}
-      ${beat >= 1 ? card('Preview pesan · ' + name, `<div class="message-bubble">${journey ? 'Halo Pak Bayu, terima kasih sudah mampir ke Senja. Kami senang menyambut Bapak kembali bersama keluarga.' : 'Halo Bu Dewi, sudah lama tidak bertemu di Senja. Ada waktu untuk makan bersama keluarga akhir pekan ini? Kami senang menyambut Ibu kembali.'}</div>`) : card('Template pesan', '<p>Pilih pesan yang sesuai dengan audiens.</p>')}
+      ${card('Template pesan', `<p>${beat >= 1 ? 'Pesan personal untuk ' + name + ' siap ditinjau di preview.' : 'Pilih pesan yang sesuai dengan audiens.'}</p>`)}
       ${action(beat >= 2 ? 'Siapkan WhatsApp untuk ' + (journey ? 'Bayu' : 'Dewi') : 'Buat draft campaign')}
       ${beat >= 3 ? note('Pesan siap ditinjau. Staf membuka dan mengirim satu per satu.') : '<p class="scene-fine">Penerima di luar segmen tidak masuk audiens ini.</p>'}`;
   }
@@ -134,6 +134,18 @@
   let renderedStep = -1, renderedBeat = -1, cursorAnimation = null;
   let remaining = interval, dueAt = 0;
   const controls = [...root.querySelectorAll('[data-step]')];
+  // One compact control row, like the landing-page story player.
+  const stepNavigation = root.querySelector('.demo-steps');
+  ['pause', 'restart', 'next'].forEach(id => stepNavigation.appendChild(document.getElementById(id)));
+  document.getElementById('restart').textContent = '↻';
+  controls.forEach((button, index) => button.setAttribute('aria-label', `Langkah ${index + 1}: ${definition.steps[index].label}`));
+  function fitStage() {
+    const scale = Math.min((stage.clientWidth || 680) / 680, (stage.clientHeight || 560) / 560);
+    const changed = Math.abs(Number(stage.style.getPropertyValue('--stage-scale')) - scale) > .001;
+    stage.style.setProperty('--stage-scale', String(scale));
+    stage.style.setProperty('--pointer-size', String(1 / scale));
+    return changed;
+  }
   function clear(preserve = false) {
     if (timer !== null) {
       if (preserve) remaining = Math.max(0, dueAt - performance.now());
@@ -219,12 +231,13 @@
     pointer.classList.toggle('visible', !!target && !motion.matches && !finished);
     if (!target || motion.matches) return;
     const bounds = pointer.parentElement.getBoundingClientRect();
+    const scale = bounds.width / 680 || 1;
     const targetBounds = target.getBoundingClientRect();
     const previousBounds = pointer.getBoundingClientRect();
-    const x = Math.max(0, Math.min(bounds.width - 70, targetBounds.left - bounds.left + targetBounds.width * .62));
-    const y = targetBounds.top - bounds.top + targetBounds.height * .55;
-    const startX = reset ? Math.max(12, x - 80) : previousBounds.left - bounds.left;
-    const startY = reset ? y + 50 : previousBounds.top - bounds.top;
+    const x = Math.max(0, Math.min(680 - 40 / scale, (targetBounds.left - bounds.left + targetBounds.width * .62) / scale));
+    const y = (targetBounds.top - bounds.top + targetBounds.height * .55) / scale;
+    const startX = reset ? Math.max(12, x - 80) : (previousBounds.left - bounds.left) / scale;
+    const startY = reset ? y + 50 : (previousBounds.top - bounds.top) / scale;
     pointer.style.transform = `translate(${x}px, ${y}px)`;
     pointer.querySelector('.pointer-label').textContent = target.matches('.pf-in,.search-field') ? 'Isi data' : target.matches('.app-row') ? 'Lihat tamu' : 'Klik';
     cursorAnimation = animate(pointer, [
@@ -244,8 +257,9 @@
     root.dataset.step = String(stepIndex);
     root.dataset.beat = String(beat);
     document.getElementById('story-label').textContent = `${definition.category} · ${stepIndex + 1} / ${definition.steps.length}`;
-    document.getElementById('story-title').textContent = current.title;
+    document.getElementById('story-title').textContent = definition.keyMessage;
     document.getElementById('story-text').textContent = current.text;
+    document.getElementById('story-text').dataset.number = String(stepIndex + 1);
     document.getElementById('story-note').textContent = current.note;
     document.getElementById('screen-label').textContent = current.label;
     root.querySelector('.app-date').textContent = current.scene === 'return' ? '3 Okt 2026' : current.scene === 'journey-message' ? '1 Okt 2026' : date;
@@ -265,7 +279,7 @@
       updateSurface(companionScreen, companionView.html);
       if (stepChanged) animate(scene, [{ opacity: .3, transform: 'translateY(12px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 800 });
       if (hadSceneFocus && !stage.contains(document.activeElement)) (stage.querySelector('[data-scene-action]') || document.getElementById('next')).focus({ preventScroll: true });
-      movePointer(current.scene, stepChanged);
+      fitStage(); movePointer(current.scene, stepChanged);
       renderedStep = stepIndex; renderedBeat = beat;
     }
     if (finished) pointer.classList.remove('visible');
@@ -273,11 +287,12 @@
     document.getElementById('beat-label').textContent = ['Alur dimulai', 'Lihat konteksnya', 'Tindakan di Intoch', 'Hasilnya terlihat'][beat];
     document.getElementById('demo-progress').style.width = `${((stepIndex * 4 + beat + 1) / (definition.steps.length * 4)) * 100}%`;
     document.getElementById('step-count').textContent = `${stepIndex + 1} / ${definition.steps.length}`;
-    document.getElementById('pause').textContent = motion.matches ? 'Mode manual' : finished ? 'Putar lagi' : paused ? 'Putar' : 'Jeda';
+    document.getElementById('pause').textContent = motion.matches ? 'Ⅱ' : finished ? '▶' : paused ? '▶' : 'Ⅱ';
+    document.getElementById('pause').setAttribute('aria-label', motion.matches ? 'Mode manual: animasi dikurangi' : finished ? 'Putar lagi' : paused ? 'Putar' : 'Jeda');
     document.getElementById('pause').disabled = motion.matches;
     document.getElementById('pause').setAttribute('aria-pressed', String(paused || motion.matches));
     document.getElementById('previous').disabled = stepIndex === 0;
-    document.getElementById('next').textContent = stepIndex === definition.steps.length - 1 ? 'Selesai ✓' : '→';
+    document.getElementById('next').textContent = stepIndex === definition.steps.length - 1 ? '✓' : '→';
     document.getElementById('next').setAttribute('aria-label', stepIndex === definition.steps.length - 1 ? 'Selesaikan demo' : 'Langkah berikutnya');
     document.getElementById('demo-end').hidden = !finished;
   }
@@ -315,7 +330,11 @@
     clear(); remaining = interval; beat = Math.min(lastBeat, beat + 1); paint(); schedule();
   });
   document.addEventListener('visibilitychange', () => { syncMotion(); schedule(); });
-  window.addEventListener('resize', () => { movePointer(definition.steps[stepIndex].scene, false); syncMotion(); });
+  window.addEventListener('resize', () => { fitStage(); movePointer(definition.steps[stepIndex].scene, false); syncMotion(); });
+  if ('ResizeObserver' in window) new ResizeObserver(() => {
+    if (fitStage()) movePointer(definition.steps[stepIndex].scene, false);
+    syncMotion();
+  }).observe(stage);
   motion.addEventListener('change', () => { if (motion.matches) beat = lastBeat; paint(); schedule(); });
   if ('IntersectionObserver' in window) {
     const observer = new IntersectionObserver(entries => {

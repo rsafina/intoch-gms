@@ -45,8 +45,8 @@ async function main() {
     const shot = await command('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
     fs.writeFileSync(path.join(output, name + '.png'), Buffer.from(shot.data, 'base64'));
   }
-  for (const width of [1440, 390, 320]) {
-    await command('Emulation.setDeviceMetricsOverride', { width, height: width > 500 ? 1000 : 900, deviceScaleFactor: 1, mobile: width < 500 });
+  for (const [width, height] of [[1440,900], [1280,720], [393,852], [320,640]]) {
+    await command('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 500 });
     await navigate('/demo/reactivation');
     const slugs = await evaluate('IntochDemoData.definitions.map(item => item.slug)');
     for (const slug of slugs) {
@@ -56,11 +56,13 @@ async function main() {
         await evaluate(`document.querySelectorAll('.demo-steps [data-step]')[${index}].click()`);
         const overflow = await evaluate(`({page: document.documentElement.scrollWidth > innerWidth, scene: document.getElementById('scene').scrollWidth > document.getElementById('scene').clientWidth})`);
         assert.deepEqual(overflow, { page: false, scene: false }, `${slug} step ${index} at ${width}px`);
+        const visibleTogether = await evaluate(`['.story-stage','#story-title','#story-text','.demo-steps'].map(selector => { const bounds = document.querySelector(selector).getBoundingClientRect(); return {selector, top:bounds.top, bottom:bounds.bottom, visible:bounds.top >= 0 && bounds.bottom <= innerHeight}; })`);
+        assert.ok(visibleTogether.every(item => item.visible), `${slug} step ${index} must show devices, caption and controls without scrolling at ${width}x${height}: ${JSON.stringify(visibleTogether)}`);
         if (['reactivation', 'reservation', 'customer-database', 'walk-in'].includes(slug) && width !== 320) await capture(`${slug}-${width}-${index + 1}`);
       }
       await command('Page.reload', { ignoreCache: true });
       for (let attempt = 0; attempt < 40; attempt++) { if (await evaluate('document.readyState === "complete" && !!document.querySelector(".demo-steps")')) break; await delay(100); }
-      assert.equal(await evaluate('document.querySelector(".demo-steps").children.length'), count, 'refresh preserves direct route');
+      assert.equal(await evaluate('document.querySelectorAll(".demo-steps [data-step]").length'), count, 'refresh preserves direct route');
     }
   }
   await command('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
@@ -89,6 +91,7 @@ async function main() {
   assert.notEqual(await evaluate('document.querySelector(".demo-pointer").getBoundingClientRect().x'), startPointer, 'pointer travels smoothly toward a real control');
   await capture('reservation-cursor-moving-1440');
   await evaluate('document.getElementById("pause").click()');
+  await evaluate('Promise.all(document.querySelector(".demo-pointer").getAnimations().map(animation => animation.ready)).then(() => true)');
   const pausedPointer = await evaluate('document.querySelector(".demo-pointer").getAnimations()[0].currentTime');
   await delay(300);
   assert.equal(await evaluate('document.querySelector(".demo-pointer").getAnimations()[0].currentTime'), pausedPointer, 'pause freezes the cursor mid-path');
@@ -105,7 +108,7 @@ async function main() {
   assert.equal(await evaluate('document.getElementById("uc-t3").getAttribute("aria-selected")'), 'true');
   assert.equal(await evaluate('getComputedStyle(document.getElementById("uc-p3")).display'), 'grid');
   assert.deepEqual(errors, [], 'no browser runtime exceptions');
-  console.log('PASS: all nine routes and refresh, all steps at 1440/390/320px, no horizontal overflow, landing tabs, no runtime errors.');
+  console.log('PASS: all nine routes and refresh; devices, caption and controls together at 1440x900, 1280x720, 393x852 and 320x640; no horizontal overflow; landing tabs and motion controls.');
   console.log('Screenshots: ' + output);
 }
 main().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => { clearTimeout(watchdog); if (socket) socket.close(); chrome.kill(); });
