@@ -101,24 +101,20 @@
 .motion-paused *, .motion-paused *::after { animation-play-state: paused !important; }
 .reduced-motion .demo-pointer { display: none; }
 .demo-footer { margin-top: 20px; }
-.detail-toolbar { display: none; }
 @media (max-width: 560px) {
   .story-stage { overflow: hidden; border-radius: 12px; }
-  .detail-toolbar { display: flex; position: absolute; bottom: 0; inset-inline: 0; z-index: 10; gap: 5px; justify-content: center; background: var(--brand-tint2); padding: 3px 0; }
-  .detail-toolbar button { min-height: 32px; border: 1px solid var(--brand-soft); border-radius: 8px; background: white; color: var(--brand-deep); font: 10px "Plus Jakarta Sans",sans-serif; padding: 5px 8px; }
-  .detail-toolbar button:focus-visible { outline: 2px solid var(--brand); }
-  .story-stage.detail-view .stage-devices { width: 100%; height: calc(100% - 38px); margin: 0; left: 0; transform: none; --pointer-size: 1; }
+  .story-stage.detail-view .stage-devices { width: 100%; height: 100%; margin: 0; left: 0; transform: none; --pointer-size: 1; }
   .detail-view .device-laptop { width: 100%; height: 100%; top: 0; left: 0; }
   .detail-view .device-laptop .product-wrap { height: 100%; border-width: 2px; border-radius: 10px; box-shadow: none; }
   .detail-view .product-screen { height: 100%; display: flex; flex-direction: column; }
   .detail-view .app-top { padding: 7px 10px; flex: none; }
-  .detail-view .scene { height: auto; min-height: 0; flex: 1; overflow: auto; display: block; padding: 10px; }
+  .detail-view .scene { height: auto; min-height: 0; flex: 1; overflow: hidden; display: block; padding: 10px; }
   .detail-view .scene > * { margin-bottom: 9px; }
   .detail-view .scene .app-row { flex-shrink: 0; }
   .detail-view .scene .scene-summary, .detail-view .scene .scene-note, .detail-view .scene > .scene-action, .detail-view .scene > .scene-fine { max-width: 100%; }
   .detail-view .browser-bar, .detail-view .product-caption, .detail-view .laptop-base, .detail-view .companion { display: none; }
   .detail-view.detail-companion .device-laptop { display: none; }
-  .detail-view.detail-companion .companion { display: block; inset: 0; width: 100%; height: 100%; overflow: auto; }
+  .detail-view.detail-companion .companion { display: block; inset: 0; width: 100%; height: 100%; overflow: hidden; }
   .detail-view .companion-device, .detail-view .companion-device.phone { min-height: 0; border: 2px solid var(--brand-soft); border-radius: 10px; box-shadow: none; }
   .detail-view .comp-body { gap: 8px; padding: 10px; }
   .detail-view .comp-body p, .detail-view .comp-bubble, .detail-view .comp-receipt, .detail-view .mini-person, .detail-view .comp-body .demo-field .pf-in { font-size: 12px; }
@@ -173,3 +169,9 @@
   .demo-pointer { display: none; }
   .demo-steps button { transition: none; }
 }
+
+/* Quiet progress indicators; playback requires no input. */
+.demo-steps button[data-step] { flex-basis: 24px; width: 24px; border: 0; background: transparent; position: relative; }
+.demo-steps button[data-step] > span { display: none; }
+.demo-steps button[data-step]::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--brand-soft); }
+.demo-steps button[data-step][aria-current]::after { background: var(--brand); width: 18px; border-radius: 6px; }

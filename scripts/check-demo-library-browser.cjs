@@ -60,11 +60,7 @@ async function main() {
         assert.ok(visibleTogether.every(item => item.visible), `${slug} step ${index} must show devices, caption and controls without scrolling at ${width}x${height}: ${JSON.stringify(visibleTogether)}`);
         if (width < 500) {
           assert.ok(await evaluate('parseFloat(getComputedStyle(document.querySelector("#scene .scene-heading h3")).fontSize) >= 14'), 'mobile detail heading is readable without device scaling');
-          await evaluate('document.getElementById("detail-screen").click()');
-          await evaluate('document.getElementById("detail-screen").click()');
-          await evaluate('document.getElementById("detail-toggle").click()');
-          assert.equal(await evaluate('document.querySelector(".story-stage").classList.contains("detail-view")'), false);
-          await evaluate('document.getElementById("detail-toggle").click()');
+          assert.equal(await evaluate('document.querySelector(".detail-toolbar")'), null, 'no screen switches');
         }
         if (['reactivation', 'reservation', 'customer-database', 'walk-in'].includes(slug) && width !== 320) await capture(`${slug}-${width}-${index + 1}`);
       }
@@ -74,6 +70,16 @@ async function main() {
     }
   }
   await command('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
+  await command('Emulation.setDeviceMetricsOverride', { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+  await navigate('/demo/reservation');
+  assert.equal(await evaluate('document.querySelector(".story-stage").dataset.shot'), 'overview');
+  await delay(3600);
+  assert.equal(await evaluate('document.querySelector(".story-stage").dataset.shot'), 'companion', 'camera automatically zooms into guest form');
+  await capture('automatic-guest-393');
+  await delay(4900);
+  assert.equal(await evaluate('document.querySelector(".story-stage").dataset.shot'), 'main', 'camera automatically reveals dashboard result');
+  assert.equal(await evaluate('scrollY'), 0, 'automatic camera never scrolls the page');
+  await capture('automatic-result-393');
   await navigate('/demo/reactivation');
   await delay(2600);
   assert.equal(await evaluate('document.getElementById("demo-root").dataset.beat'), '1', 'autoplay advances');

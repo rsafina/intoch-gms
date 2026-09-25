@@ -42,8 +42,9 @@ overrides. The existing logo and share image are reused. Product screenshot asse
 inspected in the repository inventory; scenes use fictional HTML UI rather than embed
 screenshots with client information or tiny mobile text.
 
-The player advances four beats per step at 2.4 seconds per beat: about 29 seconds for
-three steps and 38 seconds for Full Journey. CSS provides cursor and result transitions.
+The player advances four beats per step: three 2.4-second action beats and a 4.2-second
+result hold, about 34 seconds for three steps and 46 seconds for Full Journey.
+Web Animations provides pausable camera, cursor and result transitions.
 It stops at the result/CTA, with explicit replay. Step changes reset the scene. Pause
 survives step changes. Hidden tabs and offscreen product panels stop the timer. Reduced
 motion shows the completed state of each step with manual navigation and no animation;
@@ -53,10 +54,13 @@ headline, one active numbered caption and round playback controls. These remain 
 together at the checked viewport sizes, including 320x640. Cursor motion uses Web Animations
 and pauses with playback. No hover is required.
 
-At phone widths (560px and below), the default view shows unscaled product details
-inside the same bounded stage. Visitors can switch between Intoch and the companion
-screen, or choose the device overview. Longer screens scroll inside the stage; playback
-brings active controls and final results into view while captions remain outside it.
+At phone widths (560px and below), playback automatically moves from a device overview
+to unscaled product details inside the same bounded stage. The camera chooses the guest
+screen or Intoch screen and brings active controls and final results into view; there
+are no screen switches. Reservation entry moves from guest form to dashboard result.
+Results hold for 4.2 seconds. Captions remain outside the camera viewport, with quiet
+step dots, pause/play and replay. Reduced motion disables camera animation and keeps
+step dots available for manual navigation.
 
 Only local in-memory state is used. There are no app scripts, Auth, Supabase clients,
 requests to customer services, writes, or local/session storage. External requests are

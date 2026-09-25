@@ -130,32 +130,13 @@
   const stage = root.querySelector('.story-stage');
   const companionScreen = document.getElementById('companion-screen');
   const pointer = root.querySelector('.demo-pointer');
-  const detailBar = document.createElement('div');
-  detailBar.className = 'detail-toolbar';
-  detailBar.innerHTML = '<button type="button" id="detail-toggle" aria-pressed="true">Lihat perangkat</button><button type="button" id="detail-screen" aria-pressed="false">Lihat tampilan pendamping</button>';
-  stage.appendChild(detailBar);
-  stage.classList.add('detail-view');
-  detailBar.addEventListener('click', event => {
-    const button = event.target.closest('button');
-    if (!button) return;
-    if (button.id === 'detail-toggle') {
-      const detailed = stage.classList.toggle('detail-view');
-      button.setAttribute('aria-pressed', String(detailed));
-      button.textContent = detailed ? 'Lihat perangkat' : 'Perbesar detail';
-    } else {
-      const companion = stage.classList.toggle('detail-companion');
-      button.setAttribute('aria-pressed', String(companion));
-      button.textContent = companion ? 'Lihat layar Intoch' : 'Lihat tampilan pendamping';
-    }
-    fitStage(); movePointer(definition.steps[stepIndex].scene, true); syncMotion();
-  });
   const animations = new Set();
   let renderedStep = -1, renderedBeat = -1, cursorAnimation = null;
   let remaining = interval, dueAt = 0;
   const controls = [...root.querySelectorAll('[data-step]')];
   // One compact control row, like the landing-page story player.
   const stepNavigation = root.querySelector('.demo-steps');
-  ['pause', 'restart', 'next'].forEach(id => stepNavigation.appendChild(document.getElementById(id)));
+  ['pause', 'restart'].forEach(id => stepNavigation.appendChild(document.getElementById(id)));
   document.getElementById('restart').textContent = '↻';
   controls.forEach((button, index) => button.setAttribute('aria-label', `Langkah ${index + 1}: ${definition.steps[index].label}`));
   function fitStage() {
@@ -253,8 +234,9 @@
     const detailed = window.innerWidth <= 560 && stage.classList.contains('detail-view');
     const scale = detailed ? 1 : bounds.width / 680 || 1;
     if (detailed && !target.getClientRects().length) { pointer.classList.remove('visible'); return; }
-    if (detailed && scene.contains(target)) {
-      scene.scrollTop += target.getBoundingClientRect().top - scene.getBoundingClientRect().top - scene.clientHeight / 2;
+    if (detailed) {
+      const viewport = scene.contains(target) ? scene : companionScreen.parentElement;
+      viewport.scrollTop += target.getBoundingClientRect().top - viewport.getBoundingClientRect().top - viewport.clientHeight / 2;
     }
     const targetBounds = target.getBoundingClientRect();
     const previousBounds = pointer.getBoundingClientRect();
@@ -277,13 +259,6 @@
   function paint() {
     const current = definition.steps[stepIndex];
     const stepChanged = renderedStep !== stepIndex;
-    if (stepChanged) {
-      scene.scrollTop = 0;
-      const guestScreen = current.scene === 'reservation';
-      stage.classList.toggle('detail-companion', guestScreen);
-      document.getElementById('detail-screen').setAttribute('aria-pressed', String(guestScreen));
-      document.getElementById('detail-screen').textContent = guestScreen ? 'Lihat layar Intoch' : 'Lihat tampilan pendamping';
-    }
     const sceneChanged = stepChanged || renderedBeat !== beat;
     root.dataset.step = String(stepIndex);
     root.dataset.beat = String(beat);
@@ -310,9 +285,27 @@
       updateSurface(companionScreen, companionView.html);
       if (stepChanged) animate(scene, [{ opacity: .3, transform: 'translateY(12px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 800 });
       if (hadSceneFocus && !stage.contains(document.activeElement)) (stage.querySelector('[data-scene-action]') || document.getElementById('next')).focus({ preventScroll: true });
+      const previousShot = stage.dataset.shot;
+      const guestAction = current.scene === 'reservation' && beat < lastBeat;
+      const guestResult = ['campaign', 'journey-message', 'reward'].includes(current.scene) && beat === lastBeat;
+      const shot = beat === 0 && !motion.matches ? 'overview' : guestAction || guestResult ? 'companion' : 'main';
+      const cameraTarget = shot === 'companion' ? companionScreen : stage.querySelector('.product-wrap');
+      const beforeCamera = cameraTarget.getBoundingClientRect();
+      stage.dataset.shot = shot;
+      stage.classList.toggle('detail-view', shot !== 'overview');
+      stage.classList.toggle('detail-companion', shot === 'companion');
+      if (stepChanged || previousShot !== shot) { scene.scrollTop = 0; companionScreen.parentElement.scrollTop = 0; }
       fitStage(); movePointer(current.scene, stepChanged);
+      if (window.innerWidth <= 560 && previousShot !== shot) {
+        const afterCamera = cameraTarget.getBoundingClientRect();
+        const from = beforeCamera.width && afterCamera.width
+          ? `translate(${beforeCamera.left - afterCamera.left}px, ${beforeCamera.top - afterCamera.top}px) scale(${beforeCamera.width / afterCamera.width}, ${beforeCamera.height / afterCamera.height})`
+          : 'translateY(12px) scale(.96)';
+        animate(cameraTarget, [{ opacity: .35, transform: from, transformOrigin: 'top left' }, { opacity: 1, transform: 'none', transformOrigin: 'top left' }], { duration: 1000 });
+      }
       if (window.innerWidth <= 560 && stage.classList.contains('detail-view') && beat === lastBeat) {
-        scene.scrollTop = scene.scrollHeight - scene.clientHeight;
+        const viewport = shot === 'companion' ? companionScreen.parentElement : scene;
+        viewport.scrollTop = viewport.scrollHeight - viewport.clientHeight;
       }
       renderedStep = stepIndex; renderedBeat = beat;
     }
@@ -339,6 +332,7 @@
       if (beat < lastBeat) beat++;
       else if (stepIndex < definition.steps.length - 1) { stepIndex++; beat = 0; }
       else finished = true;
+      remaining = beat === lastBeat ? 4200 : interval;
       paint(); schedule();
     }, remaining);
   }

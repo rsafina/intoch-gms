@@ -1,5 +1,14 @@
 # Current state and operational handoff
 
+Automatic mobile demo camera (2026-09-25; local on `demo`): replaces the manual
+screen switches below with a hands-free overview/action/result sequence. Phone visitors
+see an establishing device view, animated enlargement of the active screen, then the
+result automatically; reservation entry hands off from guest form to dashboard. Final
+results hold for 4.2 seconds. Captions stay fixed, with progress dots, pause and replay.
+Reduced motion retains manual step selection without camera animation. Targeted tests
+exercise every story's automatic shot selection, completion and pause; browser checks
+cover viewport fit and the real timed mobile handoff. No push, merge or deployment.
+
 Mobile demo readability (2026-09-25; local on `demo`): phones now default to an
 unscaled detail viewport with readable product text. Buttons switch to the companion
 screen or back to the device overview; reservation entry initially shows the guest form.

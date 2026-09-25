@@ -40,7 +40,17 @@ for (const slug of slugs) {
   const page = fixture(slug);
   const count = page.document.querySelectorAll('.demo-steps [data-step]').length;
   assert.match(page.document.title, /Demo Intoch/);
-  for (let index = 0; index < count * 4; index++) page.tick();
+  assert.equal(page.document.querySelector('.detail-toolbar'), null, 'no screen-selection work for visitors');
+  assert.equal(page.document.querySelector('.story-stage').dataset.shot, 'overview');
+  for (let index = 0; index < count * 4; index++) {
+    page.tick();
+    const stage = page.document.querySelector('.story-stage');
+    const beat = page.document.getElementById('demo-root').dataset.beat;
+    assert.equal(stage.dataset.shot === 'overview', beat === '0', slug + ' automatically focuses after establishing shot');
+    if (stage.dataset.scene === 'reservation' && beat !== '0') {
+      assert.equal(stage.dataset.shot, beat === '3' ? 'main' : 'companion', 'guest form automatically hands off to dashboard');
+    }
+  }
   assert.equal(page.document.getElementById('demo-end').hidden, false, slug + ' completes');
   assert.equal(page.timers.size, 0);
   assert.ok(page.document.querySelector('.demo-cta').href.startsWith('https://wa.me/6281325063362?'));
