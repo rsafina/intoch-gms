@@ -53,6 +53,11 @@ headline, one active numbered caption and round playback controls. These remain 
 together at the checked viewport sizes, including 320x640. Cursor motion uses Web Animations
 and pauses with playback. No hover is required.
 
+At phone widths (560px and below), the default view shows unscaled product details
+inside the same bounded stage. Visitors can switch between Intoch and the companion
+screen, or choose the device overview. Longer screens scroll inside the stage; playback
+brings active controls and final results into view while captions remain outside it.
+
 Only local in-memory state is used. There are no app scripts, Auth, Supabase clients,
 requests to customer services, writes, or local/session storage. External requests are
 fonts and the existing sales contact link when deliberately opened. Visible scene

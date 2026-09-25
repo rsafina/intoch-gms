@@ -130,6 +130,25 @@
   const stage = root.querySelector('.story-stage');
   const companionScreen = document.getElementById('companion-screen');
   const pointer = root.querySelector('.demo-pointer');
+  const detailBar = document.createElement('div');
+  detailBar.className = 'detail-toolbar';
+  detailBar.innerHTML = '<button type="button" id="detail-toggle" aria-pressed="true">Lihat perangkat</button><button type="button" id="detail-screen" aria-pressed="false">Lihat tampilan pendamping</button>';
+  stage.appendChild(detailBar);
+  stage.classList.add('detail-view');
+  detailBar.addEventListener('click', event => {
+    const button = event.target.closest('button');
+    if (!button) return;
+    if (button.id === 'detail-toggle') {
+      const detailed = stage.classList.toggle('detail-view');
+      button.setAttribute('aria-pressed', String(detailed));
+      button.textContent = detailed ? 'Lihat perangkat' : 'Perbesar detail';
+    } else {
+      const companion = stage.classList.toggle('detail-companion');
+      button.setAttribute('aria-pressed', String(companion));
+      button.textContent = companion ? 'Lihat layar Intoch' : 'Lihat tampilan pendamping';
+    }
+    fitStage(); movePointer(definition.steps[stepIndex].scene, true); syncMotion();
+  });
   const animations = new Set();
   let renderedStep = -1, renderedBeat = -1, cursorAnimation = null;
   let remaining = interval, dueAt = 0;
@@ -231,7 +250,12 @@
     pointer.classList.toggle('visible', !!target && !motion.matches && !finished);
     if (!target || motion.matches) return;
     const bounds = pointer.parentElement.getBoundingClientRect();
-    const scale = bounds.width / 680 || 1;
+    const detailed = window.innerWidth <= 560 && stage.classList.contains('detail-view');
+    const scale = detailed ? 1 : bounds.width / 680 || 1;
+    if (detailed && !target.getClientRects().length) { pointer.classList.remove('visible'); return; }
+    if (detailed && scene.contains(target)) {
+      scene.scrollTop += target.getBoundingClientRect().top - scene.getBoundingClientRect().top - scene.clientHeight / 2;
+    }
     const targetBounds = target.getBoundingClientRect();
     const previousBounds = pointer.getBoundingClientRect();
     const x = Math.max(0, Math.min(680 - 40 / scale, (targetBounds.left - bounds.left + targetBounds.width * .62) / scale));
@@ -253,6 +277,13 @@
   function paint() {
     const current = definition.steps[stepIndex];
     const stepChanged = renderedStep !== stepIndex;
+    if (stepChanged) {
+      scene.scrollTop = 0;
+      const guestScreen = current.scene === 'reservation';
+      stage.classList.toggle('detail-companion', guestScreen);
+      document.getElementById('detail-screen').setAttribute('aria-pressed', String(guestScreen));
+      document.getElementById('detail-screen').textContent = guestScreen ? 'Lihat layar Intoch' : 'Lihat tampilan pendamping';
+    }
     const sceneChanged = stepChanged || renderedBeat !== beat;
     root.dataset.step = String(stepIndex);
     root.dataset.beat = String(beat);
@@ -280,6 +311,9 @@
       if (stepChanged) animate(scene, [{ opacity: .3, transform: 'translateY(12px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 800 });
       if (hadSceneFocus && !stage.contains(document.activeElement)) (stage.querySelector('[data-scene-action]') || document.getElementById('next')).focus({ preventScroll: true });
       fitStage(); movePointer(current.scene, stepChanged);
+      if (window.innerWidth <= 560 && stage.classList.contains('detail-view') && beat === lastBeat) {
+        scene.scrollTop = scene.scrollHeight - scene.clientHeight;
+      }
       renderedStep = stepIndex; renderedBeat = beat;
     }
     if (finished) pointer.classList.remove('visible');

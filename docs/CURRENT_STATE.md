@@ -1,5 +1,12 @@
 # Current state and operational handoff
 
+Mobile demo readability (2026-09-25; local on `demo`): phones now default to an
+unscaled detail viewport with readable product text. Buttons switch to the companion
+screen or back to the device overview; reservation entry initially shows the guest form.
+The viewport follows active controls and final results, with internal scrolling available
+for longer screens. Caption and playback controls retain their compact layout. Desktop
+composition is unchanged. No push, merge, deployment or production changes.
+
 Compact demo layout (2026-09-25; local on `demo`, not pushed or deployed): replaced
 the tall mobile device stack with an overlapping laptop/phone stage, stable headline,
 one numbered caption and round controls matching the landing reference. Existing

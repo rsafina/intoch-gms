@@ -58,6 +58,14 @@ async function main() {
         assert.deepEqual(overflow, { page: false, scene: false }, `${slug} step ${index} at ${width}px`);
         const visibleTogether = await evaluate(`['.story-stage','#story-title','#story-text','.demo-steps'].map(selector => { const bounds = document.querySelector(selector).getBoundingClientRect(); return {selector, top:bounds.top, bottom:bounds.bottom, visible:bounds.top >= 0 && bounds.bottom <= innerHeight}; })`);
         assert.ok(visibleTogether.every(item => item.visible), `${slug} step ${index} must show devices, caption and controls without scrolling at ${width}x${height}: ${JSON.stringify(visibleTogether)}`);
+        if (width < 500) {
+          assert.ok(await evaluate('parseFloat(getComputedStyle(document.querySelector("#scene .scene-heading h3")).fontSize) >= 14'), 'mobile detail heading is readable without device scaling');
+          await evaluate('document.getElementById("detail-screen").click()');
+          await evaluate('document.getElementById("detail-screen").click()');
+          await evaluate('document.getElementById("detail-toggle").click()');
+          assert.equal(await evaluate('document.querySelector(".story-stage").classList.contains("detail-view")'), false);
+          await evaluate('document.getElementById("detail-toggle").click()');
+        }
         if (['reactivation', 'reservation', 'customer-database', 'walk-in'].includes(slug) && width !== 320) await capture(`${slug}-${width}-${index + 1}`);
       }
       await command('Page.reload', { ignoreCache: true });
