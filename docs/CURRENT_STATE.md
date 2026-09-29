@@ -1,5 +1,16 @@
 # Current state and operational handoff
 
+Demo character names (2026-09-29; local on `demo`): all nine stories now consistently
+use Michelle, Noelle, Jessica, Daniel, John and Brian in narration, accessible titles,
+mock screens, messages and initials. Indonesian copy and Bu/Pak forms of address remain.
+Internal scene identifiers are unchanged. Targeted playback/routing tests pass.
+No commit, push or deployment.
+
+Reservation demo identity (2026-09-29; local on `demo`): synchronized form, confirmation,
+booking rows/notifications and saved profile to Michelle, matching approved narration.
+Other stories retain Dewi; reservation profile initials are M. No workflow or timing
+changes. Targeted tests check every reservation beat for stale Dewi references.
+
 Approved Demo Library copy (2026-09-29; local on `demo`): updated all nine story
 titles, subtitles, step copy, existing notes, specified animation callouts and accessible
 step titles. Routes, scene order, fictional guests, styling, camera and timing are unchanged.

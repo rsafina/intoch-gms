@@ -2,6 +2,11 @@
 
 Approved wording retained, including exceptions to the general wording guidelines.
 
+Subsequent user-approved name update: Dewi is Michelle, Rina is Noelle, Sari is Jessica,
+Andi is Daniel, Bima is John, and Bayu is Brian throughout runtime copy and animations.
+The original approved-copy quotations and mismatch notes below describe the earlier
+copy review; this name update supersedes their character names.
+
 Copy-only update on `demo`. Existing scene IDs/order, routes, fictional guests, layout,
 styles, camera, timing and playback behavior remain unchanged. Existing note placement
 is preserved (Membership note remains on step 2); Walk-in has no note.
@@ -14,7 +19,8 @@ use the first sentence of each approved step. All requested callout groups are u
 
 - Campaign still filters At Risk (>60 days) and targets Dewi/Rina; approved steps describe
   New Comer/Pelanggan Baru. No audience logic was changed.
-- Reservation still displays Dewi Lestari, while approved step copy names Michelle.
+- Reservation name mismatch resolved: form, confirmation, booking notification and profile
+  now show Michelle. Dewi remains in the other stories, including Follow Up.
 - Walk-in steps still show visit A3 and Bayu's profile, not adding notes and changing tables.
 - At Risk filter is strictly greater than 60 days, whereas approved copy says starting at 60.
 - Full Journey has no message-history display proving the subtitle's claim that every

@@ -45,7 +45,12 @@ for (const slug of slugs) {
   for (let index = 0; index < count * 4; index++) {
     page.tick();
     const stage = page.document.querySelector('.story-stage');
+    assert.doesNotMatch(stage.textContent, /\b(Dewi|Rina|Sari|Andi|Bima|Bayu)\b/, 'all visible demo characters use the updated names');
     const beat = page.document.getElementById('demo-root').dataset.beat;
+    if (slug === 'reservation') {
+      assert.doesNotMatch(stage.textContent, /Dewi/, 'reservation visuals use the approved Michelle identity');
+      if (beat === '3') assert.match(stage.textContent, /Michelle/, 'reservation result names Michelle');
+    }
     assert.equal(stage.dataset.shot === 'overview', beat === '0', slug + ' automatically focuses after establishing shot');
     if (stage.dataset.scene === 'reservation' && beat !== '0') {
       assert.equal(stage.dataset.shot, beat === '3' ? 'main' : 'companion', 'guest form automatically hands off to dashboard');
@@ -76,13 +81,13 @@ for (const slug of slugs) {
 }
 const risk = fixture('reactivation');
 risk.click('.demo-steps [data-step="1"]');
-const persistentGuest = risk.document.querySelector('[data-key="DL"]');
+const persistentGuest = risk.document.querySelector('[data-key="MI"]');
 assert.equal(risk.document.querySelectorAll('.guest-rows .app-row').length, 6);
 risk.tick(); risk.tick();
-assert.equal(risk.document.querySelector('[data-key="DL"]'), persistentGuest, 'retained guests update in place without remounting');
+assert.equal(risk.document.querySelector('[data-key="MI"]'), persistentGuest, 'retained guests update in place without remounting');
 assert.equal(risk.document.querySelectorAll('.guest-rows .app-row').length, 2);
-assert.match(risk.document.getElementById('scene').textContent, /Dewi Lestari/);
-assert.doesNotMatch(risk.document.getElementById('scene').textContent, /Sari Wulandari/);
+assert.match(risk.document.getElementById('scene').textContent, /Michelle/);
+assert.doesNotMatch(risk.document.getElementById('scene').textContent, /Jessica/);
 risk.click('.demo-steps [data-step="1"]');
 assert.equal(risk.document.querySelectorAll('.guest-rows .app-row').length, 6, 'reselection resets scene');
 risk.close();
