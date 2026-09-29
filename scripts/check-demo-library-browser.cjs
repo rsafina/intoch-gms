@@ -59,6 +59,9 @@ async function main() {
     const slugs = await evaluate('IntochDemoData.definitions.map(item => item.slug)');
     for (const slug of slugs) {
       await navigate('/demo/' + slug);
+      assert.ok(await evaluate('document.querySelector(".demo-intro h1").textContent === IntochDemoData.definitions.find(item => item.slug === location.pathname.split("/").pop()).title'), 'header consistently shows story title');
+      assert.ok(await evaluate('document.getElementById("story-title").textContent === IntochDemoData.definitions.find(item => item.slug === location.pathname.split("/").pop()).problem'), 'body consistently shows subtitle');
+      assert.notEqual(await evaluate('getComputedStyle(document.querySelector(".demo-intro h1")).display'), 'none', 'header is visible at every viewport');
       assert.ok(await evaluate('document.title === IntochDemoData.definitions.find(item => item.slug === location.pathname.split("/").pop()).title + " · Demo Intoch"'), 'browser title uses approved story title');
       assert.ok(await evaluate('document.querySelector("meta[name=description]").content === IntochDemoData.definitions.find(item => item.slug === location.pathname.split("/").pop()).problem'), 'description uses approved subtitle');
       const count = await evaluate('document.querySelectorAll(".demo-steps [data-step]").length');

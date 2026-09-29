@@ -1,5 +1,12 @@
 # Current state and operational handoff
 
+Demo heading parity (2026-09-29; local on `demo`): desktop and mobile now use the
+same visible hierarchy: approved title in the page header, approved subtitle in the
+story body, then the active step caption. Removed the mobile-only subtitle hiding and
+duplicated body title. Camera, playback and story text are unchanged. Browser checks
+assert the same header/subtitle fields and their visibility across viewport sizes.
+No commit, push or deployment.
+
 Demo character names (2026-09-29; local on `demo`): all nine stories now consistently
 use Michelle, Noelle, Jessica, Daniel, John and Brian in narration, accessible titles,
 mock screens, messages and initials. Indonesian copy and Bu/Pak forms of address remain.

@@ -25,8 +25,9 @@ use the first sentence of each approved step. All requested callout groups are u
 - At Risk filter is strictly greater than 60 days, whereas approved copy says starting at 60.
 - Full Journey has no message-history display proving the subtitle's claim that every
   message is stored in the profile; no storage behavior was added.
-- No typewriter subtitle implementation exists. Existing mobile CSS hides the page h1
-  (subtitle); it remains available in desktop header and meta description.
+- No typewriter subtitle implementation exists. A subsequent user-requested parity fix
+  places the title in the header and subtitle in the body on both desktop and mobile;
+  the subtitle is no longer hidden on mobile.
 - Static Open Graph text remains the generic library preview, as before; no route-specific
   social metadata generator was introduced.
 - Real screen labels (Database Tamu, Profil Tamu, Buat Campaign, Follow-up Reservasi,
