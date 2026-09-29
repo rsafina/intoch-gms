@@ -47,10 +47,20 @@ async function main() {
   }
   for (const [width, height] of [[1440,900], [1280,720], [393,852], [320,640]]) {
     await command('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 500 });
+    await command('Page.navigate', { url: base + '/demo' });
+    for (let attempt = 0; attempt < 80; attempt++) {
+      if (await evaluate('location.pathname === "/demo" && document.readyState === "complete" && document.querySelectorAll(".demo-grid a").length === 9')) break;
+      await delay(100);
+    }
+    assert.equal(await evaluate('document.querySelectorAll(".demo-grid a").length'), 9, 'library lists all nine stories');
+    assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false, 'library copy wraps');
+    await capture(`library-${width}`);
     await navigate('/demo/reactivation');
     const slugs = await evaluate('IntochDemoData.definitions.map(item => item.slug)');
     for (const slug of slugs) {
       await navigate('/demo/' + slug);
+      assert.ok(await evaluate('document.title === IntochDemoData.definitions.find(item => item.slug === location.pathname.split("/").pop()).title + " · Demo Intoch"'), 'browser title uses approved story title');
+      assert.ok(await evaluate('document.querySelector("meta[name=description]").content === IntochDemoData.definitions.find(item => item.slug === location.pathname.split("/").pop()).problem'), 'description uses approved subtitle');
       const count = await evaluate('document.querySelectorAll(".demo-steps [data-step]").length');
       for (let index = 0; index < count; index++) {
         await evaluate(`document.querySelectorAll('.demo-steps [data-step]')[${index}].click()`);

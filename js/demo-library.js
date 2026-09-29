@@ -33,7 +33,7 @@
     return `<div class="scene-heading"><h3>Database Tamu</h3>${badge(visibleGuests.length + ' tamu')}</div>
       <div class="filter-bar">${search ? `<div class="search-field">⌕ ${beat ? 'Dewi Lestari' : 'Cari nama atau nomor telepon'}</div>${action('Cari tamu')}` : `<span class="filter-chip ${!filtered || !selected ? 'selected' : ''}">Semua tamu · 6</span>${filtered ? action(selected ? '✓ At Risk · 2 tamu' : 'Pilih At Risk >60 hari') : '<span class="filter-chip">Kunjungan terakhir</span>'}`}</div>
       <div class="guest-rows">${visibleGuests.map(guest => row(guest, beat > 0 && guest.days > 60)).join('')}</div>
-      <div class="scene-summary">${filtered && selected ? '<strong>6 → 2</strong><span>Hanya tamu yang lebih dari 60 hari belum datang.</span>' : search && selected ? '<strong>Profil ditemukan</strong><span>Riwayat dan catatan berada di satu tempat.</span>' : '<strong>Kenali jeda kunjungannya</strong><span>Dewi dan Rina sudah lama tidak datang.</span>'}</div>`;
+      <div class="scene-summary">${filtered && selected ? '<strong>6 → 2</strong><span>Tersisa pelanggan yang 60 hari lebih tidak datang.</span>' : search && selected ? '<strong>Profil ketemu</strong><span>Riwayat dan catatan ada di satu halaman.</span>' : '<strong>Sudah lama tidak datang</strong><span>Bu Dewi dan Bu Rina belum kembali lebih dari 2 bulan.</span>'}</div>`;
   }
   function profile(kind) {
     const isBayu = kind === 'bayu-profile' || kind === 'return';
@@ -43,7 +43,7 @@
       ${card('', identity(guest) + stats(guest))}
       <div class="profile-columns">${card('Riwayat kunjungan', `<div class="history">${isBayu ? `${returning && beat >= 2 ? '<p class="highlight">3 Okt · Walk-in <b>2 orang</b></p>' : ''}<p>23 Sep · Walk-in <b>2 orang · A3</b></p>` : '<p>20 Jun · Reservasi <b>Rp360.000</b></p><p>16 Mei · Walk-in <b>Rp280.000</b></p><p>11 Apr · Reservasi <b>Rp320.000</b></p><p>7 Mar · Walk-in <b>Rp280.000</b></p>'}</div>`)}
       ${card(kind === 'booked-profile' ? 'Reservasi mendatang' : 'Catatan tim', kind === 'booked-profile' ? '<p>26 Sep · 19:00</p><b>4 orang · Teras</b>' : `<p class="${beat >= 1 ? 'highlight' : ''}">${guest.note}</p><small>${isBayu ? 'Gunakan profil yang sama saat tamu kembali.' : 'Buka catatan sebelum menyiapkan meja.'}</small>`, beat >= 1 ? 'lit' : '')}</div>
-      ${kind === 'preference' ? `${action('Lihat catatan tamu')}${beat >= 2 ? note('“Selamat datang kembali, Bu Dewi. Ingin di teras seperti biasa?”') : ''}` : returning ? `${action('Catat kunjungan berikutnya')}${beat >= 2 ? note('Kunjungan kedua terhubung ke profil Bayu.') : ''}` : beat >= 2 ? note(isBayu ? 'Bayu kini punya riwayat, bukan hanya nama.' : 'Identitas, riwayat, dan konteks tamu tersedia untuk tim.') : ''}`;
+      ${kind === 'preference' ? `${action('Lihat catatan tamu')}${beat >= 2 ? note('“Selamat datang kembali, Bu Dewi. Ingin di teras seperti biasa?”') : ''}` : returning ? `${action('Catat kunjungan berikutnya')}${beat >= 2 ? note('Kunjungan kedua terhubung ke profil Bayu.') : ''}` : beat >= 2 ? note(isBayu ? 'Pak Bayu kini tercatat sebagai pelanggan.' : 'Siapa dia, kapan datang, dan apa kesukaannya, semua terlihat.') : ''}`;
   }
   function campaign(kind) {
     const journey = kind === 'journey-message';
@@ -54,7 +54,7 @@
       ${field('Nama campaign', journey ? 'Terima kasih sudah datang' : 'Kembali ke Senja')}
       ${card('Template pesan', `<p>${beat >= 1 ? 'Pesan personal untuk ' + name + ' siap ditinjau di preview.' : 'Pilih pesan yang sesuai dengan audiens.'}</p>`)}
       ${action(beat >= 2 ? 'Siapkan WhatsApp untuk ' + (journey ? 'Bayu' : 'Dewi') : 'Buat draft campaign')}
-      ${beat >= 3 ? note('Pesan siap ditinjau. Staf membuka dan mengirim satu per satu.') : '<p class="scene-fine">Penerima di luar segmen tidak masuk audiens ini.</p>'}`;
+      ${beat >= 3 ? note('Pesan siap. Staf kirim satu per satu lewat WhatsApp.') : '<p class="scene-fine">Penerima di luar segmen tidak masuk audiens ini.</p>'}`;
   }
   function walkin() {
     return `<div class="scene-heading"><h3>Walk-in</h3>${badge('23 Sep · 18:30')}</div><p class="scene-fine">Tamu datang tanpa reservasi</p>
@@ -65,7 +65,7 @@
     return `<div class="scene-heading"><h3>Reservasi Mendatang</h3>${badge(beat === 3 ? '1 booking baru' : 'Minggu ini')}</div>
       <div class="app-row"><span class="who"><b>Sari Wulandari</b><small>Jum, 25 Sep · 20:00 · 2 orang · Indoor</small></span>${badge('Reserved')}</div>
       ${beat === 3 ? `<div class="app-row hl"><span class="who"><b>Dewi Lestari <span class="tg online">Online</span></b><small>Sab, 26 Sep · 19:00 · 4 orang · Teras</small></span>${badge('Reserved')}</div><div class="notification">Reservasi online baru<br><b>Dewi Lestari · 4 orang</b></div>` : '<div class="awaiting-booking"><span>↙</span><b>Dimulai dari ponsel tamu</b><p>Booking akan muncul di sini.</p></div>'}
-      <div class="scene-summary"><strong>${beat === 3 ? 'Masuk otomatis' : 'Tim siap menerima'}</strong><span>${beat === 3 ? 'Nama, kontak, dan pilihan tamu ikut tersimpan.' : 'Tamu memilih. Intoch mencatat.'}</span></div>`;
+      <div class="scene-summary"><strong>${beat === 3 ? 'Langsung masuk' : 'Booking baru'}</strong><span>${beat === 3 ? 'Nama, nomor, dan pilihan meja ikut tersimpan.' : 'Pelanggan pilih sendiri, Intoch yang mencatat.'}</span></div>`;
   }
   function booking(follow = false, done = false, context = false) {
     return `<div class="scene-heading"><h3>${follow ? 'Follow-up Reservasi' : 'Reservasi Mendatang'}</h3>${badge(done && beat >= 2 ? '0 perlu follow-up' : '1 perlu follow-up', true)}</div>
@@ -73,8 +73,8 @@
       ${!follow && beat >= 1 ? '<div class="notification">♧ Reservasi online baru<br><b>Dewi Lestari · 4 orang</b></div>' : ''}
       ${card(context ? 'Konteks sebelum menghubungi' : 'Detail reservasi', `<div class="booking-details"><p><span>Kontak</span><b>${dewi.phone}</b></p><p><span>Catatan tamu</span><b>${dewi.note}</b></p><p><span>Kunjungan sebelumnya</span><b>20 Jun · 4 kunjungan</b></p></div>`)}
       ${context ? card('Pesan konfirmasi', '<div class="message-bubble">Halo Bu Dewi, kami konfirmasi reservasi Sabtu, 26 Sep pukul 19:00 untuk 4 orang di Teras. Kami tunggu kedatangannya di Senja.</div>') : ''}
-      ${follow ? action(done ? (beat >= 2 ? '✓ Sudah di-follow up' : 'Tandai setelah menghubungi') : 'Lihat detail & pesan WhatsApp') : '<div class="scene-summary"><strong>Tanpa salin ulang</strong><span>Nama, kontak, waktu, dan jumlah tamu masuk bersama booking.</span></div>'}
-      ${done && beat >= 2 ? note('Ditandai oleh staf · 23 Sep, 10:05. Antrean diperbarui.') : context ? '<p class="scene-fine">Staf tetap meninjau dan mengirim pesan di WhatsApp.</p>' : ''}`;
+      ${follow ? action(done ? (beat >= 2 ? '✓ Sudah di-follow up' : 'Tandai setelah menghubungi') : 'Lihat detail & pesan WhatsApp') : '<div class="scene-summary"><strong>Tidak perlu salin dari chat</strong><span>Nama, nomor, jam, dan jumlah orang sudah terisi.</span></div>'}
+      ${done && beat >= 2 ? note('Ditandai oleh staf · 23 Sep, 10:05. Antrean diperbarui.') : context ? '<p class="scene-fine">Pesan tetap dikirim staf lewat WhatsApp.</p>' : ''}`;
   }
   function membership(kind) {
     const converted = kind === 'reward' && beat >= 2;
@@ -104,21 +104,21 @@
     const guest = isBayu ? bayu : dewi;
     if (reservationFlow) {
       const sent = kind !== 'reservation' || beat === 3;
-      return { type: 'phone', label: 'PONSEL TAMU', title: sent ? 'Reservasi terkirim' : 'Tamu memilih sendiri', html: `<div class="comp-phone-top"><span class="phone-speaker"></span><b>Senja Resto</b><small>Reservasi meja</small></div><div class="comp-body">
+      return { type: 'phone', label: 'HP PELANGGAN', title: 'Booking tanpa chat', html: `<div class="comp-phone-top"><span class="phone-speaker"></span><b>Senja Resto</b><small>Reservasi meja</small></div><div class="comp-body">
         ${sent ? '<div class="phone-success">✓</div><h4>Sampai jumpa, Bu Dewi.</h4><p>26 Sep · 19:00<br>4 orang · Teras</p><div class="comp-receipt">Reservasi diterima<br><b>Tim akan menghubungi Anda.</b></div>' : `${field('Tanggal', 'Sab, 26 Sep 2026')}<div class="comp-choice" data-point="area"><small>Area</small><div class="pf-pills"><span class="pf-pill">Indoor</span><span class="pf-pill ${beat >= 1 ? 'pick' : ''}">Teras</span></div></div><div class="comp-choice" data-point="time"><small>Jam</small><div class="pf-pills"><span class="pf-pill">18:00</span><span class="pf-pill ${beat >= 2 ? 'pick' : ''}">19:00</span></div></div>${field('Nama · Jumlah', beat >= 2 ? 'Dewi Lestari · 4 orang' : 'Nama tamu · 4 orang')}<button class="scene-action" data-scene-action type="button">Kirim reservasi</button>`}</div>` };
     }
     if (messaging) {
       const follow = kind.startsWith('follow');
       const message = follow ? 'Halo Bu Dewi, kami konfirmasi reservasi 26 Sep, pukul 19:00 untuk 4 orang di Teras. Kami tunggu di Senja.' : isBayu ? 'Halo Pak Bayu, terima kasih sudah mampir ke Senja. Kami senang menyambut Bapak kembali bersama keluarga.' : 'Halo Bu Dewi, sudah lama tidak bertemu di Senja. Ada waktu untuk makan bersama keluarga akhir pekan ini?';
-      return { type: 'phone chat', label: 'PREVIEW WHATSAPP', title: 'Pesan personal, siap ditinjau', html: `<div class="comp-phone-top"><span class="phone-speaker"></span><b>${guest.name}</b><small>${guest.phone}</small></div><div class="comp-body"><span class="chat-date">${follow ? 'Konfirmasi reservasi' : 'Kembali ke Senja'}</span><div class="comp-bubble ${beat >= 1 ? 'revealed' : ''}">${beat >= 1 ? message : 'Pesan disiapkan dari konteks tamu…'}</div><div class="comp-receipt"><b>Draft pesan</b><br>Staf meninjau dan mengirim di WhatsApp.</div></div>` };
+      return { type: 'phone chat', label: 'PREVIEW WHATSAPP', title: 'Pesan sudah menyebut nama pelanggan', html: `<div class="comp-phone-top"><span class="phone-speaker"></span><b>${guest.name}</b><small>${guest.phone}</small></div><div class="comp-body"><span class="chat-date">${follow ? 'Konfirmasi reservasi' : 'Kembali ke Senja'}</span><div class="comp-bubble ${beat >= 1 ? 'revealed' : ''}">${beat >= 1 ? message : 'Menyiapkan pesan…'}</div><div class="comp-receipt"><b>Draft:</b><br>staf cek dulu, lalu kirim.</div></div>` };
     }
     if (memberFlow) {
       const reward = kind === 'reward' && beat >= 2;
-      return { type: 'phone member-phone', label: 'MEMBERSHIP FAMILY', title: 'Aktivitas menjadi reward', html: `<div class="comp-phone-top"><span class="phone-speaker"></span><b>Senja Family</b><small>Sari Wulandari</small></div><div class="comp-body"><div class="member-emblem">S</div><h4>${reward ? 'Voucher member' : 'Selamat datang kembali.'}</h4><div class="comp-receipt"><span>${reward ? 'Reward tersedia' : 'Saldo stiker'}</span><strong>${reward ? 'Rp50.000' : kind === 'member' || (kind === 'stickers' && beat < 2) ? '8 / 10' : '10 / 10'}</strong><small>${reward ? 'Berlaku hingga 23 Okt 2026' : '10 stiker menjadi 1 voucher'}</small></div><p>Kenali tamunya.<br>Jaga hubungannya.</p></div>` };
+      return { type: 'phone member-phone', label: 'MEMBERSHIP FAMILY', title: 'Belanja jadi stiker, stiker jadi voucher', html: `<div class="comp-phone-top"><span class="phone-speaker"></span><b>Senja Family</b><small>Sari Wulandari</small></div><div class="comp-body"><div class="member-emblem">S</div><h4>${reward ? 'Voucher member' : 'Selamat datang kembali.'}</h4><div class="comp-receipt"><span>${reward ? 'Reward tersedia' : 'Saldo stiker'}</span><strong>${reward ? 'Rp50.000' : kind === 'member' || (kind === 'stickers' && beat < 2) ? '8 / 10' : '10 / 10'}</strong><small>${reward ? 'Berlaku hingga 23 Okt 2026' : '10 stiker menjadi 1 voucher'}</small></div><p>Datang lagi, dapat hadiah.</p></div>` };
     }
     const segment = ['database', 'risk'].includes(kind);
-    if (segment) return { type: 'insight', label: 'DARI DATA KE INSIGHT', title: 'Ada tamu yang perlu disapa', html: `<div class="comp-body"><span class="insight-symbol">↗</span><h4>${kind === 'risk' && beat >= 2 ? 'Audiens ditemukan' : 'Pernah datang. Lama tak kembali.'}</h4><div class="insight-number">2 <small>dari 6 tamu</small></div><div class="mini-person"><b>DL</b><span>Dewi Lestari<small>95 hari tidak datang</small></span></div><div class="mini-person"><b>RP</b><span>Rina Putri<small>75 hari tidak datang</small></span></div><p>Mulai dari hubungan yang sudah ada.</p></div>` };
-    return { type: 'profile-peek', label: 'KONTEKS TAMU', title: isBayu ? 'Kunjungan menjadi riwayat' : 'Tim mengenal tamunya', html: `<div class="comp-body">${identity(guest)}<div class="comp-receipt"><small>${isBayu ? 'Kunjungan tercatat' : 'Catatan untuk tim'}</small><b>${isBayu ? kind === 'return' && beat >= 2 ? '2 kunjungan · tamu kembali' : '23 Sep · 2 orang · A3' : 'Suka meja teras'}</b></div><p>${isBayu ? 'Gunakan profil yang sama saat datang lagi.' : '“Ingin di teras seperti biasa, Bu Dewi?”'}</p></div>` };
+    if (segment) return { type: 'insight', label: 'PERLU DISAPA', title: '2 pelanggan lama belum kembali', html: `<div class="comp-body"><span class="insight-symbol">↗</span><h4>Pernah datang, lalu menghilang</h4><div class="insight-number">2 <small>dari 6 tamu</small></div><div class="mini-person"><b>DL</b><span>Dewi Lestari<small>95 hari tidak datang</small></span></div><div class="mini-person"><b>RP</b><span>Rina Putri<small>75 hari tidak datang</small></span></div><p>Mereka sudah kenal restoran Anda.</p></div>` };
+    return { type: 'profile-peek', label: 'PROFIL PELANGGAN', title: isBayu ? 'Bayu: Kunjungan pertama tercatat' : 'Tim tahu siapa yang datang', html: `<div class="comp-body">${identity(guest)}<div class="comp-receipt"><small>${isBayu ? 'Kunjungan tercatat' : 'Catatan untuk tim'}</small><b>${isBayu ? kind === 'return' && beat >= 2 ? '2 kunjungan · tamu kembali' : '23 Sep · 2 orang · A3' : 'Suka meja teras'}</b></div><p>${isBayu ? 'Kunjungan berikutnya masuk ke profil ini.' : '“Ingin di teras seperti biasa, Bu Dewi?”'}</p></div>` };
   }
   root.innerHTML = `<section class="demo-intro"><div class="intro-top"><span class="v2-stagetag">${definition.category}</span><span>${definition.title}</span></div><h1>${definition.problem}</h1></section>
     <section class="demo-player" aria-label="${definition.title}">
@@ -138,7 +138,7 @@
   const stepNavigation = root.querySelector('.demo-steps');
   ['pause', 'restart'].forEach(id => stepNavigation.appendChild(document.getElementById(id)));
   document.getElementById('restart').textContent = '↻';
-  controls.forEach((button, index) => button.setAttribute('aria-label', `Langkah ${index + 1}: ${definition.steps[index].label}`));
+  controls.forEach((button, index) => button.setAttribute('aria-label', `Langkah ${index + 1}: ${definition.steps[index].title}`));
   function fitStage() {
     const scale = Math.min((stage.clientWidth || 680) / 680, (stage.clientHeight || 560) / 560);
     const changed = Math.abs(Number(stage.style.getPropertyValue('--stage-scale')) - scale) > .001;
@@ -311,7 +311,7 @@
     }
     if (finished) pointer.classList.remove('visible');
     syncMotion();
-    document.getElementById('beat-label').textContent = ['Alur dimulai', 'Lihat konteksnya', 'Tindakan di Intoch', 'Hasilnya terlihat'][beat];
+    document.getElementById('beat-label').textContent = ['Situasinya', 'Cek datanya', 'Lakukan di Intoch', 'Hasilnya'][beat];
     document.getElementById('demo-progress').style.width = `${((stepIndex * 4 + beat + 1) / (definition.steps.length * 4)) * 100}%`;
     document.getElementById('step-count').textContent = `${stepIndex + 1} / ${definition.steps.length}`;
     document.getElementById('pause').textContent = motion.matches ? 'Ⅱ' : finished ? '▶' : paused ? '▶' : 'Ⅱ';

@@ -3,78 +3,78 @@
   'use strict';
   const step = (label, title, text, scene, note = '') => ({ label, title, text, scene, note });
   const definitions = [
-    { slug: 'reactivation', category: 'Hubungan pelanggan', title: 'Pelanggan Lama Kembali',
-      problem: 'Punya banyak data tamu. Siapa yang sudah lama tidak datang?',
-      keyMessage: 'Temukan customer yang sudah lama tidak kembali.',
+    { slug: 'reactivation', category: 'Hubungan pelanggan', title: "Tingkatkan After-Sales, Ciptakan Customer Relationship",
+      problem: "Temukan pelanggan yang lama belum kembali, dan berikan perhatian lewat pesan WhatsApp.",
+      keyMessage: "Tingkatkan After-Sales, Ciptakan Customer Relationship",
       steps: [
-        step('Data', 'Masih ingat Dewi?', 'Dulu rutin datang. Di antara nama-nama lain, jeda kunjungannya mudah terlewat.', 'database'),
-        step('Insight', 'Lihat siapa yang mulai menjauh.', 'Pilih segmen At Risk. Tamu yang lebih dari 60 hari belum berkunjung terlihat bersama kunjungan terakhirnya.', 'risk'),
-        step('Action', 'Ajak kembali dengan alasan yang relevan.', 'Buat campaign untuk segmen ini, lalu siapkan pesan personal. Staf menghubungi penerima satu per satu lewat WhatsApp.', 'reactivate', 'Data yang sudah Anda miliki tetap berguna. Tidak harus mengganti POS atau platform reservasi Anda.')
+        step("Data", "Bu Dewi dulu rutin makan di sini.", "Bu Dewi dulu rutin makan di sini. Tapi, sudah 3 bulan dia tidak datang, dan tidak ada yang sadar.", "database"),
+        step("Insight", "Melalui report 'Customer At Risk', pelanggan dengan visit mulai 60 hari lalu dapat ditemukan.", "Melalui report 'Customer At Risk', pelanggan dengan visit mulai 60 hari lalu dapat ditemukan.", "risk"),
+        step("Action", "Follow up dengan campaign, siapkan pesan ajakan repeat order dan kirim secara personal melalui WhatsApp.", "Follow up dengan campaign, siapkan pesan ajakan repeat order dan kirim secara personal melalui WhatsApp.", "reactivate", "Dengan Intoch, data pelanggan menjadi milik Anda sepenuhnya, dan dapat Anda manfaatkan untuk menciptakan Customer Relationship.")
       ], related: ['customer-database', 'campaign'] },
-    { slug: 'customer-database', category: 'Kenali tamu', title: 'Kenali Customer',
-      problem: 'Nama familiar. Tapi tim lupa kunjungan dan kesukaannya?',
-      keyMessage: 'Customer data bukan cuma tersimpan — tapi bisa digunakan.',
+    { slug: 'customer-database', category: 'Kenali tamu', title: "Kenali Pelanggan Lebih Baik dengan Customer Database",
+      problem: "Bantu tim waiter Anda melayani lebih personal, tanpa perlu menghafal.",
+      keyMessage: "Kenali Pelanggan Lebih Baik dengan Customer Database",
       steps: [
-        step('Cari', 'Satu nama, konteksnya terbuka.', 'Cari Dewi saat ia menghubungi restoran. Tim melihat profil yang sama tanpa menggali chat lama.', 'search'),
-        step('Kenali', 'Bukan sekadar nomor telepon.', 'Riwayat reservasi, walk-in, belanja yang tercatat, dan catatan tamu membantu tim mengenalinya.', 'profile'),
-        step('Layani', 'Sambut dengan lebih personal.', 'Catatan “suka meja teras” memberi tim konteks untuk percakapan berikutnya.', 'preference', 'Belanja hanya ditampilkan jika pernah dicatat. Penggabungan data dari sistem lain memerlukan penyiapan data saat onboarding.')
+        step("Cari", "Bu Dewi menelepon untuk pesan meja.", "Bu Dewi menelepon untuk pesan meja. Cukup ketik namanya, profilnya langsung muncul.", "search"),
+        step("Kenali", "Tim langsung tahu berapa kali ia datang, kapan terakhir, dan berapa belanjanya.", "Tim langsung tahu berapa kali ia datang, kapan terakhir, dan berapa belanjanya.", "profile"),
+        step("Layani", "Ada catatan “suka meja teras”.", "Ada catatan “suka meja teras”. Tim bisa langsung menawarkan meja favoritnya.", "preference", "Total belanja pelanggan dapat ditambahkan di data kunjungan dan menjadi 'spending behavior' yang dapat digunakan di masa depan.")
       ], related: ['reactivation', 'walk-in'] },
-    { slug: 'campaign', category: 'Pesan yang relevan', title: 'Campaign Berdasarkan Segmen',
-      problem: 'Pesan yang sama dikirim ke semua orang?',
-      keyMessage: 'Kirim pesan yang relevan ke customer yang tepat.',
+    { slug: 'campaign', category: 'Pesan yang relevan', title: "Berhenti bagikan pesan broadcast yang sama ke semua leads pelanggan Anda.",
+      problem: "Kirimkan broadcast marketing yang relevan dengan history visit, data spending, atau event spesial pelanggan.",
+      keyMessage: "Berhenti bagikan pesan broadcast yang sama ke semua leads pelanggan Anda.",
       steps: [
-        step('Semua tamu', 'Setiap tamu punya konteks berbeda.', 'Ada yang baru datang minggu ini. Ada yang sudah berbulan-bulan tidak kembali.', 'database'),
-        step('Pilih audiens', 'Enam tamu. Dua yang perlu diajak kembali.', 'Segmen At Risk mempersempit audiens. Pesan ajakan kembali tidak diarahkan ke tamu yang baru datang.', 'risk'),
-        step('Siapkan pesan', 'Satu tujuan, audiens yang sesuai.', 'Tinjau pesan dan dua penerima sebelum staf membuka WhatsApp satu per satu.', 'campaign', 'Membuka WhatsApp bukan bukti pesan terkirim. Pengiriman tetap dilakukan oleh staf.')
+        step("Semua tamu", "Ada pelanggan new comer, ada loyal customer dan ada yang lama tidak repeat order.", "Ada pelanggan new comer, ada loyal customer dan ada yang lama tidak repeat order. Tentu, marketing broadcastnya tidak bisa sama.", "database"),
+        step("Pilih audiens", "Contoh, Anda ingin pelanggan 'New Comer' untuk berkunjung kedua kalinya.", "Contoh, Anda ingin pelanggan 'New Comer' untuk berkunjung kedua kalinya. Anda bisa membuat campaign dengan target kategori 'Pelanggan Baru'.", "risk"),
+        step("Siapkan pesan", "Buat pesan broadcast khusus untuk 'Pelanggan Baru', dan kirimkan WhatsApp personal ke target leads.", "Buat pesan broadcast khusus untuk 'Pelanggan Baru', dan kirimkan WhatsApp personal ke target leads.", "campaign", "Fitur campaign Intoch bantu Anda menyiapkan template pesan WhatsApp dan terhubung langsung ke target leads.")
       ], related: ['reactivation', 'customer-insight'] },
-    { slug: 'walk-in', category: 'Di meja penerima tamu', title: 'Walk-in Saat Ramai',
-      problem: 'Tamu terus datang. Mencatat data sering tertinggal?',
-      keyMessage: 'Tetap kenal customer meski datang tanpa reservasi.',
+    { slug: 'walk-in', category: 'Di meja penerima tamu', title: "Dapatkan data pelanggan walk-in, tanpa membuat mereka menunggu.",
+      problem: "Saat ramai pun, data pelanggan tetap tercatat tanpa membuat antrean.",
+      keyMessage: "Dapatkan data pelanggan walk-in, tanpa membuat mereka menunggu.",
       steps: [
-        step('Catat cepat', 'Tamu masuk. Catat yang perlu saja.', 'Nama, kontak, jumlah tamu, dan meja. Tim bisa langsung melanjutkan pelayanan.', 'walkin'),
-        step('Kunjungan', 'Duduk di meja A3, tercatat di Intoch.', 'Kunjungan Bayu tersimpan sebagai walk-in untuk dua orang.', 'visit'),
-        step('Kembali', 'Lain kali, bukan mulai dari nol.', 'Cari kontak yang sama saat Bayu kembali. Riwayat kunjungannya sudah ada.', 'bayu-profile')
+        step("Catat cepat", "Cukup isi nama, nomor WhatsApp, dan jumlah pax, lalu antarkan pelanggan ke meja.", "Cukup isi nama, nomor WhatsApp, dan jumlah pax, lalu antarkan pelanggan ke meja.", "walkin"),
+        step("Kunjungan", "Tambahkan nomor meja dan note setelah Anda/pelanggan menentukan tempat duduknya.", "Tambahkan nomor meja dan note setelah Anda/pelanggan menentukan tempat duduknya.", "visit"),
+        step("Kembali", "Ubah nomor meja dengan fleksibel kapanpun pelanggan request untuk pindah meja.", "Ubah nomor meja dengan fleksibel kapanpun pelanggan request untuk pindah meja.", "bayu-profile")
       ], related: ['customer-database', 'reservation'] },
-    { slug: 'reservation', category: 'Sebelum tamu datang', title: 'Reservasi Mandiri',
-      problem: 'Booking tersebar di chat. Staf harus mencatat ulang?',
-      keyMessage: 'Reservasi masuk otomatis tanpa pencatatan ulang.',
+    { slug: 'reservation', category: 'Sebelum tamu datang', title: "Mudahkan Reservasi Pelanggan dengan Online Form, Simpan dan Manfaatkan Data Kemudian",
+      problem: "Setiap data kunjungan terakumulasi, on track dan jadi database yang siap digunakan.",
+      keyMessage: "Mudahkan Reservasi Pelanggan dengan Online Form, Simpan dan Manfaatkan Data Kemudian",
       steps: [
-        step('Tamu memilih', 'Tamu mengatur rencananya sendiri.', 'Dewi memilih tanggal, area, jam, dan empat orang melalui tautan reservasi.', 'reservation'),
-        step('Booking masuk', 'Tim langsung melihat reservasinya.', 'Booking muncul di daftar reservasi dengan notifikasi untuk ditindaklanjuti.', 'booking'),
-        step('Data tersimpan', 'Kontak tamu ikut tersimpan.', 'Reservasi Dewi terhubung ke profilnya. Tim tidak perlu menyalin nama dan nomor dari chat.', 'booked-profile', 'Contoh area tanpa deposit. Status dan kebutuhan deposit mengikuti pengaturan restoran.')
+        step("Tamu memilih", "Michelle klik link form reservasi, kemudian isi nama, nomor WhatsApp, pilih tanggal, waktu, dan jumlah pax.", "Michelle klik link form reservasi, kemudian isi nama, nomor WhatsApp, pilih tanggal, waktu, dan jumlah pax.", "reservation"),
+        step("Booking masuk", "Reservasi otomatis muncul di dashboard, lengkap dengan notifikasi untuk tim resto.", "Reservasi otomatis muncul di dashboard, lengkap dengan notifikasi untuk tim resto.", "booking"),
+        step("Data tersimpan", "Nama dan nomor WhatsApp Michelle otomatis tersimpan di database Anda.", "Nama dan nomor WhatsApp Michelle otomatis tersimpan di database Anda.", "booked-profile", "Contoh reservasi ini tanpa deposit. Advance setting tersedia jika reservasi membutuhkan deposit.")
       ], related: ['follow-up', 'walk-in'] },
-    { slug: 'follow-up', category: 'Tindak lanjut reservasi', title: 'Follow Up dengan Mudah',
-      problem: 'Booking masuk, tapi siapa yang sudah menghubungi tamunya?',
-      keyMessage: 'Tidak ada customer yang terlewat untuk di-follow-up.',
+    { slug: 'follow-up', category: 'Tindak lanjut reservasi', title: "Pantau Konfirmasi Booking dalam Satu Daftar",
+      problem: "Tim tahu booking mana yang sudah dan belum dihubungi, tanpa saling tanya.",
+      keyMessage: "Pantau Konfirmasi Booking dalam Satu Daftar",
       steps: [
-        step('Perlu tindakan', 'Booking baru punya tempat di antrean.', 'Daftar follow-up menunjukkan reservasi Dewi yang masih perlu ditindaklanjuti.', 'follow-list'),
-        step('Buka konteks', 'Detailnya siap sebelum menghubungi.', 'Periksa tanggal, jam, jumlah orang, dan profil tamu. Pesan konfirmasi disiapkan untuk WhatsApp.', 'follow-context'),
-        step('Tandai selesai', 'Tim berikutnya tahu sudah ditangani.', 'Setelah benar-benar menghubungi tamu, staf menandai “Sudah di-follow up”.', 'follow-done', 'Membuka WhatsApp tidak otomatis menandai reservasi selesai ditindaklanjuti.')
+        step("Perlu tindakan", "Booking Bu Dewi masuk ke daftar Follow Up karena belum ada yang menghubunginya.", "Booking Bu Dewi masuk ke daftar Follow Up karena belum ada yang menghubunginya.", "follow-list"),
+        step("Buka konteks", "Detail booking dan profil Bu Dewi sudah terbuka.", "Detail booking dan profil Bu Dewi sudah terbuka. Pesan konfirmasinya juga sudah disiapkan.", "follow-context"),
+        step("Tandai selesai", "Setelah menghubungi Bu Dewi, staf menandai “Sudah di-follow up”.", "Setelah menghubungi Bu Dewi, staf menandai “Sudah di-follow up”. Shift berikutnya langsung tahu.", "follow-done", "Status baru berubah setelah staf menandainya, bukan saat WhatsApp dibuka.")
       ], related: ['reservation', 'customer-database'] },
-    { slug: 'membership', category: 'Hubungan jangka panjang', title: 'Pelanggan Setia Kembali',
-      problem: 'Punya member, tapi aktivitas dan reward-nya jarang dibuka?',
-      keyMessage: 'Ubah customer loyal menjadi relationship jangka panjang.',
+    { slug: 'membership', category: 'Hubungan jangka panjang', title: "Beri Pelanggan Setia Alasan untuk Kembali",
+      problem: "Belanja member terkumpul jadi stiker, lalu ditukar voucher.",
+      keyMessage: "Beri Pelanggan Setia Alasan untuk Kembali",
       steps: [
-        step('Kenali member', 'Sari datang lagi. Tim mengenalinya.', 'Profil membership Family menunjukkan kunjungan dan saldo stiker yang sudah dimiliki.', 'member'),
-        step('Catat aktivitas', 'Belanja tercatat, stiker bertambah.', 'Simpan transaksi member dari kunjungan yang benar-benar terjadi.', 'stickers', 'Contoh aturan Senja: Rp100.000 per stiker, 10 stiker per voucher. Aturan dapat diatur restoran.'),
-        step('Reward', 'Ada alasan untuk kunjungan berikutnya.', 'Sepuluh stiker dikonversi menjadi voucher member. Saldo stiker dan voucher dapat ditelusuri.', 'reward')
+        step("Kenali member", "Bu Sari, member Family, datang lagi.", "Bu Sari, member Family, datang lagi. Tim langsung lihat jumlah kunjungan dan sisa stikernya.", "member"),
+        step("Catat aktivitas", "Setelah makan, transaksinya dicatat.", "Setelah makan, transaksinya dicatat. Stiker Bu Sari otomatis bertambah.", "stickers", "Di contoh ini, Rp100.000 = 1 stiker dan 10 stiker = 1 voucher. Aturannya bisa Anda ubah."),
+        step("Reward", "Stikernya sudah 10, bisa ditukar voucher.", "Stikernya sudah 10, bisa ditukar voucher. Bu Sari punya alasan untuk datang lagi.", "reward")
       ], related: ['customer-database', 'full-journey'] },
-    { slug: 'customer-insight', category: 'Dari pola ke tindakan', title: 'Customer Insight',
-      problem: 'Data tamu bertambah. Apa yang perlu dilakukan berikutnya?',
-      keyMessage: 'Kenali pola customer sebelum menentukan campaign.',
+    { slug: 'customer-insight', category: 'Dari pola ke tindakan', title: "Tahu Siapa yang Perlu Disapa dengan Customer Insight",
+      problem: "Lihat siapa yang aktif dan siapa yang mulai jarang datang.",
+      keyMessage: "Tahu Siapa yang Perlu Disapa dengan Customer Insight",
       steps: [
-        step('Baca pola', 'Frekuensi saja belum cukup.', 'Dewi pernah datang empat kali, tetapi kunjungan terakhirnya sudah 95 hari lalu.', 'profile'),
-        step('Lihat jeda', 'Pisahkan yang aktif dan yang lama absen.', 'Segmen berdasarkan kunjungan terakhir membantu menemukan tamu yang perlu disapa kembali.', 'risk'),
-        step('Tindak lanjuti', 'Jadikan temuan sebagai audiens.', 'Siapkan campaign reaktivasi untuk dua tamu At Risk, dengan pesan yang sesuai konteks mereka.', 'reactivate', 'Contoh memakai riwayat kunjungan dan segmen yang tersedia; tidak memprediksi perilaku atau menjanjikan hasil campaign.')
+        step("Baca pola", "Bu Dewi sudah 4 kali datang.", "Bu Dewi sudah 4 kali datang. Kelihatannya pelanggan setia, padahal terakhir datang 95 hari lalu.", "profile"),
+        step("Lihat jeda", "Intoch mengelompokkan pelanggan dari kunjungan terakhirnya.", "Intoch mengelompokkan pelanggan dari kunjungan terakhirnya. Yang lama absen langsung terlihat.", "risk"),
+        step("Tindak lanjuti", "Dua pelanggan At Risk langsung jadi daftar penerima campaign ajakan kembali.", "Dua pelanggan At Risk langsung jadi daftar penerima campaign ajakan kembali.", "reactivate", "Segmen dibuat dari riwayat kunjungan yang tercatat. Intoch tidak menebak perilaku pelanggan.")
       ], related: ['reactivation', 'campaign'] },
-    { slug: 'full-journey', category: 'Cerita Senja Resto', title: 'Full Customer Journey',
-      problem: 'Dari tamu pertama kali sampai menjadi pelanggan, konteksnya sering putus?',
-      keyMessage: 'Dari reservasi sampai customer kembali — semuanya terhubung.',
+    { slug: 'full-journey', category: 'Cerita Senja Resto', title: "Dari Kunjungan Pertama sampai Jadi Pelanggan Langganan",
+      problem: "Setiap kunjungan dan pesan tersimpan di satu profil pelanggan.",
+      keyMessage: "Dari Kunjungan Pertama sampai Jadi Pelanggan Langganan",
       steps: [
-        step('Datang', 'Mulai dari satu kunjungan.', 'Bayu datang tanpa reservasi. Tim mencatat dua orang di meja A3.', 'walkin'),
-        step('Kenali', 'Kunjungan menjadi konteks.', 'Nama, kontak, dan riwayat tersimpan di profil Bayu untuk pelayanan berikutnya.', 'bayu-profile'),
-        step('Jaga hubungan', 'Sapa dengan pesan yang sesuai.', 'Beberapa waktu kemudian, tim menyiapkan pesan untuk tamu baru yang belum kembali.', 'journey-message'),
-        step('Kembali', 'Saat Bayu kembali, tim sudah mengenalnya.', 'Pada kunjungan berikutnya, gunakan profil yang sama. Riwayat bertambah, hubungan berlanjut.', 'return', 'Ilustrasi perjalanan tamu, bukan jaminan hasil campaign. Membership tersedia bila tamu bergabung.')
+        step("Datang", "Pak Bayu datang pertama kali tanpa reservasi.", "Pak Bayu datang pertama kali tanpa reservasi. Tim mencatatnya di meja A3.", "walkin"),
+        step("Kenali", "Nama dan nomor Pak Bayu kini punya profil sendiri, siap dipakai di kunjungan berikutnya.", "Nama dan nomor Pak Bayu kini punya profil sendiri, siap dipakai di kunjungan berikutnya.", "bayu-profile"),
+        step("Jaga hubungan", "Pak Bayu belum kembali sejak kunjungan pertama.", "Pak Bayu belum kembali sejak kunjungan pertama. Tim menyiapkan pesan terima kasih untuknya.", "journey-message"),
+        step("Kembali", "Saat Pak Bayu kembali, tim sudah mengenalnya.", "Saat Pak Bayu kembali, tim sudah mengenalnya. Kunjungan keduanya tercatat di profil yang sama.", "return", "Ini contoh perjalanan pelanggan. Hasil nyata bergantung pada restoran dan penawaran Anda.")
       ], related: ['membership', 'campaign'] }
   ];
   window.IntochDemoData = {

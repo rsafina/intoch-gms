@@ -1,5 +1,13 @@
 # Current state and operational handoff
 
+Approved Demo Library copy (2026-09-29; local on `demo`): updated all nine story
+titles, subtitles, step copy, existing notes, specified animation callouts and accessible
+step titles. Routes, scene order, fictional guests, styling, camera and timing are unchanged.
+All 91 suites pass; isolated build generates seven outputs without touching client config.
+Desktop/mobile checks pass at 1440x900, 1280x720, 393x852 and 320x640. See
+[copy review](DEMO_COPY_REVIEW.md) for exact overlength copy and preserved mismatches.
+No commit, push, merge or deployment.
+
 Automatic mobile demo camera (2026-09-25; local on `demo`): replaces the manual
 screen switches below with a hands-free overview/action/result sequence. Phone visitors
 see an establishing device view, animated enlargement of the active screen, then the
