@@ -23,8 +23,8 @@
       problem: "Kirimkan broadcast marketing yang relevan dengan history visit, data spending, atau event spesial pelanggan.",
       keyMessage: "Berhenti bagikan pesan broadcast yang sama ke semua leads pelanggan Anda.",
       steps: [
-        step("Semua tamu", "Ada pelanggan new comer, ada loyal customer dan ada yang lama tidak repeat order.", "Ada pelanggan new comer, ada loyal customer dan ada yang lama tidak repeat order. Tentu, marketing broadcastnya tidak bisa sama.", "database"),
-        step("Pilih audiens", "Contoh, Anda ingin pelanggan 'New Comer' untuk berkunjung kedua kalinya.", "Contoh, Anda ingin pelanggan 'New Comer' untuk berkunjung kedua kalinya. Anda bisa membuat campaign dengan target kategori 'Pelanggan Baru'.", "risk"),
+        step("Semua tamu", "Ada pelanggan new comer, ada loyal customer dan ada yang lama tidak repeat order.", "Ada pelanggan new comer, ada loyal customer dan ada yang lama tidak repeat order. Tentu, marketing broadcastnya tidak bisa sama.", "campaign-segments"),
+        step("Pilih audiens", "Contoh, Anda ingin pelanggan 'New Comer' untuk berkunjung kedua kalinya.", "Contoh, Anda ingin pelanggan 'New Comer' untuk berkunjung kedua kalinya. Anda bisa membuat campaign dengan target kategori 'Pelanggan Baru'.", "newcomers"),
         step("Siapkan pesan", "Buat pesan broadcast khusus untuk 'Pelanggan Baru', dan kirimkan WhatsApp personal ke target leads.", "Buat pesan broadcast khusus untuk 'Pelanggan Baru', dan kirimkan WhatsApp personal ke target leads.", "campaign", "Fitur campaign Intoch bantu Anda menyiapkan template pesan WhatsApp dan terhubung langsung ke target leads.")
       ], related: ['reactivation', 'customer-insight'] },
     { slug: 'walk-in', category: 'Di meja penerima tamu', title: "Dapatkan data pelanggan walk-in, tanpa membuat mereka menunggu.",
@@ -67,7 +67,7 @@
         step("Lihat jeda", "Intoch mengelompokkan pelanggan dari kunjungan terakhirnya.", "Intoch mengelompokkan pelanggan dari kunjungan terakhirnya. Yang lama absen langsung terlihat.", "risk"),
         step("Tindak lanjuti", "Dua pelanggan At Risk langsung jadi daftar penerima campaign ajakan kembali.", "Dua pelanggan At Risk langsung jadi daftar penerima campaign ajakan kembali.", "reactivate", "Segmen dibuat dari riwayat kunjungan yang tercatat. Intoch tidak menebak perilaku pelanggan.")
       ], related: ['reactivation', 'campaign'] },
-    { slug: 'full-journey', category: 'Cerita Senja Resto', title: "Dari Kunjungan Pertama sampai Jadi Pelanggan Langganan",
+    { slug: 'full-journey', category: 'Cerita Intoch Restaurant', title: "Dari Kunjungan Pertama sampai Jadi Pelanggan Langganan",
       problem: "Setiap kunjungan dan pesan tersimpan di satu profil pelanggan.",
       keyMessage: "Dari Kunjungan Pertama sampai Jadi Pelanggan Langganan",
       steps: [
@@ -79,7 +79,7 @@
   ];
   window.IntochDemoData = {
     definitions,
-    restaurant: 'Senja Resto', date: '23 Sep 2026',
+    restaurant: 'Intoch Restaurant', date: '23 Sep 2026',
     contact: 'https://wa.me/6281325063362?text=Halo%2C%20saya%20tertarik%20dengan%20Intoch%20untuk%20restoran%20saya.',
     guests: [
       { name: 'Michelle', initials: 'MI', last: '20 Jun', days: 95, visits: 4, spend: 'Rp1.240.000', note: 'Suka meja teras', phone: '0812 •••• 0098' },

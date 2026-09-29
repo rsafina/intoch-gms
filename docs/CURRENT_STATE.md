@@ -1,5 +1,22 @@
 # Current state and operational handoff
 
+Reactivation campaign workspace (2026-09-29; local on `demo`): third step now shows
+category selection (At Risk), the Pesan editor with Simpan Pesan, then Penerima (2)
+with separate Kirim WA buttons for Michelle and Noelle. The final state shows WhatsApp
+opened, not confirmed delivery. Uses the current Campaign workspace vocabulary and
+existing demo player/timing; other stories are unchanged. No push or deployment.
+
+Distinct Campaign story (2026-09-29; local on `demo`): Campaign now compares customer
+categories, filters Pelanggan Baru to Brian (one recorded visit), then prepares his
+second-visit WhatsApp invitation. Reactivation retains Michelle/Noelle and At Risk.
+Uses existing player, camera and visual components; sending remains explicitly manual.
+Targeted tests verify the distinct audience and message. No push or deployment.
+
+Demo restaurant name (2026-09-29; local on `demo`): replaced Senja with Intoch
+Restaurant across the shared fixture, story category, phone branding, WhatsApp drafts,
+campaign names, vouchers, membership branding and footer. Membership emblem is I.
+Targeted demo playback/routing tests and syntax checks pass. No push or deployment.
+
 Demo heading parity (2026-09-29; local on `demo`): desktop and mobile now use the
 same visible hierarchy: approved title in the page header, approved subtitle in the
 story body, then the active step caption. Removed the mobile-only subtitle hiding and

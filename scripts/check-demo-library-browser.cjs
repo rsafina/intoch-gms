@@ -75,7 +75,7 @@ async function main() {
           assert.ok(await evaluate('parseFloat(getComputedStyle(document.querySelector("#scene .scene-heading h3")).fontSize) >= 14'), 'mobile detail heading is readable without device scaling');
           assert.equal(await evaluate('document.querySelector(".detail-toolbar")'), null, 'no screen switches');
         }
-        if (['reactivation', 'reservation', 'customer-database', 'walk-in'].includes(slug) && width !== 320) await capture(`${slug}-${width}-${index + 1}`);
+        if (['reactivation', 'reservation', 'customer-database', 'walk-in', 'campaign'].includes(slug) && width !== 320) await capture(`${slug}-${width}-${index + 1}`);
       }
       await command('Page.reload', { ignoreCache: true });
       for (let attempt = 0; attempt < 40; attempt++) { if (await evaluate('document.readyState === "complete" && !!document.querySelector(".demo-steps")')) break; await delay(100); }

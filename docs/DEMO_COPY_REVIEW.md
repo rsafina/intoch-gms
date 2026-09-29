@@ -17,8 +17,9 @@ use the first sentence of each approved step. All requested callout groups are u
 
 ## Preserved mismatches and existing text
 
-- Campaign still filters At Risk (>60 days) and targets Dewi/Rina; approved steps describe
-  New Comer/Pelanggan Baru. No audience logic was changed.
+- Campaign mismatch resolved by subsequent user request: its separate category/filter
+  sequence selects Brian as Pelanggan Baru and prepares a second-visit invitation.
+  Reactivation still uses At Risk and Michelle/Noelle.
 - Reservation name mismatch resolved: form, confirmation, booking notification and profile
   now show Michelle. Dewi remains in the other stories, including Follow Up.
 - Walk-in steps still show visit A3 and Bayu's profile, not adding notes and changing tables.
