@@ -4,13 +4,13 @@
   const step = (label, title, text, scene, note = '') => ({ label, title, text, scene, note });
   const definitions = [
     { slug: 'reactivation', category: 'Hubungan pelanggan', title: "Tingkatkan After-Sales, Ciptakan Customer Relationship",
-      problem: "Temukan pelanggan yang lama belum kembali, dan berikan perhatian lewat pesan WhatsApp.",
+      problem: "Sapa pelanggan lewat WhatsApp di setiap momen, dari konfirmasi reservasi sampai ucapan terima kasih.",
       keyMessage: "Tingkatkan After-Sales, Ciptakan Customer Relationship",
       steps: [
-        step("Data", "Bu Michelle dulu rutin makan di sini.", "Bu Michelle dulu rutin makan di sini. Tapi, sudah 3 bulan dia tidak datang, dan tidak ada yang sadar.", "database"),
-        step("Insight", "Melalui report 'Customer At Risk', pelanggan dengan visit mulai 60 hari lalu dapat ditemukan.", "Melalui report 'Customer At Risk', pelanggan dengan visit mulai 60 hari lalu dapat ditemukan.", "risk"),
-        step("Action", "Follow up dengan campaign, siapkan pesan ajakan repeat order dan kirim secara personal melalui WhatsApp.", "Follow up dengan campaign, siapkan pesan ajakan repeat order dan kirim secara personal melalui WhatsApp.", "reactivate", "Dengan Intoch, data pelanggan menjadi milik Anda sepenuhnya, dan dapat Anda manfaatkan untuk menciptakan Customer Relationship.")
-      ], related: ['customer-database', 'campaign'] },
+        step("Follow up", "Bu Michelle reservasi malam ini. Satu klik Follow up, pesan konfirmasi WhatsApp sudah terisi.", "Bu Michelle reservasi malam ini. Satu klik Follow up, pesan konfirmasi WhatsApp sudah terisi lengkap dengan tanggal, jam, dan jumlah tamu.", "rel-followup"),
+        step("Issue ticket", "Klik Issue ticket, dan Bu Michelle menerima tiket konfirmasi reservasi lewat WhatsApp.", "Klik Issue ticket, dan Bu Michelle menerima tiket konfirmasi reservasi lewat WhatsApp. Tiketnya bisa dibuka dan diunduh dari ponselnya.", "rel-ticket"),
+        step("WA Thanks", "Setelah kunjungan selesai, tamu walk-in maupun reservasi dapat ucapan terima kasih.", "Setelah kunjungan selesai, tamu walk-in maupun reservasi dapat ucapan terima kasih. Cukup klik WA Thanks.", "rel-thanks", "Pesan tetap dikirim staf lewat WhatsApp. Isi template bisa Anda ubah sesuai gaya restoran.")
+      ], related: ['follow-up', 'walk-in'] },
     { slug: 'customer-database', category: 'Kenali tamu', title: "Kenali Pelanggan Lebih Baik dengan Customer Database",
       problem: "Bantu tim waiter Anda melayani lebih personal, tanpa perlu menghafal.",
       keyMessage: "Kenali Pelanggan Lebih Baik dengan Customer Database",
@@ -23,9 +23,9 @@
       problem: "Kirimkan broadcast marketing yang relevan dengan history visit, data spending, atau event spesial pelanggan.",
       keyMessage: "Berhenti bagikan pesan broadcast yang sama ke semua leads pelanggan Anda.",
       steps: [
-        step("Semua tamu", "Ada pelanggan new comer, ada loyal customer dan ada yang lama tidak repeat order.", "Ada pelanggan new comer, ada loyal customer dan ada yang lama tidak repeat order. Tentu, marketing broadcastnya tidak bisa sama.", "campaign-segments"),
-        step("Pilih audiens", "Contoh, Anda ingin pelanggan 'New Comer' untuk berkunjung kedua kalinya.", "Contoh, Anda ingin pelanggan 'New Comer' untuk berkunjung kedua kalinya. Anda bisa membuat campaign dengan target kategori 'Pelanggan Baru'.", "newcomers"),
-        step("Siapkan pesan", "Buat pesan broadcast khusus untuk 'Pelanggan Baru', dan kirimkan WhatsApp personal ke target leads.", "Buat pesan broadcast khusus untuk 'Pelanggan Baru', dan kirimkan WhatsApp personal ke target leads.", "campaign", "Fitur campaign Intoch bantu Anda menyiapkan template pesan WhatsApp dan terhubung langsung ke target leads.")
+        step("Kenali segmen", "Report Customer Insight membagi pelanggan menjadi Acquire, Retain, dan At Risk.", "Report Customer Insight membagi pelanggan menjadi Acquire (tamu pertama kali), Retain (tamu yang kembali), dan At Risk (lama tidak datang).", "segment-report"),
+        step("Buat campaign", "Contoh, Anda ingin berterima kasih ke 23 tamu yang kembali.", "Contoh, Anda ingin berterima kasih ke 23 tamu yang kembali. Klik Buat Campaign, beri nama, lalu pilih segmen 'Tamu yang kembali'.", "campaign-create"),
+        step("Kirim pesan", "Pesan khusus tamu yang kembali sudah siap, lalu dikirim ke setiap penerima.", "Pesan khusus tamu yang kembali sudah siap. Kirim WhatsApp personal ke setiap penerima di daftar.", "campaign-send", "Fitur campaign Intoch bantu Anda menyiapkan template pesan WhatsApp dan terhubung langsung ke target leads.")
       ], related: ['reactivation', 'customer-insight'] },
     { slug: 'walk-in', category: 'Di meja penerima tamu', title: "Dapatkan data pelanggan walk-in, tanpa membuat mereka menunggu.",
       problem: "Saat ramai pun, data pelanggan tetap tercatat tanpa membuat antrean.",

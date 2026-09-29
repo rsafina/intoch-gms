@@ -36,15 +36,6 @@
       <div class="guest-rows">${visibleGuests.map(guest => row(guest, beat > 0 && guest.days > 60)).join('')}</div>
       <div class="scene-summary">${filtered && selected ? '<strong>6 → 2</strong><span>Tersisa pelanggan yang 60 hari lebih tidak datang.</span>' : search && selected ? '<strong>Profil ketemu</strong><span>Riwayat dan catatan ada di satu halaman.</span>' : '<strong>Sudah lama tidak datang</strong><span>Bu Michelle dan Bu Noelle belum kembali lebih dari 2 bulan.</span>'}</div>`;
   }
-  function campaignSegments(filter = false) {
-    const selected = filter && beat >= 2;
-    const newcomers = guests.filter(guest => guest.visits === 1);
-    return `<div class="scene-heading"><h3>Database Tamu</h3>${badge((selected ? newcomers.length : guests.length) + ' tamu')}</div>
-      <div class="filter-bar"><span class="filter-chip ${selected ? '' : 'selected'}">Semua tamu</span>${filter ? action(selected ? 'Pelanggan Baru terpilih' : 'Pilih Pelanggan Baru') : '<span class="filter-chip">Kategori pelanggan</span>'}</div>
-      ${filter ? `<div class="guest-rows">${(selected ? newcomers : guests).map(guest => row(guest, beat > 0 && guest.visits === 1, guest.visits + ' kunjungan')).join('')}</div>` :
-        `${card('Pelanggan Baru', 'Brian · 1 kunjungan')}${card('Pelanggan setia', 'Jessica · 8 kunjungan')}${card('Lama belum kembali', 'Michelle · terakhir 95 hari lalu')}`}
-      <div class="scene-summary"><strong>${selected ? '6 → 1' : 'Pesan berbeda untuk setiap kategori'}</strong><span>${selected ? 'Brian baru satu kali datang. Ajak untuk kunjungan kedua.' : 'Pilih pelanggan sesuai tujuan campaign Anda.'}</span></div>`;
-  }
   function profile(kind) {
     const isBayu = kind === 'bayu-profile' || kind === 'return';
     const returning = kind === 'return';
@@ -56,37 +47,81 @@
       ${kind === 'preference' ? `${action('Lihat catatan tamu')}${beat >= 2 ? note('“Selamat datang kembali, Bu Michelle. Ingin di teras seperti biasa?”') : ''}` : returning ? `${action('Catat kunjungan berikutnya')}${beat >= 2 ? note('Kunjungan kedua terhubung ke profil Brian.') : ''}` : beat >= 2 ? note(isBayu ? 'Pak Brian kini tercatat sebagai pelanggan.' : 'Siapa dia, kapan datang, dan apa kesukaannya, semua terlihat.') : ''}`;
   }
   function campaign(kind) {
-    if (kind === 'reactivate' && definition.slug === 'reactivation') return reactivationCampaign();
     const journey = kind === 'journey-message';
-    const newCustomer = kind === 'campaign';
-    const brianAudience = journey || newCustomer;
+    const brianAudience = journey;
     const name = brianAudience ? bayu.name : dewi.name;
-    const segment = newCustomer ? 'Pelanggan Baru' : journey ? 'Tamu baru belum kembali' : 'At Risk >60 hari';
+    const segment = journey ? 'Tamu baru belum kembali' : 'At Risk >60 hari';
     return `<div class="scene-heading"><h3>${beat >= 2 ? 'Workspace Campaign' : 'Buat Campaign'}</h3>${badge('Draft')}</div>
       ${card('Audiens terpilih', `<div class="audience-count"><b>${brianAudience ? '1' : '2'}</b><span>dari ${guests.length} tamu<br><strong>${segment}</strong></span></div><div class="audience-names">${brianAudience ? 'Brian' : 'Michelle · Noelle'}</div>`)}
-      ${field('Nama campaign', newCustomer ? 'Ajakan kunjungan kedua' : journey ? 'Terima kasih sudah datang' : 'Kembali ke Intoch Restaurant')}
+      ${field('Nama campaign', journey ? 'Terima kasih sudah datang' : 'Kembali ke Intoch Restaurant')}
       ${card('Template pesan', `<p>${beat >= 1 ? 'Pesan personal untuk ' + name + ' siap ditinjau di preview.' : 'Pilih pesan yang sesuai dengan audiens.'}</p>`)}
       ${action(beat >= 2 ? 'Siapkan WhatsApp untuk ' + (brianAudience ? 'Brian' : 'Michelle') : 'Buat draft campaign')}
       ${beat >= 3 ? note('Pesan siap. Staf kirim satu per satu lewat WhatsApp.') : '<p class="scene-fine">Penerima di luar segmen tidak masuk audiens ini.</p>'}`;
   }
-  function reactivationCampaign() {
-    const message = 'Halo {nama}, sudah lama tidak bertemu di Intoch Restaurant. Ada waktu untuk makan bersama keluarga akhir pekan ini?';
-    if (beat === 0) return `<div class="scene-heading"><h3>Buat Campaign</h3>${badge('Draft')}</div>
-      ${field('Nama campaign', 'Ajakan kembali')}
-      ${card('Kategori pelanggan', '<div class="filter-bar"><span class="filter-chip">Pelanggan Baru</span><span class="filter-chip selected">At Risk &gt;60 hari</span></div>')}
-      ${card('Penerima', '<p>Michelle · Noelle</p><p>2 pelanggan lama belum kembali</p>')}
-      ${action('Buat Campaign')}`;
-    if (beat === 1) return `<div class="scene-heading"><h3>Workspace Campaign</h3>${badge('Draft')}</div>
-      <div class="filter-bar"><span class="filter-chip selected">Pesan</span><span class="filter-chip">Penerima (2)</span></div>
-      ${field('Kategori pelanggan', 'At Risk >60 hari')}
-      ${card('Isi pesan', `<div class="message-bubble">${message}</div>`)}
-      ${action('Simpan Pesan')}
-      <p class="scene-fine">Nama pelanggan diisi pada preview WhatsApp masing-masing.</p>`;
-    return `<div class="scene-heading"><h3>Workspace Campaign</h3>${badge('Aktif')}</div>
-      <div class="filter-bar"><span class="filter-chip">Pesan</span><span class="filter-chip selected">Penerima (2)</span></div>
-      ${card('Ajakan kembali', '<p>At Risk &gt;60 hari · pesan siap</p>')}
-      <div class="guest-rows">${[dewi, guests[1]].map((guest, index) => `<div class="app-row ${index === 0 ? 'hl' : ''}" data-key="${guest.initials}"><span class="avatar">${guest.initials}</span><span class="who"><b>${guest.name}</b><small>${beat === 3 && index === 0 ? 'WhatsApp dibuka' : 'Belum dikirim'}</small></span>${action('Kirim WA')}</div>`).join('')}</div>
-      ${note(beat === 3 ? 'Pesan Michelle dibuka di WhatsApp. Staf cek dan kirim, lalu lanjut ke Noelle.' : 'Kirim satu per satu dari daftar penerima.')}`;
+  // Pesan yang relevan: the Customer Insight cards, the Campaign Baru modal and
+  // the recipient list, in the order staff meet them in the app.
+  const segmentCards = [
+    { key: 'acquire', label: 'ACQUIRE', total: 20, unit: 'first-time visitors', lines: [['Via reservation', '6 guests / 31 pax'], ['Via walk-in', '14 guests / 55 pax']], cta: 'Buat Campaign Akuisisi' },
+    { key: 'retain', label: 'RETAIN', total: 23, unit: 'returning guests', lines: [['Via reservation', '8 guests / 61 pax'], ['Via walk-in', '15 guests / 68 pax']], cta: 'Buat Campaign Tamu Kembali' },
+    { key: 'risk', label: 'AT RISK', total: 14, unit: "haven't returned in 60–89 days", lines: [['60–89 Days', '14 guests'], ['Last visit', 'all-time']], cta: 'Buat Campaign At-Risk' }
+  ];
+  const segmentOptions = ['At Risk (>60 hari tidak berkunjung)', 'Akuisisi', 'Tamu yang kembali', 'Tamu Baru (belum kembali)', 'Medium Spender', 'High Spender', 'Berdasarkan Tag', 'Semua Guest'];
+  const returningGuests = [guests[2], guests[4], guests[3]];
+  const returningMessage = name => `Halo ${name}! Terima kasih sudah kembali berkunjung ke ${restaurant}. Kami sangat menghargai kepercayaannya dan senang bisa melayani Bapak/Ibu lagi. Sampai jumpa di kunjungan berikutnya!`;
+  function segmentReport(pick = false) {
+    const cards = segmentCards.map((item, index) => {
+      const shown = pick || beat >= index;
+      const lit = pick ? item.key === 'retain' : beat === index;
+      const button = pick && item.key === 'retain' ? `<button type="button" class="seg-cta" data-scene-action>${item.cta}</button>` : `<span class="seg-cta">${item.cta}</span>`;
+      return `<div class="seg-card ${item.key} ${shown ? '' : 'pending'} ${lit ? 'lit' : ''}" data-seg="${item.key}"><small>${item.label}</small>${shown ? `<b class="seg-num">${item.total}</b><span class="seg-unit">${item.unit}</span>${item.lines.map(([k, v]) => `<p><span>${k}</span><em>${v}</em></p>`).join('')}${button}` : '<b class="seg-num">–</b>'}</div>`;
+    }).join('');
+    return `<div class="scene-heading"><h3>Customer Insight</h3>${badge('1–23 Sep 2026')}</div><div class="seg-cards">${cards}</div>
+      ${pick ? '<p class="scene-fine">Pilih segmen yang ingin disapa.</p>' : beat >= 3 ? note('Tiga segmen, tiga pesan yang berbeda.') : `<div class="scene-summary"><strong>${segmentCards[beat].label}</strong><span>${['Tamu yang pertama kali datang di periode ini.', 'Tamu yang sudah pernah datang, lalu kembali lagi.', 'Tamu yang 60 hari lebih belum kembali.'][beat]}</span></div>`}`;
+  }
+  function campaignModal(stage) {
+    // stage: 0 name only, 1 dropdown open, 2 segment chosen, 3 ready to submit
+    const chosen = stage >= 2;
+    const select = stage === 0 ? `<button type="button" class="camp-select" data-scene-action>Pilih segmen <i>⌄</i></button>` : `<div class="camp-select ${stage === 1 ? 'open' : ''}">${chosen ? 'Tamu yang kembali' : 'Pilih segmen'} <i>⌄</i></div>`;
+    const list = stage === 1 ? `<div class="camp-options">${segmentOptions.map(option => option === 'Tamu yang kembali' ? `<button type="button" class="camp-option active" data-scene-action>${option}</button>` : `<span class="camp-option">${option}</span>`).join('')}</div>` : '';
+    const info = chosen ? `<div class="camp-info"><p><b>23 guest</b> masuk segmen ini sekarang, <b>23</b> punya nomor WA valid.</p><p>Periode laporan: <b>1–23 September 2026</b>.</p></div>` : '';
+    const submit = stage === 3 ? `<button type="button" class="camp-submit" data-scene-action>Buat Campaign</button>` : '<span class="camp-submit">Buat Campaign</span>';
+    return `<div class="camp-modal"><h3>Campaign Baru</h3><p class="scene-fine">Pilih siapa yang mau disapa. Pesan diatur setelah ini.</p>
+      <div class="demo-field"><span>NAMA CAMPAIGN</span><div class="pf-in">Tamu Kembali - September</div></div>
+      <div class="demo-field camp-segment"><span>SEGMEN</span>${select}${list}</div>${info}
+      <div class="camp-footer"><span class="camp-cancel">Batal</span>${submit}</div></div>`;
+  }
+  function campaignSend() {
+    if (beat === 0) return campaignModal(3);
+    const recipients = beat >= 2;
+    const sent = beat >= 3;
+    return `<div class="scene-heading"><h3>Tamu Kembali - September</h3>${badge(sent ? 'Aktif' : 'Draft')}</div>
+      <div class="filter-bar"><span class="filter-chip ${recipients ? '' : 'selected'}">Pesan</span>${recipients ? '<span class="filter-chip selected" data-tab="recipients">Penerima (23)</span>' : '<button type="button" class="filter-chip" data-tab="recipients" data-scene-action>Penerima (23)</button>'}</div>
+      ${recipients ? `<div class="guest-rows">${returningGuests.map((guest, index) => `<div class="app-row ${index === 0 && !sent ? 'hl' : ''}" data-key="${guest.initials}"><span class="avatar">${guest.initials}</span><span class="who"><b>${guest.name}</b><small>${index === 0 && sent ? '✓ Terkirim · 10:20' : guest.visits + ' kunjungan · Belum dikirim'}</small></span>${index === 0 && sent ? badge('Terkirim') : index === 0 ? action('Kirim WA') : '<span class="rel-btn">Kirim WA</span>'}</div>`).join('')}</div><p class="scene-fine">+ 20 penerima lainnya di segmen Tamu yang kembali</p>`
+        : `${field('Segmen', 'Tamu yang kembali · 23 guest')}${card('Isi pesan', `<div class="message-bubble">${returningMessage('{nama}')}</div>`)}<p class="scene-fine">Nama tamu terisi otomatis di pesan masing-masing.</p>`}
+      ${sent ? note('Pesan Jessica terkirim. Lanjut ke John, satu per satu dari daftar.') : ''}`;
+  }
+  // Hubungan pelanggan: one evening of WhatsApp touchpoints, mirroring the
+  // dashboard buttons (Follow up, Issue ticket, WA Thanks). Staff still send.
+  const relButton = (text, rel, extra = '') => `<button type="button" class="rel-btn ${extra}" data-rel="${rel}" data-scene-action>${text}</button>`;
+  function relationship(kind) {
+    if (kind === 'rel-thanks') {
+      const done = beat >= 1, sent = beat >= 2;
+      return `<div class="scene-heading"><h3>Kunjungan Hari Ini</h3>${badge('23 Sep · 21:30')}</div>
+      <div class="guest-rows">
+        <div class="app-row rel-row ${done && !sent ? 'hl' : ''}" data-key="BR"><span class="t">18:30</span><span class="who"><b>${bayu.name} <span class="tg hs">Walk-in</span></b><small>2 orang · A3 · 1 kunjungan</small></span><span class="rel-actions">${done ? '<span class="rel-state">✓ Done</span>' : relButton('Done', 'done')}<span class="rel-state edit">Edit</span>${done ? relButton(sent ? '✓ WA Thanks' : 'WA Thanks', 'thanks', 'wa') : ''}</span></div>
+        <div class="app-row rel-row" data-key="MI"><span class="t">19:00</span><span class="who"><b>${dewi.name} <span class="tg online">Reservasi</span></b><small>4 orang · Teras · 5 kunjungan</small></span><span class="rel-actions"><span class="st arr">Completed</span><span class="rel-btn wa">✓ WA Thanks</span></span></div>
+      </div>
+      ${beat >= 3 ? note('Brian (walk-in) dan Michelle (reservasi) sama-sama menerima ucapan terima kasih.') : `<div class="scene-summary"><strong>Walk-in dan reservasi</strong><span>Tombol WA Thanks muncul setelah kunjungan ditandai selesai.</span></div>`}`;
+    }
+    const ticket = kind === 'rel-ticket';
+    const followed = ticket || beat >= 2;
+    const rowLit = ticket ? beat === 0 : beat === 1;
+    return `<div class="scene-heading"><h3>Reservasi Mendatang</h3>${badge('Hari ini · 1')}</div>
+      <div class="guest-rows"><div class="app-row rel-row ${rowLit ? 'hl' : ''}" data-key="MI"><span class="t">19:00</span><span class="who"><b>${dewi.name}</b><small>4 orang · Teras · T2 · 4 kunjungan</small>${followed ? '<small class="rel-flag">✓ Konfirmasi WhatsApp terkirim</small>' : ''}</span>${badge('Reserved')}
+        <span class="rel-actions stack"><span class="rel-btn primary">Update</span>${ticket ? relButton('Issue ticket', 'ticket', beat >= 1 ? 'active' : '') : '<span class="rel-btn">Issue ticket</span>'}${ticket ? '<span class="rel-btn outline">Follow up ↗</span>' : relButton('Follow up ↗', 'follow', 'outline' + (beat >= 1 ? ' active' : ''))}</span></div></div>
+      ${ticket && beat >= 1 ? card('Tiket konfirmasi', `<p class="scene-fine">Tiket siap dibagikan. Tamu dapat membuka dan mengunduhnya.</p><div class="pf-in rel-link-field">intoch.app/reservation-ticket?t=MI-0923</div><div class="rel-actions start"><span class="rel-btn">Salin tautan</span>${relButton(beat >= 2 ? '✓ WhatsApp' : 'WhatsApp', 'ticket-wa', 'primary')}</div>`, 'lit') : ''}
+      ${beat >= 3 ? note(ticket ? 'Tiket konfirmasi sudah di WhatsApp Bu Michelle. Tidak perlu screenshot atau ketik ulang.' : 'Pesan konfirmasi terisi otomatis. Staf cukup cek, lalu kirim.')
+        : ticket && beat >= 1 ? '' : `<div class="scene-summary"><strong>${ticket ? 'Beri kepastian' : 'Satu klik'}</strong><span>${ticket ? 'Tiket resmi membuat tamu yakin mejanya aman.' : 'Nama, tanggal, jam, dan jumlah tamu sudah ada di pesan.'}</span></div>`}`;
   }
   function walkin() {
     return `<div class="scene-heading"><h3>Walk-in</h3>${badge('23 Sep · 18:30')}</div><p class="scene-fine">Tamu datang tanpa reservasi</p>
@@ -118,27 +153,53 @@
       ${kind === 'member' ? card('Aktivitas member', '<p>8 kunjungan · terakhir 18 Sep</p><p>Saldo 8 stiker · siap digunakan pada kunjungan berikutnya.</p>') : kind === 'stickers' ? `${field('Transaksi kunjungan · 23 Sep', 'Rp200.000 → 2 stiker')}${action('Simpan transaksi member')}${added ? note('2 stiker ditambahkan · saldo 10 stiker.') : ''}` : `${action('Konversi 10 stiker menjadi voucher')}${converted ? card('Voucher member', '<b>Voucher Intoch Restaurant · Rp50.000</b><p>Aktif · berlaku hingga 23 Okt 2026</p><small>Nilai dan masa berlaku mengikuti aturan restoran.</small>', 'reward-card') : '<p class="scene-fine">10 stiker siap dikonversi sesuai aturan restoran.</p>'}`}`;
   }
   const scenes = {
-    'campaign-segments': () => campaignSegments(), newcomers: () => campaignSegments(true),
+    'segment-report': () => segmentReport(), 'campaign-create': () => beat === 0 ? segmentReport(true) : campaignModal(beat - 1), 'campaign-send': campaignSend,
     database: () => database(), risk: () => database(true), search: () => database(false, true),
     profile: () => profile('profile'), preference: () => profile('preference'),
     'booked-profile': () => profile('booked-profile'), 'bayu-profile': () => profile('bayu-profile'), return: () => profile('return'),
-    reactivate: () => campaign('reactivate'), campaign: () => campaign('campaign'), 'journey-message': () => campaign('journey-message'),
+    reactivate: () => campaign('reactivate'), 'journey-message': () => campaign('journey-message'),
     walkin, reservation, booking: () => booking(),
     visit: () => `<div class="scene-heading"><h3>Kunjungan Hari Ini</h3>${badge('23 Sep 2026')}</div>${row(bayu, beat >= 1, '18:30 · 2 orang · A3 · Indoor')}${card('Kunjungan walk-in', '<div class="visit-proof"><b>A3</b><div>Brian<p>2 orang · Sedang berkunjung</p></div></div>')}${beat >= 2 ? note('Kunjungan terhubung ke profil Brian.') : ''}`,
     'follow-list': () => booking(true), 'follow-context': () => booking(true, false, true), 'follow-done': () => booking(true, true),
+    'rel-followup': () => relationship('rel-followup'), 'rel-ticket': () => relationship('rel-ticket'), 'rel-thanks': () => relationship('rel-thanks'),
     member: () => membership('member'), stickers: () => membership('stickers'), reward: () => membership('reward')
   };
+  function relationshipPhone(kind) {
+    const thanks = kind === 'rel-thanks', ticket = kind === 'rel-ticket';
+    const guest = thanks ? bayu : dewi;
+    const followUp = `Halo ${dewi.name}!<br><br>Kami dari ${restaurant} ingin mengonfirmasi reservasi Bapak/Ibu:<br>Tanggal: 23 Sep 2026<br>Jam: 19:00<br>Jumlah: 4 orang<br><br>Kami nantikan kehadirannya. Terima kasih!`;
+    const sent = time => `<div class="comp-receipt rel-sent">Dikirim staf · ${time} ✓✓</div>`;
+    let body;
+    if (thanks) body = beat >= 2
+      ? `<span class="chat-date">Setelah kunjungan</span><div class="comp-bubble revealed">Terima kasih atas kunjungan Bapak di ${restaurant} hari ini. Kami nantikan kedatangannya kembali di lain waktu!</div>${sent('21:30')}`
+      : `<span class="chat-date">Setelah kunjungan</span><div class="comp-bubble">${beat >= 1 ? 'Menyiapkan pesan…' : 'Pesan terima kasih siap setelah kunjungan selesai.'}</div>`;
+    else if (ticket) body = `<span class="chat-date">Konfirmasi reservasi</span>${beat >= 2
+      ? `<div class="comp-bubble revealed">Halo ${dewi.name}! Reservasi Anda di ${restaurant} telah dikonfirmasi untuk 23 Sep, pukul 19:00, 4 orang. Tiket Anda:</div><div class="rel-ticket"><small>TIKET RESERVASI</small><b>${restaurant}</b><span>${dewi.name} · 4 orang</span><span>Rab, 23 Sep · 19:00 · Teras</span><em>Buka &amp; unduh tiket ↗</em></div>${sent('10:12')}`
+      : `<div class="comp-bubble rel-earlier">Konfirmasi reservasi terkirim · 10:05 ✓✓</div><div class="comp-bubble">${beat >= 1 ? 'Menyiapkan tiket…' : 'Tiket konfirmasi belum dikirim.'}</div>`}`;
+    else body = `<span class="chat-date">Konfirmasi reservasi</span><div class="comp-bubble ${beat >= 1 ? 'revealed' : ''}">${beat >= 1 ? followUp : 'Klik Follow up untuk menyiapkan pesan.'}</div>${beat === 1 ? '<button class="scene-action" data-scene-action type="button">Kirim di WhatsApp</button>' : beat >= 2 ? sent('10:05') : ''}`;
+    return { type: 'phone chat', label: 'WHATSAPP PELANGGAN', title: thanks ? 'Ucapan terima kasih setelah kunjungan' : ticket ? 'Tiket konfirmasi di WhatsApp' : 'Konfirmasi reservasi', html: `<div class="comp-phone-top"><span class="phone-speaker"></span><b>${guest.name}</b><small>${guest.phone}</small></div><div class="comp-body">${body}</div>` };
+  }
+  function segmentPeek(kind) {
+    if (kind === 'campaign-send') {
+      const shown = beat >= 1;
+      const guest = returningGuests[0];
+      return { type: 'phone chat', label: 'WHATSAPP PELANGGAN', title: 'Pesan untuk tamu yang kembali', html: `<div class="comp-phone-top"><span class="phone-speaker"></span><b>${guest.name}</b><small>${guest.phone}</small></div><div class="comp-body"><span class="chat-date">Tamu Kembali - September</span><div class="comp-bubble ${beat >= 3 ? 'revealed' : ''}">${beat >= 3 ? returningMessage(guest.name) : shown ? 'Pesan siap dikirim dari daftar penerima.' : 'Menunggu campaign dibuat…'}</div>${beat >= 3 ? '<div class="comp-receipt rel-sent">Dikirim staf · 10:20 ✓✓</div>' : ''}</div>` };
+    }
+    const item = kind === 'campaign-create' ? segmentCards[1] : segmentCards[Math.min(beat, 2)];
+    const all = kind === 'segment-report' && beat >= 3;
+    return { type: 'insight', label: 'SEGMEN', title: 'Pesan mengikuti segmen', html: all
+      ? `<div class="comp-body"><span class="insight-symbol">◎</span><h4>Satu pesan untuk setiap segmen</h4>${segmentCards.map(card => `<div class="mini-person seg-mini ${card.key}"><b>${card.total}</b><span>${card.label}<small>${card.cta.replace('Buat Campaign ', 'Campaign ')}</small></span></div>`).join('')}</div>`
+      : `<div class="comp-body seg-peek ${item.key}"><small class="seg-peek-label">${item.label}</small><div class="insight-number">${item.total} <small>${item.unit}</small></div>${item.lines.map(([k, v]) => `<div class="mini-person"><span>${k}<small>${v}</small></span></div>`).join('')}<p>${kind === 'campaign-create' && beat >= 3 ? '23 punya nomor WA valid.' : { acquire: 'Ajak kembali untuk kunjungan kedua.', retain: 'Ucapkan terima kasih karena sudah kembali.', risk: 'Sapa sebelum mereka benar-benar hilang.' }[item.key]}</p></div>` };
+  }
   // The companion is part of the same story: a guest phone, profile or audience.
   // It stays mounted alongside the staff screen, as in the landing-page use cases.
   function companion(kind) {
-    if (['campaign-segments', 'newcomers'].includes(kind)) return {
-      type: 'profile-peek', label: 'PELANGGAN BARU', title: 'Ajak untuk kunjungan kedua',
-      html: `<div class="comp-body">${identity(bayu)}<div class="comp-receipt"><small>Riwayat kunjungan</small><b>1 kunjungan · 23 Sep</b></div><p>Siapkan pesan khusus untuk pelanggan yang baru pertama kali datang.</p></div>`
-    };
+    if (kind.startsWith('rel-')) return relationshipPhone(kind);
+    if (['segment-report', 'campaign-create', 'campaign-send'].includes(kind)) return segmentPeek(kind);
     const reservationFlow = ['reservation', 'booking', 'booked-profile'].includes(kind);
-    const messaging = ['reactivate', 'campaign', 'journey-message', 'follow-context', 'follow-list', 'follow-done'].includes(kind);
+    const messaging = ['reactivate', 'journey-message', 'follow-context', 'follow-list', 'follow-done'].includes(kind);
     const memberFlow = ['member', 'stickers', 'reward'].includes(kind);
-    const isBayu = ['walkin', 'visit', 'bayu-profile', 'return', 'journey-message', 'campaign', 'newcomers', 'campaign-segments'].includes(kind);
+    const isBayu = ['walkin', 'visit', 'bayu-profile', 'return', 'journey-message'].includes(kind);
     const guest = isBayu ? bayu : dewi;
     if (reservationFlow) {
       const sent = kind !== 'reservation' || beat === 3;
@@ -147,8 +208,8 @@
     }
     if (messaging) {
       const follow = kind.startsWith('follow');
-      const message = kind === 'campaign' ? 'Halo Pak Brian, terima kasih atas kunjungan pertama ke Intoch Restaurant. Yuk, mampir lagi untuk kunjungan kedua bersama keluarga. Kami tunggu kedatangannya!' : follow ? 'Halo Bu Michelle, kami konfirmasi reservasi 26 Sep, pukul 19:00 untuk 4 orang di Teras. Kami tunggu di Intoch Restaurant.' : isBayu ? 'Halo Pak Brian, terima kasih sudah mampir ke Intoch Restaurant. Kami senang menyambut Bapak kembali bersama keluarga.' : 'Halo Bu Michelle, sudah lama tidak bertemu di Intoch Restaurant. Ada waktu untuk makan bersama keluarga akhir pekan ini?';
-      return { type: 'phone chat', label: 'PREVIEW WHATSAPP', title: 'Pesan sudah menyebut nama pelanggan', html: `<div class="comp-phone-top"><span class="phone-speaker"></span><b>${guest.name}</b><small>${guest.phone}</small></div><div class="comp-body"><span class="chat-date">${follow ? 'Konfirmasi reservasi' : kind === 'campaign' ? 'Ajakan kunjungan kedua' : 'Kembali ke Intoch Restaurant'}</span><div class="comp-bubble ${beat >= 1 ? 'revealed' : ''}">${beat >= 1 ? message : 'Menyiapkan pesan…'}</div><div class="comp-receipt"><b>Draft:</b><br>staf cek dulu, lalu kirim.</div></div>` };
+      const message = follow ? 'Halo Bu Michelle, kami konfirmasi reservasi 26 Sep, pukul 19:00 untuk 4 orang di Teras. Kami tunggu di Intoch Restaurant.' : isBayu ? 'Halo Pak Brian, terima kasih sudah mampir ke Intoch Restaurant. Kami senang menyambut Bapak kembali bersama keluarga.' : 'Halo Bu Michelle, sudah lama tidak bertemu di Intoch Restaurant. Ada waktu untuk makan bersama keluarga akhir pekan ini?';
+      return { type: 'phone chat', label: 'PREVIEW WHATSAPP', title: 'Pesan sudah menyebut nama pelanggan', html: `<div class="comp-phone-top"><span class="phone-speaker"></span><b>${guest.name}</b><small>${guest.phone}</small></div><div class="comp-body"><span class="chat-date">${follow ? 'Konfirmasi reservasi' : 'Kembali ke Intoch Restaurant'}</span><div class="comp-bubble ${beat >= 1 ? 'revealed' : ''}">${beat >= 1 ? message : 'Menyiapkan pesan…'}</div><div class="comp-receipt"><b>Draft:</b><br>staf cek dulu, lalu kirim.</div></div>` };
     }
     if (memberFlow) {
       const reward = kind === 'reward' && beat >= 2;
@@ -254,8 +315,18 @@
   }
   function movePointer(kind, reset) {
     if (cursorAnimation) cursorAnimation.cancel();
-    const selectors = kind === 'reactivate' && definition.slug === 'reactivation'
-      ? ['#scene .filter-chip.selected', '#scene [data-scene-action]', '#scene .guest-rows [data-scene-action]']
+    const selectors = kind === 'segment-report'
+      ? ['#scene [data-seg="acquire"] .seg-num', '#scene [data-seg="retain"] .seg-num', '#scene [data-seg="risk"] .seg-num']
+      : kind === 'campaign-create'
+      ? ['#scene [data-seg="retain"] [data-scene-action]', '#scene .camp-select', '#scene .camp-option.active']
+      : kind === 'campaign-send'
+      ? ['#scene .camp-submit', '#scene [data-tab="recipients"]', '#scene .guest-rows [data-scene-action]']
+      : kind === 'rel-followup'
+      ? ['#scene [data-rel="follow"]', '.companion [data-scene-action]', null]
+      : kind === 'rel-ticket'
+      ? ['#scene [data-rel="ticket"]', '#scene [data-rel="ticket-wa"]', null]
+      : kind === 'rel-thanks'
+      ? ['#scene [data-rel="done"]', '#scene [data-rel="thanks"]', null]
       : kind === 'reservation'
       ? ['.companion [data-point="area"] .pf-pill:last-child', '.companion [data-point="time"] .pf-pill:last-child', '.companion [data-scene-action]']
       : kind === 'walkin'
@@ -327,8 +398,9 @@
       if (hadSceneFocus && !stage.contains(document.activeElement)) (stage.querySelector('[data-scene-action]') || document.getElementById('next')).focus({ preventScroll: true });
       const previousShot = stage.dataset.shot;
       const guestAction = current.scene === 'reservation' && beat < lastBeat;
-      const guestResult = ['campaign', 'journey-message', 'reward'].includes(current.scene) && beat === lastBeat;
-      const shot = beat === 0 && !motion.matches ? 'overview' : guestAction || guestResult ? 'companion' : 'main';
+      const guestResult = ['campaign-send', 'journey-message', 'reward'].includes(current.scene) && beat === lastBeat;
+      const guestMessage = current.scene.startsWith('rel-') && (beat === 2 || (current.scene === 'rel-followup' && beat === 1));
+      const shot = beat === 0 && !motion.matches ? 'overview' : guestAction || guestResult || guestMessage ? 'companion' : 'main';
       const cameraTarget = shot === 'companion' ? companionScreen : stage.querySelector('.product-wrap');
       const beforeCamera = cameraTarget.getBoundingClientRect();
       stage.dataset.shot = shot;

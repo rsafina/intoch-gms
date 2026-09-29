@@ -176,3 +176,78 @@
 .demo-steps button[data-step] > span { display: none; }
 .demo-steps button[data-step]::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--brand-soft); }
 .demo-steps button[data-step][aria-current]::after { background: var(--brand); width: 18px; border-radius: 6px; }
+
+/* Hubungan pelanggan: dashboard action buttons (Follow up, Issue ticket, WA Thanks). */
+.scene .rel-row { align-items: center; }
+/* Keep the action buttons clear of the overlapping phone on the wide stage. */
+.story-stage[data-scene^="rel-"] .scene > .guest-rows, .story-stage[data-scene^="rel-"] .scene > .gp-card { max-width: 74%; }
+.scene .rel-row .t { font-size: 15px; }
+.rel-flag { display: block; margin-top: 2px; color: var(--success) !important; font-weight: 600; }
+.rel-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
+.rel-actions.stack { flex-direction: column; align-items: stretch; flex-wrap: nowrap; gap: 5px; min-width: 88px; }
+.rel-actions.start { justify-content: flex-start; margin-top: 8px; }
+.rel-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 26px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-white); color: var(--navy); font: 600 10px "Plus Jakarta Sans",sans-serif; white-space: nowrap; cursor: pointer; transition: box-shadow .25s, background .25s; }
+.rel-btn.primary { background: var(--navy); border-color: var(--navy); color: var(--surface-white); }
+.rel-btn.outline { border-color: var(--navy); }
+.rel-btn.wa { border-color: transparent; background: none; color: #1FAF5E; padding: 4px 2px; }
+.rel-btn.active { box-shadow: 0 0 0 3px rgb(var(--brand-rgb) / .22); background: var(--brand-tint2); }
+.rel-state { font-size: 10px; color: var(--success); white-space: nowrap; }
+.rel-state.edit { color: var(--accent-strong); }
+.rel-link-field { margin-top: 6px; font: 10px "Source Code Pro",monospace; color: var(--brand-deep); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rel-earlier { opacity: .6; font-size: 9px; }
+.rel-sent { align-self: flex-end; }
+.rel-ticket { display: flex; flex-direction: column; gap: 3px; padding: 10px; border-radius: 10px; background: var(--surface-white); border: 1px dashed var(--brand-soft); font-size: 10px; color: var(--text-sec); }
+.rel-ticket small { font: 700 8px "Source Code Pro",monospace; letter-spacing: .08em; color: var(--brand); }
+.rel-ticket b { color: var(--navy); font-size: 12px; }
+.rel-ticket em { font-style: normal; font-weight: 700; color: var(--brand); margin-top: 3px; }
+@media (max-width: 560px) {
+  .story-stage.detail-view[data-scene^="rel-"] .scene > .guest-rows, .story-stage.detail-view[data-scene^="rel-"] .scene > .gp-card { max-width: 100%; }
+  .detail-view .rel-btn, .detail-view .rel-state { font-size: 11px; }
+  .detail-view .rel-ticket { font-size: 12px; }
+}
+
+/* Pesan yang relevan: Customer Insight cards, Campaign Baru modal. */
+.seg-cards { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; }
+.story-stage[data-scene^="segment-"] .scene > .seg-cards, .story-stage[data-scene="campaign-create"] .scene > .seg-cards { max-width: 76%; }
+.story-stage[data-scene="campaign-send"] .scene > .guest-rows, .story-stage[data-scene="campaign-send"] .scene > .gp-card, .story-stage[data-scene="campaign-send"] .scene > .demo-field { max-width: 74%; }
+.seg-card { --seg: var(--brand-deepest); --seg-ink: var(--brand-deepest); display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 8px 7px; border: 1px solid var(--line); border-top: 3px solid var(--seg); border-radius: 9px; background: var(--surface-white); transition: opacity .35s, box-shadow .35s, transform .35s; }
+.seg-card.retain { --seg: #F5A623; --seg-ink: var(--accent-hover); }
+.seg-card.risk { --seg: #E8736A; --seg-ink: var(--danger); }
+.seg-card > small { font: 700 8px "Source Code Pro",monospace; letter-spacing: .08em; color: var(--seg-ink); }
+.seg-card .seg-num { font: 700 26px/1.05 "Plus Jakarta Sans",sans-serif; color: var(--seg-ink); }
+.seg-card .seg-unit { font-size: 9px; color: var(--text); line-height: 1.3; min-height: 24px; }
+.seg-card p { display: flex; justify-content: space-between; gap: 4px; font-size: 7.5px; color: var(--text-sec); }
+.seg-card p em { font-style: normal; color: var(--text); white-space: nowrap; }
+.seg-cta { margin-top: 5px; padding: 5px 3px; border: 0; border-radius: 4px; background: var(--seg); color: var(--surface-white); font: 600 7.5px/1.3 "Plus Jakarta Sans",sans-serif; text-align: center; cursor: pointer; }
+.seg-card.pending { opacity: .35; }
+.seg-card.pending .seg-num { color: var(--line); }
+.seg-card.lit { box-shadow: 0 0 0 2px var(--seg), 0 10px 20px rgb(var(--brand-deepest-rgb) / .12); transform: translateY(-2px); }
+.camp-modal { display: flex; flex-direction: column; gap: 9px; max-width: 76%; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-white); box-shadow: 0 16px 34px rgb(var(--brand-deepest-rgb) / .16); }
+.camp-modal h3 { font: 600 17px "Source Code Pro",monospace; color: var(--brand-deepest); }
+.camp-modal .demo-field > span { font-size: 8px; letter-spacing: .06em; }
+.camp-modal .pf-in { border-color: var(--brand-deepest); }
+.camp-segment { position: relative; }
+.camp-select { display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 30px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-white); color: var(--text); font: 11px "Plus Jakarta Sans",sans-serif; text-align: left; cursor: pointer; }
+.camp-select.open { border-color: var(--brand); }
+.camp-select i { font-style: normal; color: var(--text-sec); }
+.camp-options { display: flex; flex-direction: column; margin-top: 2px; border: 1px solid var(--text-sec); background: var(--surface-white); }
+.camp-option { padding: 3px 8px; border: 0; background: none; color: var(--text); font: 10px "Plus Jakarta Sans",sans-serif; text-align: left; }
+.camp-option.active { background: #1A6BD6; color: var(--surface-white); cursor: pointer; }
+.camp-info { padding: 9px 10px; border: 1px solid var(--brand-tint); border-radius: 9px; background: var(--brand-tint2); font-size: 9.5px; line-height: 1.6; color: var(--text-sec); }
+.camp-info b { color: var(--text); }
+.camp-footer { display: flex; justify-content: flex-end; gap: 7px; }
+.camp-cancel, .camp-submit { padding: 7px 13px; border-radius: 9px; font: 700 10px "Plus Jakarta Sans",sans-serif; }
+.camp-cancel { border: 1px solid var(--line); color: var(--text-sec); font-weight: 500; }
+.camp-submit { border: 0; background: var(--brand-deepest); color: var(--surface-white); cursor: pointer; }
+.seg-peek-label { font: 700 9px "Source Code Pro",monospace; letter-spacing: .08em; color: var(--brand-deepest); }
+.seg-peek.retain .seg-peek-label, .seg-peek.retain .insight-number { color: var(--accent-hover); }
+.seg-peek.risk .seg-peek-label, .seg-peek.risk .insight-number { color: var(--danger); }
+.seg-mini > b { background: var(--brand-tint2); color: var(--brand-deepest); }
+.seg-mini.retain > b { background: var(--accent-tint); color: var(--accent-hover); }
+.seg-mini.risk > b { background: #FBE3E0; color: var(--danger); }
+@media (max-width: 560px) {
+  .story-stage.detail-view .scene > .seg-cards, .story-stage.detail-view .camp-modal, .story-stage.detail-view[data-scene="campaign-send"] .scene > * { max-width: 100%; }
+  .detail-view .seg-card .seg-num { font-size: 24px; }
+  .detail-view .seg-card p, .detail-view .seg-cta { font-size: 8px; }
+  .detail-view .camp-option { font-size: 11px; }
+}
