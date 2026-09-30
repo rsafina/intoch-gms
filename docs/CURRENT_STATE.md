@@ -1,5 +1,46 @@
 # Current state and operational handoff
 
+Reservation sales story (2026-09-30; local): “Sebelum tamu datang” now opens on
+the online form with a restaurant-logo close-up, then example contact/area/time
+entry and receipt. The second chapter shows a booking-follow-up notification,
+Upcoming Reservations, Update Reservation and a saved Outdoor table assignment.
+The third chapter previews the automatically saved Michelle record and profile,
+with the same phone, 26 Sep/21:00/4 pax booking, zero visits and no recorded spend.
+Revised copy emphasizes restaurant identity. Normal playback timing, pause/replay
+and reduced-motion behavior remain. Targeted state tests and desktop/393/320px
+Chrome checks pass; long form/profile content scrolls within its screen. No live
+booking, guest data, push or deployment.
+
+Dashboard walk-in sales story (2026-09-30; local): replaced the generic walk-in
+scenes with the supplied Quick Walk-In dashboard pattern. Three sequences show
+Jessica selected from name suggestions with her existing phone, Brian registered
+as a new guest without a required phone, then Edit Walk-In after seating to save
+4 pax, Indoor table T2 and a note back to the active row. “Quick registration in
+under 20 seconds” is a product tagline; playback retains the normal readable pace.
+Desktop/mobile retain pause, replay and reduced-motion behavior. Targeted tests
+cover both registration paths and the saved seating details; browser checks cover
+all nine routes at desktop and 393/320px. No live writes, push or deployment.
+
+Guest Database sales story (2026-09-30; local): “Kenali tamu” now uses two
+reference-based sequences: search Michelle, find her row, highlight/click the eye,
+then open Guest Profile; repeat for Jessica with membership badge, stickers and
+vouchers. The database includes navigation, filters and table columns; the overlay
+shows average spend, favorite, notes and visit history using fictional demo data.
+Phone layouts keep search and the eye readable and allow longer profiles to scroll.
+Existing playback, pause, restart and reduced-motion controls remain in use.
+Targeted tests cover filtering, eye/open/close behavior and member details; Chrome
+checks cover desktop and 393/320px mobile. No live guest data, push or deployment.
+
+Mobile Customer Insight cards (2026-09-30; local): the Campaign demo shows one
+full-width category at a time below 560px, sliding through Acquire, Retain and At
+Risk with playback. Cards support native horizontal swiping and keyboard scrolling;
+touching the row pauses playback. Reduced motion skips the slide animation. Desktop
+retains three columns. The phone view starts directly on Acquire and keeps the
+heading above the cards; short screens allow vertical scrolling within the scene.
+Targeted playback/routing and syntax checks pass. Chrome checks cover all nine
+stories at 1440/1280/393/320px, including single-card sizing and no page overflow.
+No push or deployment.
+
 Reactivation campaign workspace (2026-09-29; local on `demo`): third step now shows
 category selection (At Risk), the Pesan editor with Simpan Pesan, then Penerima (2)
 with separate Kirim WA buttons for Michelle and Noelle. The final state shows WhatsApp

@@ -15,9 +15,8 @@
       problem: "Bantu tim waiter Anda melayani lebih personal, tanpa perlu menghafal.",
       keyMessage: "Kenali Pelanggan Lebih Baik dengan Customer Database",
       steps: [
-        step("Cari", "Bu Michelle menelepon untuk pesan meja.", "Bu Michelle menelepon untuk pesan meja. Cukup ketik namanya, profilnya langsung muncul.", "search"),
-        step("Kenali", "Tim langsung tahu berapa kali ia datang, kapan terakhir, dan berapa belanjanya.", "Tim langsung tahu berapa kali ia datang, kapan terakhir, dan berapa belanjanya.", "profile"),
-        step("Layani", "Ada catatan “suka meja teras”.", "Ada catatan “suka meja teras”. Tim bisa langsung menawarkan meja favoritnya.", "preference", "Total belanja pelanggan dapat ditambahkan di data kunjungan dan menjadi 'spending behavior' yang dapat digunakan di masa depan.")
+        step("Cari tamu", "Cari nama, lalu buka Guest Profile.", "Ketik nama Michelle di Guest Database. Klik ikon mata untuk melihat rata-rata belanja, catatan, dan riwayat kunjungannya.", "db-guest"),
+        step("Kenali member", "Data membership ada di profil yang sama.", "Cari Jessica dan buka profilnya. Status member, saldo stiker, voucher, dan riwayat kunjungan langsung terlihat.", "db-member")
       ], related: ['reactivation', 'walk-in'] },
     { slug: 'campaign', category: 'Pesan yang relevan', title: "Berhenti bagikan pesan broadcast yang sama ke semua leads pelanggan Anda.",
       problem: "Kirimkan broadcast marketing yang relevan dengan history visit, data spending, atau event spesial pelanggan.",
@@ -31,17 +30,17 @@
       problem: "Saat ramai pun, data pelanggan tetap tercatat tanpa membuat antrean.",
       keyMessage: "Dapatkan data pelanggan walk-in, tanpa membuat mereka menunggu.",
       steps: [
-        step("Catat cepat", "Cukup isi nama, nomor WhatsApp, dan jumlah pax, lalu antarkan pelanggan ke meja.", "Cukup isi nama, nomor WhatsApp, dan jumlah pax, lalu antarkan pelanggan ke meja.", "walkin"),
-        step("Kunjungan", "Tambahkan nomor meja dan note setelah Anda/pelanggan menentukan tempat duduknya.", "Tambahkan nomor meja dan note setelah Anda/pelanggan menentukan tempat duduknya.", "visit"),
-        step("Kembali", "Ubah nomor meja dengan fleksibel kapanpun pelanggan request untuk pindah meja.", "Ubah nomor meja dengan fleksibel kapanpun pelanggan request untuk pindah meja.", "bayu-profile")
+        step("Pilih tamu", "Pilih tamu dari saran nama.", "Ketik nama Jessica, pilih dari saran yang muncul, lalu klik Add. Walk-in langsung tercatat tanpa mengisi ulang data tamu.", "quick-existing"),
+        step("Tamu baru", "Belum terdaftar? Tambahkan tamu baru.", "Untuk tamu baru seperti Brian, cukup isi nama lalu klik Add. Nomor telepon opsional; detail lainnya bisa menyusul.", "quick-new", "Quick registration in under 20 seconds."),
+        step("Setelah duduk", "Lengkapi detail setelah tamu duduk.", "Tamu sudah duduk? Klik Edit, pilih meja dan tambahkan catatan, lalu Save Changes. Detail walk-in diperbarui di daftar yang sama.", "quick-seat")
       ], related: ['customer-database', 'reservation'] },
     { slug: 'reservation', category: 'Sebelum tamu datang', title: "Mudahkan Reservasi Pelanggan dengan Online Form, Simpan dan Manfaatkan Data Kemudian",
-      problem: "Setiap data kunjungan terakumulasi, on track dan jadi database yang siap digunakan.",
+      problem: "Form dengan identitas restoran Anda. Reservasi masuk otomatis, data tamu langsung tersimpan.",
       keyMessage: "Mudahkan Reservasi Pelanggan dengan Online Form, Simpan dan Manfaatkan Data Kemudian",
       steps: [
-        step("Tamu memilih", "Michelle klik link form reservasi, kemudian isi nama, nomor WhatsApp, pilih tanggal, waktu, dan jumlah pax.", "Michelle klik link form reservasi, kemudian isi nama, nomor WhatsApp, pilih tanggal, waktu, dan jumlah pax.", "reservation"),
-        step("Booking masuk", "Reservasi otomatis muncul di dashboard, lengkap dengan notifikasi untuk tim resto.", "Reservasi otomatis muncul di dashboard, lengkap dengan notifikasi untuk tim resto.", "booking"),
-        step("Data tersimpan", "Nama dan nomor WhatsApp Michelle otomatis tersimpan di database Anda.", "Nama dan nomor WhatsApp Michelle otomatis tersimpan di database Anda.", "booked-profile", "Contoh reservasi ini tanpa deposit. Advance setting tersedia jika reservasi membutuhkan deposit.")
+        step("Form restoran Anda", "Reservasi dengan identitas restoran Anda.", "Logo dan nama restoran Anda menyambut tamu. Michelle mengisi kontak, jumlah tamu, area, tanggal, dan jam, lalu klik Reserve Now.", "rsv-form"),
+        step("Masuk otomatis", "Notifikasi masuk, reservasi siap dikelola.", "Reservasi otomatis masuk ke dashboard dengan notifikasi. Temukan di Upcoming Reservations, lalu klik Update untuk melengkapi meja nanti.", "rsv-dashboard"),
+        step("Tamu tersimpan", "Satu reservasi, satu profil tamu baru.", "Nama dan nomor WhatsApp Michelle otomatis tersimpan di Guest Database. Buka profilnya untuk melihat detail reservasi; riwayat kunjungan dimulai setelah ia datang.", "rsv-guest", "Contoh reservasi ini tanpa deposit.")
       ], related: ['follow-up', 'walk-in'] },
     { slug: 'follow-up', category: 'Tindak lanjut reservasi', title: "Pantau Konfirmasi Booking dalam Satu Daftar",
       problem: "Tim tahu booking mana yang sudah dan belum dihubungi, tanpa saling tanya.",

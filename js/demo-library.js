@@ -36,6 +36,23 @@
       <div class="guest-rows">${visibleGuests.map(guest => row(guest, beat > 0 && guest.days > 60)).join('')}</div>
       <div class="scene-summary">${filtered && selected ? '<strong>6 → 2</strong><span>Tersisa pelanggan yang 60 hari lebih tidak datang.</span>' : search && selected ? '<strong>Profil ketemu</strong><span>Riwayat dan catatan ada di satu halaman.</span>' : '<strong>Sudah lama tidak datang</strong><span>Bu Michelle dan Bu Noelle belum kembali lebih dari 2 bulan.</span>'}</div>`;
   }
+  const eyeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+  function guestDatabaseStory(member = false) {
+    const guest = member ? sari : dewi;
+    const found = beat >= 1;
+    const rows = found ? [guest] : guests;
+    const tier = person => person === sari ? 'High Spender' : 'Medium Spender';
+    const profileOpen = beat === lastBeat;
+    return `<div class="db-demo ${beat === 0 ? 'db-searching' : ''} ${profileOpen ? 'db-open' : ''}">
+      <aside class="db-sidebar"><b>intoch</b><span>Dashboard</span><span>Reservations</span><span>Walk-Ins</span><strong>Guests</strong><span>Membership</span><span>Broadcast</span><span>Reports</span></aside>
+      <div class="db-workspace">
+        <div class="scene-heading"><div><h3>Guest Database</h3><small>Search and manage guest profiles</small></div><span class="db-new">+ New Guest</span></div>
+        <div class="db-filters"><div class="db-search" aria-label="Search guests"><span>⌕</span><span class="db-query ${beat === 0 ? 'db-typing' : ''}" style="--letters:${guest.name.length}">${guest.name}</span></div><div class="db-filter-row"><span>All Tiers ⌄</span><span>All Tags ⌄</span><span>Any Visits ⌄</span><span>Last visit</span><span>dd/mm/yyyy</span><span>Reset</span></div></div>
+        <div class="db-table"><div class="db-table-head"><span>GUEST</span><span>PHONE</span><span>TIER</span><span>VISITS</span><span>LAST VISIT</span><span></span></div>${rows.map(person => `<div class="db-row ${found ? 'db-found' : ''}" data-key="${person.initials}"><div class="db-person"><span class="avatar">${person.initials}</span><div><b>${person.name}</b>${person === sari ? '<small class="db-member-badge">★ M-0007</small>' : '<small>RETURNING</small>'}</div></div><span class="db-phone">${person.phone}</span><span class="db-tier">${tier(person)}</span><span class="db-visits">${person.visits}</span><span class="db-last">${person.last} 2026</span><button class="db-eye ${beat === 2 ? 'db-eye-active' : ''}" type="button" data-db-eye aria-label="Lihat profil ${person.name}">${eyeIcon}</button></div>`).join('')}</div>
+      </div>
+      ${profileOpen ? `<div class="db-overlay"><section class="db-profile" aria-label="Guest Profile ${guest.name}"><div class="db-profile-heading"><h3>Guest Profile</h3><button type="button" class="db-close" data-db-close aria-label="Tutup profil">×</button></div><div class="db-profile-id"><span class="avatar">${guest.initials}</span><div><b>${guest.name}</b><span>${guest.phone}</span>${member ? '<div class="db-member-line"><small class="db-member-badge">★ M-0007</small><span>8 stickers · 2 vouchers available</span></div><span class="db-member-link">Open member card</span>' : ''}<div><span class="db-tier">${tier(guest)}</span> <small>Auto-calculated</small></div><small>Member since ${member ? '12 Jun' : '7 Mar'} 2026</small></div><span class="db-edit">Edit</span></div><div class="db-profile-metrics"><div><small>AVERAGE SPEND</small><b>${member ? 'Rp350.000' : 'Rp310.000'}</b><span>across ${guest.visits} visits with spend recorded</span></div><div><small>FAVORITE</small><b>—</b><span>no order recorded yet</span></div></div><div class="db-profile-note"><small>NOTES</small><p>${member ? 'Member Family · pelanggan tetap, kenal staf.' : guest.note}</p></div><div class="db-history"><small>VISIT HISTORY (${guest.visits} VISITS)</small>${(member ? [['18 Sep', 'Reservation · 2 pax · Indoor', 'Rp400.000'], ['5 Sep', 'Walk-In · 3 pax · Teras', 'Rp300.000']] : [['20 Jun', 'Reservation · 4 pax · Teras', 'Rp360.000'], ['16 Mei', 'Walk-In · 2 pax · Indoor', 'Rp280.000'], ['11 Apr', 'Reservation · 2 pax · Teras', 'Rp320.000'], ['7 Mar', 'Walk-In · 2 pax · Indoor', 'Rp280.000']]).map(([day, detail, spend]) => `<div><span>${day} 2026<small>${detail}</small></span><b>${spend}</b></div>`).join('')}${member ? '<p class="db-history-more">+ 6 kunjungan sebelumnya</p>' : ''}</div></section></div>` : ''}
+    </div>`;
+  }
   function profile(kind) {
     const isBayu = kind === 'bayu-profile' || kind === 'return';
     const returning = kind === 'return';
@@ -70,12 +87,12 @@
   const returningMessage = name => `Halo ${name}! Terima kasih sudah kembali berkunjung ke ${restaurant}. Kami sangat menghargai kepercayaannya dan senang bisa melayani Bapak/Ibu lagi. Sampai jumpa di kunjungan berikutnya!`;
   function segmentReport(pick = false) {
     const cards = segmentCards.map((item, index) => {
-      const shown = pick || beat >= index;
+      const shown = window.innerWidth <= 560 || pick || beat >= index;
       const lit = pick ? item.key === 'retain' : beat === index;
       const button = pick && item.key === 'retain' ? `<button type="button" class="seg-cta" data-scene-action>${item.cta}</button>` : `<span class="seg-cta">${item.cta}</span>`;
       return `<div class="seg-card ${item.key} ${shown ? '' : 'pending'} ${lit ? 'lit' : ''}" data-seg="${item.key}"><small>${item.label}</small>${shown ? `<b class="seg-num">${item.total}</b><span class="seg-unit">${item.unit}</span>${item.lines.map(([k, v]) => `<p><span>${k}</span><em>${v}</em></p>`).join('')}${button}` : '<b class="seg-num">–</b>'}</div>`;
     }).join('');
-    return `<div class="scene-heading"><h3>Customer Insight</h3>${badge('1–23 Sep 2026')}</div><div class="seg-cards">${cards}</div>
+    return `<div class="scene-heading"><h3>Customer Insight</h3>${badge('1–23 Sep 2026')}</div><div class="seg-cards" tabindex="0" role="region" aria-label="Segmen pelanggan: geser untuk melihat kategori lainnya">${cards}</div>
       ${pick ? '<p class="scene-fine">Pilih segmen yang ingin disapa.</p>' : beat >= 3 ? note('Tiga segmen, tiga pesan yang berbeda.') : `<div class="scene-summary"><strong>${segmentCards[beat].label}</strong><span>${['Tamu yang pertama kali datang di periode ini.', 'Tamu yang sudah pernah datang, lalu kembali lagi.', 'Tamu yang 60 hari lebih belum kembali.'][beat]}</span></div>`}`;
   }
   function campaignModal(stage) {
@@ -123,10 +140,30 @@
       ${beat >= 3 ? note(ticket ? 'Tiket konfirmasi sudah di WhatsApp Bu Michelle. Tidak perlu screenshot atau ketik ulang.' : 'Pesan konfirmasi terisi otomatis. Staf cukup cek, lalu kirim.')
         : ticket && beat >= 1 ? '' : `<div class="scene-summary"><strong>${ticket ? 'Beri kepastian' : 'Satu klik'}</strong><span>${ticket ? 'Tiket resmi membuat tamu yakin mejanya aman.' : 'Nama, tanggal, jam, dan jumlah tamu sudah ada di pesan.'}</span></div>`}`;
   }
+  function quickWalkin(kind) {
+    const existing = kind === 'quick-existing';
+    const seating = kind === 'quick-seat';
+    const guest = existing ? sari : bayu;
+    const registered = seating || beat === lastBeat;
+    const editing = seating && (beat === 1 || beat === 2);
+    const seated = seating && beat === lastBeat;
+    const chosen = existing && beat >= 2;
+    return `<div class="qw-dashboard ${editing ? 'qw-editing' : ''}"><div class="scene-heading"><div><h3>Welcome!</h3><small>Wednesday, 23 September 2026</small></div><div class="qw-top-actions"><span>ϟ Walk-In</span><span>+ New Reservation</span></div></div>
+      <div class="qw-quick"><div class="qw-label"><b>QUICK WALK-IN</b><small>Name &amp; hp, sisa detail bisa menyusul</small><small>Pax bisa diisi nanti</small></div><div class="qw-name"><div class="qw-input" data-qw-name>${!seating && !registered ? `<span class="${beat === 0 ? 'db-typing' : ''}" style="--letters:${guest.name.length}">${guest.name}</span>` : '<span class="qw-placeholder">Guest name *</span>'}</div>${!seating && beat === 1 ? `<div class="qw-suggestions">${existing ? `<button type="button" data-scene-action><b>Jessica <span class="db-member-badge">★ M-0007</span></b><small>${sari.phone}</small></button>` : '<div><b>Belum ada tamu yang cocok</b><small>Klik Add untuk mendaftarkan Brian.</small></div>'}</div>` : ''}</div><div class="qw-input qw-phone">${chosen ? guest.phone : 'Phone (optional)'}</div><div class="qw-input qw-pax">${chosen ? '4' : '1'}</div><button class="qw-primary" type="button" data-scene-action>Add</button></div>
+      <section class="qw-list"><div class="scene-heading"><div><h3>Today's Walk-Ins</h3><small>${registered ? '1 walk-in' : '0 walk-ins'} on Wednesday, 23 September</small></div><span class="qw-link">View all →</span></div>${registered ? `<div class="qw-visit"><span class="qw-time">5:45 PM</span><div class="qw-guest"><b>${guest.name} ${existing ? '<span class="db-member-badge">★ M-0007</span>' : ''}</b><small>${existing ? '4' : seated ? '4' : '1'} pax · ${seated ? 'T2 · Indoor' : '— · —'}</small><small>${existing ? '8 visits · Member Family' : seated ? 'Dekat jendela' : 'Tamu baru'}</small></div><div class="qw-row-actions"><span class="qw-active">● Active</span><button type="button" data-scene-action>Edit</button><span>Complete</span></div></div>` : '<p class="qw-empty">No walk-ins for today</p>'}</section>
+      <div class="qw-tagline">Quick registration in under 20 seconds.</div>
+      ${editing ? `<div class="qw-overlay"><section class="qw-modal"><div class="db-profile-heading"><h3>Edit Walk-In</h3><span class="db-close" aria-hidden="true">×</span></div><p class="qw-subtitle">Quick registration in under 20 seconds</p><div class="qw-edit-identity">${field('Guest Name *', 'Brian')}${field('Phone (optional)', '—')}</div><div class="qw-edit-fields">${field('Pax *', beat === 2 ? '4' : '1')}${field('Area (auto from table)', beat === 2 ? 'Indoor' : 'No preference')}</div>${field('Notes', beat === 2 ? 'Dekat jendela' : 'Any notes...')}<div class="qw-tables"><div><b>Tables</b><span>Clear selection</span></div><small>Select one or more tables in the same area.</small><b>Indoor</b><div class="qw-table-pills">${['IN6', 'IN7', 'IN8', 'T1', 'T2', 'T3'].map(table => `<button type="button" class="${beat === 2 && table === 'T2' ? 'selected' : ''}" data-scene-action>${table} · 4 pax</button>`).join('')}</div><b>Outdoor</b><div class="qw-table-pills"><span>OUT4 · 6 pax</span><span>OUT5 · 6 pax</span></div></div><div class="qw-modal-footer"><button type="button" class="qw-primary" data-scene-action>Save Changes</button><span>Cancel</span></div></section></div>` : ''}</div>`;
+  }
   function walkin() {
     return `<div class="scene-heading"><h3>Walk-in</h3>${badge('23 Sep · 18:30')}</div><p class="scene-fine">Tamu datang tanpa reservasi</p>
       ${card('Tambah kunjungan', `<div class="form-grid">${field('Nama tamu', beat >= 1 ? bayu.name : 'Nama tamu')}${field('Nomor WhatsApp', beat >= 1 ? bayu.phone : 'Nomor tamu')}${field('Jumlah tamu', '2 orang')}${field('Meja · Area', beat >= 2 ? 'A3 · Indoor' : 'Pilih meja')}</div>${action('Simpan walk-in')}`)}
       ${beat >= 3 ? note('Brian · 2 orang · meja A3. Kunjungan tersimpan.') : '<div class="service-context"><span>01</span><p>Catat singkat.<br><b>Lanjutkan menyambut tamu.</b></p></div>'}`;
+  }
+  function reservationStory(kind) {
+    const phone = reservationGuest.phone;
+    if (kind === 'rsv-form') return `<div class="rsv-form-view ${beat === 0 ? 'rsv-brand-focus' : ''}"><div class="rsv-brand"><img src="/assets/intoch-logo.png" alt="Intoch Restaurant logo"><b>${restaurant}</b><small>Reservasi dengan identitas restoran Anda</small></div><section class="rsv-form"><div class="scene-heading"><h3>BOOK A TABLE</h3></div><p>Welcome to ${restaurant}</p><div data-rsv="identity">${field('Name', beat >= 1 ? 'Michelle' : 'Your name')}${field('WhatsApp Number', beat >= 1 ? phone : '08xxxxxxxxxx')}</div><div data-rsv="choices">${field('Number of Guests', beat >= 2 ? '−　　　　 4　　　　 +' : '−　　　　 2　　　　 +')}<small>□ Book a private room if available</small><label>Choose an Area</label><div class="rsv-pills"><span>Indoor</span><span class="${beat >= 2 ? 'selected' : ''}">Outdoor</span><span>Outdoor – Smoking</span></div>${field('Date', '26/09/2026')}<label>Time</label><div class="rsv-pills"><span>19:00</span><span>20:00</span><span class="${beat >= 2 ? 'selected' : ''}">21:00</span></div>${field('Notes (optional)', beat >= 2 ? 'Meja dekat taman, jika tersedia.' : 'Any notes...')}</div><button type="button" class="rsv-submit" data-scene-action>Reserve Now</button>${beat === 3 ? '<div class="rsv-received"><b>✓ Reservasi diterima, Michelle.</b><span>26 Sep · 21:00 · 4 pax · Outdoor</span><small>Tim restoran akan menghubungi Anda.</small></div>' : ''}</section></div>`;
+    if (kind === 'rsv-dashboard') return `<div class="rsv-dashboard"><div class="scene-heading"><div><h3>Welcome!</h3><small>Wednesday, 23 September 2026</small></div><span class="rsv-bell">♧ <b>1</b></span></div>${beat === 0 ? '<div class="rsv-notification"><h3>Booking follow-ups</h3><small>Perlu follow up (1)</small><b>Michelle</b><span>Sab, 26 Sep · 21:00 · 4 pax</span><span>□ Sudah di-follow up</span><div>Buka halaman Reservasi</div></div>' : ''}<section class="rsv-upcoming"><div class="scene-heading"><h3>Upcoming Reservations</h3><small>Next 3 days</small></div><div class="rsv-pills"><span>Today (0)</span><span>Tomorrow (0)</span><span class="selected">26 Sep (1)</span></div><div class="rsv-totals"><b>26 September</b><span>Total reservations <strong>1</strong></span><span>Expected pax <strong>4</strong></span></div><div class="rsv-booking"><b>21:00</b><div><strong>Michelle</strong><small>4 pax · Outdoor · ${beat === 3 ? 'OUT4' : 'Unassigned'}</small><small>Online Form · 0 visits</small></div>${badge('Reserved')}<div class="rsv-actions"><button type="button" data-scene-action>Update</button><span>Issue ticket</span><span>Follow up ↗</span></div></div></section>${beat === 2 ? '<div class="rsv-edit-overlay"><section class="rsv-edit"><div class="db-profile-heading"><h3>Update Reservation</h3><span class="db-close">×</span></div><div class="db-profile-note"><b>Michelle</b><p>9:00 PM · 4 pax</p><small>Source: Online Form</small></div><label>UPDATE STATUS</label><div class="rsv-status"><span class="selected">Reserved</span><span>Arrived</span><span>Completed</span><span>Cancelled</span><span>Cancelled (No Show)</span></div><label>ASSIGN TABLE</label><div class="qw-input">Outdoor</div><div class="qw-table-pills"><span class="selected">OUT4 · 6 pax</span><span>OUT5 · 6 pax</span><span>OUT6 · 6 pax</span><span>OUT7 · 6 pax</span></div><button type="button" class="rsv-submit" data-scene-action>Save Changes</button></section></div>' : beat === 3 ? '<div class="scene-note">✓ Meja OUT4 tersimpan. Status tetap Reserved.</div>' : ''}</div>`;
+    return `<div class="rsv-guest"><div class="scene-heading"><div><h3>Guest Database</h3><small>Search and manage guest profiles</small></div></div><div class="db-filters"><div class="db-search"><span>⌕</span><span class="db-query ${beat === 0 ? 'db-typing' : ''}" style="--letters:8">Michelle</span></div></div><div class="db-table"><div class="rsv-guest-row"><span class="avatar">MI</span><div><b>Michelle</b><small>${phone}</small></div><span class="db-tier">None</span><span>0 visits</span><button class="db-eye ${beat === 2 ? 'db-eye-active' : ''}" type="button" data-db-eye aria-label="Lihat profil Michelle">${eyeIcon}</button></div></div><p class="rsv-saved">✓ Kontak tersimpan otomatis dari Online Form.</p>${beat === 3 ? `<div class="db-overlay"><section class="db-profile"><div class="db-profile-heading"><h3>Guest Profile</h3><button type="button" class="db-close" data-db-close aria-label="Tutup profil">×</button></div><div class="db-profile-id"><span class="avatar">MI</span><div><b>Michelle</b><span>${phone}</span><div><span class="db-tier">None</span> <small>Belum ada spending tercatat</small></div><small>Member since 23 Sep 2026</small></div></div><div class="db-profile-metrics"><div><small>AVERAGE SPEND</small><b>—</b><span>No visits with spend recorded</span></div><div><small>FAVORITE</small><b>—</b><span>no order recorded yet</span></div></div><div class="db-profile-note"><small>UPCOMING RESERVATION</small><p>26 Sep 2026 · 21:00 · 4 pax</p><p>Outdoor · OUT4 · Reserved</p><small>Meja dekat taman, jika tersedia.</small></div><div class="db-history"><small>VISIT HISTORY (0 VISITS)</small><p>Belum ada kunjungan tercatat.</p></div></section></div>` : ''}</div>`;
   }
   function reservation() {
     return `<div class="scene-heading"><h3>Reservasi Mendatang</h3>${badge(beat === 3 ? '1 booking baru' : 'Minggu ini')}</div>
@@ -153,6 +190,9 @@
       ${kind === 'member' ? card('Aktivitas member', '<p>8 kunjungan · terakhir 18 Sep</p><p>Saldo 8 stiker · siap digunakan pada kunjungan berikutnya.</p>') : kind === 'stickers' ? `${field('Transaksi kunjungan · 23 Sep', 'Rp200.000 → 2 stiker')}${action('Simpan transaksi member')}${added ? note('2 stiker ditambahkan · saldo 10 stiker.') : ''}` : `${action('Konversi 10 stiker menjadi voucher')}${converted ? card('Voucher member', '<b>Voucher Intoch Restaurant · Rp50.000</b><p>Aktif · berlaku hingga 23 Okt 2026</p><small>Nilai dan masa berlaku mengikuti aturan restoran.</small>', 'reward-card') : '<p class="scene-fine">10 stiker siap dikonversi sesuai aturan restoran.</p>'}`}`;
   }
   const scenes = {
+    'rsv-form': () => reservationStory('rsv-form'), 'rsv-dashboard': () => reservationStory('rsv-dashboard'), 'rsv-guest': () => reservationStory('rsv-guest'),
+    'quick-existing': () => quickWalkin('quick-existing'), 'quick-new': () => quickWalkin('quick-new'), 'quick-seat': () => quickWalkin('quick-seat'),
+    'db-guest': () => guestDatabaseStory(), 'db-member': () => guestDatabaseStory(true),
     'segment-report': () => segmentReport(), 'campaign-create': () => beat === 0 ? segmentReport(true) : campaignModal(beat - 1), 'campaign-send': campaignSend,
     database: () => database(), risk: () => database(true), search: () => database(false, true),
     profile: () => profile('profile'), preference: () => profile('preference'),
@@ -313,9 +353,25 @@
         animate(element, [{ opacity: .25, transform: 'translateY(7px)' }, { opacity: 1, transform: 'translateY(0)' }]);
     });
   }
+  function fitSegments(slide = false) {
+    const track = scene.querySelector('.seg-cards');
+    if (!track || window.innerWidth > 560 || !stage.classList.contains('detail-view')) return;
+    const index = definition.steps[stepIndex].scene === 'campaign-create' ? 1 : Math.min(beat, 2);
+    const card = track.children[index];
+    const previous = track.scrollLeft;
+    track.scrollLeft = card.offsetLeft - track.children[0].offsetLeft;
+    if (slide && track.scrollLeft !== previous) animate(card, [{ transform: 'translateX(100%)', opacity: .4 }, { transform: 'translateX(0)', opacity: 1 }], { duration: 550 });
+  }
   function movePointer(kind, reset) {
     if (cursorAnimation) cursorAnimation.cancel();
-    const selectors = kind === 'segment-report'
+    const selectors = kind === 'rsv-form' ? ['#scene .rsv-brand img', '#scene [data-rsv="identity"]', '#scene [data-rsv="choices"] .rsv-pills']
+      : kind === 'rsv-dashboard' ? ['#scene .rsv-notification', '#scene .rsv-actions button', '#scene .rsv-edit .rsv-submit']
+      : kind === 'rsv-guest' ? ['#scene .db-search', '#scene .rsv-guest-row', '#scene .db-eye']
+      : kind.startsWith('quick-')
+      ? kind === 'quick-seat' ? ['#scene .qw-row-actions button', '#scene .qw-edit-identity', '#scene .qw-modal-footer button'] : ['#scene [data-qw-name]', kind === 'quick-existing' ? '#scene .qw-suggestions button' : '#scene .qw-quick > button', '#scene .qw-quick > button']
+      : kind.startsWith('db-')
+      ? ['#scene .db-search', '#scene .db-found .db-person', '#scene .db-eye']
+      : kind === 'segment-report'
       ? ['#scene [data-seg="acquire"] .seg-num', '#scene [data-seg="retain"] .seg-num', '#scene [data-seg="risk"] .seg-num']
       : kind === 'campaign-create'
       ? ['#scene [data-seg="retain"] [data-scene-action]', '#scene .camp-select', '#scene .camp-option.active']
@@ -345,8 +401,8 @@
     const detailed = window.innerWidth <= 560 && stage.classList.contains('detail-view');
     const scale = detailed ? 1 : bounds.width / 680 || 1;
     if (detailed && !target.getClientRects().length) { pointer.classList.remove('visible'); return; }
-    if (detailed) {
-      const viewport = scene.contains(target) ? scene : companionScreen.parentElement;
+    if ((detailed || kind.startsWith('rsv-')) && kind !== 'segment-report' && !kind.startsWith('db-')) {
+      const viewport = target.closest('.rsv-edit, .rsv-form-view, .rsv-dashboard, .qw-modal, .qw-dashboard') || (scene.contains(target) ? scene : companionScreen.parentElement);
       viewport.scrollTop += target.getBoundingClientRect().top - viewport.getBoundingClientRect().top - viewport.clientHeight / 2;
     }
     const targetBounds = target.getBoundingClientRect();
@@ -400,14 +456,28 @@
       const guestAction = current.scene === 'reservation' && beat < lastBeat;
       const guestResult = ['campaign-send', 'journey-message', 'reward'].includes(current.scene) && beat === lastBeat;
       const guestMessage = current.scene.startsWith('rel-') && (beat === 2 || (current.scene === 'rel-followup' && beat === 1));
-      const shot = beat === 0 && !motion.matches ? 'overview' : guestAction || guestResult || guestMessage ? 'companion' : 'main';
+      const mobileSegments = window.innerWidth <= 560 && (current.scene === 'segment-report' || current.scene.startsWith('db-') || current.scene.startsWith('quick-'));
+      const shot = current.scene.startsWith('rsv-') ? 'main' : beat === 0 && !motion.matches && !mobileSegments ? 'overview' : guestAction || guestResult || guestMessage ? 'companion' : 'main';
       const cameraTarget = shot === 'companion' ? companionScreen : stage.querySelector('.product-wrap');
       const beforeCamera = cameraTarget.getBoundingClientRect();
       stage.dataset.shot = shot;
       stage.classList.toggle('detail-view', shot !== 'overview');
       stage.classList.toggle('detail-companion', shot === 'companion');
       if (stepChanged || previousShot !== shot) { scene.scrollTop = 0; companionScreen.parentElement.scrollTop = 0; }
-      fitStage(); movePointer(current.scene, stepChanged);
+      fitStage(); fitSegments(true); movePointer(current.scene, stepChanged);
+      if (current.scene.startsWith('rsv-')) {
+        const viewport = scene.querySelector('.rsv-form-view, .rsv-dashboard, .rsv-guest');
+        if (stepChanged) viewport.scrollTop = 0;
+        if (current.scene === 'rsv-form' && beat === 3) viewport.scrollTop = viewport.scrollHeight;
+        if (current.scene === 'rsv-dashboard' && beat === 2) viewport.scrollTop = 0;
+        if (current.scene === 'rsv-dashboard' && beat === 3 && window.innerWidth <= 560) viewport.scrollTop = scene.querySelector('.rsv-booking').offsetTop - 14;
+        if (current.scene === 'rsv-form' && beat === 0) animate(scene.querySelector('.rsv-brand'), [{ transform: 'scale(1)', opacity: .7 }, { transform: 'scale(1.12)', opacity: 1 }], { duration: 1800 });
+      }
+      if (current.scene.startsWith('quick-')) {
+        const dashboard = scene.querySelector('.qw-dashboard');
+        if (beat === lastBeat && window.innerWidth <= 560) dashboard.scrollTop = scene.querySelector('.qw-list').offsetTop - 10;
+        else if (dashboard.classList.contains('qw-editing')) dashboard.scrollTop = 0;
+      }
       if (window.innerWidth <= 560 && previousShot !== shot) {
         const afterCamera = cameraTarget.getBoundingClientRect();
         const from = beforeCamera.width && afterCamera.width
@@ -415,7 +485,7 @@
           : 'translateY(12px) scale(.96)';
         animate(cameraTarget, [{ opacity: .35, transform: from, transformOrigin: 'top left' }, { opacity: 1, transform: 'none', transformOrigin: 'top left' }], { duration: 1000 });
       }
-      if (window.innerWidth <= 560 && stage.classList.contains('detail-view') && beat === lastBeat) {
+      if (window.innerWidth <= 560 && stage.classList.contains('detail-view') && beat === lastBeat && current.scene !== 'segment-report' && !current.scene.startsWith('db-') && !current.scene.startsWith('quick-') && !current.scene.startsWith('rsv-')) {
         const viewport = shot === 'companion' ? companionScreen.parentElement : scene;
         viewport.scrollTop = viewport.scrollHeight - viewport.clientHeight;
       }
@@ -466,11 +536,19 @@
     paused = !paused; paint(); schedule();
   });
   stage.addEventListener('click', event => {
+    if (event.target.closest('[data-db-eye], [data-db-close]')) {
+      clear(); remaining = interval; beat = event.target.closest('[data-db-close]') ? 1 : lastBeat; paint(); schedule(); return;
+    }
     if (!event.target.closest('[data-scene-action]')) return;
     clear(); remaining = interval; beat = Math.min(lastBeat, beat + 1); paint(); schedule();
   });
+  stage.addEventListener('pointerdown', event => {
+    if (window.innerWidth > 560 || !event.target.closest('.seg-cards')) return;
+    paused = true; paint(); schedule();
+    pointer.classList.remove('visible');
+  });
   document.addEventListener('visibilitychange', () => { syncMotion(); schedule(); });
-  window.addEventListener('resize', () => { fitStage(); movePointer(definition.steps[stepIndex].scene, false); syncMotion(); });
+  window.addEventListener('resize', () => { fitStage(); fitSegments(); movePointer(definition.steps[stepIndex].scene, false); syncMotion(); });
   if ('ResizeObserver' in window) new ResizeObserver(() => {
     if (fitStage()) movePointer(definition.steps[stepIndex].scene, false);
     syncMotion();

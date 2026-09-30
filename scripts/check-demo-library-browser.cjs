@@ -72,7 +72,11 @@ async function main() {
         const visibleTogether = await evaluate(`['.story-stage','#story-title','#story-text','.demo-steps'].map(selector => { const bounds = document.querySelector(selector).getBoundingClientRect(); return {selector, top:bounds.top, bottom:bounds.bottom, visible:bounds.top >= 0 && bounds.bottom <= innerHeight}; })`);
         assert.ok(visibleTogether.every(item => item.visible), `${slug} step ${index} must show devices, caption and controls without scrolling at ${width}x${height}: ${JSON.stringify(visibleTogether)}`);
         if (width < 500) {
-          assert.ok(await evaluate('parseFloat(getComputedStyle(document.querySelector("#scene .scene-heading h3")).fontSize) >= 14'), 'mobile detail heading is readable without device scaling');
+          if (await evaluate('!!document.querySelector(".seg-cards")')) {
+            assert.ok(await evaluate(`(() => { const track = document.querySelector('.seg-cards'); const card = track.querySelector('.seg-card'); return card.clientWidth >= track.clientWidth - 12 && track.scrollWidth > track.clientWidth * 2; })()`), 'mobile segments show one full-width swipeable card');
+            await capture(`segments-${width}-${slug}-${index}`);
+          }
+          assert.ok(await evaluate('parseFloat(getComputedStyle(document.querySelector("#scene .scene-heading h3, #scene .camp-modal h3")).fontSize) >= 14'), 'mobile detail heading is readable without device scaling');
           assert.equal(await evaluate('document.querySelector(".detail-toolbar")'), null, 'no screen switches');
         }
         if (['reactivation', 'reservation', 'customer-database', 'walk-in', 'campaign'].includes(slug) && width !== 320) await capture(`${slug}-${width}-${index + 1}`);
@@ -84,13 +88,43 @@ async function main() {
   }
   await command('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
   await command('Emulation.setDeviceMetricsOverride', { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+  await navigate('/demo/customer-database');
+  await capture('database-search-mobile');
+  await delay(2600);
+  assert.equal(await evaluate('document.querySelectorAll(".db-row").length'), 1, 'search finds one guest');
+  await capture('database-found-mobile');
+  await delay(2400);
+  assert.ok(await evaluate('!!document.querySelector(".db-eye-active")'), 'eye highlighted before opening profile');
+  await capture('database-eye-mobile');
+  await evaluate('document.querySelector(".db-eye").click(); document.getElementById("pause").click()');
+  assert.ok(await evaluate('document.querySelector(".db-profile").textContent.includes("Michelle")'), 'eye opens matching profile');
+  await evaluate('document.querySelector(".db-profile").scrollTop = document.querySelector(".db-profile").scrollHeight');
+  await capture('database-history-mobile');
+  assert.ok(await evaluate('document.querySelector(".db-profile").scrollTop > 0'), 'long mobile profile can scroll to history');
   await navigate('/demo/reservation');
-  assert.equal(await evaluate('document.querySelector(".story-stage").dataset.shot'), 'overview');
+  // The walk-in edit panel is a nested scrolling surface on phones.
+  await navigate('/demo/walk-in');
+  await delay(2600);
+  await capture('walkin-suggestions-mobile');
+  assert.ok(await evaluate('!!document.querySelector(".qw-suggestions button")'), 'existing guest suggestion appears');
+  await evaluate('document.querySelector(".qw-suggestions button").click(); document.querySelector(".qw-quick > button").click()');
+  await capture('walkin-registered-mobile');
+  await evaluate('document.querySelectorAll(".demo-steps [data-step]")[2].click(); document.querySelector(".qw-row-actions button").click()');
+  await delay(800);
+  await capture('walkin-edit-mobile');
+  await evaluate('document.querySelectorAll(".qw-table-pills button")[4].click()');
+  await delay(800);
+  await capture('walkin-table-mobile');
+  await evaluate('document.querySelector(".qw-modal-footer button").click()');
+  assert.ok(await evaluate('document.querySelector(".qw-visit").textContent.includes("T2 · Indoor")'), 'saved table appears on walk-in');
+  await navigate('/demo/reservation');
+  assert.ok(await evaluate('!!document.querySelector(".rsv-brand-focus img")'), 'reservation opens on the restaurant brand');
+  await capture('reservation-brand-393');
   await delay(3600);
-  assert.equal(await evaluate('document.querySelector(".story-stage").dataset.shot'), 'companion', 'camera automatically zooms into guest form');
+  assert.equal(await evaluate('document.querySelector(".rsv-form .pf-in").textContent'), 'Michelle', 'guest form fills with the example name');
   await capture('automatic-guest-393');
   await delay(4900);
-  assert.equal(await evaluate('document.querySelector(".story-stage").dataset.shot'), 'main', 'camera automatically reveals dashboard result');
+  assert.ok(await evaluate('!!document.querySelector(".rsv-received")'), 'submitted form shows reservation receipt');
   assert.equal(await evaluate('scrollY'), 0, 'automatic camera never scrolls the page');
   await capture('automatic-result-393');
   await navigate('/demo/reactivation');
