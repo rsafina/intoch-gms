@@ -270,6 +270,19 @@
     return `<div class="rm-screen pm-chat">${heading('Promo untuk Jessica')}<section class="rm-card">${mobilePerson(sari)}<p class="pm-message">${returningMessage(sari.name)}</p><span class="rm-status">Dikirim staf · 10:20 ✓✓</span></section></div>`;
   }
   function mobileReservationStory(kind) {
+    if (kind === 'rsv-form') {
+      // Phone composition: one screen per beat, nothing to scroll or shrink.
+      // 0 form invite · 1 brand close-up · 2 filled form · 3 confirmation
+      const brand = size => `<div class="rsv-brand rsv-m-brand ${size}"><img src="/assets/intoch-logo.png" alt="Intoch Restaurant logo"><b>${restaurant}</b>${size === 'hero' ? '<small>Reservasi dengan identitas restoran Anda</small>' : ''}</div>`;
+      const filled = beat >= 2;
+      const screens = [
+        `${brand('bar')}<section class="rsv-form rsv-m-card"><h3>BOOK A TABLE</h3><p>Welcome to ${restaurant}</p>${field('Name', 'Your name')}${field('WhatsApp Number', '08xxxxxxxxxx')}<span class="rsv-submit rsv-m-submit">Mulai reservasi</span></section>`,
+        `${brand('hero')}<section class="rsv-form rsv-m-card rsv-m-quiet"><p>Tamu melihat logo dan nama restoran Anda, bukan aplikasi pihak lain.</p></section>`,
+        `${brand('bar')}<section class="rsv-form rsv-m-card">${field('Name', 'Michelle')}${field('WhatsApp Number', reservationGuest.phone)}<div class="rsv-m-row"><span>Jumlah tamu</span><b>− 4 +</b></div><div class="rsv-m-row"><span>Area</span><div class="rsv-pills"><span>Indoor</span><span class="selected">Outdoor</span></div></div><div class="rsv-m-row"><span>Sab, 26 Sep</span><div class="rsv-pills"><span>20:00</span><span class="selected">21:00</span></div></div><span class="rsv-submit rsv-m-submit">Reserve Now</span></section>`,
+        `${brand('bar')}<section class="rsv-success rsv-m-card"><div class="rsv-success-check">✓</div><h3>RESERVATION CREATED</h3><div class="rsv-success-details"><b>Michelle</b><span>Saturday, 26 September 2026 · 21:00</span><span>4 pax · Outdoor</span></div><p>Our staff will contact you shortly.</p><div class="rsv-success-wa">Chat with us on WhatsApp</div></section>`
+      ];
+      return `<div class="rsv-form-view rsv-form-phase-${beat} rm-screen rsv-m-form ${filled ? 'filled' : ''}">${screens[beat]}</div>`;
+    }
     const guestHeader = `<div class="rm-person"><span class="avatar">MI</span><div><b>Michelle</b><small>${reservationGuest.phone}</small></div></div>`;
     const bookingDetails = `<div class="rm-details"><span><small>Tanggal & jam</small><b>26 Sep · 21:00</b></span><span><small>Jumlah tamu</small><b>4 orang</b></span><span><small>Area</small><b>Outdoor</b></span><span><small>Meja</small><b>${beat === 3 ? 'OUT4' : 'Belum ditentukan'}</b></span></div>`;
     if (kind === 'rsv-dashboard') {
@@ -279,10 +292,10 @@
     return `<div class="rsv-guest rm-screen"><header class="rm-heading"><small>GUEST DATABASE</small><h3>${beat === 3 ? 'Profil tamu tersimpan' : 'Tamu otomatis terdaftar'}</h3></header>${beat < 3 ? `<div class="rm-search">⌕ <span>Michelle</span></div><section class="rm-card">${guestHeader}<div class="rm-guest-facts"><span>0 kunjungan</span><span>Belum ada spending</span></div><div class="rm-card-footer"><span class="rm-status">✓ Dari Online Form</span><button class="rm-eye ${beat === 2 ? 'selected' : ''}" type="button" data-db-eye aria-label="Lihat profil Michelle">${eyeIcon}<span>Lihat profil</span></button></div></section><p class="rm-footnote">Nama dan nomor WhatsApp tersimpan otomatis.</p>` : `<section class="rm-card rm-profile">${guestHeader}<div class="rm-guest-facts"><span>0 kunjungan</span><span>Belum ada spending</span></div><div class="rm-field-label">Reservasi mendatang</div><div class="rm-profile-booking"><b>26 Sep · 21:00 · 4 orang</b><span>Outdoor · OUT4 · Reserved</span><small>Meja dekat taman, jika tersedia.</small></div><p class="rm-help">Riwayat kunjungan dimulai setelah tamu datang.</p></section>`}</div>`;
   }
   function mobileReservationScene() {
-    return window.innerWidth <= 560 && ['reactivation', 'customer-database', 'campaign', 'walk-in', 'reservation', 'follow-up'].includes(definition.slug) && definition.steps[stepIndex].scene !== 'rsv-form';
+    return window.innerWidth <= 560 && ['reactivation', 'customer-database', 'campaign', 'walk-in', 'reservation', 'follow-up'].includes(definition.slug);
   }
   function reservationStory(kind) {
-    if (window.innerWidth <= 560 && kind !== 'rsv-form') return mobileReservationStory(kind);
+    if (window.innerWidth <= 560) return mobileReservationStory(kind);
     const phone = reservationGuest.phone;
     if (kind === 'rsv-form') return `<div class="rsv-form-view rsv-form-phase-${beat}"><div class="rsv-page"><div class="rsv-brand"><img src="/assets/intoch-logo.png" alt="Intoch Restaurant logo"><b>${restaurant}</b><small>Reservasi dengan identitas restoran Anda</small></div><section class="rsv-form"><div class="scene-heading"><h3>BOOK A TABLE</h3></div><p>Welcome to ${restaurant}</p><div data-rsv="identity">${field('Name', beat >= 2 ? 'Michelle' : 'Your name')}${field('WhatsApp Number', beat >= 2 ? phone : '08xxxxxxxxxx')}</div><div data-rsv="choices">${field('Number of Guests', beat >= 2 ? '−　　　　 4　　　　 +' : '−　　　　 2　　　　 +')}<small>□ Book a private room if available</small><label>Choose an Area</label><div class="rsv-pills"><span>Indoor</span><span class="${beat >= 2 ? 'selected' : ''}">Outdoor</span><span>Outdoor – Smoking</span></div>${field('Date', '26/09/2026')}<label>Time</label><div class="rsv-pills"><span>19:00</span><span>20:00</span><span class="${beat >= 2 ? 'selected' : ''}">21:00</span></div>${field('Notes (optional)', beat >= 2 ? 'Meja dekat taman, jika tersedia.' : 'Any notes...')}</div><button type="button" class="rsv-submit" data-scene-action>Reserve Now</button></section>${beat === 3 ? '<section class="rsv-success"><div class="rsv-success-check">✓</div><h3>RESERVATION CREATED</h3><p>Our staff will contact you shortly. You can also reach us through WhatsApp.</p><div class="rsv-success-details"><b>Michelle</b><span>Saturday, 26 September 2026 · 21:00</span><span>4 pax · Outdoor</span></div><div class="rsv-success-wa">Chat with us on WhatsApp</div><small>← Make another reservation</small></section>' : ''}</div></div>`;
     if (kind === 'rsv-dashboard') return `<div class="rsv-dashboard"><div class="scene-heading"><div><h3>Welcome!</h3><small>Wednesday, 23 September 2026</small></div><span class="rsv-bell">♧ <b>1</b></span></div>${beat === 0 ? '<div class="rsv-notification"><h3>Booking follow-ups</h3><small>Perlu follow up (1)</small><b>Michelle</b><span>Sab, 26 Sep · 21:00 · 4 pax</span><span>□ Sudah di-follow up</span><div>Buka halaman Reservasi</div></div>' : ''}<section class="rsv-upcoming"><div class="scene-heading"><h3>Upcoming Reservations</h3><small>Next 3 days</small></div><div class="rsv-pills"><span>Today (0)</span><span>Tomorrow (0)</span><span class="selected">26 Sep (1)</span></div><div class="rsv-totals"><b>26 September</b><span>Total reservations <strong>1</strong></span><span>Expected pax <strong>4</strong></span></div><div class="rsv-booking"><b>21:00</b><div><strong>Michelle</strong><small>4 pax · Outdoor · ${beat === 3 ? 'OUT4' : 'Unassigned'}</small><small>Online Form · 0 visits</small></div>${badge('Reserved')}<div class="rsv-actions"><button type="button" data-scene-action>Update</button><span>Issue ticket</span><span>Follow up ↗</span></div></div></section>${beat === 2 ? '<div class="rsv-edit-overlay"><section class="rsv-edit"><div class="db-profile-heading"><h3>Update Reservation</h3><span class="db-close">×</span></div><div class="db-profile-note"><b>Michelle</b><p>9:00 PM · 4 pax</p><small>Source: Online Form</small></div><label>UPDATE STATUS</label><div class="rsv-status"><span class="selected">Reserved</span><span>Arrived</span><span>Completed</span><span>Cancelled</span><span>Cancelled (No Show)</span></div><label>ASSIGN TABLE</label><div class="qw-input">Outdoor</div><div class="qw-table-pills"><span class="selected">OUT4 · 6 pax</span><span>OUT5 · 6 pax</span><span>OUT6 · 6 pax</span><span>OUT7 · 6 pax</span></div><button type="button" class="rsv-submit" data-scene-action>Save Changes</button></section></div>' : beat === 3 ? '<div class="scene-note">✓ Meja OUT4 tersimpan. Status tetap Reserved.</div>' : ''}</div>`;
@@ -636,10 +649,9 @@
         if (stepChanged) viewport.scrollTop = 0;
         if (current.scene === 'rsv-form') {
           viewport.scrollTop = 0;
-          if (beat === 2 && window.innerWidth <= 560) profileScroll = { element: viewport, elapsed: 0 };
         }
         if (current.scene === 'rsv-dashboard' && beat === 2) viewport.scrollTop = 0;
-        if (current.scene === 'rsv-form' && beat === 1) animate(scene.querySelector('.rsv-brand'), [{ transform: 'scale(.65)' }, { transform: 'scale(1)' }], { duration: 1200 });
+        if (current.scene === 'rsv-form' && beat === 1 && window.innerWidth > 560) animate(scene.querySelector('.rsv-brand'), [{ transform: 'scale(.65)' }, { transform: 'scale(1)' }], { duration: 1200 });
       }
       if (current.scene.startsWith('quick-')) {
         const dashboard = scene.querySelector('.qw-dashboard');
@@ -686,7 +698,7 @@
       if (beat < lastBeat) beat++;
       else if (stepIndex < definition.steps.length - 1) { stepIndex++; beat = 0; }
       else finished = true;
-      remaining = beat === lastBeat ? resultDuration() : definition.steps[stepIndex].scene === 'rsv-form' && beat === 2 ? 10000 : definition.steps[stepIndex].scene === 'quick-seat' ? 3800 : interval;
+      remaining = beat === lastBeat ? resultDuration() : definition.steps[stepIndex].scene === 'rsv-form' && beat === 2 ? (window.innerWidth > 560 ? 10000 : 4000) : definition.steps[stepIndex].scene === 'quick-seat' ? 3800 : interval;
       paint(); schedule();
     }, remaining);
   }

@@ -1,4 +1,6 @@
 /* Landing-style sales story: bounded overlapping devices, one caption and controls. */
+/* iPhone Safari inflates text in narrow boxes on its own; keep the sizes we set. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 /* Phone stories use a stable, intentionally composed screen rather than a camera. */
 @media (max-width: 560px) {
   .story-stage.phone-composed { height: 400px; }
@@ -766,4 +768,38 @@ button.fu-check { cursor: pointer; }
   .fu-m-check { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; color: var(--text); }
   .fu-m-check .fu-box { width: 20px; height: 20px; border-radius: 5px; font-size: 13px; }
   .fu-m-check.checked { border-color: var(--brand); background: var(--brand-tint2); font-weight: 700; color: var(--brand-deep); }
+}
+
+/* Sebelum tamu datang · PHONE composition for the guest form: one screen per beat. */
+@media (max-width: 560px) {
+  .story-stage.phone-composed .scene > .rsv-m-form { display: flex; flex-direction: column; gap: 10px; padding: 12px; overflow: hidden; background: color-mix(in srgb, var(--brand-deepest) 72%, var(--danger)); }
+  .rsv-m-form .rsv-m-brand { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px; padding: 2px 0; margin: 0; background: transparent; color: var(--surface-white); }
+  .rsv-m-form .rsv-m-brand img { width: 74px; max-width: none; padding: 4px 8px; border-radius: 8px; background: var(--surface-white); box-sizing: content-box; }
+  .rsv-m-form .rsv-m-brand b { font-size: 13px; }
+  .rsv-m-form .rsv-m-brand.hero { flex: 1; flex-direction: column; gap: 10px; text-align: center; }
+  .rsv-m-form .rsv-m-brand.hero img { width: 150px; padding: 12px 18px; border-radius: 14px; }
+  .rsv-m-form .rsv-m-brand.hero b { font-size: 20px; }
+  .rsv-m-form .rsv-m-brand.hero small { max-width: 240px; font-size: 13px; line-height: 1.5; color: var(--surface-white); opacity: .85; }
+  .rsv-m-card { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 16px; background: var(--surface-white); }
+  .rsv-m-card h3 { margin: 0; text-align: center; font-size: 17px; font-weight: 500; letter-spacing: .06em; color: var(--navy); }
+  .rsv-m-card > p { margin: 0; text-align: center; font-size: 12px; line-height: 1.5; color: var(--text-sec); }
+  .rsv-m-card .demo-field { margin: 0; }
+  .rsv-m-card .demo-field > span { margin-bottom: 3px; font-size: 11px; }
+  .rsv-m-card .demo-field .pf-in { min-height: 34px; padding: 7px 11px; border-radius: 10px; background: var(--brand-tint2); font-size: 14px; }
+  .rsv-m-form.filled .demo-field .pf-in { color: var(--navy); font-weight: 600; }
+  .rsv-m-quiet { padding: 14px 16px; }
+  .rsv-m-quiet p { font-size: 13px; }
+  .rsv-m-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 6px; border-top: 1px solid var(--line); font-size: 13px; color: var(--text-sec); }
+  .rsv-m-row > b { color: var(--navy); font-size: 14px; letter-spacing: .08em; }
+  .rsv-m-row .rsv-pills { display: flex; gap: 6px; margin: 0; }
+  .rsv-m-row .rsv-pills span { padding: 5px 11px; border: 1px solid var(--line); border-radius: 99px; font-size: 12px; color: var(--text); }
+  .rsv-m-row .rsv-pills .selected { border-color: var(--brand-deepest); background: var(--brand-deepest); color: var(--surface-white); }
+  .rsv-m-submit { display: block; margin-top: 2px; padding: 10px; border-radius: 10px; background: var(--brand-deepest); color: var(--surface-white); font-size: 13px; font-weight: 700; text-align: center; }
+  .rsv-m-form .rsv-success { align-items: center; text-align: center; }
+  .rsv-m-form .rsv-success-check { display: grid; place-items: center; width: 48px; height: 48px; margin: 0; border-radius: 50%; background: var(--success); color: var(--surface-white); font-size: 26px; }
+  .rsv-m-form .rsv-success h3 { font-size: 16px; }
+  .rsv-m-form .rsv-success-details { display: flex; flex-direction: column; gap: 3px; width: 100%; margin: 0; padding: 12px; border-radius: 10px; background: var(--brand-tint2); font-size: 13px; color: var(--text); }
+  .rsv-m-form .rsv-success-details b { font-size: 15px; color: var(--navy); }
+  .rsv-m-form .rsv-success p { font-size: 12px; }
+  .rsv-m-form .rsv-success-wa { width: 100%; padding: 11px; margin: 0; border-radius: 10px; background: #1FAF5E; color: var(--surface-white); font-size: 13px; font-weight: 700; text-align: center; }
 }

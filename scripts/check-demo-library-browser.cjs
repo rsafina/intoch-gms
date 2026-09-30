@@ -140,7 +140,7 @@ async function main() {
   assert.equal(await evaluate('document.querySelector(".rsv-form .pf-in").textContent'), 'Michelle', 'guest form fills after zoom');
   await capture('automatic-guest-393');
   await delay(7200);
-  assert.ok(await evaluate('document.querySelector(".rsv-form-view").scrollTop > 0'), 'phone form scrolls automatically during filling');
+  assert.ok(await evaluate('(() => { const view = document.querySelector(".rsv-form-view"); return !!view.querySelector(".rsv-pills .selected") && view.scrollHeight <= view.clientHeight + 2; })()'), 'phone form shows the filled booking on one screen');
   await capture('reservation-filled-393');
   await delay(2100);
   assert.ok(await evaluate('!!document.querySelector(".rsv-success")'), 'dedicated success screen appears before dashboard');
