@@ -46,7 +46,7 @@
       problem: "Tim tahu booking mana yang sudah dan belum dihubungi, tanpa saling tanya.",
       keyMessage: "Pantau Konfirmasi Booking dalam Satu Daftar",
       steps: [
-        step("Filter reservasi", "Temukan reservasi yang perlu ditangani.", "Pilih periode, status Reserved, dan Online form only. Cari nama tamu untuk langsung menemukan reservasi yang Anda butuhkan.", "fu-filter"),
+        step("Filter reservasi", "Temukan reservasi yang perlu ditangani.", "Pilih status Reserved, lalu aktifkan Online form only. Booking online yang perlu dikonfirmasi langsung terlihat.", "fu-filter"),
         step("Hubungi & kirim tiket", "Follow up dan issue ticket dari reservasi yang sama.", "Klik Follow up untuk menyiapkan WhatsApp konfirmasi. Lalu Issue ticket untuk membagikan tiket reservasi kepada tamu.", "fu-actions"),
         step("Cek notifikasi", "Tandai follow up dan cek kedatangan secara terpisah.", "Setelah menghubungi tamu, centang Sudah di-follow up pada notifikasi. Menjelang kedatangan, buka Arrival checks dan tandai Sudah dicek.", "fu-checks", "Membuka WhatsApp tidak otomatis mencentang checklist. Cek kedatangan tidak mengubah status tamu menjadi Arrived.")
       ], related: ['reservation', 'customer-database'] },

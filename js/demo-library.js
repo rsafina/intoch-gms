@@ -167,25 +167,88 @@
       ${beat >= 3 ? note('Brian · 2 orang · meja A3. Kunjungan tersimpan.') : '<div class="service-context"><span>01</span><p>Catat singkat.<br><b>Lanjutkan menyambut tamu.</b></p></div>'}`;
   }
   const mobilePerson = guest => `<div class="rm-person"><span class="avatar">${guest.initials}</span><div><b>${guest.name}</b><small>${guest.phone}</small></div></div>`;
-  function followUpStory(kind) {
-    const phone = window.innerWidth <= 560;
-    const shell = (title, body) => `<div class="fu-screen ${phone ? 'rm-screen fu-phone' : 'fu-desktop'}"><header class="${phone ? 'rm-heading' : 'scene-heading'}"><div><small>FOLLOW UP RESERVASI</small><h3>${title}</h3></div><div class="fu-icons"><span>♧</span><span>▣</span></div></header>${body}</div>`;
-    const detail = '<span>26 Sep · 19:00 · 4 orang</span><small>Teras · T2 · Online Form</small>';
+  // Follow up reservasi. Two separate compositions: the desktop mirrors the
+  // Reservations page (filters, table, header bells); the phone shows one card
+  // at a time. Michelle's booking is tomorrow, so it is also due for Arrival checks.
+  const fuRows = [
+    { key: 'MI', name: 'Michelle', pax: 4, time: '19:00', area: 'Teras', table: 'T2', status: 'Reserved', online: true },
+    { key: 'DA', name: 'Daniel', pax: 2, time: '19:30', area: 'Indoor', table: 'IN6', status: 'Reserved', online: false },
+    { key: 'NO', name: 'Noelle', pax: 3, time: '20:00', area: 'Outdoor', table: 'Unassigned', status: 'Waitlist', online: true },
+    { key: 'SA', name: 'Sarah', pax: 6, time: '21:00', area: 'Outdoor', table: 'Unassigned', status: 'Reserved', online: true, cancelled: true }
+  ];
+  const fuStatuses = ['All', 'Deposit queue', 'Reserved', 'Waitlist', 'Incoming', 'Arrived', 'Completed', 'Cancelled', 'No Show'];
+  const fuConfirm = `Halo Michelle!<br><br>Kami dari ${restaurant} ingin mengonfirmasi reservasi Bapak/Ibu:<br>Tanggal: 24 Sep 2026<br>Jam: 19:00<br>Jumlah: 4 orang<br><br>Kami nantikan kehadirannya. Terima kasih!`;
+  const fuTicketText = `Halo Michelle! Reservasi Anda di ${restaurant} telah dikonfirmasi untuk 24 Sep, pukul 19:00, 4 orang. Silakan lihat dan unduh tiket konfirmasi Anda:`;
+  const fuTicketCard = `<div class="rel-ticket"><small>TIKET RESERVASI</small><b>${restaurant}</b><span>Michelle · 4 orang</span><span>Kam, 24 Sep · 19:00 · Teras</span><em>Buka &amp; unduh tiket ↗</em></div>`;
+  function fuFilterState() {
+    // beat 0: all · beat 1: Reserved · beat 2+: Reserved + Online form only
+    const reserved = beat >= 1, online = beat >= 2;
+    const rows = fuRows.filter(row => (!reserved || (row.status === 'Reserved' && !row.cancelled)) && (!online || row.online));
+    return { reserved, online, rows };
+  }
+  function fuBells(followOpen, arrivalOpen, followDone) {
+    return `<div class="fu-bells"><span class="fu-bell cake" aria-hidden="true">🎂</span><span class="fu-bell follow ${followOpen ? 'open' : ''}" data-bell="follow">🔔${followDone ? '' : '<i>1</i>'}</span><span class="fu-bell arrival ${arrivalOpen ? 'open' : ''}" data-bell="arrival">▣<i class="amber">1</i></span></div>`;
+  }
+  function followUpDesktop(kind) {
+    const header = (bells = fuBells(false, false, false)) => `<div class="fu-page-head"><div><h3>Reservations</h3><small>Wednesday, 1 September 2026 – 30 September 2026</small></div><div class="fu-head-actions"><span class="fu-ghost">Export Excel</span><span class="fu-new">+ New Reservation</span>${bells}</div></div>`;
+    const actions = (row, live) => `<div class="fu-row-buttons"><span class="fu-update">Update</span>${live === 'ticket' ? '<button type="button" class="fu-ticket-btn" data-fu="ticket" data-scene-action>Issue ticket</button>' : '<span>Issue ticket</span>'}${live === 'follow' ? '<button type="button" class="fu-follow-btn" data-fu="follow" data-scene-action>Follow up ↗</button>' : '<span class="fu-follow-btn">Follow up ↗</span>'}</div>`;
+    const tableRow = (row, live = '', lit = false, flag = '') => `<div class="fu-row ${lit ? 'hl' : ''}" data-key="${row.key}"><span class="fu-time">${row.time}</span><div class="fu-guest"><b>${row.name} <small>· ${row.pax} pax</small></b><span class="fu-tags">${row.online ? '<span class="tg online">Online Form</span>' : '<span class="tg">Staff</span>'}</span>${flag}</div><div class="fu-seat"><span>${row.area}</span><b>${row.table}</b></div><span class="fu-status ${row.cancelled ? 'cancelled' : row.status.toLowerCase()}">● ${row.cancelled ? 'Cancelled' : row.status}</span>${actions(row, live)}</div>`;
+    const table = (rows, count = 1) => `<div class="fu-table"><div class="fu-table-head"><span>TIME</span><span>GUEST &amp; BOOKING</span><span>SEATING</span><span>STATUS</span><span>ACTIONS</span></div><div class="fu-day">Thursday, 24 September 2026 <small>${count} ${count === 1 ? 'reservation' : 'reservations'}</small></div>${rows}</div>`;
     if (kind === 'fu-filter') {
-      const rows = [{ name: 'Michelle', pax: 4, date: '26 Sep', time: '19:00', area: 'Teras · T2', status: 'Reserved' }, { name: 'Daniel', pax: 2, date: '29 Sep', time: '19:00', area: 'Indoor · IN6', status: 'Reserved' }, { name: 'Noelle', pax: 3, date: '30 Sep', time: '21:00', area: 'Outdoor', status: 'Cancelled' }].filter(row => beat === 0 || (row.status === 'Reserved' && (beat < 2 || row.name === 'Michelle')));
-      const filters = `<section class="fu-filters"><div class="fu-search">⌕ <span>${beat >= 2 ? 'Michelle' : 'Search a guest by name or phone'}</span></div><div class="fu-dates"><span>Custom ⌄</span><b>01/09/2026 – 30/09/2026</b></div><div class="fu-statuses">${['All', 'Reserved', 'Waitlist', 'Incoming', 'Arrived', 'Completed'].map(status => `<span class="${status === (beat ? 'Reserved' : 'All') ? 'selected' : ''}">${status}</span>`).join('')}</div><div class="fu-online">☑ Online form only</div></section>`;
-      const content = phone ? `<div class="fu-mobile-results">${rows.map(row => `<section class="rm-card"><div class="fu-card-title"><b>${row.name}</b><span class="rm-status">${row.status}</span></div><div class="fu-card-detail"><span>${row.date} · ${row.time} · ${row.pax} orang</span><small>${row.area} · Online Form</small></div>${beat >= 2 ? '<button type="button" class="rm-primary" data-scene-action>Lihat reservasi Michelle</button>' : ''}</section>`).join('')}</div>` : `<div class="fu-table"><div class="fu-table-head"><span>TIME</span><span>GUEST & BOOKING</span><span>SEATING</span><span>STATUS</span><span>ACTIONS</span></div>${rows.map(row => `<div class="fu-table-row"><span>${row.date}<b>${row.time}</b></span><div><b>${row.name}</b><small>${row.pax} pax · Online Form</small></div><span>${row.area}</span>${badge(row.status)}<div class="fu-row-buttons"><span>Update</span><span>Issue ticket</span><span>Follow up ↗</span></div></div>`).join('')}</div>`;
-      return shell('Reservations', `${filters}<div class="fu-count"><b>${rows.length} reservasi</b><span>${rows.reduce((sum, row) => sum + row.pax, 0)} total pax</span></div>${content}`);
+      const { reserved, online, rows } = fuFilterState();
+      const chips = fuStatuses.map(status => status === 'Reserved' && !reserved ? `<button type="button" class="fu-chip" data-fu="reserved" data-scene-action>${status}</button>` : `<span class="fu-chip ${status === (reserved ? 'Reserved' : 'All') ? 'selected' : ''}">${status}</span>`).join('');
+      const toggle = reserved && !online ? '<button type="button" class="fu-online" data-fu="online" data-scene-action><span class="fu-box"></span>Online form only</button>' : `<span class="fu-online ${online ? 'on' : ''}"><span class="fu-box">${online ? '✓' : ''}</span>Online form only</span>`;
+      return `<div class="fu-desktop">${header()}<section class="fu-filter-card"><div class="fu-filter-top"><span class="fu-search">⌕ Search a guest by name or phone</span><span class="fu-select">Custom ⌄</span><span class="fu-date">01/09/2026</span><span class="fu-date">30/09/2026</span></div><div class="fu-filter-bottom"><div class="fu-chips">${chips}</div>${toggle}</div></section>
+        <div class="fu-summary">Reservations <b>${rows.length}</b><span>Total Pax <b>${rows.reduce((sum, row) => sum + row.pax, 0)}</b></span></div>${table(rows.map(row => tableRow(row, '', online && row.key === 'MI')).join(''), rows.length)}
+        ${beat >= 3 ? note('Satu booking online yang perlu dikonfirmasi langsung terlihat.') : ''}</div>`;
     }
     if (kind === 'fu-actions') {
-      const body = beat === 0 ? `<div class="fu-card-detail">${detail}</div><span class="rm-status">Reserved</span><div class="fu-action-pair"><button type="button" class="rm-primary" data-scene-action>Follow up ↗</button><span>Issue ticket</span></div>`
-        : beat === 1 ? `<p class="pm-message">Halo Michelle! Kami dari ${restaurant} ingin mengonfirmasi reservasi 26 September, pukul 19:00 untuk 4 orang di Teras. Kami nantikan kedatangannya!</p><p class="fu-help">Pesan konfirmasi siap dikirim staf lewat WhatsApp.</p><button type="button" class="rm-primary" data-scene-action>Issue ticket</button>`
-        : beat === 2 ? `<div class="pm-ticket"><small>TIKET RESERVASI</small><b>${restaurant}</b>${detail}<small>Reserved · tiket siap dibuka dan diunduh</small></div><button type="button" class="rm-primary" data-scene-action>Bagikan tiket via WhatsApp</button>`
-        : `<p class="pm-message">Halo Michelle! Reservasi Anda di ${restaurant} telah dikonfirmasi untuk 26 September, pukul 19:00, 4 orang. Berikut tiket reservasi Anda.</p><div class="fu-ticket-link">↗ Buka tiket reservasi</div><p class="fu-help">Staf membagikan tiket lewat WhatsApp.</p>`;
-      return shell(beat < 2 ? 'Follow up tamu' : 'Issue ticket', `<section class="rm-card fu-focus">${mobilePerson(dewi)}${body}</section>`);
+      const followed = beat >= 1;
+      const live = beat === 0 ? 'follow' : beat === 1 ? 'ticket' : '';
+      const flag = followed ? '<small class="rel-flag">✓ Konfirmasi WhatsApp terkirim</small>' : '';
+      const ticketPanel = beat >= 2 ? card('Tiket konfirmasi', `<p class="scene-fine">Tiket siap dibagikan. Tamu dapat membuka dan mengunduhnya.</p><div class="pf-in rel-link-field">intoch.app/reservation-ticket?t=MI-0924</div><div class="rel-actions start"><span class="rel-btn">Salin tautan</span>${beat === 2 ? '<button type="button" class="rel-btn primary" data-fu="ticket-wa" data-scene-action>WhatsApp</button>' : '<span class="rel-btn primary">✓ WhatsApp</span>'}</div>`, 'lit fu-ticket-panel') : '';
+      return `<div class="fu-desktop fu-narrow">${header()}${table(tableRow(fuRows[0], live, beat < 2, flag))}${ticketPanel}${beat >= 3 ? note('Konfirmasi dan tiket sudah di WhatsApp Michelle.') : ''}</div>`;
+    }
+    // fu-checks: beat 0 bell · beat 1 follow-up panel · beat 2 ticked, open arrival · beat 3 arrival ticked
+    const followDone = beat >= 2, arrivalOpen = beat >= 2;
+    const followPanel = `<div class="fu-panel"><h4>Booking follow-ups</h4>${followDone ? '<p class="fu-panel-empty">Tidak ada yang perlu di-follow up.</p><div class="fu-handled"><small>SUDAH DITANGANI</small><div class="fu-item"><div><b>Michelle</b><small>Kam, 24 Sep · 19:00 · 4 pax</small><small>Ditangani staf · 10:05</small></div><em>SUDAH</em></div></div>'
+      : `<small class="fu-panel-label red">PERLU FOLLOW UP (1)</small><div class="fu-item"><div><b>Michelle</b><small>Kam, 24 Sep · 19:00 · 4 pax</small><button type="button" class="fu-check" data-fu="followed" data-scene-action><span class="fu-box"></span>Sudah di-follow up</button></div></div>`}</div>`;
+    const arrivalPanel = `<div class="fu-panel"><h4>Arrival checks</h4><small class="fu-panel-label amber">CEK KEHADIRAN (1)</small><p class="fu-panel-help">Hubungi tamu, pastikan jadi datang.</p><div class="fu-item"><div><b>Michelle <em class="amber">BESOK</em></b><small>Kam, 24 Sep · 19:00 · 4 pax</small><span class="fu-check ${beat >= 3 ? 'checked' : ''}"><span class="fu-box">${beat >= 3 ? '✓' : ''}</span>Sudah dicek</span></div></div></div>`;
+    const bells = fuBells(beat === 1, arrivalOpen, followDone).replace('data-bell="follow"', beat === 0 ? 'data-bell="follow" data-scene-action' : 'data-bell="follow"').replace('data-bell="arrival"', beat === 2 ? 'data-bell="arrival" data-scene-action' : 'data-bell="arrival"');
+    return `<div class="fu-desktop fu-checks-view">${header(bells)}${beat === 1 ? followPanel : arrivalOpen ? arrivalPanel : ''}${table(tableRow(fuRows[0], '', false, followDone ? '<small class="rel-flag">✓ Sudah di-follow up</small>' : ''))}
+      ${beat >= 3 ? note('Follow up dan cek kehadiran tercatat terpisah. Shift berikutnya langsung tahu.') : ''}</div>`;
+  }
+  function followUpPhone(kind) {
+    const shell = (label, title, body) => `<div class="fu-phone rm-screen"><header class="rm-heading"><small>${label}</small><h3>${title}</h3></header>${body}</div>`;
+    const person = `<div class="rm-person"><span class="avatar">MI</span><div><b>Michelle</b><small>${dewi.phone}</small></div></div>`;
+    const detail = '<div class="fu-m-detail"><span>Kam, 24 Sep · 19:00 · 4 orang</span><small>Teras · T2 · Online Form</small></div>';
+    if (kind === 'fu-filter') {
+      const { reserved, online, rows } = fuFilterState();
+      const chips = ['All', 'Reserved', 'Waitlist', 'Incoming'].map(status => `<span class="${status === (reserved ? 'Reserved' : 'All') ? 'selected' : ''}">${status}</span>`).join('');
+      const results = beat >= 2 ? `<section class="rm-card fu-m-result">${person}${detail}<span class="rm-status">● Reserved</span></section>`
+        : `<div class="fu-m-list">${rows.map(row => `<div class="fu-m-row"><b>${row.name}</b><small>${row.time} · ${row.pax} pax · ${row.online ? 'Online Form' : 'Staff'}</small><span class="${row.cancelled ? 'cancelled' : ''}">${row.cancelled ? 'Cancelled' : row.status}</span></div>`).join('')}</div>`;
+      return shell('FILTER RESERVASI', ['Semua reservasi', 'Hanya Reserved', 'Reserved dari form online', 'Booking yang perlu dikonfirmasi'][beat],
+        `<div class="fu-m-chips">${chips}</div><div class="fu-m-toggle ${online ? 'on' : ''}"><span>Online form only</span><i></i></div><p class="fu-m-count"><b>${rows.length}</b> reservasi · ${rows.reduce((sum, row) => sum + row.pax, 0)} pax</p>${results}`);
+    }
+    if (kind === 'fu-actions') {
+      if (beat === 1 || beat === 3) return shell('WHATSAPP', beat === 1 ? 'Konfirmasi siap dikirim' : 'Tiket terkirim', `<div class="pm-chat"><div class="comp-phone-top"><b>Michelle</b><small>${dewi.phone}</small></div><div class="comp-body"><div class="comp-bubble">${beat === 1 ? fuConfirm : fuTicketText}</div>${beat === 3 ? fuTicketCard : ''}<div class="comp-receipt rel-sent">Dikirim staf · ${beat === 1 ? '10:05' : '10:12'} ✓✓</div></div></div>`);
+      return shell('FOLLOW UP RESERVASI', beat === 0 ? 'Hubungi Michelle' : 'Bagikan tiket', `<section class="rm-card">${person}${detail}${beat === 0
+        ? '<div class="fu-m-buttons"><span class="rm-primary">Follow up ↗</span><span class="fu-m-secondary">Issue ticket</span></div>'
+        : `<small class="rel-flag">✓ Konfirmasi WhatsApp terkirim</small><div class="pm-ticket"><small>TIKET KONFIRMASI</small><b>intoch.app/reservation-ticket?t=MI-0924</b><small>Tamu dapat membuka dan mengunduhnya.</small></div><span class="rm-primary fu-m-full">Bagikan lewat WhatsApp</span>`}</section>`);
     }
     const arrival = beat >= 2, checked = beat === 1 || beat === 3;
-    return shell('Notifikasi & checklist', `<div class="fu-notification-tabs"><span class="${!arrival ? 'selected' : ''}">♧ Booking follow-ups ${!arrival && !checked ? '· 1' : ''}</span><span class="${arrival ? 'selected' : ''}">▣ Arrival checks ${arrival && !checked ? '· 1' : ''}</span></div><section class="rm-card fu-focus"><div class="fu-panel-heading"><h3>${arrival ? 'Arrival checks' : 'Booking follow-ups'}</h3><small>${arrival ? '25 Sep · H-1 kedatangan' : '23 Sep · setelah menghubungi tamu'}</small></div>${mobilePerson(dewi)}<div class="fu-card-detail">${detail}</div><button type="button" role="checkbox" aria-checked="${checked}" class="fu-check ${checked ? 'checked' : ''}" data-scene-action><span aria-hidden="true">${checked ? '☑' : '☐'}</span>${arrival ? 'Sudah dicek' : 'Sudah di-follow up'}</button>${checked ? `<div class="fu-done">✓ ${arrival ? 'Pengecekan H-1 tercatat' : 'Follow up tercatat'} · ditandai staf</div>` : '<p class="fu-help">Centang setelah staf selesai menghubungi tamu.</p>'}</section>${arrival ? '<p class="fu-help">Pengecekan H-1 dan hari kedatangan dicatat terpisah.</p>' : ''}`);
+    return shell(arrival ? 'ARRIVAL CHECKS' : 'BOOKING FOLLOW-UPS', arrival ? 'Pastikan tamu jadi datang' : 'Tandai sudah dihubungi',
+      `<div class="fu-m-bells"><span class="${arrival ? '' : 'selected'}">🔔 Follow-ups${!arrival && !checked ? ' <i>1</i>' : ''}</span><span class="${arrival ? 'selected' : ''}">▣ Arrival checks${arrival && !checked ? ' <i class="amber">1</i>' : ''}</span></div>
+      <section class="rm-card">${person}${detail}<div class="fu-m-check ${checked ? 'checked' : ''}"><span class="fu-box">${checked ? '✓' : ''}</span>${arrival ? 'Sudah dicek' : 'Sudah di-follow up'}</div>${checked ? `<small class="rel-flag">✓ ${arrival ? 'Cek kehadiran tercatat' : 'Follow up tercatat'} · ditandai staf</small>` : ''}</section>
+      <p class="rm-footnote">${arrival ? 'Cek H-1 dan hari kedatangan dicatat terpisah.' : 'Membuka WhatsApp tidak otomatis mencentang ini.'}</p>`);
+  }
+  function followUpStory(kind) {
+    return window.innerWidth <= 560 ? followUpPhone(kind) : followUpDesktop(kind);
+  }
+  function followUpCompanion(kind) {
+    const ticket = beat >= 3;
+    return { type: 'phone chat', label: 'WHATSAPP PELANGGAN', title: 'Konfirmasi dan tiket reservasi', html: `<div class="comp-phone-top"><span class="phone-speaker"></span><b>Michelle</b><small>${dewi.phone}</small></div><div class="comp-body"><span class="chat-date">Konfirmasi reservasi</span>${kind !== 'fu-actions' || beat === 0 ? '<div class="comp-bubble">Klik Follow up untuk menyiapkan pesan.</div>'
+      : `<div class="comp-bubble ${ticket ? 'rel-earlier' : 'revealed'}">${ticket ? 'Konfirmasi reservasi terkirim · 10:05 ✓✓' : fuConfirm}</div>${ticket ? `<div class="comp-bubble revealed">${fuTicketText}</div>${fuTicketCard}<div class="comp-receipt rel-sent">Dikirim staf · 10:12 ✓✓</div>` : '<div class="comp-receipt rel-sent">Dikirim staf · 10:05 ✓✓</div>'}`}</div>` };
   }
   function mobileRelationship(kind) {
     const thanks = kind === 'rel-thanks', ticket = kind === 'rel-ticket';
@@ -216,7 +279,7 @@
     return `<div class="rsv-guest rm-screen"><header class="rm-heading"><small>GUEST DATABASE</small><h3>${beat === 3 ? 'Profil tamu tersimpan' : 'Tamu otomatis terdaftar'}</h3></header>${beat < 3 ? `<div class="rm-search">⌕ <span>Michelle</span></div><section class="rm-card">${guestHeader}<div class="rm-guest-facts"><span>0 kunjungan</span><span>Belum ada spending</span></div><div class="rm-card-footer"><span class="rm-status">✓ Dari Online Form</span><button class="rm-eye ${beat === 2 ? 'selected' : ''}" type="button" data-db-eye aria-label="Lihat profil Michelle">${eyeIcon}<span>Lihat profil</span></button></div></section><p class="rm-footnote">Nama dan nomor WhatsApp tersimpan otomatis.</p>` : `<section class="rm-card rm-profile">${guestHeader}<div class="rm-guest-facts"><span>0 kunjungan</span><span>Belum ada spending</span></div><div class="rm-field-label">Reservasi mendatang</div><div class="rm-profile-booking"><b>26 Sep · 21:00 · 4 orang</b><span>Outdoor · OUT4 · Reserved</span><small>Meja dekat taman, jika tersedia.</small></div><p class="rm-help">Riwayat kunjungan dimulai setelah tamu datang.</p></section>`}</div>`;
   }
   function mobileReservationScene() {
-    return window.innerWidth <= 560 && ['reactivation', 'customer-database', 'campaign', 'walk-in', 'reservation'].includes(definition.slug) && definition.steps[stepIndex].scene !== 'rsv-form';
+    return window.innerWidth <= 560 && ['reactivation', 'customer-database', 'campaign', 'walk-in', 'reservation', 'follow-up'].includes(definition.slug) && definition.steps[stepIndex].scene !== 'rsv-form';
   }
   function reservationStory(kind) {
     if (window.innerWidth <= 560 && kind !== 'rsv-form') return mobileReservationStory(kind);
@@ -296,6 +359,7 @@
   // It stays mounted alongside the staff screen, as in the landing-page use cases.
   function companion(kind) {
     if (kind.startsWith('rel-')) return relationshipPhone(kind);
+    if (kind.startsWith('fu-')) return followUpCompanion(kind);
     if (['segment-report', 'campaign-create', 'campaign-send'].includes(kind)) return segmentPeek(kind);
     const reservationFlow = ['reservation', 'booking', 'booked-profile'].includes(kind);
     const messaging = ['reactivate', 'journey-message', 'follow-context', 'follow-list', 'follow-done'].includes(kind);
@@ -461,7 +525,10 @@
   function movePointer(kind, reset) {
     if (cursorAnimation) cursorAnimation.cancel();
     if (mobileReservationScene()) { pointer.classList.remove('visible'); return; }
-    const selectors = kind === 'rsv-form' ? [null, null, null]
+    const selectors = kind === 'fu-filter' ? ['#scene [data-fu="reserved"]', '#scene [data-fu="online"]', '#scene .fu-row.hl']
+      : kind === 'fu-actions' ? ['#scene [data-fu="follow"]', '#scene [data-fu="ticket"]', '#scene [data-fu="ticket-wa"]']
+      : kind === 'fu-checks' ? ['#scene [data-bell="follow"]', '#scene [data-fu="followed"]', '#scene [data-bell="arrival"]']
+      : kind === 'rsv-form' ? [null, null, null]
       : kind === 'rsv-dashboard' ? ['#scene .rsv-notification', '#scene .rsv-actions button', '#scene .rsv-edit .rsv-submit']
       : kind === 'rsv-guest' ? ['#scene .db-search', '#scene .rsv-guest-row', '#scene .db-eye']
       : kind.startsWith('quick-')
@@ -658,7 +725,7 @@
     const nextPhoneLayout = window.innerWidth <= 560;
     if (nextPhoneLayout !== phoneLayout) {
       phoneLayout = nextPhoneLayout;
-      if (['reactivation', 'customer-database', 'campaign', 'walk-in', 'reservation'].includes(definition.slug)) { renderedStep = -1; paint(); }
+      if (['reactivation', 'customer-database', 'campaign', 'walk-in', 'reservation', 'follow-up'].includes(definition.slug)) { renderedStep = -1; paint(); }
     }
     fitStage(); fitSegments(); movePointer(definition.steps[stepIndex].scene, false); syncMotion();
   });

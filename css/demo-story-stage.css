@@ -653,3 +653,117 @@
   .detail-view[data-scene="segment-report"] .scene-summary, .detail-view[data-scene="segment-report"] .scene-note { display: none; }
   .detail-view .camp-option { font-size: 11px; }
 }
+
+/* Follow up reservasi · DESKTOP composition: mirrors the Reservations page. */
+.story-stage[data-scene="fu-filter"] .companion, .story-stage[data-scene="fu-checks"] .companion { display: none; }
+.fu-desktop { position: relative; display: flex; flex-direction: column; gap: 7px; font-size: 9px; color: var(--text); }
+.fu-narrow > .fu-table, .fu-narrow > .gp-card, .fu-narrow > .scene-note { max-width: 74%; }
+.fu-page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.fu-page-head h3 { margin: 0; font: 600 17px "Source Code Pro",monospace; color: var(--brand-deepest); }
+.fu-page-head small { display: block; margin-top: 2px; font-size: 9px; font-weight: 600; color: var(--navy); }
+.fu-head-actions { display: flex; align-items: center; gap: 5px; }
+.fu-ghost, .fu-new { padding: 5px 8px; border-radius: 6px; font-size: 8px; white-space: nowrap; }
+.fu-ghost { border: 1px solid var(--line); background: var(--surface-white); }
+.fu-new { background: var(--brand-deepest); color: var(--surface-white); font-weight: 600; }
+.fu-bells { display: flex; gap: 4px; margin-left: 3px; }
+.fu-bell { position: relative; display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--line); border-radius: 50%; background: var(--surface-white); font-size: 11px; color: var(--accent-hover); }
+.fu-bell[data-scene-action] { cursor: pointer; }
+.fu-bell.open { box-shadow: 0 0 0 2px rgb(var(--brand-rgb) / .3); }
+.fu-bell i { position: absolute; top: -4px; right: -4px; min-width: 12px; height: 12px; padding: 0 2px; border-radius: 99px; background: #c0392b; color: #fff; font: 700 7px/12px "Plus Jakarta Sans",sans-serif; font-style: normal; text-align: center; }
+.fu-bell i.amber { background: #b7791f; }
+.fu-filter-card { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-white); }
+.fu-filter-top { display: grid; grid-template-columns: 2.2fr 1fr 1fr 1fr; gap: 5px; }
+.fu-filter-top > span { padding: 5px 7px; border: 1px solid var(--line); border-radius: 6px; font-size: 8px; color: var(--text-sec); white-space: nowrap; overflow: hidden; }
+.fu-filter-top .fu-search { background: var(--surface-blue); }
+.fu-filter-bottom { display: flex; align-items: center; gap: 6px; }
+.fu-chips { display: flex; gap: 3px; flex: 1; min-width: 0; overflow: hidden; }
+.fu-chip { flex: none; padding: 3px 6px; border: 1px solid var(--line); border-radius: 99px; background: var(--surface-white); color: var(--text); font: 7.5px "Plus Jakarta Sans",sans-serif; }
+button.fu-chip { cursor: pointer; }
+.fu-chip.selected { background: var(--brand-deepest); border-color: var(--brand-deepest); color: var(--surface-white); }
+.fu-online { flex: none; display: flex; align-items: center; gap: 4px; padding: 4px 7px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-white); font: 8px "Plus Jakarta Sans",sans-serif; color: var(--text); cursor: pointer; transition: all .3s; }
+.fu-online.on { border-color: var(--brand); background: var(--brand-tint2); color: var(--brand-deep); font-weight: 700; box-shadow: 0 0 0 3px rgb(var(--brand-rgb) / .18); }
+.fu-box { display: inline-grid; place-items: center; width: 10px; height: 10px; border: 1px solid var(--text-sec); border-radius: 2px; background: var(--surface-white); font-size: 8px; line-height: 1; }
+.fu-online.on .fu-box, .fu-check.checked .fu-box, .fu-m-check.checked .fu-box { border-color: var(--brand); background: var(--brand); color: var(--surface-white); }
+.fu-summary { display: flex; gap: 14px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-white); color: var(--text-sec); font-size: 9px; }
+.fu-summary b { margin-left: 4px; color: var(--navy); }
+.fu-table { border: 1px solid var(--line); border-radius: 8px; background: var(--surface-white); overflow: hidden; }
+.fu-table-head, .fu-row { display: grid; grid-template-columns: 38px minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) 74px; gap: 6px; align-items: center; padding: 5px 8px; }
+.fu-table-head { background: var(--surface-linen); color: var(--text-sec); font-size: 7px; letter-spacing: .04em; }
+.fu-day { padding: 4px 8px; border-top: 1px solid var(--line); background: var(--surface-blue); font-size: 8px; font-weight: 600; color: var(--navy); }
+.fu-day small { margin-left: 6px; font-weight: 400; color: var(--text-sec); }
+.fu-row { border-top: 1px solid var(--line); transition: background .3s; }
+.fu-row.hl { background: var(--brand-tint2); box-shadow: inset 3px 0 0 var(--brand); }
+.fu-time { font: 13px "Plus Jakarta Sans",sans-serif; color: var(--navy); }
+.fu-guest { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.fu-guest b { font-size: 10px; color: var(--navy); }
+.fu-guest b small { font-weight: 400; color: var(--text-sec); }
+.fu-tags .tg { margin-left: 0; }
+.fu-seat { display: flex; flex-direction: column; gap: 1px; color: var(--text-sec); }
+.fu-seat b { font-weight: 500; color: var(--text); }
+.fu-status { justify-self: start; padding: 2px 6px; border-radius: 99px; background: var(--brand-tint2); color: var(--brand); font-size: 8px; white-space: nowrap; }
+.fu-status.waitlist { background: var(--accent-tint2); color: var(--accent-hover); }
+.fu-status.cancelled { background: #FBE3E0; color: var(--danger); }
+.fu-row-buttons { display: flex; flex-direction: column; gap: 3px; }
+.fu-row-buttons > * { padding: 3px 4px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface-white); color: var(--navy); font: 7.5px "Plus Jakarta Sans",sans-serif; text-align: center; white-space: nowrap; }
+.fu-row-buttons .fu-update { border-color: var(--brand-deepest); background: var(--brand-deepest); color: var(--surface-white); font-weight: 600; }
+.fu-row-buttons .fu-follow-btn { border-color: var(--navy); }
+.fu-row-buttons button { cursor: pointer; box-shadow: 0 0 0 2px rgb(var(--brand-rgb) / .25); }
+.fu-ticket-panel .rel-link-field { font-size: 9px; }
+.fu-panel { position: absolute; z-index: 3; top: 34px; right: 0; width: 58%; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-white); box-shadow: 0 14px 30px rgb(var(--brand-deepest-rgb) / .2); }
+.fu-panel h4 { margin: 0 0 6px; font-size: 11px; color: var(--navy); }
+.fu-panel-label { display: block; font: 700 7.5px "Plus Jakarta Sans",sans-serif; letter-spacing: .04em; }
+.fu-panel-label.red { color: #c0392b; }
+.fu-panel-label.amber, .fu-item em.amber { color: #b7791f; }
+.fu-panel-help, .fu-panel-empty { margin: 2px 0 4px; font-size: 8px; color: var(--text-sec); }
+.fu-item { display: flex; justify-content: space-between; gap: 6px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.fu-item:last-child { border-bottom: 0; }
+.fu-item > div { display: flex; flex-direction: column; gap: 2px; }
+.fu-item b { font-size: 10px; color: var(--text); }
+.fu-item em { font-style: normal; font-size: 7px; font-weight: 700; color: var(--success); }
+.fu-item small { font-size: 8px; color: var(--text-sec); }
+.fu-handled { margin-top: 4px; opacity: .75; }
+.fu-handled > small { font-size: 7px; font-weight: 700; color: var(--text-sec); }
+.fu-check { display: inline-flex; align-items: center; gap: 4px; margin-top: 3px; padding: 0; border: 0; background: none; color: var(--text-sec); font: 8px "Plus Jakarta Sans",sans-serif; }
+button.fu-check { cursor: pointer; }
+.fu-check.checked { color: var(--brand-deep); font-weight: 600; }
+
+/* Follow up reservasi · PHONE composition: one card at a time, no table. */
+@media (max-width: 560px) {
+  .fu-phone { display: flex; flex-direction: column; gap: 12px; }
+  .fu-phone .rm-heading { margin-bottom: 0; }
+  .fu-m-chips { display: flex; gap: 6px; overflow: hidden; }
+  .fu-m-chips span { flex: none; padding: 8px 13px; border: 1px solid var(--line); border-radius: 99px; background: var(--surface-white); font-size: 12px; color: var(--text); }
+  .fu-m-chips .selected { background: var(--brand-deepest); border-color: var(--brand-deepest); color: var(--surface-white); }
+  .fu-m-toggle { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-white); font-size: 13px; color: var(--text); transition: all .3s; }
+  .fu-m-toggle i { position: relative; width: 38px; height: 22px; border-radius: 99px; background: var(--line); transition: background .3s; }
+  .fu-m-toggle i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface-white); transition: transform .3s; }
+  .fu-m-toggle.on { border-color: var(--brand); background: var(--brand-tint2); color: var(--brand-deep); font-weight: 700; box-shadow: 0 0 0 3px rgb(var(--brand-rgb) / .18); }
+  .fu-m-toggle.on i { background: var(--brand); }
+  .fu-m-toggle.on i::after { transform: translateX(16px); }
+  .fu-m-count { margin: 0; font-size: 12px; color: var(--text-sec); }
+  .fu-m-count b { font-size: 16px; color: var(--navy); }
+  .fu-m-list { display: flex; flex-direction: column; gap: 8px; }
+  .fu-m-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-white); }
+  .fu-m-row b { font-size: 14px; color: var(--navy); }
+  .fu-m-row small { grid-column: 1; font-size: 11px; color: var(--text-sec); }
+  .fu-m-row > span { grid-column: 2; grid-row: 1 / span 2; align-self: center; padding: 4px 9px; border-radius: 99px; background: var(--brand-tint2); color: var(--brand); font-size: 10px; }
+  .fu-m-row > span.cancelled { background: #FBE3E0; color: var(--danger); }
+  .fu-m-result { border-color: var(--brand); box-shadow: 0 0 0 3px rgb(var(--brand-rgb) / .15); }
+  .fu-m-detail { display: flex; flex-direction: column; gap: 3px; margin: 12px 0; font-size: 13px; color: var(--text); }
+  .fu-m-detail small { font-size: 11px; color: var(--text-sec); }
+  .fu-m-buttons { display: grid; gap: 8px; }
+  .fu-m-buttons > *, .fu-m-full { display: block; text-align: center; }
+  .fu-m-secondary { padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; font-size: 12px; font-weight: 600; color: var(--navy); }
+  .fu-phone .rel-flag { font-size: 11px; }
+  .fu-phone .rm-card > .rel-flag { display: block; margin-top: 10px; }
+  .fu-phone .pm-ticket { margin: 10px 0 12px; }
+  .fu-phone .pm-ticket b { font: 11px "Source Code Pro",monospace; word-break: break-all; }
+  .fu-m-bells { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .fu-m-bells span { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-white); font-size: 12px; color: var(--text); }
+  .fu-m-bells .selected { border-color: var(--brand); background: var(--brand-tint2); font-weight: 700; color: var(--brand-deep); }
+  .fu-m-bells i { min-width: 18px; height: 18px; padding: 0 4px; border-radius: 99px; background: #c0392b; color: #fff; font: 700 10px/18px "Plus Jakarta Sans",sans-serif; font-style: normal; text-align: center; }
+  .fu-m-bells i.amber { background: #b7791f; }
+  .fu-m-check { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; color: var(--text); }
+  .fu-m-check .fu-box { width: 20px; height: 20px; border-radius: 5px; font-size: 13px; }
+  .fu-m-check.checked { border-color: var(--brand); background: var(--brand-tint2); font-weight: 700; color: var(--brand-deep); }
+}
