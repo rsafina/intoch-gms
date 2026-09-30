@@ -243,7 +243,8 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 /* Dashboard quick registration and editing after seating. */
 /* Separate phone composition: fixed cards, no desktop table or modal camera. */
 @media (max-width: 560px) {
-  .story-stage[data-scene="rsv-dashboard"], .story-stage[data-scene="rsv-guest"] { height: 365px; }
+  /* Same stage size for every phone story, including the online form. */
+  .story-stage[data-scene^="rsv-"] { height: 400px; }
   .story-stage[data-scene="rsv-dashboard"] .app-top, .story-stage[data-scene="rsv-guest"] .app-top { display: none; }
   .detail-view .rm-screen { padding: 16px; height: 100%; overflow-y: auto; background: var(--surface-blue); }
   .rm-heading { margin-bottom: 14px; }
@@ -770,36 +771,43 @@ button.fu-check { cursor: pointer; }
   .fu-m-check.checked { border-color: var(--brand); background: var(--brand-tint2); font-weight: 700; color: var(--brand-deep); }
 }
 
-/* Sebelum tamu datang · PHONE composition for the guest form: one screen per beat. */
+/* Drawn icons replace text glyphs (⌕, ⌄) that iPhone fonts render oddly. */
+.ui-icon { display: inline-block; width: 1.05em; height: 1.05em; vertical-align: -.15em; flex: none; }
+.ui-chevron { display: inline-block; width: .42em; height: .42em; margin-left: .35em; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-.2em) rotate(45deg); opacity: .7; font-style: normal; }
+
 @media (max-width: 560px) {
-  .story-stage.phone-composed .scene > .rsv-m-form { display: flex; flex-direction: column; gap: 10px; padding: 12px; overflow: hidden; background: color-mix(in srgb, var(--brand-deepest) 72%, var(--danger)); }
-  .rsv-m-form .rsv-m-brand { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px; padding: 2px 0; margin: 0; background: transparent; color: var(--surface-white); }
-  .rsv-m-form .rsv-m-brand img { width: 74px; max-width: none; padding: 4px 8px; border-radius: 8px; background: var(--surface-white); box-sizing: content-box; }
-  .rsv-m-form .rsv-m-brand b { font-size: 13px; }
-  .rsv-m-form .rsv-m-brand.hero { flex: 1; flex-direction: column; gap: 10px; text-align: center; }
-  .rsv-m-form .rsv-m-brand.hero img { width: 150px; padding: 12px 18px; border-radius: 14px; }
-  .rsv-m-form .rsv-m-brand.hero b { font-size: 20px; }
-  .rsv-m-form .rsv-m-brand.hero small { max-width: 240px; font-size: 13px; line-height: 1.5; color: var(--surface-white); opacity: .85; }
-  .rsv-m-card { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 16px; background: var(--surface-white); }
-  .rsv-m-card h3 { margin: 0; text-align: center; font-size: 17px; font-weight: 500; letter-spacing: .06em; color: var(--navy); }
-  .rsv-m-card > p { margin: 0; text-align: center; font-size: 12px; line-height: 1.5; color: var(--text-sec); }
-  .rsv-m-card .demo-field { margin: 0; }
-  .rsv-m-card .demo-field > span { margin-bottom: 3px; font-size: 11px; }
-  .rsv-m-card .demo-field .pf-in { min-height: 34px; padding: 7px 11px; border-radius: 10px; background: var(--brand-tint2); font-size: 14px; }
-  .rsv-m-form.filled .demo-field .pf-in { color: var(--navy); font-weight: 600; }
-  .rsv-m-quiet { padding: 14px 16px; }
-  .rsv-m-quiet p { font-size: 13px; }
-  .rsv-m-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 6px; border-top: 1px solid var(--line); font-size: 13px; color: var(--text-sec); }
-  .rsv-m-row > b { color: var(--navy); font-size: 14px; letter-spacing: .08em; }
-  .rsv-m-row .rsv-pills { display: flex; gap: 6px; margin: 0; }
-  .rsv-m-row .rsv-pills span { padding: 5px 11px; border: 1px solid var(--line); border-radius: 99px; font-size: 12px; color: var(--text); }
-  .rsv-m-row .rsv-pills .selected { border-color: var(--brand-deepest); background: var(--brand-deepest); color: var(--surface-white); }
-  .rsv-m-submit { display: block; margin-top: 2px; padding: 10px; border-radius: 10px; background: var(--brand-deepest); color: var(--surface-white); font-size: 13px; font-weight: 700; text-align: center; }
-  .rsv-m-form .rsv-success { align-items: center; text-align: center; }
-  .rsv-m-form .rsv-success-check { display: grid; place-items: center; width: 48px; height: 48px; margin: 0; border-radius: 50%; background: var(--success); color: var(--surface-white); font-size: 26px; }
-  .rsv-m-form .rsv-success h3 { font-size: 16px; }
-  .rsv-m-form .rsv-success-details { display: flex; flex-direction: column; gap: 3px; width: 100%; margin: 0; padding: 12px; border-radius: 10px; background: var(--brand-tint2); font-size: 13px; color: var(--text); }
-  .rsv-m-form .rsv-success-details b { font-size: 15px; color: var(--navy); }
-  .rsv-m-form .rsv-success p { font-size: 12px; }
-  .rsv-m-form .rsv-success-wa { width: 100%; padding: 11px; margin: 0; border-radius: 10px; background: #1FAF5E; color: var(--surface-white); font-size: 13px; font-weight: 700; text-align: center; }
+
+  /* Di meja penerima tamu · phone composition. */
+  .story-stage.phone-composed .qw-m-quick { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 14px; margin: 0; border: 1px solid var(--line); border-radius: 14px; text-align: left; }
+  .story-stage.phone-composed .qw-m-quick .rm-details { display: grid; grid-template-columns: 1fr 1fr; text-align: left; }
+  .story-stage.phone-composed .qw-m-edit .qw-table-pills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .story-stage.phone-composed .qw-m-edit .qw-table-pills > * { display: flex; flex-direction: column; gap: 3px; padding: 9px 4px; border-radius: 9px; font-size: 13px; text-align: center; }
+  .story-stage.phone-composed .qw-m-edit .qw-table-pills small { font-size: 10px; color: var(--text-sec); }
+  .qw-m-quick .rm-field-label { margin: 0; }
+  .qw-m-quick .rm-details { margin: 4px 0; }
+  .qw-m-suggestions { display: flex; flex-direction: column; border: 1px solid var(--brand); border-radius: 10px; overflow: hidden; }
+  .qw-m-suggestions > * { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border: 0; background: var(--brand-tint2); text-align: left; font: inherit; color: var(--navy); }
+  .qw-m-suggestions b { font-size: 14px; }
+  .qw-m-suggestions small { font-size: 11px; color: var(--text-sec); }
+  .qw-m-ready { box-shadow: 0 0 0 3px rgb(var(--brand-rgb) / .22); }
+  .qw-m-visit .rm-guest-facts { justify-content: space-between; align-items: center; }
+  .qw-m-active { background: #E6F4EA !important; color: var(--success); font-weight: 700; }
+  .qw-m-visit .qw-row-actions { display: grid; }
+  .qw-m-visit .qw-row-actions > * { text-align: center; }
+  .qw-m-edit .rm-details { margin: 0 0 4px; }
+  .qw-m-edit .rm-field-label { margin-top: 4px; }
+  .qw-m-edit .qw-modal-footer { margin-top: 12px; }
+  .qw-m-edit .qw-modal-footer .rm-primary { width: 100%; }
+
+  /* Kenali tamu · phone profile. */
+  .story-stage.phone-composed .scene > .db-m-screen { display: flex; flex-direction: column; overflow: hidden; }
+  .db-m-profile { flex: 1; min-height: 0; overflow-y: auto; }
+  .db-m-profile .rm-guest-facts { margin: 12px 0; }
+  .db-m-profile .rm-details { margin: 12px 0 4px; }
+  .db-m-history p { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); margin: 0; }
+  .db-m-history span { display: flex; flex-direction: column; gap: 2px; }
+  .db-m-history b { font-size: 12px; color: var(--navy); }
+  .db-m-history small { font-size: 11px; color: var(--text-sec); }
+  .db-m-history em { font-style: normal; font-size: 12px; font-weight: 600; color: var(--text); }
 }
+.pm-field .db-typing, .rm-search .db-typing { display: inline-block; font-family: "Source Code Pro",monospace; }

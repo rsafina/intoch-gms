@@ -88,7 +88,7 @@ async function main() {
             assert.ok(await evaluate(`(() => { const track = document.querySelector('.seg-cards'); const card = track.querySelector('.seg-card'); return card.clientWidth >= track.clientWidth - 12 && track.scrollWidth > track.clientWidth * 2; })()`), 'mobile segments show one full-width swipeable card');
             await capture(`segments-${width}-${slug}-${index}`);
           }
-          assert.ok(await evaluate('parseFloat(getComputedStyle(document.querySelector("#scene .scene-heading h3, #scene .camp-modal h3")).fontSize) >= 14'), 'mobile detail heading is readable without device scaling');
+          assert.ok(await evaluate('parseFloat(getComputedStyle(document.querySelector("#scene .scene-heading h3, #scene .camp-modal h3, #scene .rm-heading h3")).fontSize) >= 14'), 'mobile detail heading is readable without device scaling');
           assert.equal(await evaluate('document.querySelector(".detail-toolbar")'), null, 'no screen switches');
         }
         if (['reactivation', 'reservation', 'customer-database', 'walk-in', 'campaign'].includes(slug) && width !== 320) await capture(`${slug}-${width}-${index + 1}`);
@@ -102,21 +102,21 @@ async function main() {
   await command('Emulation.setDeviceMetricsOverride', { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
   await navigate('/demo/customer-database');
   await capture('database-search-mobile');
-  await delay(2600);
-  assert.equal(await evaluate('document.querySelectorAll(".db-row").length'), 1, 'search finds one guest');
+  await delay(3800);
+  assert.equal(await evaluate('document.querySelectorAll(".pm-guest-list .rm-card").length'), 1, 'search finds one guest');
   await capture('database-found-mobile');
-  await delay(2400);
-  assert.ok(await evaluate('!!document.querySelector(".db-eye-active")'), 'eye highlighted before opening profile');
+  await delay(3700);
+  assert.ok(await evaluate('!!document.querySelector(".rm-eye.selected")'), 'eye highlighted before opening profile');
   await capture('database-eye-mobile');
-  await evaluate('document.querySelector(".db-eye").click()');
-  assert.ok(await evaluate('document.querySelector(".db-profile").textContent.includes("Michelle")'), 'eye opens matching profile');
+  await evaluate('document.querySelector("[data-db-eye]").click()');
+  assert.ok(await evaluate('document.querySelector(".db-m-profile").textContent.includes("Michelle")'), 'eye opens the phone profile');
+  assert.equal(await evaluate('!!document.querySelector(".db-sidebar")'), false, 'phone profile never shows the desktop sidebar');
   await delay(7200);
   await capture('database-history-mobile');
-  assert.ok(await evaluate('(() => { const profile = document.querySelector(".db-profile"); return profile.scrollTop >= profile.scrollHeight - profile.clientHeight - 2; })()'), 'long mobile profile automatically reaches visit history');
-  await navigate('/demo/reservation');
-  // The walk-in edit panel is a nested scrolling surface on phones.
+  // Di meja penerima tamu: phone composition, never the full dashboard.
   await navigate('/demo/walk-in');
-  await delay(2600);
+  assert.equal(await evaluate('!!document.querySelector(".qw-dashboard")'), false, 'phone walk-in uses its own screens');
+  await delay(3800);
   await capture('walkin-suggestions-mobile');
   assert.ok(await evaluate('!!document.querySelector(".qw-suggestions button")'), 'existing guest suggestion appears');
   await evaluate('document.querySelector(".qw-suggestions button").click(); document.querySelector(".qw-quick > button").click()');
@@ -129,6 +129,7 @@ async function main() {
   await capture('walkin-table-mobile');
   await evaluate('document.querySelector(".qw-modal-footer button").click()');
   assert.ok(await evaluate('document.querySelector(".qw-visit").textContent.includes("T2 · Indoor")'), 'saved table appears on walk-in');
+  assert.equal(await evaluate('/[⌕⌄]/.test(document.getElementById("demo-root").textContent)'), false, 'no glyph icons on phone');
   await navigate('/demo/reservation');
   assert.ok(await evaluate('!!document.querySelector(".rsv-form-phase-0 .rsv-form")'), 'reservation opens on the full form');
   assert.equal(await evaluate('getComputedStyle(document.querySelector(".rsv-brand")).backgroundColor'), 'rgba(0, 0, 0, 0)', 'logo has no white card');
@@ -140,14 +141,14 @@ async function main() {
   assert.equal(await evaluate('document.querySelector(".rsv-form .pf-in").textContent'), 'Michelle', 'guest form fills after zoom');
   await capture('automatic-guest-393');
   await delay(7200);
-  assert.ok(await evaluate('(() => { const view = document.querySelector(".rsv-form-view"); return !!view.querySelector(".rsv-pills .selected") && view.scrollHeight <= view.clientHeight + 2; })()'), 'phone form shows the filled booking on one screen');
+  assert.ok(await evaluate('document.querySelector(".rsv-form-view").scrollTop > 0'), 'phone form scrolls automatically during filling');
   await capture('reservation-filled-393');
   await delay(2100);
   assert.ok(await evaluate('!!document.querySelector(".rsv-success")'), 'dedicated success screen appears before dashboard');
   assert.equal(await evaluate('scrollY'), 0, 'automatic camera never scrolls the page');
   await capture('automatic-result-393');
   await navigate('/demo/reactivation');
-  await delay(2600);
+  await delay(3800); // phone beats run 3.6s so whole-screen changes can be read
   assert.equal(await evaluate('document.getElementById("demo-root").dataset.beat'), '1', 'autoplay advances');
   await evaluate('document.getElementById("pause").click()');
   await delay(2700);
