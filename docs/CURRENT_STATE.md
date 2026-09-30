@@ -1,5 +1,19 @@
 # Current state and operational handoff
 
+Returning-guest campaign copy (2026-09-30; local): “Pesan yang relevan” now
+demonstrates Promo Dessert - Oktober, thanking guests and inviting another visit
+before 31 October for a chance of free dessert. Campaign editor, WhatsApp preview
+and captions share the promotion. Targeted playback tests pass. No message sent
+and no deployment.
+
+Automatic “Kenali tamu” profile scroll (2026-09-30; local): both Michelle and
+Jessica profiles now hold on identity, scroll to spending/notes, then reach visit
+history automatically. Profile beats last nine seconds so the bottom remains
+readable. Scrolling follows pause/resume, visibility and reduced-motion settings;
+scene changes/replay cancel the old scroll. Reduced motion keeps manual scrolling.
+Targeted tests cover both profiles, holds, pause/resume and restart; Chrome checks
+verify the phone profile reaches the bottom without a manual scroll. No deployment.
+
 Reservation sales story (2026-09-30; local): “Sebelum tamu datang” now opens on
 the online form with a restaurant-logo close-up, then example contact/area/time
 entry and receipt. The second chapter shows a booking-follow-up notification,

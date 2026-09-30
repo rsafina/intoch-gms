@@ -96,11 +96,11 @@ async function main() {
   await delay(2400);
   assert.ok(await evaluate('!!document.querySelector(".db-eye-active")'), 'eye highlighted before opening profile');
   await capture('database-eye-mobile');
-  await evaluate('document.querySelector(".db-eye").click(); document.getElementById("pause").click()');
+  await evaluate('document.querySelector(".db-eye").click()');
   assert.ok(await evaluate('document.querySelector(".db-profile").textContent.includes("Michelle")'), 'eye opens matching profile');
-  await evaluate('document.querySelector(".db-profile").scrollTop = document.querySelector(".db-profile").scrollHeight');
+  await delay(7200);
   await capture('database-history-mobile');
-  assert.ok(await evaluate('document.querySelector(".db-profile").scrollTop > 0'), 'long mobile profile can scroll to history');
+  assert.ok(await evaluate('(() => { const profile = document.querySelector(".db-profile"); return profile.scrollTop >= profile.scrollHeight - profile.clientHeight - 2; })()'), 'long mobile profile automatically reaches visit history');
   await navigate('/demo/reservation');
   // The walk-in edit panel is a nested scrolling surface on phones.
   await navigate('/demo/walk-in');

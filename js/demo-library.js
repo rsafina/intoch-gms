@@ -84,7 +84,7 @@
   ];
   const segmentOptions = ['At Risk (>60 hari tidak berkunjung)', 'Akuisisi', 'Tamu yang kembali', 'Tamu Baru (belum kembali)', 'Medium Spender', 'High Spender', 'Berdasarkan Tag', 'Semua Guest'];
   const returningGuests = [guests[2], guests[4], guests[3]];
-  const returningMessage = name => `Halo ${name}! Terima kasih sudah kembali berkunjung ke ${restaurant}. Kami sangat menghargai kepercayaannya dan senang bisa melayani Bapak/Ibu lagi. Sampai jumpa di kunjungan berikutnya!`;
+  const returningMessage = name => `Halo ${name}! Terima kasih sudah berkunjung ke ${restaurant}. Yuk, datang lagi sebelum 31 Oktober untuk kesempatan menikmati dessert gratis. Ajak teman atau keluarga, dan buat momen manis berikutnya bersama kami!`;
   function segmentReport(pick = false) {
     const cards = segmentCards.map((item, index) => {
       const shown = window.innerWidth <= 560 || pick || beat >= index;
@@ -103,7 +103,7 @@
     const info = chosen ? `<div class="camp-info"><p><b>23 guest</b> masuk segmen ini sekarang, <b>23</b> punya nomor WA valid.</p><p>Periode laporan: <b>1–23 September 2026</b>.</p></div>` : '';
     const submit = stage === 3 ? `<button type="button" class="camp-submit" data-scene-action>Buat Campaign</button>` : '<span class="camp-submit">Buat Campaign</span>';
     return `<div class="camp-modal"><h3>Campaign Baru</h3><p class="scene-fine">Pilih siapa yang mau disapa. Pesan diatur setelah ini.</p>
-      <div class="demo-field"><span>NAMA CAMPAIGN</span><div class="pf-in">Tamu Kembali - September</div></div>
+      <div class="demo-field"><span>NAMA CAMPAIGN</span><div class="pf-in">Promo Dessert - Oktober</div></div>
       <div class="demo-field camp-segment"><span>SEGMEN</span>${select}${list}</div>${info}
       <div class="camp-footer"><span class="camp-cancel">Batal</span>${submit}</div></div>`;
   }
@@ -111,7 +111,7 @@
     if (beat === 0) return campaignModal(3);
     const recipients = beat >= 2;
     const sent = beat >= 3;
-    return `<div class="scene-heading"><h3>Tamu Kembali - September</h3>${badge(sent ? 'Aktif' : 'Draft')}</div>
+    return `<div class="scene-heading"><h3>Promo Dessert - Oktober</h3>${badge(sent ? 'Aktif' : 'Draft')}</div>
       <div class="filter-bar"><span class="filter-chip ${recipients ? '' : 'selected'}">Pesan</span>${recipients ? '<span class="filter-chip selected" data-tab="recipients">Penerima (23)</span>' : '<button type="button" class="filter-chip" data-tab="recipients" data-scene-action>Penerima (23)</button>'}</div>
       ${recipients ? `<div class="guest-rows">${returningGuests.map((guest, index) => `<div class="app-row ${index === 0 && !sent ? 'hl' : ''}" data-key="${guest.initials}"><span class="avatar">${guest.initials}</span><span class="who"><b>${guest.name}</b><small>${index === 0 && sent ? '✓ Terkirim · 10:20' : guest.visits + ' kunjungan · Belum dikirim'}</small></span>${index === 0 && sent ? badge('Terkirim') : index === 0 ? action('Kirim WA') : '<span class="rel-btn">Kirim WA</span>'}</div>`).join('')}</div><p class="scene-fine">+ 20 penerima lainnya di segmen Tamu yang kembali</p>`
         : `${field('Segmen', 'Tamu yang kembali · 23 guest')}${card('Isi pesan', `<div class="message-bubble">${returningMessage('{nama}')}</div>`)}<p class="scene-fine">Nama tamu terisi otomatis di pesan masing-masing.</p>`}
@@ -223,7 +223,7 @@
     if (kind === 'campaign-send') {
       const shown = beat >= 1;
       const guest = returningGuests[0];
-      return { type: 'phone chat', label: 'WHATSAPP PELANGGAN', title: 'Pesan untuk tamu yang kembali', html: `<div class="comp-phone-top"><span class="phone-speaker"></span><b>${guest.name}</b><small>${guest.phone}</small></div><div class="comp-body"><span class="chat-date">Tamu Kembali - September</span><div class="comp-bubble ${beat >= 3 ? 'revealed' : ''}">${beat >= 3 ? returningMessage(guest.name) : shown ? 'Pesan siap dikirim dari daftar penerima.' : 'Menunggu campaign dibuat…'}</div>${beat >= 3 ? '<div class="comp-receipt rel-sent">Dikirim staf · 10:20 ✓✓</div>' : ''}</div>` };
+      return { type: 'phone chat', label: 'WHATSAPP PELANGGAN', title: 'Pesan untuk tamu yang kembali', html: `<div class="comp-phone-top"><span class="phone-speaker"></span><b>${guest.name}</b><small>${guest.phone}</small></div><div class="comp-body"><span class="chat-date">Promo Dessert - Oktober</span><div class="comp-bubble ${beat >= 3 ? 'revealed' : ''}">${beat >= 3 ? returningMessage(guest.name) : shown ? 'Pesan siap dikirim dari daftar penerima.' : 'Menunggu campaign dibuat…'}</div>${beat >= 3 ? '<div class="comp-receipt rel-sent">Dikirim staf · 10:20 ✓✓</div>' : ''}</div>` };
     }
     const item = kind === 'campaign-create' ? segmentCards[1] : segmentCards[Math.min(beat, 2)];
     const all = kind === 'segment-report' && beat >= 3;
@@ -272,6 +272,28 @@
   const animations = new Set();
   let renderedStep = -1, renderedBeat = -1, cursorAnimation = null;
   let remaining = interval, dueAt = 0;
+  let profileScroll = null, profileFrame = null, profileFrameTime = null;
+  function resultDuration() { return definition.steps[stepIndex].scene.startsWith('db-') ? 9000 : 4200; }
+  function stopProfileScroll() {
+    if (profileFrame !== null) cancelAnimationFrame(profileFrame);
+    profileFrame = null; profileFrameTime = null;
+  }
+  function syncProfileScroll() {
+    if (!profileScroll || !isRunning()) { stopProfileScroll(); return; }
+    if (profileFrame !== null) return;
+    function frame(now) {
+      profileFrame = null;
+      if (!profileScroll || !profileScroll.element.isConnected || !isRunning()) { profileFrameTime = null; return; }
+      if (profileFrameTime !== null) profileScroll.elapsed += now - profileFrameTime;
+      profileFrameTime = now;
+      const elapsed = profileScroll.elapsed;
+      const ease = value => { const progress = Math.max(0, Math.min(1, value)); return progress * progress * (3 - 2 * progress); };
+      const progress = elapsed < 4200 ? .45 * ease((elapsed - 1200) / 2000) : .45 + .55 * ease((elapsed - 4200) / 2400);
+      profileScroll.element.scrollTop = (profileScroll.element.scrollHeight - profileScroll.element.clientHeight) * progress;
+      if (elapsed < 9000) profileFrame = requestAnimationFrame(frame);
+    }
+    profileFrame = requestAnimationFrame(frame);
+  }
   const controls = [...root.querySelectorAll('[data-step]')];
   // One compact control row, like the landing-page story player.
   const stepNavigation = root.querySelector('.demo-steps');
@@ -301,6 +323,7 @@
     return animation;
   }
   function syncMotion() {
+    syncProfileScroll();
     stage.classList.toggle('motion-paused', !isRunning());
     stage.classList.toggle('reduced-motion', motion.matches);
     animations.forEach(animation => {
@@ -440,6 +463,7 @@
       if (index === stepIndex) button.setAttribute('aria-current', 'step'); else button.removeAttribute('aria-current');
     });
     if (sceneChanged) {
+      stopProfileScroll(); profileScroll = null;
       if (stepChanged) animations.forEach(animation => animation.cancel());
       const hadSceneFocus = stage.contains(document.activeElement);
       const companionView = companion(current.scene);
@@ -489,6 +513,10 @@
         const viewport = shot === 'companion' ? companionScreen.parentElement : scene;
         viewport.scrollTop = viewport.scrollHeight - viewport.clientHeight;
       }
+      if (current.scene.startsWith('db-') && beat === lastBeat) {
+        const profileElement = scene.querySelector('.db-profile');
+        if (profileElement) { profileElement.scrollTop = 0; profileScroll = { element: profileElement, elapsed: 0 }; }
+      }
       renderedStep = stepIndex; renderedBeat = beat;
     }
     if (finished) pointer.classList.remove('visible');
@@ -514,7 +542,7 @@
       if (beat < lastBeat) beat++;
       else if (stepIndex < definition.steps.length - 1) { stepIndex++; beat = 0; }
       else finished = true;
-      remaining = beat === lastBeat ? 4200 : interval;
+      remaining = beat === lastBeat ? resultDuration() : interval;
       paint(); schedule();
     }, remaining);
   }
@@ -537,7 +565,7 @@
   });
   stage.addEventListener('click', event => {
     if (event.target.closest('[data-db-eye], [data-db-close]')) {
-      clear(); remaining = interval; beat = event.target.closest('[data-db-close]') ? 1 : lastBeat; paint(); schedule(); return;
+      clear(); beat = event.target.closest('[data-db-close]') ? 1 : lastBeat; remaining = beat === lastBeat ? resultDuration() : interval; paint(); schedule(); return;
     }
     if (!event.target.closest('[data-scene-action]')) return;
     clear(); remaining = interval; beat = Math.min(lastBeat, beat + 1); paint(); schedule();
@@ -548,6 +576,7 @@
     pointer.classList.remove('visible');
   });
   document.addEventListener('visibilitychange', () => { syncMotion(); schedule(); });
+  window.addEventListener('pagehide', stopProfileScroll);
   window.addEventListener('resize', () => { fitStage(); fitSegments(); movePointer(definition.steps[stepIndex].scene, false); syncMotion(); });
   if ('ResizeObserver' in window) new ResizeObserver(() => {
     if (fitStage()) movePointer(definition.steps[stepIndex].scene, false);

@@ -23,8 +23,8 @@
       keyMessage: "Berhenti bagikan pesan broadcast yang sama ke semua leads pelanggan Anda.",
       steps: [
         step("Kenali segmen", "Report Customer Insight membagi pelanggan menjadi Acquire, Retain, dan At Risk.", "Report Customer Insight membagi pelanggan menjadi Acquire (tamu pertama kali), Retain (tamu yang kembali), dan At Risk (lama tidak datang).", "segment-report"),
-        step("Buat campaign", "Contoh, Anda ingin berterima kasih ke 23 tamu yang kembali.", "Contoh, Anda ingin berterima kasih ke 23 tamu yang kembali. Klik Buat Campaign, beri nama, lalu pilih segmen 'Tamu yang kembali'.", "campaign-create"),
-        step("Kirim pesan", "Pesan khusus tamu yang kembali sudah siap, lalu dikirim ke setiap penerima.", "Pesan khusus tamu yang kembali sudah siap. Kirim WhatsApp personal ke setiap penerima di daftar.", "campaign-send", "Fitur campaign Intoch bantu Anda menyiapkan template pesan WhatsApp dan terhubung langsung ke target leads.")
+        step("Buat campaign", "Ajak 23 tamu yang kembali menikmati promo dessert.", "Ajak 23 tamu yang kembali menikmati promo dessert. Klik Buat Campaign, beri nama, lalu pilih segmen 'Tamu yang kembali'.", "campaign-create"),
+        step("Kirim pesan", "Undangan datang kembali dengan kesempatan dessert gratis sudah siap.", "Ajak tamu datang lagi sebelum 31 Oktober untuk kesempatan menikmati dessert gratis. Kirim pesan promonya secara personal lewat WhatsApp.", "campaign-send", "Fitur campaign Intoch bantu Anda menyiapkan template pesan WhatsApp dan terhubung langsung ke target leads.")
       ], related: ['reactivation', 'customer-insight'] },
     { slug: 'walk-in', category: 'Di meja penerima tamu', title: "Dapatkan data pelanggan walk-in, tanpa membuat mereka menunggu.",
       problem: "Saat ramai pun, data pelanggan tetap tercatat tanpa membuat antrean.",

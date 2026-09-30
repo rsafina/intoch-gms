@@ -15,6 +15,9 @@ function fixture(slug, reduced = false) {
     return animation;
   };
   const timers = new Map(); let id = 0; let motionListener; let observer;
+  const frames = new Map(); let frameId = 0;
+  window.requestAnimationFrame = callback => { frames.set(++frameId, callback); return frameId; };
+  window.cancelAnimationFrame = key => frames.delete(key);
   const media = { matches: reduced, addEventListener: (_, callback) => { motionListener = callback; } };
   window.matchMedia = () => media;
   window.setTimeout = callback => { timers.set(++id, callback); return id; };
@@ -27,6 +30,7 @@ function fixture(slug, reduced = false) {
   window.eval(read('js/demo-library.js'));
   const document = window.document;
   return { window, document, timers, motionAnimations,
+    frame(now) { const pending = [...frames.values()]; frames.clear(); pending.forEach(callback => callback(now)); },
     click(selector) { document.querySelector(selector).click(); },
     tick() { const next = timers.entries().next().value; assert.ok(next, 'a single timer is pending'); timers.delete(next[0]); next[1](); assert.ok(timers.size <= 1); },
     motion(value) { media.matches = value; motionListener(); },
@@ -122,6 +126,25 @@ assert.equal(databaseScene().querySelector('.db-query').textContent, 'Jessica');
 guestDatabase.tick(); guestDatabase.tick(); guestDatabase.tick();
 assert.match(databaseScene().querySelector('.db-profile').textContent, /Jessica.*M-0007.*8 stickers.*2 vouchers.*Open member card.*Rp350.000.*VISIT HISTORY \(8 VISITS\)/s);
 guestDatabase.close();
+for (const stepIndex of [0, 1]) {
+  const scrolling = fixture('customer-database');
+  scrolling.click(`.demo-steps [data-step="${stepIndex}"]`);
+  scrolling.tick(); scrolling.tick(); scrolling.tick();
+  const profile = scrolling.document.querySelector('.db-profile');
+  Object.defineProperty(profile, 'scrollHeight', { value: 800 });
+  Object.defineProperty(profile, 'clientHeight', { value: 240 });
+  scrolling.frame(0); scrolling.frame(1000);
+  assert.equal(profile.scrollTop, 0, 'profile identity holds before scrolling');
+  scrolling.frame(3200);
+  assert.equal(profile.scrollTop, 252, 'spending and notes receive a middle stop');
+  scrolling.click('#pause'); scrolling.frame(6000);
+  assert.equal(profile.scrollTop, 252, 'pause freezes automatic profile scroll');
+  scrolling.click('#pause'); scrolling.frame(7000); scrolling.frame(10400);
+  assert.equal(profile.scrollTop, 560, 'resume reaches visit history without user scrolling');
+  scrolling.click('#restart'); scrolling.frame(14000);
+  assert.equal(scrolling.document.querySelector('.db-profile'), null, 'restart cancels profile scrolling');
+  scrolling.close();
+}
 const relationship = fixture('reactivation');
 const relScene = () => relationship.document.getElementById('scene');
 const relPhone = () => relationship.document.getElementById('companion-screen');
@@ -158,7 +181,7 @@ assert.match(campScene().textContent, /ACQUIRE.*20.*RETAIN.*23.*AT RISK.*14/s);
 targetedCampaign.click('.demo-steps [data-step="1"]');
 assert.ok(campScene().querySelector('[data-seg="retain"] [data-scene-action]'), 'Buat Campaign Tamu Kembali is clickable');
 targetedCampaign.tick();
-assert.match(campScene().textContent, /Campaign Baru.*Tamu Kembali - September.*Pilih segmen/s, 'naming screen opens');
+assert.match(campScene().textContent, /Campaign Baru.*Promo Dessert - Oktober.*Pilih segmen/s, 'naming screen opens');
 targetedCampaign.tick();
 assert.equal(campScene().querySelectorAll('.camp-option').length, 8, 'segment dropdown lists every segment');
 assert.equal(campScene().querySelector('.camp-option.active').textContent, 'Tamu yang kembali');
@@ -167,11 +190,12 @@ assert.match(campScene().textContent, /23 guest.*nomor WA valid/s, 'segment sele
 targetedCampaign.click('.demo-steps [data-step="2"]');
 assert.ok(campScene().querySelector('.camp-submit[data-scene-action]'), 'Buat Campaign submits the modal');
 targetedCampaign.tick();
-assert.match(campScene().textContent, /Terima kasih sudah kembali berkunjung/);
+assert.match(campScene().textContent, /Terima kasih sudah berkunjung/);
+assert.match(campScene().textContent, /sebelum 31 Oktober.*kesempatan menikmati dessert gratis/s);
 targetedCampaign.tick();
 assert.match(campScene().textContent, /Penerima \(23\).*Jessica.*Kirim WA/s, 'recipient list is shown');
 targetedCampaign.tick();
-assert.match(targetedCampaign.document.getElementById('companion-screen').textContent, /Jessica.*Terima kasih sudah kembali berkunjung/s, 'message reaches the first recipient');
+assert.match(targetedCampaign.document.getElementById('companion-screen').textContent, /Jessica.*Terima kasih sudah berkunjung/s, 'message reaches the first recipient');
 assert.doesNotMatch(campScene().textContent, /Brian|Michelle/, 'returning audience excludes non-returning guests');
 targetedCampaign.close();
 risk.click('.demo-steps [data-step="1"]');
