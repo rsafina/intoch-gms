@@ -39,6 +39,10 @@
   const eyeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
   function guestDatabaseStory(member = false) {
     const guest = member ? sari : dewi;
+    if (window.innerWidth <= 560 && beat < 3) {
+      const shown = beat === 0 ? [guest, member ? dewi : sari] : [guest];
+      return `<div class="rm-screen"><header class="rm-heading"><small>KENALI TAMU</small><h3>Guest Database</h3></header><div class="rm-search">⌕ <span class="${beat === 0 ? 'db-typing' : ''}" style="--letters:${guest.name.length}">${guest.name}</span></div><div class="pm-guest-list">${shown.map(person => `<section class="rm-card"><div class="rm-person"><span class="avatar">${person.initials}</span><div><b>${person.name}</b><small>${person.phone}</small></div></div><div class="rm-guest-facts"><span>${person.visits} kunjungan</span><span>${person === sari ? '★ Member Family' : 'Medium Spender'}</span></div>${person === guest ? `<button class="rm-eye ${beat === 2 ? 'selected' : ''}" type="button" data-db-eye>${eyeIcon}<span>Lihat profil ${person.name}</span></button>` : ''}</section>`).join('')}</div></div>`;
+    }
     const found = beat >= 1;
     const rows = found ? [guest] : guests;
     const tier = person => person === sari ? 'High Spender' : 'Medium Spender';
@@ -96,6 +100,7 @@
       ${pick ? '<p class="scene-fine">Pilih segmen yang ingin disapa.</p>' : beat >= 3 ? note('Tiga segmen, tiga pesan yang berbeda.') : `<div class="scene-summary"><strong>${segmentCards[beat].label}</strong><span>${['Tamu yang pertama kali datang di periode ini.', 'Tamu yang sudah pernah datang, lalu kembali lagi.', 'Tamu yang 60 hari lebih belum kembali.'][beat]}</span></div>`}`;
   }
   function campaignModal(stage) {
+    if (window.innerWidth <= 560) return mobileCampaign('campaign-create', stage + 1);
     // stage: 0 name only, 1 dropdown open, 2 segment chosen, 3 ready to submit
     const chosen = stage >= 2;
     const select = stage === 0 ? `<button type="button" class="camp-select" data-scene-action>Pilih segmen <i>⌄</i></button>` : `<div class="camp-select ${stage === 1 ? 'open' : ''}">${chosen ? 'Tamu yang kembali' : 'Pilih segmen'} <i>⌄</i></div>`;
@@ -108,6 +113,7 @@
       <div class="camp-footer"><span class="camp-cancel">Batal</span>${submit}</div></div>`;
   }
   function campaignSend() {
+    if (window.innerWidth <= 560) return mobileCampaign('campaign-send', beat);
     if (beat === 0) return campaignModal(3);
     const recipients = beat >= 2;
     const sent = beat >= 3;
@@ -121,6 +127,7 @@
   // dashboard buttons (Follow up, Issue ticket, WA Thanks). Staff still send.
   const relButton = (text, rel, extra = '') => `<button type="button" class="rel-btn ${extra}" data-rel="${rel}" data-scene-action>${text}</button>`;
   function relationship(kind) {
+    if (window.innerWidth <= 560) return mobileRelationship(kind);
     if (kind === 'rel-thanks') {
       const done = beat >= 1, sent = beat >= 2;
       return `<div class="scene-heading"><h3>Kunjungan Hari Ini</h3>${badge('23 Sep · 21:30')}</div>
@@ -148,20 +155,73 @@
     const editing = seating && (beat === 1 || beat === 2);
     const seated = seating && beat === lastBeat;
     const chosen = existing && beat >= 2;
-    return `<div class="qw-dashboard ${editing ? 'qw-editing' : ''}"><div class="scene-heading"><div><h3>Welcome!</h3><small>Wednesday, 23 September 2026</small></div><div class="qw-top-actions"><span>ϟ Walk-In</span><span>+ New Reservation</span></div></div>
+    return `<div data-edit-phase="${beat}" class="qw-dashboard ${registered ? 'qw-registered' : ''} ${editing ? 'qw-editing' : ''}"><div class="scene-heading"><div><h3>Welcome!</h3><small>Wednesday, 23 September 2026</small></div><div class="qw-top-actions"><span>ϟ Walk-In</span><span>+ New Reservation</span></div></div>
       <div class="qw-quick"><div class="qw-label"><b>QUICK WALK-IN</b><small>Name &amp; hp, sisa detail bisa menyusul</small><small>Pax bisa diisi nanti</small></div><div class="qw-name"><div class="qw-input" data-qw-name>${!seating && !registered ? `<span class="${beat === 0 ? 'db-typing' : ''}" style="--letters:${guest.name.length}">${guest.name}</span>` : '<span class="qw-placeholder">Guest name *</span>'}</div>${!seating && beat === 1 ? `<div class="qw-suggestions">${existing ? `<button type="button" data-scene-action><b>Jessica <span class="db-member-badge">★ M-0007</span></b><small>${sari.phone}</small></button>` : '<div><b>Belum ada tamu yang cocok</b><small>Klik Add untuk mendaftarkan Brian.</small></div>'}</div>` : ''}</div><div class="qw-input qw-phone">${chosen ? guest.phone : 'Phone (optional)'}</div><div class="qw-input qw-pax">${chosen ? '4' : '1'}</div><button class="qw-primary" type="button" data-scene-action>Add</button></div>
       <section class="qw-list"><div class="scene-heading"><div><h3>Today's Walk-Ins</h3><small>${registered ? '1 walk-in' : '0 walk-ins'} on Wednesday, 23 September</small></div><span class="qw-link">View all →</span></div>${registered ? `<div class="qw-visit"><span class="qw-time">5:45 PM</span><div class="qw-guest"><b>${guest.name} ${existing ? '<span class="db-member-badge">★ M-0007</span>' : ''}</b><small>${existing ? '4' : seated ? '4' : '1'} pax · ${seated ? 'T2 · Indoor' : '— · —'}</small><small>${existing ? '8 visits · Member Family' : seated ? 'Dekat jendela' : 'Tamu baru'}</small></div><div class="qw-row-actions"><span class="qw-active">● Active</span><button type="button" data-scene-action>Edit</button><span>Complete</span></div></div>` : '<p class="qw-empty">No walk-ins for today</p>'}</section>
-      <div class="qw-tagline">Quick registration in under 20 seconds.</div>
-      ${editing ? `<div class="qw-overlay"><section class="qw-modal"><div class="db-profile-heading"><h3>Edit Walk-In</h3><span class="db-close" aria-hidden="true">×</span></div><p class="qw-subtitle">Quick registration in under 20 seconds</p><div class="qw-edit-identity">${field('Guest Name *', 'Brian')}${field('Phone (optional)', '—')}</div><div class="qw-edit-fields">${field('Pax *', beat === 2 ? '4' : '1')}${field('Area (auto from table)', beat === 2 ? 'Indoor' : 'No preference')}</div>${field('Notes', beat === 2 ? 'Dekat jendela' : 'Any notes...')}<div class="qw-tables"><div><b>Tables</b><span>Clear selection</span></div><small>Select one or more tables in the same area.</small><b>Indoor</b><div class="qw-table-pills">${['IN6', 'IN7', 'IN8', 'T1', 'T2', 'T3'].map(table => `<button type="button" class="${beat === 2 && table === 'T2' ? 'selected' : ''}" data-scene-action>${table} · 4 pax</button>`).join('')}</div><b>Outdoor</b><div class="qw-table-pills"><span>OUT4 · 6 pax</span><span>OUT5 · 6 pax</span></div></div><div class="qw-modal-footer"><button type="button" class="qw-primary" data-scene-action>Save Changes</button><span>Cancel</span></div></section></div>` : ''}</div>`;
+      <div class="qw-tagline">Pendaftaran cepat dalam kurang dari 20 detik.</div>
+      ${editing ? `<div class="qw-overlay"><section class="qw-modal"><div class="db-profile-heading"><h3>Edit Walk-In</h3><span class="db-close" aria-hidden="true">×</span></div><p class="qw-subtitle">Brian · ${beat === 1 ? 'Lengkapi jumlah tamu dan catatan' : 'Pilih meja, lalu simpan perubahan'}</p><div class="qw-edit-identity">${field('Guest Name *', 'Brian')}${field('Phone (optional)', '—')}</div><div class="qw-edit-fields">${field('Pax *', '4')}${field('Area (auto from table)', beat === 2 ? 'Indoor' : 'No preference')}</div>${field('Notes', 'Dekat jendela')}<div class="qw-tables"><div><b>Tables</b><span>Clear selection</span></div><small>Select one or more tables in the same area.</small><b>Indoor</b><div class="qw-table-pills">${['IN6', 'IN7', 'IN8', 'T1', 'T2', 'T3'].map(table => `<button type="button" class="${beat === 2 && table === 'T2' ? 'selected' : ''}" data-scene-action>${table} · 4 pax</button>`).join('')}</div><b>Outdoor</b><div class="qw-table-pills"><span>OUT4 · 6 pax</span><span>OUT5 · 6 pax</span></div></div><div class="qw-modal-footer"><button type="button" class="qw-primary" data-scene-action>Save Changes</button><span>Cancel</span></div></section></div>` : ''}</div>`;
   }
   function walkin() {
     return `<div class="scene-heading"><h3>Walk-in</h3>${badge('23 Sep · 18:30')}</div><p class="scene-fine">Tamu datang tanpa reservasi</p>
       ${card('Tambah kunjungan', `<div class="form-grid">${field('Nama tamu', beat >= 1 ? bayu.name : 'Nama tamu')}${field('Nomor WhatsApp', beat >= 1 ? bayu.phone : 'Nomor tamu')}${field('Jumlah tamu', '2 orang')}${field('Meja · Area', beat >= 2 ? 'A3 · Indoor' : 'Pilih meja')}</div>${action('Simpan walk-in')}`)}
       ${beat >= 3 ? note('Brian · 2 orang · meja A3. Kunjungan tersimpan.') : '<div class="service-context"><span>01</span><p>Catat singkat.<br><b>Lanjutkan menyambut tamu.</b></p></div>'}`;
   }
+  const mobilePerson = guest => `<div class="rm-person"><span class="avatar">${guest.initials}</span><div><b>${guest.name}</b><small>${guest.phone}</small></div></div>`;
+  function followUpStory(kind) {
+    const phone = window.innerWidth <= 560;
+    const shell = (title, body) => `<div class="fu-screen ${phone ? 'rm-screen fu-phone' : 'fu-desktop'}"><header class="${phone ? 'rm-heading' : 'scene-heading'}"><div><small>FOLLOW UP RESERVASI</small><h3>${title}</h3></div><div class="fu-icons"><span>♧</span><span>▣</span></div></header>${body}</div>`;
+    const detail = '<span>26 Sep · 19:00 · 4 orang</span><small>Teras · T2 · Online Form</small>';
+    if (kind === 'fu-filter') {
+      const rows = [{ name: 'Michelle', pax: 4, date: '26 Sep', time: '19:00', area: 'Teras · T2', status: 'Reserved' }, { name: 'Daniel', pax: 2, date: '29 Sep', time: '19:00', area: 'Indoor · IN6', status: 'Reserved' }, { name: 'Noelle', pax: 3, date: '30 Sep', time: '21:00', area: 'Outdoor', status: 'Cancelled' }].filter(row => beat === 0 || (row.status === 'Reserved' && (beat < 2 || row.name === 'Michelle')));
+      const filters = `<section class="fu-filters"><div class="fu-search">⌕ <span>${beat >= 2 ? 'Michelle' : 'Search a guest by name or phone'}</span></div><div class="fu-dates"><span>Custom ⌄</span><b>01/09/2026 – 30/09/2026</b></div><div class="fu-statuses">${['All', 'Reserved', 'Waitlist', 'Incoming', 'Arrived', 'Completed'].map(status => `<span class="${status === (beat ? 'Reserved' : 'All') ? 'selected' : ''}">${status}</span>`).join('')}</div><div class="fu-online">☑ Online form only</div></section>`;
+      const content = phone ? `<div class="fu-mobile-results">${rows.map(row => `<section class="rm-card"><div class="fu-card-title"><b>${row.name}</b><span class="rm-status">${row.status}</span></div><div class="fu-card-detail"><span>${row.date} · ${row.time} · ${row.pax} orang</span><small>${row.area} · Online Form</small></div>${beat >= 2 ? '<button type="button" class="rm-primary" data-scene-action>Lihat reservasi Michelle</button>' : ''}</section>`).join('')}</div>` : `<div class="fu-table"><div class="fu-table-head"><span>TIME</span><span>GUEST & BOOKING</span><span>SEATING</span><span>STATUS</span><span>ACTIONS</span></div>${rows.map(row => `<div class="fu-table-row"><span>${row.date}<b>${row.time}</b></span><div><b>${row.name}</b><small>${row.pax} pax · Online Form</small></div><span>${row.area}</span>${badge(row.status)}<div class="fu-row-buttons"><span>Update</span><span>Issue ticket</span><span>Follow up ↗</span></div></div>`).join('')}</div>`;
+      return shell('Reservations', `${filters}<div class="fu-count"><b>${rows.length} reservasi</b><span>${rows.reduce((sum, row) => sum + row.pax, 0)} total pax</span></div>${content}`);
+    }
+    if (kind === 'fu-actions') {
+      const body = beat === 0 ? `<div class="fu-card-detail">${detail}</div><span class="rm-status">Reserved</span><div class="fu-action-pair"><button type="button" class="rm-primary" data-scene-action>Follow up ↗</button><span>Issue ticket</span></div>`
+        : beat === 1 ? `<p class="pm-message">Halo Michelle! Kami dari ${restaurant} ingin mengonfirmasi reservasi 26 September, pukul 19:00 untuk 4 orang di Teras. Kami nantikan kedatangannya!</p><p class="fu-help">Pesan konfirmasi siap dikirim staf lewat WhatsApp.</p><button type="button" class="rm-primary" data-scene-action>Issue ticket</button>`
+        : beat === 2 ? `<div class="pm-ticket"><small>TIKET RESERVASI</small><b>${restaurant}</b>${detail}<small>Reserved · tiket siap dibuka dan diunduh</small></div><button type="button" class="rm-primary" data-scene-action>Bagikan tiket via WhatsApp</button>`
+        : `<p class="pm-message">Halo Michelle! Reservasi Anda di ${restaurant} telah dikonfirmasi untuk 26 September, pukul 19:00, 4 orang. Berikut tiket reservasi Anda.</p><div class="fu-ticket-link">↗ Buka tiket reservasi</div><p class="fu-help">Staf membagikan tiket lewat WhatsApp.</p>`;
+      return shell(beat < 2 ? 'Follow up tamu' : 'Issue ticket', `<section class="rm-card fu-focus">${mobilePerson(dewi)}${body}</section>`);
+    }
+    const arrival = beat >= 2, checked = beat === 1 || beat === 3;
+    return shell('Notifikasi & checklist', `<div class="fu-notification-tabs"><span class="${!arrival ? 'selected' : ''}">♧ Booking follow-ups ${!arrival && !checked ? '· 1' : ''}</span><span class="${arrival ? 'selected' : ''}">▣ Arrival checks ${arrival && !checked ? '· 1' : ''}</span></div><section class="rm-card fu-focus"><div class="fu-panel-heading"><h3>${arrival ? 'Arrival checks' : 'Booking follow-ups'}</h3><small>${arrival ? '25 Sep · H-1 kedatangan' : '23 Sep · setelah menghubungi tamu'}</small></div>${mobilePerson(dewi)}<div class="fu-card-detail">${detail}</div><button type="button" role="checkbox" aria-checked="${checked}" class="fu-check ${checked ? 'checked' : ''}" data-scene-action><span aria-hidden="true">${checked ? '☑' : '☐'}</span>${arrival ? 'Sudah dicek' : 'Sudah di-follow up'}</button>${checked ? `<div class="fu-done">✓ ${arrival ? 'Pengecekan H-1 tercatat' : 'Follow up tercatat'} · ditandai staf</div>` : '<p class="fu-help">Centang setelah staf selesai menghubungi tamu.</p>'}</section>${arrival ? '<p class="fu-help">Pengecekan H-1 dan hari kedatangan dicatat terpisah.</p>' : ''}`);
+  }
+  function mobileRelationship(kind) {
+    const thanks = kind === 'rel-thanks', ticket = kind === 'rel-ticket';
+    const guest = thanks ? bayu : dewi;
+    const label = thanks ? 'Ucapan terima kasih' : ticket ? 'Tiket reservasi' : 'Konfirmasi reservasi';
+    const chat = thanks || ticket ? beat >= 2 : beat >= 1;
+    if (chat) return `<div class="rm-screen pm-chat"><header class="rm-heading"><small>WHATSAPP PELANGGAN</small><h3>${label}</h3></header>${relationshipPhone(kind).html}</div>`;
+    const content = ticket && beat === 1
+      ? `<div class="pm-ticket"><small>TIKET RESERVASI</small><b>${restaurant}</b><span>Michelle · 4 orang</span><span>23 Sep · 19:00 · Teras</span><small>Tamu dapat membuka dan mengunduh tiket.</small></div><button class="rm-primary" type="button" data-scene-action>Kirim tiket via WhatsApp</button>`
+      : `<div class="rm-details"><span><small>${thanks ? 'Kunjungan' : 'Reservasi'}</small><b>23 Sep · ${thanks ? '18:30' : '19:00'}</b></span><span><small>Tamu & meja</small><b>${thanks ? '2 orang · A3' : '4 orang · T2'}</b></span></div><div class="rm-notice"><b>${thanks ? beat === 1 ? '✓ Kunjungan selesai' : 'Tamu selesai makan' : 'Reserved · Teras'}</b><span>${thanks ? 'Walk-in dan reservasi bisa menerima WA Thanks.' : 'Kontak dan detail booking sudah tersedia.'}</span></div><button class="rm-primary" type="button" data-scene-action>${thanks ? beat === 0 ? 'Tandai selesai' : 'WA Thanks' : ticket ? 'Issue ticket' : 'Follow up via WhatsApp'}</button>`;
+    return `<div class="rm-screen"><header class="rm-heading"><small>HUBUNGAN PELANGGAN</small><h3>${label}</h3></header><section class="rm-card">${mobilePerson(guest)}${content}</section></div>`;
+  }
+  function mobileCampaign(kind, phase) {
+    const heading = text => `<header class="rm-heading"><small>PROMO DESSERT · OKTOBER</small><h3>${text}</h3></header>`;
+    if (kind === 'campaign-create') return `<div class="rm-screen">${heading(phase === 2 ? 'Pilih penerima campaign' : 'Campaign Baru')}<section class="rm-card"><div class="rm-field-label">Nama campaign</div><div class="pm-field">Promo Dessert - Oktober</div><div class="rm-field-label">Segmen pelanggan</div>${phase === 2 ? `<div class="pm-options">${['Akuisisi', 'Tamu yang kembali', 'At Risk'].map(label => `<button type="button" class="${label === 'Tamu yang kembali' ? 'selected' : ''}" data-scene-action>${label}</button>`).join('')}</div>` : `<button class="pm-field" type="button" data-scene-action>${phase >= 3 ? 'Tamu yang kembali' : 'Pilih segmen ⌄'}</button>`}${phase >= 3 ? '<div class="rm-notice"><b>23 pelanggan terpilih</b><span>23 nomor WhatsApp tersedia.</span></div><button class="rm-primary" type="button" data-scene-action>Buat Campaign</button>' : ''}</section></div>`;
+    if (phase === 0) return mobileCampaign('campaign-create', 3);
+    if (phase === 1) return `<div class="rm-screen">${heading('Pesan ajakan kembali')}<section class="rm-card"><span class="rm-status">Tamu yang kembali · 23 penerima</span><p class="pm-message">${returningMessage('{nama}')}</p><button class="rm-primary" type="button" data-scene-action>Lihat penerima</button></section></div>`;
+    if (phase === 2) return `<div class="rm-screen">${heading('Kirim satu per satu')}<section class="rm-card">${mobilePerson(sari)}<div class="rm-guest-facts"><span>8 kunjungan</span><span>Pesan personal siap</span></div><button class="rm-primary" type="button" data-scene-action>Kirim WA ke Jessica</button></section><div class="pm-next"><b>Berikutnya: John, Daniel</b><small>+ 20 penerima lainnya</small></div><p class="rm-footnote">Pesan dikirim staf dari daftar penerima.</p></div>`;
+    return `<div class="rm-screen pm-chat">${heading('Promo untuk Jessica')}<section class="rm-card">${mobilePerson(sari)}<p class="pm-message">${returningMessage(sari.name)}</p><span class="rm-status">Dikirim staf · 10:20 ✓✓</span></section></div>`;
+  }
+  function mobileReservationStory(kind) {
+    const guestHeader = `<div class="rm-person"><span class="avatar">MI</span><div><b>Michelle</b><small>${reservationGuest.phone}</small></div></div>`;
+    const bookingDetails = `<div class="rm-details"><span><small>Tanggal & jam</small><b>26 Sep · 21:00</b></span><span><small>Jumlah tamu</small><b>4 orang</b></span><span><small>Area</small><b>Outdoor</b></span><span><small>Meja</small><b>${beat === 3 ? 'OUT4' : 'Belum ditentukan'}</b></span></div>`;
+    if (kind === 'rsv-dashboard') {
+      const titles = ['Reservasi baru masuk', 'Reservasi mendatang', 'Atur meja tamu', 'Perubahan tersimpan'];
+      return `<div class="rsv-dashboard rm-screen"><header class="rm-heading"><small>DASHBOARD</small><h3>${titles[beat]}</h3></header><section class="rm-card">${guestHeader}${beat === 0 ? '<div class="rm-notice"><b>Notifikasi reservasi baru</b><span>Online Form · perlu follow up</span></div>' : ''}${beat === 2 ? `<div class="rm-edit-context">26 Sep · 21:00 · 4 orang · Outdoor</div><div class="rm-field-label">Pilih meja</div><div class="rm-tables"><button type="button" class="selected" data-scene-action>OUT4<small>6 pax · dipilih</small></button><span>OUT5<small>6 pax</small></span><span>OUT6<small>6 pax</small></span></div><p class="rm-help">Status tetap Reserved.</p><button class="rm-primary" type="button" data-scene-action>Simpan perubahan</button>` : `${bookingDetails}<div class="rm-card-footer"><span class="rm-status">${beat === 3 ? '✓ Meja OUT4 tersimpan' : 'Reserved'}</span>${beat === 1 ? '<button class="rm-primary" type="button" data-scene-action>Update reservasi</button>' : ''}</div>`}</section><p class="rm-footnote">${beat === 0 ? 'Otomatis tercatat, tanpa menyalin dari chat.' : beat === 3 ? 'Reservasi diperbarui di daftar yang sama.' : 'Detail dapat dilengkapi sebelum tamu datang.'}</p></div>`;
+    }
+    return `<div class="rsv-guest rm-screen"><header class="rm-heading"><small>GUEST DATABASE</small><h3>${beat === 3 ? 'Profil tamu tersimpan' : 'Tamu otomatis terdaftar'}</h3></header>${beat < 3 ? `<div class="rm-search">⌕ <span>Michelle</span></div><section class="rm-card">${guestHeader}<div class="rm-guest-facts"><span>0 kunjungan</span><span>Belum ada spending</span></div><div class="rm-card-footer"><span class="rm-status">✓ Dari Online Form</span><button class="rm-eye ${beat === 2 ? 'selected' : ''}" type="button" data-db-eye aria-label="Lihat profil Michelle">${eyeIcon}<span>Lihat profil</span></button></div></section><p class="rm-footnote">Nama dan nomor WhatsApp tersimpan otomatis.</p>` : `<section class="rm-card rm-profile">${guestHeader}<div class="rm-guest-facts"><span>0 kunjungan</span><span>Belum ada spending</span></div><div class="rm-field-label">Reservasi mendatang</div><div class="rm-profile-booking"><b>26 Sep · 21:00 · 4 orang</b><span>Outdoor · OUT4 · Reserved</span><small>Meja dekat taman, jika tersedia.</small></div><p class="rm-help">Riwayat kunjungan dimulai setelah tamu datang.</p></section>`}</div>`;
+  }
+  function mobileReservationScene() {
+    return window.innerWidth <= 560 && ['reactivation', 'customer-database', 'campaign', 'walk-in', 'reservation'].includes(definition.slug) && definition.steps[stepIndex].scene !== 'rsv-form';
+  }
   function reservationStory(kind) {
+    if (window.innerWidth <= 560 && kind !== 'rsv-form') return mobileReservationStory(kind);
     const phone = reservationGuest.phone;
-    if (kind === 'rsv-form') return `<div class="rsv-form-view ${beat === 0 ? 'rsv-brand-focus' : ''}"><div class="rsv-brand"><img src="/assets/intoch-logo.png" alt="Intoch Restaurant logo"><b>${restaurant}</b><small>Reservasi dengan identitas restoran Anda</small></div><section class="rsv-form"><div class="scene-heading"><h3>BOOK A TABLE</h3></div><p>Welcome to ${restaurant}</p><div data-rsv="identity">${field('Name', beat >= 1 ? 'Michelle' : 'Your name')}${field('WhatsApp Number', beat >= 1 ? phone : '08xxxxxxxxxx')}</div><div data-rsv="choices">${field('Number of Guests', beat >= 2 ? '−　　　　 4　　　　 +' : '−　　　　 2　　　　 +')}<small>□ Book a private room if available</small><label>Choose an Area</label><div class="rsv-pills"><span>Indoor</span><span class="${beat >= 2 ? 'selected' : ''}">Outdoor</span><span>Outdoor – Smoking</span></div>${field('Date', '26/09/2026')}<label>Time</label><div class="rsv-pills"><span>19:00</span><span>20:00</span><span class="${beat >= 2 ? 'selected' : ''}">21:00</span></div>${field('Notes (optional)', beat >= 2 ? 'Meja dekat taman, jika tersedia.' : 'Any notes...')}</div><button type="button" class="rsv-submit" data-scene-action>Reserve Now</button>${beat === 3 ? '<div class="rsv-received"><b>✓ Reservasi diterima, Michelle.</b><span>26 Sep · 21:00 · 4 pax · Outdoor</span><small>Tim restoran akan menghubungi Anda.</small></div>' : ''}</section></div>`;
+    if (kind === 'rsv-form') return `<div class="rsv-form-view rsv-form-phase-${beat}"><div class="rsv-page"><div class="rsv-brand"><img src="/assets/intoch-logo.png" alt="Intoch Restaurant logo"><b>${restaurant}</b><small>Reservasi dengan identitas restoran Anda</small></div><section class="rsv-form"><div class="scene-heading"><h3>BOOK A TABLE</h3></div><p>Welcome to ${restaurant}</p><div data-rsv="identity">${field('Name', beat >= 2 ? 'Michelle' : 'Your name')}${field('WhatsApp Number', beat >= 2 ? phone : '08xxxxxxxxxx')}</div><div data-rsv="choices">${field('Number of Guests', beat >= 2 ? '−　　　　 4　　　　 +' : '−　　　　 2　　　　 +')}<small>□ Book a private room if available</small><label>Choose an Area</label><div class="rsv-pills"><span>Indoor</span><span class="${beat >= 2 ? 'selected' : ''}">Outdoor</span><span>Outdoor – Smoking</span></div>${field('Date', '26/09/2026')}<label>Time</label><div class="rsv-pills"><span>19:00</span><span>20:00</span><span class="${beat >= 2 ? 'selected' : ''}">21:00</span></div>${field('Notes (optional)', beat >= 2 ? 'Meja dekat taman, jika tersedia.' : 'Any notes...')}</div><button type="button" class="rsv-submit" data-scene-action>Reserve Now</button></section>${beat === 3 ? '<section class="rsv-success"><div class="rsv-success-check">✓</div><h3>RESERVATION CREATED</h3><p>Our staff will contact you shortly. You can also reach us through WhatsApp.</p><div class="rsv-success-details"><b>Michelle</b><span>Saturday, 26 September 2026 · 21:00</span><span>4 pax · Outdoor</span></div><div class="rsv-success-wa">Chat with us on WhatsApp</div><small>← Make another reservation</small></section>' : ''}</div></div>`;
     if (kind === 'rsv-dashboard') return `<div class="rsv-dashboard"><div class="scene-heading"><div><h3>Welcome!</h3><small>Wednesday, 23 September 2026</small></div><span class="rsv-bell">♧ <b>1</b></span></div>${beat === 0 ? '<div class="rsv-notification"><h3>Booking follow-ups</h3><small>Perlu follow up (1)</small><b>Michelle</b><span>Sab, 26 Sep · 21:00 · 4 pax</span><span>□ Sudah di-follow up</span><div>Buka halaman Reservasi</div></div>' : ''}<section class="rsv-upcoming"><div class="scene-heading"><h3>Upcoming Reservations</h3><small>Next 3 days</small></div><div class="rsv-pills"><span>Today (0)</span><span>Tomorrow (0)</span><span class="selected">26 Sep (1)</span></div><div class="rsv-totals"><b>26 September</b><span>Total reservations <strong>1</strong></span><span>Expected pax <strong>4</strong></span></div><div class="rsv-booking"><b>21:00</b><div><strong>Michelle</strong><small>4 pax · Outdoor · ${beat === 3 ? 'OUT4' : 'Unassigned'}</small><small>Online Form · 0 visits</small></div>${badge('Reserved')}<div class="rsv-actions"><button type="button" data-scene-action>Update</button><span>Issue ticket</span><span>Follow up ↗</span></div></div></section>${beat === 2 ? '<div class="rsv-edit-overlay"><section class="rsv-edit"><div class="db-profile-heading"><h3>Update Reservation</h3><span class="db-close">×</span></div><div class="db-profile-note"><b>Michelle</b><p>9:00 PM · 4 pax</p><small>Source: Online Form</small></div><label>UPDATE STATUS</label><div class="rsv-status"><span class="selected">Reserved</span><span>Arrived</span><span>Completed</span><span>Cancelled</span><span>Cancelled (No Show)</span></div><label>ASSIGN TABLE</label><div class="qw-input">Outdoor</div><div class="qw-table-pills"><span class="selected">OUT4 · 6 pax</span><span>OUT5 · 6 pax</span><span>OUT6 · 6 pax</span><span>OUT7 · 6 pax</span></div><button type="button" class="rsv-submit" data-scene-action>Save Changes</button></section></div>' : beat === 3 ? '<div class="scene-note">✓ Meja OUT4 tersimpan. Status tetap Reserved.</div>' : ''}</div>`;
     return `<div class="rsv-guest"><div class="scene-heading"><div><h3>Guest Database</h3><small>Search and manage guest profiles</small></div></div><div class="db-filters"><div class="db-search"><span>⌕</span><span class="db-query ${beat === 0 ? 'db-typing' : ''}" style="--letters:8">Michelle</span></div></div><div class="db-table"><div class="rsv-guest-row"><span class="avatar">MI</span><div><b>Michelle</b><small>${phone}</small></div><span class="db-tier">None</span><span>0 visits</span><button class="db-eye ${beat === 2 ? 'db-eye-active' : ''}" type="button" data-db-eye aria-label="Lihat profil Michelle">${eyeIcon}</button></div></div><p class="rsv-saved">✓ Kontak tersimpan otomatis dari Online Form.</p>${beat === 3 ? `<div class="db-overlay"><section class="db-profile"><div class="db-profile-heading"><h3>Guest Profile</h3><button type="button" class="db-close" data-db-close aria-label="Tutup profil">×</button></div><div class="db-profile-id"><span class="avatar">MI</span><div><b>Michelle</b><span>${phone}</span><div><span class="db-tier">None</span> <small>Belum ada spending tercatat</small></div><small>Member since 23 Sep 2026</small></div></div><div class="db-profile-metrics"><div><small>AVERAGE SPEND</small><b>—</b><span>No visits with spend recorded</span></div><div><small>FAVORITE</small><b>—</b><span>no order recorded yet</span></div></div><div class="db-profile-note"><small>UPCOMING RESERVATION</small><p>26 Sep 2026 · 21:00 · 4 pax</p><p>Outdoor · OUT4 · Reserved</p><small>Meja dekat taman, jika tersedia.</small></div><div class="db-history"><small>VISIT HISTORY (0 VISITS)</small><p>Belum ada kunjungan tercatat.</p></div></section></div>` : ''}</div>`;
   }
@@ -190,6 +250,7 @@
       ${kind === 'member' ? card('Aktivitas member', '<p>8 kunjungan · terakhir 18 Sep</p><p>Saldo 8 stiker · siap digunakan pada kunjungan berikutnya.</p>') : kind === 'stickers' ? `${field('Transaksi kunjungan · 23 Sep', 'Rp200.000 → 2 stiker')}${action('Simpan transaksi member')}${added ? note('2 stiker ditambahkan · saldo 10 stiker.') : ''}` : `${action('Konversi 10 stiker menjadi voucher')}${converted ? card('Voucher member', '<b>Voucher Intoch Restaurant · Rp50.000</b><p>Aktif · berlaku hingga 23 Okt 2026</p><small>Nilai dan masa berlaku mengikuti aturan restoran.</small>', 'reward-card') : '<p class="scene-fine">10 stiker siap dikonversi sesuai aturan restoran.</p>'}`}`;
   }
   const scenes = {
+    'fu-filter': () => followUpStory('fu-filter'), 'fu-actions': () => followUpStory('fu-actions'), 'fu-checks': () => followUpStory('fu-checks'),
     'rsv-form': () => reservationStory('rsv-form'), 'rsv-dashboard': () => reservationStory('rsv-dashboard'), 'rsv-guest': () => reservationStory('rsv-guest'),
     'quick-existing': () => quickWalkin('quick-existing'), 'quick-new': () => quickWalkin('quick-new'), 'quick-seat': () => quickWalkin('quick-seat'),
     'db-guest': () => guestDatabaseStory(), 'db-member': () => guestDatabaseStory(true),
@@ -271,6 +332,7 @@
   const pointer = root.querySelector('.demo-pointer');
   const animations = new Set();
   let renderedStep = -1, renderedBeat = -1, cursorAnimation = null;
+  let phoneLayout = window.innerWidth <= 560;
   let remaining = interval, dueAt = 0;
   let profileScroll = null, profileFrame = null, profileFrameTime = null;
   function resultDuration() { return definition.steps[stepIndex].scene.startsWith('db-') ? 9000 : 4200; }
@@ -301,11 +363,21 @@
   document.getElementById('restart').textContent = '↻';
   controls.forEach((button, index) => button.setAttribute('aria-label', `Langkah ${index + 1}: ${definition.steps[index].title}`));
   function fitStage() {
+    fitReservationPage();
     const scale = Math.min((stage.clientWidth || 680) / 680, (stage.clientHeight || 560) / 560);
     const changed = Math.abs(Number(stage.style.getPropertyValue('--stage-scale')) - scale) > .001;
     stage.style.setProperty('--stage-scale', String(scale));
     stage.style.setProperty('--pointer-size', String(1 / scale));
     return changed;
+  }
+  function fitReservationPage() {
+    const page = scene.querySelector('.rsv-page');
+    if (!page) return;
+    const viewport = page.parentElement;
+    page.style.zoom = '1';
+    const fullPage = beat === 0 || beat === 3 || (beat === 2 && window.innerWidth > 560);
+    if (fullPage) page.style.zoom = String(Math.min(1, (viewport.clientHeight - 28) / page.scrollHeight, (viewport.clientWidth - 20) / page.offsetWidth));
+    else if (beat === 1) page.style.zoom = String(Math.min(1.2, (viewport.clientWidth - 20) / page.offsetWidth));
   }
   function clear(preserve = false) {
     if (timer !== null) {
@@ -316,6 +388,7 @@
   }
   function isRunning() { return !paused && !motion.matches && !document.hidden && inView && !finished; }
   function animate(element, frames, options = {}) {
+    if (mobileReservationScene() && !element.matches('.seg-card')) return null;
     if (!isRunning() || !element.animate) return null;
     const animation = element.animate(frames, { duration: 650, easing: 'cubic-bezier(.22,1,.36,1)', ...options });
     animations.add(animation);
@@ -373,7 +446,7 @@
     update(container, template.content);
     changed.forEach(element => {
       if (element.isConnected && ![...changed].some(other => other !== element && other.contains(element)))
-        animate(element, [{ opacity: .25, transform: 'translateY(7px)' }, { opacity: 1, transform: 'translateY(0)' }]);
+        animate(element, [{ opacity: definition.steps[stepIndex].scene === 'quick-seat' ? 1 : .25, transform: 'translateY(7px)' }, { opacity: 1, transform: 'translateY(0)' }]);
     });
   }
   function fitSegments(slide = false) {
@@ -387,11 +460,12 @@
   }
   function movePointer(kind, reset) {
     if (cursorAnimation) cursorAnimation.cancel();
-    const selectors = kind === 'rsv-form' ? ['#scene .rsv-brand img', '#scene [data-rsv="identity"]', '#scene [data-rsv="choices"] .rsv-pills']
+    if (mobileReservationScene()) { pointer.classList.remove('visible'); return; }
+    const selectors = kind === 'rsv-form' ? [null, null, null]
       : kind === 'rsv-dashboard' ? ['#scene .rsv-notification', '#scene .rsv-actions button', '#scene .rsv-edit .rsv-submit']
       : kind === 'rsv-guest' ? ['#scene .db-search', '#scene .rsv-guest-row', '#scene .db-eye']
       : kind.startsWith('quick-')
-      ? kind === 'quick-seat' ? ['#scene .qw-row-actions button', '#scene .qw-edit-identity', '#scene .qw-modal-footer button'] : ['#scene [data-qw-name]', kind === 'quick-existing' ? '#scene .qw-suggestions button' : '#scene .qw-quick > button', '#scene .qw-quick > button']
+      ? kind === 'quick-seat' ? ['#scene .qw-row-actions button', '#scene .qw-edit-fields', '#scene .qw-modal-footer button'] : ['#scene [data-qw-name]', kind === 'quick-existing' ? '#scene .qw-suggestions button' : '#scene .qw-quick > button', '#scene .qw-quick > button']
       : kind.startsWith('db-')
       ? ['#scene .db-search', '#scene .db-found .db-person', '#scene .db-eye']
       : kind === 'segment-report'
@@ -424,7 +498,7 @@
     const detailed = window.innerWidth <= 560 && stage.classList.contains('detail-view');
     const scale = detailed ? 1 : bounds.width / 680 || 1;
     if (detailed && !target.getClientRects().length) { pointer.classList.remove('visible'); return; }
-    if ((detailed || kind.startsWith('rsv-')) && kind !== 'segment-report' && !kind.startsWith('db-')) {
+    if ((detailed || kind.startsWith('rsv-')) && kind !== 'segment-report' && !kind.startsWith('db-') && !target.closest('.qw-registered:not(.qw-editing)')) {
       const viewport = target.closest('.rsv-edit, .rsv-form-view, .rsv-dashboard, .qw-modal, .qw-dashboard') || (scene.contains(target) ? scene : companionScreen.parentElement);
       viewport.scrollTop += target.getBoundingClientRect().top - viewport.getBoundingClientRect().top - viewport.clientHeight / 2;
     }
@@ -468,6 +542,7 @@
       const hadSceneFocus = stage.contains(document.activeElement);
       const companionView = companion(current.scene);
       stage.dataset.scene = current.scene;
+      stage.classList.toggle('phone-composed', mobileReservationScene());
       stage.dataset.device = companionView.type.split(' ')[0];
       companionScreen.className = 'companion-device ' + companionView.type;
       document.getElementById('companion-label').textContent = companionView.label;
@@ -481,7 +556,7 @@
       const guestResult = ['campaign-send', 'journey-message', 'reward'].includes(current.scene) && beat === lastBeat;
       const guestMessage = current.scene.startsWith('rel-') && (beat === 2 || (current.scene === 'rel-followup' && beat === 1));
       const mobileSegments = window.innerWidth <= 560 && (current.scene === 'segment-report' || current.scene.startsWith('db-') || current.scene.startsWith('quick-'));
-      const shot = current.scene.startsWith('rsv-') ? 'main' : beat === 0 && !motion.matches && !mobileSegments ? 'overview' : guestAction || guestResult || guestMessage ? 'companion' : 'main';
+      const shot = mobileReservationScene() || current.scene.startsWith('rsv-') ? 'main' : beat === 0 && !motion.matches && !mobileSegments ? 'overview' : guestAction || guestResult || guestMessage ? 'companion' : 'main';
       const cameraTarget = shot === 'companion' ? companionScreen : stage.querySelector('.product-wrap');
       const beforeCamera = cameraTarget.getBoundingClientRect();
       stage.dataset.shot = shot;
@@ -492,10 +567,12 @@
       if (current.scene.startsWith('rsv-')) {
         const viewport = scene.querySelector('.rsv-form-view, .rsv-dashboard, .rsv-guest');
         if (stepChanged) viewport.scrollTop = 0;
-        if (current.scene === 'rsv-form' && beat === 3) viewport.scrollTop = viewport.scrollHeight;
+        if (current.scene === 'rsv-form') {
+          viewport.scrollTop = 0;
+          if (beat === 2 && window.innerWidth <= 560) profileScroll = { element: viewport, elapsed: 0 };
+        }
         if (current.scene === 'rsv-dashboard' && beat === 2) viewport.scrollTop = 0;
-        if (current.scene === 'rsv-dashboard' && beat === 3 && window.innerWidth <= 560) viewport.scrollTop = scene.querySelector('.rsv-booking').offsetTop - 14;
-        if (current.scene === 'rsv-form' && beat === 0) animate(scene.querySelector('.rsv-brand'), [{ transform: 'scale(1)', opacity: .7 }, { transform: 'scale(1.12)', opacity: 1 }], { duration: 1800 });
+        if (current.scene === 'rsv-form' && beat === 1) animate(scene.querySelector('.rsv-brand'), [{ transform: 'scale(.65)' }, { transform: 'scale(1)' }], { duration: 1200 });
       }
       if (current.scene.startsWith('quick-')) {
         const dashboard = scene.querySelector('.qw-dashboard');
@@ -509,7 +586,7 @@
           : 'translateY(12px) scale(.96)';
         animate(cameraTarget, [{ opacity: .35, transform: from, transformOrigin: 'top left' }, { opacity: 1, transform: 'none', transformOrigin: 'top left' }], { duration: 1000 });
       }
-      if (window.innerWidth <= 560 && stage.classList.contains('detail-view') && beat === lastBeat && current.scene !== 'segment-report' && !current.scene.startsWith('db-') && !current.scene.startsWith('quick-') && !current.scene.startsWith('rsv-')) {
+      if (window.innerWidth <= 560 && !mobileReservationScene() && stage.classList.contains('detail-view') && beat === lastBeat && current.scene !== 'segment-report' && !current.scene.startsWith('db-') && !current.scene.startsWith('quick-') && !current.scene.startsWith('rsv-')) {
         const viewport = shot === 'companion' ? companionScreen.parentElement : scene;
         viewport.scrollTop = viewport.scrollHeight - viewport.clientHeight;
       }
@@ -542,7 +619,7 @@
       if (beat < lastBeat) beat++;
       else if (stepIndex < definition.steps.length - 1) { stepIndex++; beat = 0; }
       else finished = true;
-      remaining = beat === lastBeat ? resultDuration() : interval;
+      remaining = beat === lastBeat ? resultDuration() : definition.steps[stepIndex].scene === 'rsv-form' && beat === 2 ? 10000 : definition.steps[stepIndex].scene === 'quick-seat' ? 3800 : interval;
       paint(); schedule();
     }, remaining);
   }
@@ -577,7 +654,14 @@
   });
   document.addEventListener('visibilitychange', () => { syncMotion(); schedule(); });
   window.addEventListener('pagehide', stopProfileScroll);
-  window.addEventListener('resize', () => { fitStage(); fitSegments(); movePointer(definition.steps[stepIndex].scene, false); syncMotion(); });
+  window.addEventListener('resize', () => {
+    const nextPhoneLayout = window.innerWidth <= 560;
+    if (nextPhoneLayout !== phoneLayout) {
+      phoneLayout = nextPhoneLayout;
+      if (['reactivation', 'customer-database', 'campaign', 'walk-in', 'reservation'].includes(definition.slug)) { renderedStep = -1; paint(); }
+    }
+    fitStage(); fitSegments(); movePointer(definition.steps[stepIndex].scene, false); syncMotion();
+  });
   if ('ResizeObserver' in window) new ResizeObserver(() => {
     if (fitStage()) movePointer(definition.steps[stepIndex].scene, false);
     syncMotion();

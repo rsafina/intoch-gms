@@ -31,7 +31,7 @@
       keyMessage: "Dapatkan data pelanggan walk-in, tanpa membuat mereka menunggu.",
       steps: [
         step("Pilih tamu", "Pilih tamu dari saran nama.", "Ketik nama Jessica, pilih dari saran yang muncul, lalu klik Add. Walk-in langsung tercatat tanpa mengisi ulang data tamu.", "quick-existing"),
-        step("Tamu baru", "Belum terdaftar? Tambahkan tamu baru.", "Untuk tamu baru seperti Brian, cukup isi nama lalu klik Add. Nomor telepon opsional; detail lainnya bisa menyusul.", "quick-new", "Quick registration in under 20 seconds."),
+        step("Tamu baru", "Belum terdaftar? Tambahkan tamu baru.", "Untuk tamu baru seperti Brian, cukup isi nama lalu klik Add. Nomor telepon opsional; detail lainnya bisa menyusul.", "quick-new", "Pendaftaran cepat dalam kurang dari 20 detik."),
         step("Setelah duduk", "Lengkapi detail setelah tamu duduk.", "Tamu sudah duduk? Klik Edit, pilih meja dan tambahkan catatan, lalu Save Changes. Detail walk-in diperbarui di daftar yang sama.", "quick-seat")
       ], related: ['customer-database', 'reservation'] },
     { slug: 'reservation', category: 'Sebelum tamu datang', title: "Mudahkan Reservasi Pelanggan dengan Online Form, Simpan dan Manfaatkan Data Kemudian",
@@ -42,13 +42,13 @@
         step("Masuk otomatis", "Notifikasi masuk, reservasi siap dikelola.", "Reservasi otomatis masuk ke dashboard dengan notifikasi. Temukan di Upcoming Reservations, lalu klik Update untuk melengkapi meja nanti.", "rsv-dashboard"),
         step("Tamu tersimpan", "Satu reservasi, satu profil tamu baru.", "Nama dan nomor WhatsApp Michelle otomatis tersimpan di Guest Database. Buka profilnya untuk melihat detail reservasi; riwayat kunjungan dimulai setelah ia datang.", "rsv-guest", "Contoh reservasi ini tanpa deposit.")
       ], related: ['follow-up', 'walk-in'] },
-    { slug: 'follow-up', category: 'Tindak lanjut reservasi', title: "Pantau Konfirmasi Booking dalam Satu Daftar",
+    { slug: 'follow-up', category: 'Follow up reservasi', title: "Pantau Konfirmasi Booking dalam Satu Daftar",
       problem: "Tim tahu booking mana yang sudah dan belum dihubungi, tanpa saling tanya.",
       keyMessage: "Pantau Konfirmasi Booking dalam Satu Daftar",
       steps: [
-        step("Perlu tindakan", "Booking Bu Michelle masuk ke daftar Follow Up karena belum ada yang menghubunginya.", "Booking Bu Michelle masuk ke daftar Follow Up karena belum ada yang menghubunginya.", "follow-list"),
-        step("Buka konteks", "Detail booking dan profil Bu Michelle sudah terbuka.", "Detail booking dan profil Bu Michelle sudah terbuka. Pesan konfirmasinya juga sudah disiapkan.", "follow-context"),
-        step("Tandai selesai", "Setelah menghubungi Bu Michelle, staf menandai “Sudah di-follow up”.", "Setelah menghubungi Bu Michelle, staf menandai “Sudah di-follow up”. Shift berikutnya langsung tahu.", "follow-done", "Status baru berubah setelah staf menandainya, bukan saat WhatsApp dibuka.")
+        step("Filter reservasi", "Temukan reservasi yang perlu ditangani.", "Pilih periode, status Reserved, dan Online form only. Cari nama tamu untuk langsung menemukan reservasi yang Anda butuhkan.", "fu-filter"),
+        step("Hubungi & kirim tiket", "Follow up dan issue ticket dari reservasi yang sama.", "Klik Follow up untuk menyiapkan WhatsApp konfirmasi. Lalu Issue ticket untuk membagikan tiket reservasi kepada tamu.", "fu-actions"),
+        step("Cek notifikasi", "Tandai follow up dan cek kedatangan secara terpisah.", "Setelah menghubungi tamu, centang Sudah di-follow up pada notifikasi. Menjelang kedatangan, buka Arrival checks dan tandai Sudah dicek.", "fu-checks", "Membuka WhatsApp tidak otomatis mencentang checklist. Cek kedatangan tidak mengubah status tamu menjadi Arrived.")
       ], related: ['reservation', 'customer-database'] },
     { slug: 'membership', category: 'Hubungan jangka panjang', title: "Beri Pelanggan Setia Alasan untuk Kembali",
       problem: "Belanja member terkumpul jadi stiker, lalu ditukar voucher.",

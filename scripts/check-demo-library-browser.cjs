@@ -45,6 +45,18 @@ async function main() {
     const shot = await command('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
     fs.writeFileSync(path.join(output, name + '.png'), Buffer.from(shot.data, 'base64'));
   }
+  if (process.argv.includes('--reservation-layout')) {
+    await command('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+    await command('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
+    await navigate('/demo/reservation');
+    await evaluate('document.querySelector(".rsv-submit").click(); document.querySelector(".rsv-submit").click()');
+    await delay(800);
+    await capture('reservation-desktop-form');
+    assert.ok(await evaluate('(() => { const view = document.querySelector(".rsv-form-view"); return view.scrollHeight <= view.clientHeight + 2; })()'), 'desktop form fits without scrolling');
+    console.log('PASS: complete desktop form fits while filling.');
+    console.log('Screenshots: ' + output);
+    return;
+  }
   for (const [width, height] of [[1440,900], [1280,720], [393,852], [320,640]]) {
     await command('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 500 });
     await command('Page.navigate', { url: base + '/demo' });
@@ -118,13 +130,20 @@ async function main() {
   await evaluate('document.querySelector(".qw-modal-footer button").click()');
   assert.ok(await evaluate('document.querySelector(".qw-visit").textContent.includes("T2 · Indoor")'), 'saved table appears on walk-in');
   await navigate('/demo/reservation');
-  assert.ok(await evaluate('!!document.querySelector(".rsv-brand-focus img")'), 'reservation opens on the restaurant brand');
+  assert.ok(await evaluate('!!document.querySelector(".rsv-form-phase-0 .rsv-form")'), 'reservation opens on the full form');
+  assert.equal(await evaluate('getComputedStyle(document.querySelector(".rsv-brand")).backgroundColor'), 'rgba(0, 0, 0, 0)', 'logo has no white card');
   await capture('reservation-brand-393');
   await delay(3600);
-  assert.equal(await evaluate('document.querySelector(".rsv-form .pf-in").textContent'), 'Michelle', 'guest form fills with the example name');
+  assert.ok(await evaluate('!!document.querySelector(".rsv-form-phase-1")'), 'full page is followed by logo zoom');
+  await capture('reservation-logo-393');
+  await delay(2600);
+  assert.equal(await evaluate('document.querySelector(".rsv-form .pf-in").textContent'), 'Michelle', 'guest form fills after zoom');
   await capture('automatic-guest-393');
-  await delay(4900);
-  assert.ok(await evaluate('!!document.querySelector(".rsv-received")'), 'submitted form shows reservation receipt');
+  await delay(7200);
+  assert.ok(await evaluate('document.querySelector(".rsv-form-view").scrollTop > 0'), 'phone form scrolls automatically during filling');
+  await capture('reservation-filled-393');
+  await delay(2100);
+  assert.ok(await evaluate('!!document.querySelector(".rsv-success")'), 'dedicated success screen appears before dashboard');
   assert.equal(await evaluate('scrollY'), 0, 'automatic camera never scrolls the page');
   await capture('automatic-result-393');
   await navigate('/demo/reactivation');
@@ -146,6 +165,11 @@ async function main() {
   await command('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
   await command('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
   await navigate('/demo/reservation');
+  await evaluate('document.querySelector(".rsv-submit").click(); document.querySelector(".rsv-submit").click()');
+  await delay(800);
+  assert.ok(await evaluate('(() => { const view = document.querySelector(".rsv-form-view"); return view.scrollHeight <= view.clientHeight + 2; })()'), 'desktop shows the complete form while filling');
+  await capture('reservation-full-form-1440');
+  await navigate('/demo/walk-in');
   await delay(400);
   const startPointer = await evaluate('document.querySelector(".demo-pointer").getBoundingClientRect().x');
   await delay(500);

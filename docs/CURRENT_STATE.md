@@ -1,5 +1,43 @@
 # Current state and operational handoff
 
+Five-story phone composition pass (2026-09-30; local, untested at user request):
+Hubungan pelanggan now has mobile guest/action cards and in-place WhatsApp/ticket
+previews. Kenali tamu search/results use guest cards instead of compressed columns;
+its profile auto-scroll remains. Campaign creation, message review, recipients and
+WhatsApp preview have dedicated phone markup; insight cards retain their carousel.
+All five requested stories use a stable phone viewport without flying cursors or
+camera pans (the explicitly requested reservation-form logo zoom is retained).
+Walk-in focused edits and reservation mobile cards remain. Breakpoint changes
+rerender the correct composition. No tests/browser checks run; user will verify.
+No push or deployment.
+
+Dedicated reservation phone compositions (2026-09-30; local, untested at user
+request): stages two and three now render separate mobile markup. The dashboard
+chapter uses an in-place notification, reservation card, focused table editor and
+saved result. The guest chapter uses a contact card and compact profile with booking
+details and zero visits. Phone camera/cursor and surface motion are disabled for
+these chapters; the viewport has a deliberate taller composition rather than scaled
+desktop tables and overlays. Crossing the phone breakpoint rerenders the appropriate
+layout. Desktop is retained. The design requirement is recorded in DEVELOPMENT_RULES.
+No automated tests or browser checks run for this change; user will verify. No deployment.
+
+Reservation opening sequence (2026-09-30; local): stage one now establishes the
+complete reservation page, then zooms to the logo directly on its colored page
+background, fills the form, and holds a separate Reservation Created screen before
+the dashboard chapter. Desktop fits the full form; phone entry automatically scrolls
+during a longer filling beat. The success screen uses the same booking details.
+Logo white card removed. Playback tests cover ordering and success; Chrome checks
+cover page fit, transparent logo background, phone scrolling and dashboard handoff.
+No live reservation, push or deployment.
+
+Walk-in demo readability (2026-09-30; local): seating edits now use two focused
+views (pax/notes, then table/save) with larger fields and an opaque background.
+Automatic seating beats have longer reading holds. Mobile registered-guest cards
+prioritize the name and visit details, place time separately, and emphasize Edit;
+the unused registration form is hidden in that result view. The tagline is now
+“Pendaftaran cepat dalam kurang dari 20 detik.” Existing story tests pass; desktop
+and phone browser checks cover the revised composition. No deployment.
+
 Returning-guest campaign copy (2026-09-30; local): “Pesan yang relevan” now
 demonstrates Promo Dessert - Oktober, thanking guests and inviting another visit
 before 31 October for a chance of free dessert. Campaign editor, WhatsApp preview

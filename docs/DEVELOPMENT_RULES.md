@@ -8,6 +8,16 @@ verify current provider behavior before designing a new integration.
 
 ## Rules that must not be re-broken
 
+### Demo stories need distinct desktop and phone compositions
+
+User preference (2026-09-30): design sales demos for both large and small screens.
+Do not squeeze desktop tables, floating overlays or camera movement into a phone.
+Use intentional phone cards, readable type, a stable viewport and one clear action
+at a time. Keep the guest identity and context visible as state changes. Prefer
+in-place highlights to moving cursors or camera pans on phones. Desktop can retain
+its richer composition. Switching viewport sizes must select the correct layout.
+Honor explicit per-task requests to leave testing to the user; report it as untested.
+
 Each of these was found the hard way, most of them in Blue Heron. Porting the code without
 porting the rules reintroduces them.
 
