@@ -10,6 +10,12 @@ No SQL is run by reading this document or by deploying frontend files.
 
 ## Never apply filename order blindly
 
+Optional client suspension: `20261005_client_suspension.sql` requires the secured,
+Finance/session-aware schema and a reviewed live inventory. It installs with
+suspension OFF and does not alter individual account activation. Follow
+[CLIENT_SUSPENSION](../docs/deployment/CLIENT_SUSPENSION.md); applying the migration
+and activating suspension are separate actions. Do not apply automatically to all clients.
+
 Latest arrival fix: on the affected project only, review/run
 `scripts/repair_duplicate_reservation_visit.sql` before `20260920_reservation_arrival.sql`.
 The repair targets a specific reviewed pair, keeps both rows for audit, and refuses changed

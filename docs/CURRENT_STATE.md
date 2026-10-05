@@ -1,5 +1,49 @@
 # Current state and operational handoff
 
+## Djiwana suspended (2026-10-05; user-applied live)
+
+**Last known state: Djiwana access is suspended in Supabase and Cloudflare.**
+The user applied the migration and enabled suspension through Djiwana's SQL editor.
+They confirmed their already-open iPad tab automatically refreshed and displayed
+the contact Intoch PIC message. These are user-provided live results, not an
+independent agent audit. Recheck the current state before future changes.
+
+To reopen Djiwana, follow the exact two-layer procedure in
+[CLIENT_SUSPENSION — Djiwana quick restoration](deployment/CLIENT_SUSPENSION.md#djiwana-quick-restoration).
+Set the Supabase flag to false, then remove only `djiwana.intoch.app/*` from
+Cloudflare Worker **`intoch-gms-expired-access`**. Keep the original `djiwana`
+Worker/custom domain and the separate `intoch.app/expired-access*` notice route.
+Do not rerun the installation migration just to restore access.
+
+## Client suspension implementation and verification
+
+Branch `feat/client-suspension` starts from release. The targeted
+`20261005_client_suspension.sql` adds an initially active private project switch,
+operator-only setter/history, false session validity during suspension, a shared
+RPC guard and restrictive RLS for application tables/storage.objects. Existing
+role permissions and PIN-reset checks remain. Reruns preserve suspension state.
+`scripts/client-suspension-inventory.sql` is read-only; the user's complete Djiwana
+export was reviewed before they applied the migration. See
+[rollout and restoration](deployment/CLIENT_SUSPENSION.md) for boundaries, tests,
+old-tab behaviour, Storage/Realtime limitations and live validation requirements.
+The agent made no live changes, frontend build, commit or push. The user performed
+the live SQL and Cloudflare actions described above. Local suspension source/docs
+remain uncommitted on `feat/client-suspension` at this handoff; the expiration
+Worker source is on the separate `feat/access-expired-screen` branch.
+Verification: new PGlite suspension suite covers all five roles, anonymous reads/
+writes, RPC and view access, private control permissions, restoration, retained
+account/session cutoffs, reruns and rejection of unreviewed functions/views or
+disabled RLS. Existing session-monitor and session/spending SQL suites also passed;
+JavaScript syntax and diff whitespace checks passed. Existing untracked
+`scripts/access-expired/` artifacts were preserved.
+The complete supplied inventory contained 23 public tables with RLS, 8 invoker-safe
+views and the expected session/Finance guards. The reviewed public guarded RPCs
+enter require_access first; waiver uses the session-aware waiver helper. Public
+buckets are branding, dish-images and promo-images. Inventory now returns one
+JSON cell because the SQL editor displayed only the final SELECT of the original
+version. No full live role/API/Storage/Realtime regression was performed; the
+reported iPad reload confirms that specific end-to-end path only.
+
 Audited 2026-09-14. This file replaces conversation history as the task handoff.
 Implementation claims were checked against code, migrations, Git and existing tests/docs.
 No live Supabase/Cloudflare inspection, migration, deployment or push was performed for this
