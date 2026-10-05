@@ -1,5 +1,27 @@
 # Current state and operational handoff
 
+## Access expiration screen (2026-10-05; local preview only)
+
+Branch `feat/access-expired-screen` adds `access-expired.html`, a standalone,
+responsive Intoch expiration notice. The contact button uses the existing public
+WhatsApp number from `landing.html`; the user confirmed this PIC and whole-site
+coverage (including guest pages).
+The page loads no application code or Supabase connection and does not enforce
+suspension. No Cloudflare route, deployment, database change, commit or push was
+performed. Whole-domain coverage is prepared for Djiwana;
+backend enforcement is separately required to suspend already-open sessions.
+Chrome checks at 1440px and 390px confirmed the logo loads, the contact URL is
+correct, and no horizontal overflow occurs. No WhatsApp message was sent.
+
+Worker preparation: `scripts/access-expired/build.cjs` generates a standalone
+pasteable Worker with the page and embedded logo; `handler.mjs` returns 403 and
+no-store/noindex headers for every routed request without contacting the origin.
+Generated output is ignored by Git and lives under the static-upload-excluded
+scripts directory. Twenty local route/method cases and JavaScript syntax/diff
+checks passed. These Node checks do not prove live Cloudflare routing. Activation,
+alternate-URL shutdown and restoration steps are in
+[ACCESS_EXPIRATION](deployment/ACCESS_EXPIRATION.md). No live change was made.
+
 Audited 2026-09-14. This file replaces conversation history as the task handoff.
 Implementation claims were checked against code, migrations, Git and existing tests/docs.
 No live Supabase/Cloudflare inspection, migration, deployment or push was performed for this

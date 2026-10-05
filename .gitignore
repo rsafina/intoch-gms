@@ -11,6 +11,7 @@ deposit-invoice.html
 invoice-view.html
 
 node_modules/
+scripts/access-expired/generated/
 .DS_Store
 Thumbs.db
 *.log

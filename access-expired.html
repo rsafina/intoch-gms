@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#f7f0e6" />
+    <title>Access expired · Intoch</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #f7f0e6; color: #20345d; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .page { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; padding: 36px clamp(24px, 6vw, 88px) 24px; }
+      .brand { display: block; width: 116px; height: auto; }
+      main { flex: 1; display: grid; place-items: center; padding: 64px 0; }
+      .card { width: 100%; max-width: 540px; padding: 48px 40px 36px; border: 1px solid #e6e2db; border-radius: 24px; background: #fff; text-align: center; box-shadow: 0 16px 48px #20345d08; }
+      .icon { display: grid; place-items: center; width: 72px; height: 72px; margin: 0 auto 28px; border-radius: 22px; color: #3c56a6; background: #edf3fb; }
+      .eyebrow { margin: 0 0 12px; color: #64708a; font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+      h1 { margin: 0 0 18px; font-size: clamp(28px, 5vw, 36px); line-height: 1.15; letter-spacing: -.035em; font-weight: 650; }
+      .message { max-width: 350px; margin: 0 auto 30px; color: #5e687c; font-size: 16px; line-height: 1.7; }
+      .contact { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 52px; padding: 14px 20px; border-radius: 12px; background: #3c56a6; color: #fff; text-decoration: none; font-size: 15px; font-weight: 600; }
+      .contact:hover { background: #304789; }
+      .contact:focus-visible { outline: 3px solid #20345d; outline-offset: 4px; }
+      .hint { margin: 14px 0 0; color: #667085; font-size: 12px; line-height: 1.6; }
+      .divider { height: 1px; background: #edf0f4; margin: 30px 0 22px; }
+      .secondary { margin: 0; color: #64708a; font-size: 13px; line-height: 1.7; }
+      footer { text-align: center; font-size: 12px; color: #697386; line-height: 1.6; }
+      @media (max-width: 480px) {
+        .page { padding: 28px 20px 22px; }
+        .brand { width: 100px; }
+        main { padding: 40px 0; }
+        .card { padding: 36px 24px 28px; border-radius: 20px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header><img class="brand" src="assets/intoch-logo.png" alt="Intoch" /></header>
+      <main>
+        <section class="card" aria-labelledby="expired-title">
+          <div class="icon" aria-hidden="true">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="5" y="10" width="14" height="11" rx="3" />
+              <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" />
+            </svg>
+          </div>
+          <p class="eyebrow">Intoch access</p>
+          <h1 id="expired-title">Your access has expired</h1>
+          <p class="message">To continue using Intoch, please contact your Intoch PIC to renew access.</p>
+          <!-- Public Intoch PIC number confirmed for this expiration screen. -->
+          <a class="contact" href="https://wa.me/6281325063362?text=Hello%2C%20my%20Intoch%20access%20has%20expired.%20Please%20help%20me%20renew%20access." target="_blank" rel="noopener noreferrer">
+            Contact Intoch PIC
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10" /></svg>
+          </a>
+          <p class="hint">Opens WhatsApp in a new tab</p>
+          <div class="divider" aria-hidden="true"></div>
+          <p class="secondary">Already renewed?<br />Please contact your PIC to confirm reactivation.</p>
+        </section>
+      </main>
+      <footer>Intoch &middot; Restaurant Guest Management</footer>
+    </div>
+  </body>
+</html>
