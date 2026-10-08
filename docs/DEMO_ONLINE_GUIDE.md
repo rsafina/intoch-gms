@@ -98,3 +98,9 @@ bookings, pushes or deployments are performed by the preview/tests.
 
 No database migration, additional sandbox or completion-tracking service is added.
 The project remains the existing fictional playground confirmed by the user.
+
+The online guide is also selectable from the three-section first-entry introduction
+and the persistent Reset Tour picker. Staff-side Skip/Close/Escape/Explore highlight
+Reset Tour; public-form dismissal offers an explicit dashboard return link after
+Auth verification, preserving normal public visitors' experience. These controls
+restart guidance only and never delete or reset the booking already created.

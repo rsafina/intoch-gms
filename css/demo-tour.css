@@ -25,6 +25,17 @@
 .demo-tour-progress { font-size: 11px; margin-right: auto; }
 .demo-tour-link { font: inherit; font-size: 12px; color: var(--brand-ink); background: transparent; border: 0; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 8px 0; }
 #demo-tour-restart { margin-left: 14px; font-weight: 400; }
+#demo-tour-reset-menu { position: fixed; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); z-index: 102; font: 12px/1.5 "Plus Jakarta Sans", sans-serif; color: var(--brand-ink); }
+#demo-tour-reset { background: var(--demo-tour-surface, white); border: 1px solid var(--brand-tint); border-radius: 24px; padding: 10px 16px; min-height: 44px; box-shadow: 0 3px 12px color-mix(in srgb, var(--brand-ink) 12%, transparent); text-decoration: none; }
+#demo-tour-reset { display: block; margin-left: auto; }
+#demo-tour-sections { width: min(340px, calc(100vw - 32px)); max-height: calc(100dvh - 110px); overflow-y: auto; box-sizing: border-box; background: var(--demo-tour-surface, white); border: 1px solid var(--brand-tint); border-radius: 14px; padding: 16px; margin-bottom: 10px; box-shadow: 0 6px 24px color-mix(in srgb, var(--brand-ink) 15%, transparent); }
+#demo-tour-sections[hidden] { display: none; }
+.demo-tour-sections .demo-tour-link, #demo-tour-sections .demo-tour-link { display: block; text-align: left; width: 100%; min-height: 44px; padding: 8px; }
+#demo-tour-reset-hint:not(:empty) { display: block; background: var(--demo-tour-surface, white); border-radius: 8px; padding: 6px 10px; margin-bottom: 8px; }
+.demo-tour-reset-highlight #demo-tour-reset { box-shadow: 0 0 0 3px var(--brand-tint); border-color: var(--brand); }
+body:has(#demo-tour-reset-menu) .demo-tour-dock { bottom: 130px; }
+body:has(#demo-public-reset) .demo-tour-dock { bottom: 100px; }
+.demo-public-reset { position: fixed; z-index: 102; bottom: 16px; right: 16px; max-width: calc(100vw - 32px); box-sizing: border-box; padding: 12px; background: var(--demo-tour-surface, white); border: 2px solid var(--brand-tint); border-radius: 12px; }
 .demo-tour-dock { position: fixed; z-index: 101; bottom: 16px; right: 16px; max-width: min(420px, calc(100vw - 32px)); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; background: var(--demo-tour-surface, white); color: var(--brand-ink); border: 1px solid var(--brand-tint); border-radius: 12px; padding: 12px 16px; box-shadow: 0 6px 20px color-mix(in srgb, var(--brand-ink) 12%, transparent); }
 .demo-tour-dock > span { flex-basis: 100%; font: 12px/1.5 "Plus Jakarta Sans", sans-serif; }
 .intoch-demo-tour button:focus-visible, .demo-tour-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }

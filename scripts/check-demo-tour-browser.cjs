@@ -70,7 +70,7 @@ async function main() {
       assert.equal(await evaluate('!!document.querySelector(".intoch-demo-tour")'),false,'Explore dismisses intro');
       await command('Page.reload');await until('!!window.fixture','reload after explore');await sleep(650);
       assert.equal(await evaluate('!!document.querySelector(".intoch-demo-tour")'),false,'Intro does not repeat');
-      await click('#demo-tour-restart');
+      await click('#demo-tour-restart');await click('[data-tour-section=operations]');
     }else await click('.driver-popover-next-btn');
     await until(title('Your front desk at a glance'),'dashboard');await screenshot(width+'-dashboard');
     for(const expected of ['Plan for arriving guests','Keep walk-ins in view','See the seating picture','A quick welcome for walk-ins',phone?'Open navigation':'Explore reservations']){
@@ -87,11 +87,13 @@ async function main() {
     await click('.driver-popover-prev-btn');await until(title('Explore walk-ins'),'Back to reservations');
     await click('[data-tour="walkins-nav"]');await until(title('Review the service day'),'return to walkins');
     await click('.driver-popover-next-btn');await until(title('Follow each walk-in'),'walkin log');
-    await click('.driver-popover-next-btn');await until(title('Get to know your guests'),'guests navigation');
+    await click('.driver-popover-next-btn');await until(title('Your front desk guide is complete'),'operations finish');await click('.driver-popover-next-btn');await click('#demo-tour-reset');await screenshot(width+'-reset-menu');await click('[data-tour-section=guests]');
+    if(phone){await until(title('Open navigation'),'guest menu');await click('[data-tour=mobile-menu]');}
+    await until(title('Get to know your guests'),'guests navigation');
     assert.ok(await evaluate('document.querySelector(".driver-popover-next-btn").disabled'),'Navigation is action gated');
     await click('[data-tour="guests-nav"]');await until(title('Find a familiar face'),'search');
     await click('.driver-popover-prev-btn');await until(title('Get to know your guests'),'Back crosses page boundary');
-    assert.ok(await evaluate('document.querySelector("#page-walkins").classList.contains("active")'));
+    assert.ok(await evaluate('document.querySelector("#page-dashboard").classList.contains("active")'));
     await click('[data-tour="guests-nav"]');await until(title('Find a familiar face'),'return to search');
     await screenshot(width+'-search');
     await evaluate('fixture.delay=150;');
@@ -112,11 +114,12 @@ async function main() {
     await command('Page.reload');await until('!!window.fixture','completed reload');await sleep(600);
     assert.equal(await evaluate('!!document.querySelector(".intoch-demo-tour")'),false,'Completion suppresses intro');
     // Restart via dashboard; pause allows unrelated navigation and reload offers explicit resume.
-    await evaluate('navigateTo("dashboard")');await click('#demo-tour-restart');await until(title('Your front desk at a glance'),'restart');
+    await evaluate('navigateTo("dashboard")');await click('#demo-tour-restart');await click('[data-tour-section=operations]');await until(title('Your front desk at a glance'),'restart');
     await click('.demo-tour-controls .demo-tour-link:last-child');
     await evaluate('navigateTo("guests")');
     assert.equal(await evaluate('!!document.querySelector(".intoch-demo-tour")'),false,'Exploration does not force navigation');
     await command('Page.reload');await until('!!document.querySelector(".demo-tour-dock")','recovery prompt');
+    await until(`(()=>{const view=visualViewport;return ['#demo-tour-reset','.demo-tour-dock'].every(selector=>{const box=document.querySelector(selector).getBoundingClientRect();return box.left>=view.offsetLeft-1&&box.right<=view.offsetLeft+view.width+1&&box.top>=view.offsetTop-1&&box.bottom<=view.offsetTop+view.height+1;});})()`,'Reset and resume remain inside the phone viewport');
     await screenshot(width+'-resume');
     await click('.demo-tour-dock button');await until(title('Your front desk at a glance'),'resume');
     await evaluate('fixture.logout()');assert.equal(await evaluate('!!document.querySelector(".driver-overlay")'),false,'Logout removes overlay');

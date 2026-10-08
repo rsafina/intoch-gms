@@ -173,3 +173,31 @@ This local implementation does **not** grant approval to publish or provision ac
 
 No reset capability, automatic cleanup, public login bypass, server onboarding state,
 payment simulation, message interception or new sandbox infrastructure is included.
+
+## Independent sections and Reset Tour
+
+The first-entry introduction offers Dashboard, Reservations & Walk-Ins; Guest
+Database; and Reservation from Online Form. Start Dashboard Guide starts the first
+section; each choice is independently selectable. Front desk guidance ends after
+the walk-in log (12 desktop / 13 mobile steps); Guest Database starts with actual
+navigation and contains 9 desktop / 10 mobile steps. The online guide keeps its
+existing 13 steps and manual fictional booking submission.
+
+Reset Tour stays visible at the lower right of verified demo staff pages. Select a
+section to restart its guide, without changing bookings, guests or other demo data.
+Skip, Close, Escape and Explore Independently briefly highlight this entry with
+“Replay any section here”; there is no forced redirect or automatic replay. Explore
+preserves a Resume prompt. Back stays within the selected section. Older saved full
+walkthroughs retain their recovery path. On the public booking form, dismissal offers
+a verified-session-only reset link back to the dashboard; selecting a staff section
+happens after the dashboard restores its existing verified session.
+
+Verification for the section picker: full Node runner passes 93 suites. Additional
+controller checks cover direct Guest launch on desktop/mobile, intro choices, section
+progress, actual actions, Skip preserving the current page, Reset highlight, online
+selection and logout removal. Public-form tests cover ordinary-visitor exclusion,
+explicit reset return and sign-out cleanup. Chrome fixture walkthroughs pass at
+1440px, 393px and 320px for staff and online guides. Staff checks include horizontal
+and vertical visual-viewport bounds for Reset Tour and the saved-progress prompt.
+Screenshots are in `docs/screens/demo-tour/` and `docs/screens/demo-online-booking/`.
+Live Supabase Auth/RPC/realtime and deployed Cloudflare builds were not exercised.

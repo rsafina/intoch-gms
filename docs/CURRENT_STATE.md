@@ -1,5 +1,21 @@
 # Current state and operational handoff
 
+Demo guide section picker (2026-10-08; local, not deployed): first-entry introduction
+now offers three independent guides: Dashboard/Reservations/Walk-Ins, Guest Database,
+and Reservation from Online Form. A fixed Reset Tour button remains visible across
+verified demo staff pages and opens the same section picker. It resets guide progress
+only, never demo data. Skip, Close, Escape and Explore Independently highlight the
+entry without forcing navigation; paused guides still offer Resume. Guest guide can
+start directly, with an actual hamburger action on phones. Versioned recovery stores
+the selected section; older active full tours can still resume. Public online-guide
+exits offer a return-to-dashboard reset link only after existing Auth verification.
+No framework, database, configuration, Auth or RLS changes.
+Verification: 93 Node suites pass; targeted section/public-reset checks pass. Chrome
+fixtures cover 1440px, 393px and 320px, including actual guide actions and viewport
+bounds for Reset Tour and recovery prompts after table overflow. Updated screenshots
+are in docs/screens/demo-tour and docs/screens/demo-online-booking. Live backend
+and deployed-build verification remain pending; these changes are local only.
+
 Online Reservation Guide (2026-10-08; local on `feature/demo-guided-tour`): separate
 optional guide in dashboard demo guidance. Uses the actual public form in the same
 tab, fictional name/contact input gates, user-triggered save and returned booking ID.

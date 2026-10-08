@@ -64,18 +64,39 @@ async function walkToSearch(h) {
   h.next();await h.until(()=>h.title()==='Manage the arrival');h.next();await h.until(()=>h.title()==='Explore walk-ins');
   h.click('[data-tour="walkins-nav"]');await h.until(()=>h.title()==='Review the service day');
   h.back();await h.until(()=>h.title()==='Explore walk-ins');h.click('[data-tour="walkins-nav"]');await h.until(()=>h.title()==='Review the service day');
-  h.next();await h.until(()=>h.title()==='Follow each walk-in');h.next();await h.until(()=>h.title()==='Get to know your guests');
+  h.next();await h.until(()=>h.title()==='Follow each walk-in');h.next();await h.until(()=>h.title()==='Your front desk guide is complete');h.next();assert.equal(h.title(),undefined);
+  h.click('#demo-tour-reset');h.click('[data-tour-section=guests]');await h.until(()=>h.title()==='Get to know your guests');
   const nextButton=h.win.document.querySelector('.driver-popover-next-btn');
   assert.equal(nextButton.disabled,true,'Navigation requires real action');
   h.click('[data-tour="guests-nav"]');await h.until(()=>h.title()==='Find a familiar face');
 }
 (async () => {
+  for (const mobile of [false, true]) {
+    const section = await harness({ mobile });
+    await section.until(() => section.title() === 'Try Intoch at your own pace');
+    const choices = section.win.document.querySelectorAll('.demo-tour-sections button');
+    assert.equal(choices.length, 3, 'Intro offers three independent sections');
+    choices[1].click();
+    if (mobile) { await section.until(() => section.title() === 'Open navigation'); section.click('[data-tour="mobile-menu"]'); }
+    await section.until(() => section.title() === 'Get to know your guests');
+    assert.equal(section.win.document.querySelector('.demo-tour-progress').textContent, mobile ? '2 / 10' : '1 / 9');
+    section.click('[data-tour="guests-nav"]'); await section.until(() => section.title() === 'Find a familiar face');
+    section.win.document.querySelector('.demo-tour-controls button').click();
+    assert.equal(section.title(), undefined);
+    assert.ok(section.win.document.querySelector('.demo-tour-reset-highlight'), 'Skip highlights reset');
+    assert.ok(section.win.document.getElementById('page-guests').classList.contains('active'), 'Skip preserves current page');
+    section.click('#demo-tour-reset');
+    let onlineStarted = false; section.win.DemoBookingTour = { start() { onlineStarted = true; }, teardown() {} };
+    section.click('[data-tour-section=online]'); assert.ok(onlineStarted, 'Reset picker starts online guide');
+    section.win.fixture.logout(); assert.equal(section.win.document.getElementById('demo-tour-reset-menu'), null);
+    section.dom.window.close();
+  }
   let h=await harness();
   await h.until(()=>h.title()==='Try Intoch at your own pace');
   const explore=[...h.win.document.querySelectorAll('.demo-tour-link')].find(node=>node.textContent==='Explore Independently');
-  explore.click();assert.equal(h.seen()[0].status,'skipped');assert.equal(h.title(),undefined);
+  explore.click();assert.equal(h.seen()[0].status,'skipped');assert.equal(h.title(),undefined);assert.ok(h.win.document.querySelector('.demo-tour-reset-highlight'),'Explore highlights reset');
   await h.win.fixture.relogin();await sleep(400);assert.equal(h.title(),undefined,'Explicit skip suppresses next intro');
-  assert.ok(h.win.document.getElementById('demo-tour-restart'),'Restart remains available');h.dom.window.close();
+  assert.ok(h.win.document.getElementById('demo-tour-restart'),'Restart remains available');h.click('#demo-tour-reset');assert.equal(h.win.document.querySelectorAll('#demo-tour-sections [data-tour-section]').length,3);h.win.document.dispatchEvent(new h.win.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert.equal(h.win.document.getElementById('demo-tour-sections').hidden,true);h.dom.window.close();
 
   h=await harness();await walkToSearch(h);
   h.next();await sleep(50);assert.equal(h.title(),'Find a familiar face','Next cannot bypass search');
@@ -94,7 +115,7 @@ async function walkToSearch(h) {
   assert.ok(h.win.document.getElementById('modal-profile').classList.contains('hidden'));h.dom.window.close();
 
   h=await harness();await walkToSearch(h);h.back();await h.until(()=>h.title()==='Get to know your guests');
-  assert.ok(h.win.document.getElementById('page-walkins').classList.contains('active'),'Back returns across pages');
+  assert.ok(h.win.document.getElementById('page-dashboard').classList.contains('active'),'Back returns across pages');
   h.click('[data-tour="guests-nav"]');await h.until(()=>h.title()==='Find a familiar face');
   h.win.DemoTour.pause();assert.equal(h.title(),undefined);
   await h.win.eval('navigateTo("dashboard")');assert.equal(h.title(),undefined,'Independent navigation stays independent');

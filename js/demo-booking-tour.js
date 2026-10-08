@@ -86,13 +86,28 @@
     const label = document.createElement("span"); label.textContent = message; label.setAttribute("role", "status");
     dock.append(label, button(text("Resume Online Guide", "Lanjutkan Panduan Online"), resume));
     if (!isStaff() && state.submissionAttempted) dock.append(button(text("Check Dashboard", "Periksa Dashboard"), () => { state.step = "online"; state.paused = true; save(); location.assign("/"); }));
-    dock.append(button(text("Close", "Tutup"), () => exit("skipped")));
+    dock.append(button(text("Close", "Tutup"), dismiss));
     document.body.append(dock);
+    nudgeReset();
   }
   function exit(status = "skipped") {
     if (state) { try { localStorage.setItem(`intoch:online-demo:v${VERSION}:${env().supabaseUrl}:${state.staffId}:seen`, status); } catch {} }
     dispose(); dock?.remove(); dock = null; state = null; save(); pending = false; booking = null;
     if (isStaff() && typeof toggleSidebarDrawer === "function") toggleSidebarDrawer(false);
+  }
+  function dismiss() {
+    const allowed = valid(); exit("skipped");
+    if (!allowed) return;
+    nudgeReset();
+  }
+  function nudgeReset() {
+    if (isStaff()) window.DemoTour?.nudge();
+    else {
+      document.getElementById("demo-public-reset")?.remove();
+      const link = document.createElement("a"); link.id = "demo-public-reset"; link.className = "demo-public-reset demo-tour-link";
+      link.href = "/"; link.textContent = text("Reset Tour — choose a guide on the dashboard", "Reset Tour — pilih panduan di dashboard");
+      document.body.append(link);
+    }
   }
   function move(step) { if (!valid()) return; state.step = step; state.paused = false; pending = false; save(); show().catch(() => pause()); }
   function next(action = false) {
@@ -141,7 +156,7 @@
 
     overlay = window.driver.js.driver({ animate: !matchMedia("(prefers-reduced-motion: reduce)").matches, smoothScroll:false, allowKeyboardControl:false, overlayClickBehavior:"none", overlayColor:getComputedStyle(document.documentElement).getPropertyValue("--brand-ink").trim() || "#173B64", overlayOpacity:.38, stagePadding:6, stageRadius:12,
       popoverClass:"intoch-demo-tour intoch-online-tour", disableActiveInteraction:!item.action && item.id !== "party",
-      onNextClick:() => next(), onPrevClick:back, onCloseClick:() => exit(), onDestroyStarted:() => exit(), onHighlighted:() => {
+      onNextClick:() => next(), onPrevClick:back, onCloseClick:dismiss, onDestroyStarted:dismiss, onHighlighted:() => {
         clamp();
         if (isStaff() && node.closest(selector("list-scroll")) && matchMedia("(max-width: 640px)").matches) requestAnimationFrame(() => {
           if (epoch !== token || !overlay) return;
@@ -157,7 +172,7 @@
         popover.previousButton.textContent = text("Back","Kembali");
         const controls = document.createElement("div"); controls.className = "demo-tour-controls";
         const progress = document.createElement("span"); progress.className = "demo-tour-progress"; progress.textContent = `${catalog().findIndex(step => step.id === item.id)+1} / ${catalog().length}`;
-        controls.append(progress,button(text("Skip","Lewati"),() => exit()),button(text("Explore Independently","Jelajahi Mandiri"),() => pause())); popover.wrapper.append(controls);
+        controls.append(progress,button(text("Skip","Lewati"),dismiss),button(text("Explore Independently","Jelajahi Mandiri"),() => { pause(); nudgeReset(); })); popover.wrapper.append(controls);
         (item.action ? node.querySelector("input") || node : popover.nextButton).focus({preventScroll:true});
       }
     });
@@ -277,12 +292,12 @@
       const user = await db.auth.getUser(); if (user.error || !user.data?.user) return false;
       const active = await db.rpc("app_session_valid"); if (active.error || active.data !== true) return false;
       const profile = await db.from("staff_users").select("id,role,is_active").eq("auth_user_id",user.data.user.id).eq("is_active",true).maybeSingle();
-      return token === epoch && !profile.error && profile.data?.id === state?.staffId && ["admin","manager","staff","finance"].includes(profile.data.role);
+      return token === epoch && !profile.error && profile.data?.id === (state?.staffId || staffId) && ["admin","manager","staff","finance"].includes(profile.data.role);
     } catch { return false; }
   }
   function keydown(event) {
     if (!overlay) return;
-    if (event.key === "Escape") {event.preventDefault();exit();}
+    if (event.key === "Escape") {event.preventDefault();dismiss();}
     if (event.key === "Tab") {
       const node = overlay.getActiveElement();
       const nodes = [...(current()?.action || state?.step === "party" ? node.querySelectorAll("input:not([type=hidden]):not(:disabled),select:not(:disabled),button:not(:disabled),a[href]") : []), ...(node.matches("button,a,input") ? [node] : []), ...document.querySelectorAll(".intoch-online-tour button:not(:disabled)")].filter(visible);
@@ -319,6 +334,7 @@
     dispose(); clearInterval(authTimer); authTimer = null; authSubscription?.unsubscribe(); authSubscription = null;
     observer?.disconnect(); observer = null; dock?.remove(); dock = null;
     document.getElementById("demo-online-guide")?.remove();
+    document.getElementById("demo-public-reset")?.remove();
     document.removeEventListener("click",click,true); document.removeEventListener("input",inputAction); document.removeEventListener("change",inputAction);
     document.removeEventListener("submit",captureSubmit,true); document.removeEventListener("keydown",keydown,true);
     window.removeEventListener("resize",viewportChanged); window.visualViewport?.removeEventListener("resize",viewportChanged); window.visualViewport?.removeEventListener("scroll",viewportChanged);

@@ -64,7 +64,7 @@ async function main() {
     await command('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:width===320?'reduce':'no-preference'}]});
     await command('Page.navigate',{url:'http://127.0.0.1:8080/'});await until('!!document.getElementById("demo-online-guide")','online entry');
     await evaluate('localStorage.clear();sessionStorage.clear();');await command('Page.reload');await until('!!document.getElementById("demo-online-guide")','fresh staff entry');
-    await click('#demo-online-guide');await until(title('Book as a guest'),'launch');await bounds('launch '+width);await screenshot(width+'-launch');
+    await click('#demo-tour-reset');await click('[data-tour-section=online]');await until(title('Book as a guest'),'launch');await bounds('launch '+width);await screenshot(width+'-launch');
     assert.equal(await evaluate('localStorage.getItem("intoch-fixture-booking-writes")'),null,'No automatic booking');
     await click('[data-booking-tour="form-link"]');await until(title('Introduce your demo guest'),'real guest form');await bounds('name '+width);await screenshot(width+'-guest-form');
     const name=await evaluate(active+'.name');await click('#f-name');await command('Input.insertText',{text:name});await until(title('Use a fictional contact'),'name input result');
@@ -82,7 +82,7 @@ async function main() {
     await click('.driver-popover-next-btn');await until(title('Guest to front desk, connected'),'completion');await click('.driver-popover-next-btn');
     assert.equal(await evaluate(active),null,'Completed state clears handoff');assert.equal(await evaluate('localStorage.getItem("intoch-fixture-booking-writes")'),'1','No duplicate booking on reload');
     if(phone)await click('[data-tour="mobile-menu"]');await click('[data-nav="dashboard"]');await until('document.getElementById("page-dashboard").classList.contains("active")','return to guide entry');
-    await click('#demo-online-guide');await until(title('Book as a guest'),'restart online guide');await click('.driver-popover-close-btn');assert.equal(await evaluate(active),null,'Close skips guide');
+    await click('#demo-online-guide');await until(title('Book as a guest'),'restart online guide');await click('.driver-popover-close-btn');assert.equal(await evaluate(active),null,'Close skips guide');assert.ok(await evaluate('!!document.querySelector(".demo-tour-reset-highlight")'),'Online Close highlights reset');
     await click('#demo-online-guide');await until(title('Book as a guest'),'second restart');await evaluate('fixture.logout()');assert.equal(await evaluate('!!document.querySelector(".driver-overlay")'),false,'Logout teardown');
     console.log('PASS '+width+'px: guest form, actual manual submit, dashboard overview/day/exact row, recovery, completion, restart, close and logout');
   }
