@@ -7,6 +7,10 @@ documentation task. **Committed code is not proof of deployed SQL or Edge Functi
 
 ## Landing redesign (2026-10-08; local only)
 
+Follow-up: supporting-feature grid now uses continuous internal row/column lines
+matching the supplied reference. Desktop/mobile columns remain three/two; Chrome
+checks at 1440, 390, and 320px showed no horizontal overflow.
+
 Follow-up: removed all repeated visible "Contoh data" / "Sample data" labels at the
 user's request, including the hero's decorative label bar. Removed unused label
 styles and translation key; landing interaction checks and script syntax passed.

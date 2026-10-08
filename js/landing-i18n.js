@@ -47,7 +47,7 @@
           "why.b1t": "Simple for Staff",
           "why.b1p":
             "Designed for fast-paced operations. No weeks of training needed to get started.",
-          "why.b2t": "One System, Not Five",
+          "why.b2t": "One System, All in One",
           "why.b2p":
             "Reservations, walk-ins, membership, and reports combined in one platform, no app-hopping.",
           "why.b3t": "Your Guest Data Is Yours",

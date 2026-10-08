@@ -159,6 +159,10 @@ Large product and feature panels use the panel radius; simulation screens and mo
 
 ## Components
 
+The supporting-feature grid uses one-pixel internal column and row dividers with subtle opacity and fading
+only at the outer grid edges, with solid intersections and without
+outer borders: three columns on desktop and two on mobile.
+
 The FAQ heading and 850px question list are centered within the page container;
 questions and answers retain left alignment. The contact section, its supporting
 copy, and its action group are centered on both desktop and mobile.
