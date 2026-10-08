@@ -1,5 +1,23 @@
 # Current state and operational handoff
 
+Public demo login convenience (2026-10-08; local on `feature/demo-guided-tour`):
+user explicitly supplied a dedicated, publicly shareable playground Staff account
+for username/PIN autofill. `js/demo-login.js` fills only the existing allowlisted
+playground login screen, preserves other typed/saved credentials, adds a concise
+Click Login hint and a static button highlight, and focuses Login without opening
+a mobile keyboard. Login remains manual and follows existing Supabase Auth,
+app_session_valid and active-profile checks. Successful entry removes the hint,
+clears the PIN through the original handler, and opens the dashboard/tour options.
+No private/Admin credentials, database writes, Auth/RLS/config changes or bypasses.
+The user-approved public demo PIN is intentionally visible in browser source; it
+is not a secret or a pattern for production staff accounts.
+Verification: 94 Node suites pass; Chrome login fixture checks pass at 1440px, 393px
+and 320px, including real manual form submission, rejected Auth, focus and teardown.
+Screenshots inspected in docs/screens/demo-login. Live playground authentication,
+session validation and active Staff profile read succeeded; verification session
+was signed out locally. No guest/reservation/payment writes were performed. Full
+live browser/dashboard initialization and deployed asset rollout remain unverified.
+
 Demo guide section picker (2026-10-08; local, not deployed): first-entry introduction
 now offers three independent guides: Dashboard/Reservations/Walk-Ins, Guest Database,
 and Reservation from Online Form. A fixed Reset Tour button remains visible across

@@ -643,10 +643,15 @@ function showLoginPage() {
   document.body.classList.remove("sidebar-drawer-open");
   if (document.getElementById("sidebar-backdrop")) document.getElementById("sidebar-backdrop").hidden = true;
   document.getElementById("bd-alert-wrap")?.classList.add("hidden");
-  setTimeout(() => document.getElementById("login-username")?.focus(), 50);
+  const demoLoginReady = typeof DemoLogin !== "undefined" && DemoLogin.prepare();
+  setTimeout(() => {
+    if (document.getElementById("login-page")?.classList.contains("hidden")) return;
+    (demoLoginReady ? document.querySelector('[data-tour="login-submit"]') : document.getElementById("login-username"))?.focus({ preventScroll: true });
+  }, 50);
 }
 
 function showAppShell() {
+  if (typeof DemoLogin !== "undefined") DemoLogin.teardown();
   document.getElementById("login-page")?.classList.add("hidden");
   document.getElementById("app-sidebar")?.classList.remove("hidden");
   document.getElementById("app-main")?.classList.remove("hidden");

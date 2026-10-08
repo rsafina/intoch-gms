@@ -201,3 +201,27 @@ explicit reset return and sign-out cleanup. Chrome fixture walkthroughs pass at
 and vertical visual-viewport bounds for Reset Tour and the saved-progress prompt.
 Screenshots are in `docs/screens/demo-tour/` and `docs/screens/demo-online-booking/`.
 Live Supabase Auth/RPC/realtime and deployed Cloudflare builds were not exercised.
+
+## Public demo login autofill
+
+The user-approved demo Staff account is prefilled on the playground login page.
+The inline hint says “Click Login to continue to the Intoch demo. You can explore
+freely or choose a guided tour.” Login has a static, rounded highlight and receives
+focus when the demo credentials are ready; fields remain editable. No Driver overlay
+or automatic submission runs before authentication. Other saved/typed accounts are
+preserved. The hint is removed after successful login and restored on the login screen.
+
+`js/demo-login.js` is loaded after the playground allowlist and before `js/app.js`.
+`showLoginPage` prepares it; `showAppShell` removes it. CSS lives in `css/demo.css`,
+with a stable `data-tour="login-submit"` anchor in `index.html`. The public demo
+credential is intentionally browser-visible and must belong only to the dedicated
+fictional playground Staff account. The allowlist limits presentation, not access;
+verified Supabase Auth and RLS remain the actual boundary. Never substitute private
+or Admin credentials. Updating this public account's PIN also requires updating the
+public demo module and bumping its index script version; no generated config edits.
+
+QA: `node tests/demo-login.test.js`; start `node scripts/demo-tour-preview.cjs`, then
+`node scripts/check-demo-login-browser.cjs` for backend-free real-form checks and
+screenshots at 1440/393/320px. The fixture uses existing login and verified-session
+handlers with fictional Auth replies. Live credential/session/active Staff checks
+also passed, followed by local sign-out; complete live browser boot is still pending.

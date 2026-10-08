@@ -1,4 +1,6 @@
 /* Demo presentation only. Database roles and operational workflows are unchanged. */
+.demo-mode .demo-login-hint { font: 12px/1.65 "Plus Jakarta Sans", sans-serif; color: var(--brand-ink); background: var(--brand-tint); border-radius: 10px; padding: 12px 14px; margin: 0 0 16px; }
+.demo-mode .demo-login-highlight { outline: 3px solid var(--brand-tint); outline-offset: 4px; }
 .demo-mode [data-nav]:not([data-nav="dashboard"]):not([data-nav="reservations"]):not([data-nav="walkins"]):not([data-nav="guests"]):not([data-nav="reports"]):not([data-nav="invoice"]),
 .demo-mode #page-dashboard .card:has(#dash-prize-table-body),
 .demo-mode #page-dashboard .card:has(#dash-bd-table-body),
