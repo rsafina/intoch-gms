@@ -1,5 +1,16 @@
 # Current state and operational handoff
 
+Online-guide name entry simplification (2026-10-08; local): user chose arbitrary
+made-up names instead of typing an exact generated name. The name step uses the
+existing form's two-character minimum and enables Next without advancing mid-typing.
+The actual submitted name is persisted; saved-booking checks still require the
+returned reservation ID and fictional unique 000 contact. V1 recovery accepts custom
+names and older generated names. No changes to ordinary booking forms or Auth/RLS.
+Targeted online-guide tests pass, including custom-name submission/reload and
+uncertain-save recovery. Chrome fixture flow checked at 1440px, 393px and 320px;
+updated name-entry screenshots in docs/screens/demo-online-booking. No live booking
+submissions, push or deployment.
+
 Reset Tour visibility polish (2026-10-08; local): persistent reset button now uses
 Intoch navy with white text. Non-continuing exits and guide completion show a strong
 static amber ring and “Restart any guide here ↓” hint for ten seconds. No extra

@@ -67,7 +67,7 @@ async function main() {
     await click('#demo-tour-reset');await click('[data-tour-section=online]');await until(title('Book as a guest'),'launch');await bounds('launch '+width);await screenshot(width+'-launch');
     assert.equal(await evaluate('localStorage.getItem("intoch-fixture-booking-writes")'),null,'No automatic booking');
     await click('[data-booking-tour="form-link"]');await until(title('Introduce your demo guest'),'real guest form');await bounds('name '+width);await screenshot(width+'-guest-form');
-    const name=await evaluate(active+'.name');await click('#f-name');await command('Input.insertText',{text:name});await until(title('Use a fictional contact'),'name input result');
+    const name='Demoa '+width;await click('#f-name');await command('Input.insertText',{text:name});assert.ok(await evaluate("document.querySelector('.driver-popover-title').textContent === 'Introduce your demo guest'"),'Typing completes before moving on');await screenshot(width+'-guest-name');await click('.driver-popover-next-btn');await until(title('Use a fictional contact'),'name input result');assert.equal(await evaluate(active+'.name'),name);
     const number=await evaluate(active+'.phone');await click('#f-phone');await command('Input.insertText',{text:number});await until(title('Choose the party size'),'fictional contact input result');
     await click('.driver-popover-next-btn');await until(title('Choose an available visit'),'schedule');await bounds('schedule '+width);await screenshot(width+'-schedule');
     await click('#time-pills button');await until(title('Create the demo booking'),'available time chosen');

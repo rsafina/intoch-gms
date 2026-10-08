@@ -21,7 +21,7 @@
   function read() {
     try {
       const value = JSON.parse(sessionStorage.getItem(key()));
-      return value?.version === VERSION && value.expires > Date.now() && /^Intoch Demo [0-9a-f]{8}$/.test(value.name) && /^000\d{9}$/.test(value.phone) ? value : null;
+      return value?.version === VERSION && value.expires > Date.now() && typeof value.name === "string" && value.name.trim().length >= 2 && /^000\d{9}$/.test(value.phone) ? value : null;
     } catch { return null; }
   }
   function save() {
@@ -44,7 +44,7 @@
   function catalog() {
     return [
       { id: "launch", context: "staff", target: "form-link", action: "launch", title: text("Book as a guest", "Reservasi sebagai tamu"), copy: text("Open the real online form. You will enter fictional details and submit the booking yourself, then return here to see how your team receives it. No payment or message is needed.", "Buka formulir online yang sebenarnya. Anda akan memasukkan detail fiktif dan mengirim reservasi sendiri, lalu kembali untuk melihat cara tim menerimanya. Tidak perlu pembayaran atau pesan.") },
-      { id: "name", context: "form", target: "name", action: "input", title: text("Introduce your demo guest", "Perkenalkan tamu demo"), copy: text(`Enter ${state?.name}. This unique fictional name helps you recognize your booking later.`, `Masukkan ${state?.name}. Nama fiktif unik ini membantu Anda menemukan reservasi nanti.`) },
+      { id: "name", context: "form", target: "name", action: "input", title: text("Introduce your demo guest", "Perkenalkan tamu demo"), copy: text("Enter any made-up guest name, such as Demoa. When you're done typing, click Next.", "Masukkan nama tamu fiktif apa saja, misalnya Demoa. Setelah selesai mengetik, klik Lanjut.") },
       { id: "phone", context: "form", target: "phone", action: "input", title: text("Use a fictional contact", "Gunakan kontak fiktif"), copy: text(`Enter ${state?.phone}, a demo-only number starting with 000. Use these fictional details throughout; no WhatsApp message is sent by this guide.`, `Masukkan ${state?.phone}, nomor khusus demo dengan awalan 000. Gunakan detail fiktif ini; panduan tidak mengirim pesan WhatsApp.`) },
       { id: "party", context: "form", target: "party", title: text("Choose the party size", "Pilih jumlah tamu"), copy: text("Keep this example to two guests. Party size and the chosen area determine available seating and any deposit conditions.", "Gunakan dua tamu untuk contoh ini. Jumlah tamu dan area menentukan ketersediaan tempat duduk dan ketentuan deposit.") },
       { id: "schedule", context: "form", target: "schedule", action: "schedule", title: text("Choose an available visit", "Pilih kunjungan yang tersedia"), copy: text("Choose an area if offered, a date within the next 14 days, and an available time. This keeps the example in the dashboard's online overview. Availability and any conditions come from the real form.", "Pilih area jika tersedia, tanggal dalam 14 hari ke depan, dan waktu yang tersedia. Contoh ini akan masuk ke ringkasan online dashboard. Ketersediaan dan ketentuan berasal dari formulir sebenarnya.") },
@@ -113,7 +113,13 @@
   function move(step) { if (!valid()) return; state.step = step; state.paused = false; pending = false; save(); show().catch(() => pause()); }
   function next(action = false) {
     if (!valid() || state.paused) return;
-    const item = current(); if (item.action && !action) return;
+    const item = current();
+    if (item.id === "name") {
+      const name = document.getElementById("f-name")?.value.trim() || "";
+      if (name.length < 2) return;
+      state.name = name; save(); action = true;
+    }
+    if (item.action && !action) return;
     if (item.id === "finish") return exit("completed");
     if (item.id === "saved") { state.step = "online"; state.autoResume = true; state.paused = false; save(); return location.assign("/"); }
     move(catalog()[catalog().findIndex(step => step.id === item.id) + 1].id);
@@ -166,7 +172,8 @@
       },
       onPopoverRender:popover => {
         popover.wrapper.setAttribute("role","dialog"); popover.wrapper.setAttribute("aria-label",item.title);
-        popover.nextButton.disabled = !!item.action; popover.nextButton.classList.toggle("driver-popover-btn-disabled",!!item.action);
+        const blocked = !!item.action && !(item.id === "name" && (document.getElementById("f-name")?.value.trim().length || 0) >= 2);
+        popover.nextButton.disabled = blocked; popover.nextButton.classList.toggle("driver-popover-btn-disabled",blocked);
         popover.previousButton.disabled = ["launch","saved","online"].includes(item.id);
         popover.previousButton.classList.toggle("driver-popover-btn-disabled",popover.previousButton.disabled);
         popover.nextButton.textContent = item.id === "saved" ? text("Return to Dashboard","Kembali ke Dashboard") : item.id === "finish" ? text("Finish","Selesai") : text("Next","Lanjut");
@@ -190,17 +197,22 @@
   }
   function inputAction() {
     if (!valid() || state.paused) return;
-    if (state.step === "name" && document.getElementById("f-name")?.value.trim() === state.name) next(true);
+    if (state.step === "name") {
+      const nextButton = document.querySelector(".intoch-online-tour .driver-popover-next-btn");
+      const blocked = (document.getElementById("f-name")?.value.trim().length || 0) < 2;
+      if (nextButton) { nextButton.disabled = blocked; nextButton.classList.toggle("driver-popover-btn-disabled",blocked); }
+    }
     else if (state.step === "phone" && document.getElementById("f-phone")?.value.trim() === state.phone) next(true);
     else if (state.step === "schedule" && scheduleValid()) next(true);
   }
   function captureSubmit(event) {
     if (!valid() || state.paused || event.target.id !== "res-form") return;
-    if (state.step !== "submit" || !scheduleValid() || document.getElementById("f-name")?.value.trim() !== state.name || document.getElementById("f-phone")?.value.trim() !== state.phone || state.reservationId) {
+    if (state.step !== "submit" || !scheduleValid() || (document.getElementById("f-name")?.value.trim().length || 0) < 2 || document.getElementById("f-phone")?.value.trim() !== state.phone || state.reservationId) {
       event.preventDefault(); event.stopImmediatePropagation();
-      pause(text("Use the fictional name and 000 contact, choose two guests and a valid date/time, then resume. The guide has not submitted anything.", "Gunakan nama fiktif dan kontak 000, pilih dua tamu serta tanggal/waktu yang valid, lalu lanjutkan. Panduan belum mengirim apa pun.")); return;
+      pause(text("Enter a made-up name with at least two characters and use the 000 contact, choose two guests and a valid date/time, then resume. The guide has not submitted anything.", "Masukkan nama fiktif minimal dua karakter dan gunakan kontak 000, pilih dua tamu serta tanggal/waktu yang valid, lalu lanjutkan. Panduan belum mengirim apa pun.")); return;
     }
     if (state.submissionAttempted) { event.preventDefault(); event.stopImmediatePropagation(); return pause(text("This submission may already have been saved. Check Dashboard before trying again.", "Pengiriman ini mungkin sudah tersimpan. Periksa Dashboard sebelum mencoba lagi.")); }
+    state.name = document.getElementById("f-name").value.trim();
     state.submissionAttempted = true; state.date = document.getElementById("f-date").value; save();
     pending = true;
   }

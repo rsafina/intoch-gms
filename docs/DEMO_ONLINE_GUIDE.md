@@ -8,7 +8,7 @@ guidance. The regular dashboard/customer tour remains separate.
 
 1. Click the existing online form link. During this guide it opens in the same tab;
    independent use retains its original new-tab behavior.
-2. Enter the generated fictional name (`Intoch Demo` plus an eight-character suffix).
+2. Enter any made-up name, such as `Demoa`, using at least two characters. Click Next when finished typing; the guide does not advance mid-name.
 3. Enter the generated fictional contact number beginning with `000`. This is not
    a recipient for real communication. Guided submission requires these exact values.
 4. Keep the party to two guests and review how party size affects availability.
@@ -57,7 +57,7 @@ only when the user submits again; Reset Demo Data remains a separate improvement
   are not supported in this phase.
 - Missing targets and failed reads pause, with independent exploration available.
   An interrupted submission is marked uncertain: reload never retries it. The user
-  can check the dashboard, and recovery reads the unique fictional guest/contact,
+  can check the dashboard, and recovery reads the unique fictional contact,
   date and creation window before accepting exactly one matching online booking.
   Zero or ambiguous results stay paused; no duplicate is created automatically.
 - A full/closed slot or server rejection stays in the form for correction. The guide
@@ -104,3 +104,9 @@ and the persistent Reset Tour picker. Staff-side Skip/Close/Escape/Explore highl
 Reset Tour; public-form dismissal offers an explicit dashboard return link after
 Auth verification, preserving normal public visitors' experience. These controls
 restart guidance only and never delete or reset the booking already created.
+
+Name entry accepts any made-up name using the existing form's two-character minimum.
+Next is enabled once valid, but progression waits for an explicit click so users can
+finish typing. The guide captures the actual name again at submission and persists
+it for copy/recovery. The returned reservation ID and unique fictional 000 contact,
+not a generated name, identify the booking. Existing saved V1 names still recover.
