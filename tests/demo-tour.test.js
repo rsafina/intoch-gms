@@ -139,8 +139,13 @@ async function walkToSearch(h) {
   await h.until(()=>h.win.document.querySelector('.demo-tour-dock'));
   assert.equal(h.title(),undefined,'Failed page data does not satisfy navigation');h.dom.window.close();
 
+  for(const origin of ['https://demo.intoch.app','https://dashboard.intoch.app']) {
+    h=await harness({origin});await h.until(()=>h.title()==='Try Intoch at your own pace');h.dom.window.close();
+  }
   for(const options of [
     {origin:'https://client.example'},
+    {origin:'https://demo.intoch.app.client.example'},
+    {origin:'https://demo.intoch.app',environment:{origins:['https://demo.intoch.app'],supabaseUrl:'https://other-project.supabase.co',fictionalGuestNames:['Budi Santoso']}},
     {environment:{origins:['http://127.0.0.1:8080'],supabaseUrl:'https://other-project.supabase.co',fictionalGuestNames:['Budi Santoso']}},
     {setup:"fixtureStaff=null;"},
     {setup:"fixtureStaff={id:'owner',role:'owner'};"},

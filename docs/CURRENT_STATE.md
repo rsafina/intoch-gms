@@ -1,5 +1,10 @@
 # Current state and operational handoff
 
+Demo tour hostname follow-up (2026-10-08): added `https://demo.intoch.app` to the
+exact-origin allowlist for the Cloudflare demo. Retains the pinned playground project
+and verified session checks. Bumped the environment script cache version; push and
+deployment remain user-managed.
+
 Authenticated demo walkthrough (2026-10-08; local on `feature/demo-guided-tour`):
 Driver.js 1.9.0 is published locally with its MIT license. A vanilla controller offers
 Start Guided Tour / Explore Independently after verified demo dashboard entry and

@@ -41,8 +41,8 @@ Activation requires **all** of the following:
 2. The document has `demo-mode` and the verified staff session can access the dashboard
    and Guest Database. Owner's management overview is excluded.
 3. The browser origin AND generated `SUPABASE_URL` match `js/demo-tour-environment.js`.
-   This public allowlist is pinned to the existing demo-regression safety manifest:
-   `https://dashboard.intoch.app`, localhost/127.0.0.1 port 8080, and the playground
+   This public allowlist includes the Cloudflare demo hostname:
+   `https://demo.intoch.app`, `https://dashboard.intoch.app`, localhost/127.0.0.1 port 8080, and the playground
    project `hkrhsubhfqrgqkuhpvql`. A different origin or client project gets no tour UI.
 
 This presentation gate never grants permission. Existing Supabase Auth/RLS remain the
