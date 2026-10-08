@@ -15,6 +15,11 @@ node_modules/
 Thumbs.db
 *.log
 
+# Local agent skills and visual-review artifacts; retain on disk, not in commits.
+.agents/
+.impeccable/
+skills-lock.json
+
 # Local Supabase CLI state and credentials; keep function source tracked.
 supabase/.temp/
 supabase/.branches/

@@ -1,5 +1,13 @@
 # Current state and operational handoff
 
+Local repository cleanup (2026-10-08; `feature/demo-guided-tour`): user authorized
+keeping installed `.agents/` skills, `.impeccable/` visual-review screenshots and
+`skills-lock.json` local through `.gitignore`. Also excluded review artifacts and
+skill metadata from Cloudflare assets; `.agents` was already excluded there.
+Removed the unused npm Driver.js dependency; runtime and tests retain the vendored,
+version-pinned build and license. Added the npm lockfile for reproducible existing
+dev dependencies. No screenshots/skills deleted, application changes, push or deploy.
+
 Public demo login convenience (2026-10-08; local on `feature/demo-guided-tour`):
 user explicitly supplied a dedicated, publicly shareable playground Staff account
 for username/PIN autofill. `js/demo-login.js` fills only the existing allowlisted

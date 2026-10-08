@@ -51,6 +51,8 @@ assets/_to_delete
 .git
 .github
 .agents
+.impeccable
+skills-lock.json
 .codex
 .env
 .env.*
