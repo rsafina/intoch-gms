@@ -29,29 +29,10 @@ const source = fs.readFileSync(path.join(root,'js/demo.js'),'utf8');
   assert.equal(metrics.returning,200); assert.equal(metrics.fresh,300);
   assert.equal(metrics.unlinked,50); assert.equal(metrics.missing,1);
   assert.equal(win.demoMetrics([{spend_amount:null}],new Set()).average,null);
-  Object.assign(win,{
-    hasAccess:()=>true,currentPage:'reports',odIdentity:()=> 'session1',
-    odRange:()=>({start:'2026-09-01',end:'2026-09-23'}),
-    fmt:{currency:value=>`Rp ${value}`,date:value=>value},
-    odRows:async(table,columns)=>columns==='id,guest_id,visit_date' ? [{guest_id:'old',visit_date:'2026-08-01'}] : [{guest_id:'old',pax:2,spend_amount:200}],
-    odByIds:async()=>[{guest_id:'old'}]
-  });
-  await win.loadDemoReports();
-  assert.match(win.document.getElementById('demo-report-content').textContent,/Rp 200/);
-  win.odRows=async(table,columns)=>columns==='id,guest_id,visit_date' ? [{guest_id:'old',visit_date:'2026-08-01'}] : [{guest_id:'old',pax:4,spend_amount:200},{guest_id:'old',pax:2,spend_amount:201},{guest_id:'old',pax:1,spend_amount:201}];
-  win.CURRENT_LANG='id';
-  let selectedPeriod;
-  win.odRange=period=>{selectedPeriod=period;return {start:'2026-09-23',end:'2026-09-23'};};
-  await win.setDemoReportPeriod('today');
-  assert.equal(selectedPeriod,'today');
-  assert.equal(win.document.querySelector('[data-demo-period="today"]').getAttribute('aria-pressed'),'true');
-  assert.equal(win.document.querySelector('[data-demo-period="month"]').getAttribute('aria-pressed'),'false');
-  const cards=win.document.querySelectorAll('#demo-report-content .demo-metric');
-  assert.equal(cards[0].querySelector('h2').textContent,'Kunjungan');
-  assert.equal(cards[0].querySelector('strong').textContent,'3');
-  assert.equal(cards[1].querySelector('strong').textContent,'7');
-  assert.equal(cards[3].querySelector('strong').textContent,'Rp 201');
-  assert.equal(win.document.querySelectorAll('.demo-segment').length,3);
+  assert.ok(win.document.querySelector('#demo-reports #report-new-guests'),'Reuses real acquisition card');
+  assert.ok(win.document.querySelector('#demo-reports #ops-demand-0-count'),'Reuses real live cards');
+  assert.ok(win.document.querySelector('#demo-reports #ops-peak-traffic-chart'),'Reuses real Peak Traffic');
+  assert.equal(win.document.querySelectorAll('#demo-reports [id^="reports-tab-"]').length,0);
   const segments=win.demoGuestSegments([
     {guest_id:'new',pax:2},{guest_id:'new',pax:3},{guest_id:'old',pax:4},
     {guest_id:null,pax:9},{guest_id:'void',pax:4,voided_at:'2026-09-01'}
@@ -69,20 +50,6 @@ const source = fs.readFileSync(path.join(root,'js/demo.js'),'utf8');
   assert.equal(segments.acquire.ids.size,1);assert.equal(segments.acquire.visits,2);assert.equal(segments.acquire.pax,5);
   assert.equal(segments.retain.ids.size,1);assert.equal(segments.retain.pax,4);
   assert.equal(segments.risk60,2);assert.equal(segments.risk90,1);
-  win.CURRENT_LANG='en';
-  win.odRows=async()=>{throw Error('RLS/network failure');};
-  await win.loadDemoReports();
-  assert.match(win.document.getElementById('demo-report-content').textContent,/Report unavailable/);
-  assert.doesNotMatch(win.document.getElementById('demo-report-content').textContent,/Rp 0/);
-  let resolve;
-  win.odRows=()=>new Promise(done=>{resolve=done;});
-  const loading=win.loadDemoReports();
-  win.resetDemoPresentation();
-  resolve([]); await loading;
-  assert.equal(win.document.getElementById('demo-report-content').textContent,'');
-  let queried=false;
-  win.hasAccess=()=>false; win.odRows=async()=>{queried=true;return [];};
-  await win.loadDemoReports(); assert.equal(queried,false);
   win.document.documentElement.classList.remove('demo-mode');
   assert.equal(win.demoRoute('broadcast'),'broadcast');
   await new Promise(done=>win.setTimeout(done,20));

@@ -55,6 +55,31 @@ async function main() {
     await until(`(()=>{const box=document.querySelector('.intoch-demo-tour').getBoundingClientRect(),viewport=visualViewport;return box.left>=viewport.offsetLeft-1&&box.right<=viewport.offsetLeft+viewport.width+1&&box.top>=viewport.offsetTop-1&&box.bottom<=viewport.offsetTop+viewport.height+1;})()`,'Popover fits '+label);
     assert.ok(await evaluate('document.querySelector(".intoch-demo-tour").getBoundingClientRect().height < 500'),'Popover has no stretched blank space: '+label);
   }
+  if(process.argv.includes('--reports-only')) {
+    for(const width of [1440,393,320]) {
+      await command('Emulation.setDeviceMetricsOverride',{width,height:width<=640?852:1000,deviceScaleFactor:1,mobile:width<=640});
+      await command('Page.navigate',{url:'http://127.0.0.1:8080/__demo-tour-fixture'});await until('!!window.fixture','ready');
+      await evaluate('localStorage.clear();sessionStorage.clear();');await command('Page.reload');await until(title('Try Intoch at your own pace'),'welcome');await click('.driver-popover-close-btn');
+      if(width<=640)await click('[data-tour="mobile-menu"]');await click('[data-nav="reports"]');
+      await until('document.getElementById("demo-reports").dataset.reportState === "ready"','real Reports data');
+      assert.ok(await evaluate('document.getElementById("demo-reports").contains(document.getElementById("report-new-guests"))'),'Real cohort cards');
+      assert.ok(await evaluate('!!document.getElementById("ops-peak-traffic-bars").children.length'),'Real chart');
+      await screenshot(width+'-reports-overview');await click('#mkt-range-today');await until('document.getElementById("demo-reports").dataset.reportState === "ready"','date filter');
+      await click('[data-tour="reports-start"]');await until(title('Turn visits into useful insights'),'Reports introduction');await bounds('Reports intro');await screenshot(width+'-reports-intro');
+      for(const expected of ['Choose the period to review','See who is discovering you','Recognize returning relationships','Notice who has not returned',"Prepare for today's service",'Look ahead before service','Find your busiest days',"You're ready to explore Reports"]) {
+        await click('.driver-popover-next-btn');await until(title(expected),expected);await bounds(expected);
+        if(expected==='Notice who has not returned'){await click('#at-risk-tab-90');await screenshot(width+'-reports-risk');}
+        if(expected==="Prepare for today's service")await screenshot(width+'-reports-live');
+        if(expected==='Find your busiest days'){await click('#peak-date-trigger');assert(await evaluate('(()=>{const r=document.getElementById("peak-calendar-popup").getBoundingClientRect();return r.left>=0&&r.right<=innerWidth;})()'),'Reports calendar fits viewport');await screenshot(width+'-reports-peak');await click('#peak-date-trigger');}
+      }
+      await click('.driver-popover-next-btn');assert.equal(await evaluate('fixture.writes'),0);
+      await click('#demo-tour-reset');await click('[data-tour-section=reports]');await until(title('Turn visits into useful insights'),'Reports restart');
+      await evaluate('DemoTour.pause()');await command('Page.reload');await until('!!document.querySelector(".demo-tour-dock")','Reports reload prompt');await click('.demo-tour-dock button');await until(title('Turn visits into useful insights'),'Reports resume');
+      await evaluate('fixture.logout()');assert.equal(await evaluate('!!document.querySelector(".driver-overlay")'),false);
+      console.log('PASS '+width+'px: actual Reports cards/filter/risk/calendar, introduction, guide, reset, reload and logout');
+    }
+    assert.deepEqual(errors,[],'No browser runtime exceptions');return;
+  }
   if(process.argv.includes('--reset-only')) {
     for(const width of [1440,393,320]) {
       await command('Emulation.setDeviceMetricsOverride',{width,height:width<=640?852:1000,deviceScaleFactor:1,mobile:width<=640});

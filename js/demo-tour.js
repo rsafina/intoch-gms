@@ -14,12 +14,13 @@
   let dashboardReady = false, guestsReady = false, waitingCancel = null, welcomeTimer = null, dock = null;
   let observer = null, refreshTimer = null, lastFocus = null, pendingAction = null, actionTimer = null, readTimer = null;
   let searchSatisfied = false, profileSatisfied = false;
-  const operationsReady = { reservations: false, walkins: false };
+  const operationsReady = { reservations: false, walkins: false, reports: false };
   let resetMenu = null, nudgeTimer = null;
   const sections = () => [
     ["operations", text("Dashboard, Reservations & Walk-Ins", "Dashboard, Reservasi & Walk-In")],
     ["guests", text("Guest Database", "Database Tamu")],
     ["online", text("Reservation from Online Form", "Reservasi dari Form Online")],
+    ["reports", text("Reports", "Laporan")],
   ];
 
   function environment() { return window.INTOCH_DEMO_TOUR_ENV; }
@@ -68,6 +69,17 @@
   }
   function find(selector) { return [...document.querySelectorAll(selector)].find(visible); }
   function catalog() {
+    if (run?.section === "reports") return [
+      {id:"reports-intro",target:"reports-intro",title:text("Turn visits into useful insights","Ubah kunjungan menjadi wawasan"),copy:text("Understand guest relationships and prepare for upcoming service. These are the same report cards your team uses, with real playground data.","Pahami hubungan tamu dan siapkan layanan mendatang. Ini kartu laporan yang digunakan tim, dengan data playground sebenarnya.")},
+      {id:"reports-range",target:"reports-range",title:text("Choose the period to review","Pilih periode yang ditinjau"),copy:text("Try Today, This Week, This Month or a custom range. Guest counts and CSV exports follow that period; the live cards below keep their own windows.","Coba Today, This Week, This Month atau rentang khusus. Jumlah tamu dan ekspor CSV mengikuti periode tersebut; kartu live memiliki periode sendiri.")},
+      {id:"report-acquire",target:"report-acquire",title:text("See who is discovering you","Lihat siapa yang baru mengenal Anda"),copy:text("Acquire counts first-time guest profiles in the period. Reservation and walk-in lines separate guest contacts from the number of diners they brought.","Acquire menghitung profil tamu yang pertama kali datang pada periode ini. Baris reservasi dan walk-in membedakan jumlah kontak tamu dari jumlah orang yang mereka bawa.")},
+      {id:"report-retain",target:"report-retain",title:text("Recognize returning relationships","Kenali hubungan dengan tamu kembali"),copy:text("Retain shows guests who had already visited before this period. Multiple visits within a first visit's period do not turn a new guest into a returning guest.","Retain menampilkan tamu yang sudah datang sebelum periode ini. Kunjungan berulang pada periode kunjungan pertama tidak mengubah tamu baru menjadi tamu kembali.")},
+      {id:"report-risk",target:"report-risk",title:text("Notice who has not returned","Perhatikan siapa yang belum kembali"),copy:text("Switch between 60–89 days and 90+ days to review guests you may want to welcome back. This uses their latest recorded visit across all history, independently of the date filter.","Pilih 60–89 hari atau 90+ hari untuk meninjau tamu yang ingin Anda sambut kembali. Ini memakai kunjungan terakhir dari seluruh riwayat, tidak mengikuti filter tanggal.")},
+      {id:"reports-live",target:"reports-live",title:text("Prepare for today's service","Siapkan layanan hari ini"),copy:text("Today's Reservations shows bookings and expected diners; Today's Cancellations shows released demand. These live cards always refer to today.","Today's Reservations menampilkan reservasi dan perkiraan jumlah orang; Today's Cancellations menunjukkan permintaan yang dibatalkan. Kartu live selalu merujuk hari ini.")},
+      {id:"reports-forecast",target:"reports-forecast",title:text("Look ahead before service","Lihat rencana sebelum layanan"),copy:text("Upcoming Reservations groups booking demand for this week, next week and next month. Use it to plan staffing and seating; bookings are not completed visits.","Upcoming Reservations mengelompokkan permintaan reservasi minggu ini, minggu depan, dan bulan depan. Gunakan untuk merencanakan staf dan tempat duduk; reservasi bukan kunjungan selesai.")},
+      {id:"reports-peak",target:"reports-peak",title:text("Find your busiest days","Temukan hari tersibuk"),copy:text("Peak Traffic compares reservations with actual walk-in visits in its own 14-day window. Try its date picker to inspect another window.","Peak Traffic membandingkan reservasi dengan kunjungan walk-in aktual dalam periode 14 hari sendiri. Coba pemilih tanggal untuk melihat periode lain.")},
+      {id:"reports-finish",target:"reports-intro",action:"finish",title:text("You're ready to explore Reports","Anda siap menjelajahi Laporan"),copy:text("Change filters, compare guest groups or export a list independently. Reset Tour lets you revisit Reports or choose another guide.","Ubah filter, bandingkan kelompok tamu, atau ekspor daftar secara mandiri. Reset Tour memungkinkan Anda mengulang Laporan atau memilih panduan lain.")},
+    ].map(item => ({...item,page:"reports"}));
     const items = [
       { id: "dashboard", page: "dashboard", target: "dashboard-intro", title: text("Your front desk at a glance", "Ringkasan meja depan Anda"), copy: text("Start the day with bookings, walk-ins and seating in one place. This tour uses a fictional guest and never saves anything for you.", "Mulai hari dengan reservasi, walk-in, dan tempat duduk dalam satu layar. Tur ini menggunakan tamu fiktif dan tidak menyimpan data untuk Anda.") },
       { id: "reservations", page: "dashboard", target: "today-reservations", title: text("Plan for arriving guests", "Siapkan kedatangan tamu"), copy: text("Upcoming Reservations helps your team prepare before guests arrive. Today, Tomorrow and +2 Days let you look ahead without leaving the dashboard.", "Upcoming Reservations membantu tim bersiap sebelum tamu datang. Today, Tomorrow, dan +2 Days membantu Anda melihat hari berikutnya dari dashboard.") },
@@ -147,7 +159,7 @@
     if (welcome) {
       const choices = document.createElement("div"); choices.className = "demo-tour-sections";
       for (const [id, label] of sections()) {
-        if (id !== "online" || hasAccess("reservations")) choices.append(button(label, () => choose(id)));
+        if (id !== "reports" && (id !== "online" || hasAccess("reservations"))) choices.append(button(label, () => choose(id)));
       }
       popover.description.append(choices);
       next.textContent = text("Start Dashboard Guide", "Mulai Panduan Dashboard");
@@ -161,7 +173,7 @@
     if (!window.driver?.js?.driver) return null;
     return window.driver.js.driver({
       animate: !reduced(), smoothScroll: false, allowClose: true, allowKeyboardControl: false,
-      overlayClickBehavior: "none", disableActiveInteraction: !["quick", "reservation-controls", "walkin-controls"].includes(current?.id) && (!current?.action || current.action === "finish"),
+      overlayClickBehavior: "none", disableActiveInteraction: !["quick", "reservation-controls", "walkin-controls", "reports-range", "report-risk", "reports-peak"].includes(current?.id) && (!current?.action || current.action === "finish"),
       overlayColor: getComputedStyle(document.documentElement).getPropertyValue("--brand-ink").trim() || "black",
       overlayOpacity: 0.38, stagePadding: 6, stageRadius: 12, popoverOffset: 12,
       popoverClass: "intoch-demo-tour", showProgress: false,
@@ -223,6 +235,7 @@
       const heading = document.createElement("strong"); heading.textContent = text("Which guide would you like to revisit?", "Panduan mana yang ingin diulang?"); panel.append(heading);
       for (const [id, label] of sections()) {
         if (id === "online" && !hasAccess("reservations")) continue;
+        if (id === "reports" && !hasAccess("reports")) continue;
         const choice = button(label, () => choose(id)); choice.dataset.tourSection = id; panel.append(choice);
       }
       panel.append(button(text("Close", "Tutup"), closeMenu));
@@ -378,12 +391,13 @@
   }
   function start(section = "operations") {
     if (!valid()) return;
-    if (!["operations", "guests"].includes(section)) section = "operations";
+    if (!["operations", "guests", "reports"].includes(section)) section = "operations";
+    if (section === "reports" && !hasAccess("reports")) return;
     closeMenu(); clearTimeout(welcomeTimer); welcomeTimer = null; offered = true;
     if (window.DemoBookingTour) DemoBookingTour.exit();
     lastFocus = document.activeElement;
     searchSatisfied = false; profileSatisfied = false;
-    run = { section, step: section === "guests" ? (mobile() ? "menu" : "guests-nav") : "dashboard", guestId: null, guestName: environment().fictionalGuestNames[0], paused: false };
+    run = { section, step: section === "reports" ? "reports-intro" : section === "guests" ? (mobile() ? "menu" : "guests-nav") : "dashboard", guestId: null, guestName: environment().fictionalGuestNames[0], paused: false };
     store("started"); persist(); show().catch(() => pause());
   }
   function resume() {
@@ -398,7 +412,7 @@
     if (current.action && current.action !== "finish" && !fromAction) return;
     if (current.action === "search") document.querySelector(anchor("guest-search"))?.blur();
     if (current.id === "finish") { exit("completed"); hideModal("modal-profile"); find(anchor("guest-search"))?.focus({ preventScroll: true }); return; }
-    if (current.id === "operations-finish") { exit("completed"); return; }
+    if (["operations-finish", "reports-finish"].includes(current.id)) { exit("completed"); return; }
     const items = catalog(), position = items.findIndex(item => item.id === current.id);
     run.step = items[position + 1].id;
     pendingAction = null; clearTimeout(readTimer); persist(); show().catch(() => pause());
@@ -488,7 +502,7 @@
     if (driverObj && event.key === "Tab") {
       // Include the real action target (e.g. search field/eye) in keyboard traversal.
       const current = step(), target = driverObj.getActiveElement();
-      const interactive = ["quick", "reservation-controls", "walkin-controls"].includes(current?.id);
+      const interactive = ["quick", "reservation-controls", "walkin-controls", "reports-range", "report-risk", "reports-peak"].includes(current?.id);
       const nodes = [...(current?.action && target ? [target] : []),
         ...(interactive && target ? target.querySelectorAll("input:not(:disabled), select:not(:disabled), button:not(:disabled), a[href]") : []),
         ...document.querySelectorAll(".intoch-demo-tour button:not(:disabled)")].filter(visible);
@@ -522,7 +536,7 @@
     if (!eligible() || String(getStaffSession().id) !== String(staff?.id)) return;
     identity = String(staff.id); offered = !!read();
     const saved = read(true);
-    if (["operations", "guests"].includes(saved?.section)) run = { section: saved.section };
+    if (["operations", "guests", "reports"].includes(saved?.section)) run = { section: saved.section };
     if (saved?.version === VERSION && catalog().some(item => item.id === saved.step) && environment().fictionalGuestNames.includes(saved.guestName)) {
       run = { section: saved.section, step: saved.step, guestId: saved.guestId, guestName: saved.guestName, paused: true };
       showDock(text("Your tour is saved. Resume whenever you're ready.", "Tur Anda tersimpan. Lanjutkan kapan saja Anda siap."));

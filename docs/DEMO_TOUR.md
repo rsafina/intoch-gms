@@ -1,5 +1,29 @@
 # Authenticated demo walkthrough
 
+## Optional Reports guide
+
+The demo Reports page reuses the original product cards and report calculations,
+with no Marketing/Operations/Spending tab selector. It includes date range and
+guest totals, Acquire, Retain, At Risk, today's reservations/cancellations,
+upcoming reservations and Peak Traffic. Original CSV exports, at-risk switches
+and the Peak Traffic date picker remain interactive. Campaign creation and other
+report sections are outside this demo view. Non-demo Reports is unchanged.
+
+Start Reports Guide in the page introduction, or choose Reports from Reset Tour.
+The initial three-guide introduction is unchanged. The nine steps introduce:
+guest insights, date range, acquisition, returning guests, at-risk relationships,
+today's service, upcoming bookings, peak traffic and independent exploration.
+Controls can be tried while highlighted; this introduction does not require
+writes or force filter changes. Skip/Close, Back, restart and reload recovery use
+the existing controller. Loading failures offer Retry without presenting zeros
+as successful results; stale session reads cannot replace the current report.
+
+Verification uses the actual report handlers with fictional read-only fixtures:
+`tests/demo-reports.test.js` and
+`node scripts/check-demo-tour-browser.cjs --reports-only` (1440/393/320px).
+Screenshots: `docs/screens/demo-tour/*-reports-*.png`. Live Supabase reads and
+deployment remain separate verification obligations.
+
 Implemented locally on `feature/demo-guided-tour`, 2026-10-08. No deployment,
 public access provisioning, live SQL, reset, Auth changes or configuration rebuild.
 

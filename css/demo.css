@@ -26,7 +26,11 @@
 .demo-metric:nth-child(-n+2) strong { font-size:48px; }
 .demo-metric p { color:var(--brand-ink); opacity:.75; }
 .demo-metric p,.demo-note { font-size:12px; line-height:1.6; }
-#demo-reports { max-width:1024px; margin:auto; }
+#demo-reports { max-width:1280px; margin:auto; display:grid; gap:24px; }
+#demo-reports [hidden] { display:none !important; }
+#demo-reports .demo-panel { margin-bottom:0; }
+#demo-reports[data-report-state="loading"] > [data-tour]:not([data-tour="reports-intro"]):not([data-tour="reports-range"]), #demo-reports[data-report-state="error"] > [data-tour]:not([data-tour="reports-intro"]):not([data-tour="reports-range"]) { display:none; }
+@media (max-width:640px) { #demo-reports .card { padding:18px; } #demo-reports [data-tour="reports-range"] > div { min-width:0; flex-wrap:wrap; } #demo-reports input[type="date"] { max-width:100%; } #demo-reports [data-tour="reports-peak"] { overflow:hidden; } #demo-reports #peak-calendar-popup { position:static; width:min(288px,calc(100vw - 72px)); } }
 #demo-reports h1 { font-size:30px; font-weight:600; color:var(--brand-ink); }
 .demo-range-bar { margin-top:24px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; background:white; padding:18px 22px; border:1px solid var(--brand-tint); border-radius:18px; box-shadow:0 3px 12px color-mix(in srgb,var(--brand-ink) 5%,transparent); }
 .demo-eyebrow { display:block; text-transform:uppercase; font-size:11px; font-weight:600; letter-spacing:.09em; color:var(--brand); }
@@ -76,4 +80,11 @@
   .demo-campaign { grid-template-columns:1fr; padding:20px; gap:20px; }
   .demo-mode #page-dashboard > div > div:first-child { flex-wrap:wrap; gap:16px; }
   .demo-mode #page-dashboard,.demo-mode #page-reports { padding:18px; }
+}
+
+@media (max-width:640px) {
+  #demo-reports [data-tour="reports-peak"] > .flex { flex-wrap:wrap; }
+  #demo-reports #peak-date-picker-wrap { width:100%; min-width:0; }
+  #demo-reports #ops-peak-traffic-chart { overflow-x:auto; }
+  #demo-reports #ops-peak-traffic-bars { min-width:700px; }
 }

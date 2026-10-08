@@ -96,7 +96,7 @@ async function walkToSearch(h) {
   const explore=[...h.win.document.querySelectorAll('.demo-tour-link')].find(node=>node.textContent==='Explore Independently');
   explore.click();assert.equal(h.seen()[0].status,'skipped');assert.equal(h.title(),undefined);assert.ok(h.win.document.querySelector('.demo-tour-reset-highlight'),'Explore highlights reset');
   await h.win.fixture.relogin();await sleep(400);assert.equal(h.title(),undefined,'Explicit skip suppresses next intro');
-  assert.ok(h.win.document.getElementById('demo-tour-restart'),'Restart remains available');h.click('#demo-tour-reset');assert.equal(h.win.document.querySelectorAll('#demo-tour-sections [data-tour-section]').length,3);h.win.document.dispatchEvent(new h.win.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert.equal(h.win.document.getElementById('demo-tour-sections').hidden,true);h.dom.window.close();
+  assert.ok(h.win.document.getElementById('demo-tour-restart'),'Restart remains available');h.click('#demo-tour-reset');assert.equal(h.win.document.querySelectorAll('#demo-tour-sections [data-tour-section]').length,4);h.win.document.dispatchEvent(new h.win.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert.equal(h.win.document.getElementById('demo-tour-sections').hidden,true);h.dom.window.close();
 
   h=await harness();await walkToSearch(h);
   h.next();await sleep(50);assert.equal(h.title(),'Find a familiar face','Next cannot bypass search');

@@ -17,6 +17,13 @@ const functions = [
   'updateGuestSortIcons', 'viewGuestProfile', 'cancelGuestProfileRead', 'showLoginPage', 'loadDashboard', 'renderDashboardReservations',
   'renderDashboardWalkIns', 'renderDashboardAreaOccupancy', 'formatDashboardDateHeader',
   'onQwNameInput', 'hideQwResults', 'selectQwGuest', 'quickAddWalkIn',
+  'loadReports','loadOperationsReports','loadOpsForecast','setMarketingRange','getMarketingDateRange',
+  'buildReportGuestStats','reportVisitChannel','reportVisitOrderKey','reportChannelLine','reportPaxLine',
+  'reportChannelBreakdown','reportRangeLabel','reportIsAcquisitionGuest','reportLifetimeVisits',
+  'reportIsReturningGuest','reportIsLoyalGuest','reportIsVipGuest','reportIsRetainGuest',
+  'switchAtRiskTab','refreshAtRiskDisplay','getPeakDateWindow','renderOpsPeakTraffic',
+  'togglePeakCalendar','closePeakCalOnOutside','movePeakCalMonth','renderPeakCalendar',
+  'selectPeakDate','resetPeakDate','reloadPeakTrafficOnly',
 ].map(name => extract('js/app.js', name)).join('\n');
 const utilities = ['showModal', 'hideModal', 'ymd'].map(name => extract('js/config.template.js', name)).join('\n');
 const drawer = extract('js/settings-navigation.js', 'toggleSidebarDrawer');
@@ -47,6 +54,9 @@ class ReadQuery {
   eq(column,value) {this.filters.push(row=>row[column]===value);return this;}
   is(column,value) {this.filters.push(row=>(row[column]??null)===value);return this;}
   gt(column,value) {this.filters.push(row=>row[column]>value);return this;}
+  gte(column,value) {this.filters.push(row=>row[column]>=value);return this;}
+  lte(column,value) {this.filters.push(row=>row[column]<=value);return this;}
+  neq(column,value) {this.filters.push(row=>row[column]!==value);return this;}
   not(column,operator,value) {this.filters.push(row=>row[column]!==value);return this;}
   order() {return this;} limit() {return this;} in() {return this;}
   or(expression) {const query=expression.split('ilike.%')[1]?.split('%')[0]?.toLowerCase()||'';this.filters.push(row=>[row.name,row.phone,row.company].some(value=>String(value||'').toLowerCase().includes(query)));return this;}
@@ -95,6 +105,10 @@ const loadDashboardReservationCounts=async()=>{},loadDashboardReservations=async
 const odRows=async(table,columns,filter)=>{const query=new ReadQuery(table).select(columns);const result=await filter(query);if(result.error)throw Error('Fixture read failed');return result.data;};
 const odRange=()=>({start:TODAY,end:TODAY});
 const getDashboardDate=()=>TODAY;
+let currentReportSegments={},currentMarketingRange='month',currentAtRiskTab='60',peakStartDate=null,peakCalViewYear=null,peakCalViewMonth=null;
+const PEAK_DAYS_BACK=10,PEAK_DAYS_AHEAD=3;
+const getOpsReportDateRange=()=>({from:TODAY,to:TODAY});
+const padded=value=>ymd(value);
 const openResActions=()=>{fixture.lastToast='Reservation shortcut clicked (local read fixture)';},editGuest=()=>{},startEditFavoriteMenu=()=>{},startEditVisitSpend=()=>{},openGuestModal=()=>{},openWalkInModal=()=>{},openReservationModal=()=>{};
 fixture.changeIdentity = value=>{fixtureStaff=value;};
 fixture.logout = ()=>{fixtureStaff=null;showLoginPage();};

@@ -50,22 +50,28 @@ function initDemoPresentation() {
   document.getElementById('dash-bd-label')?.closest('.card')?.setAttribute('hidden','');
   const reports = document.createElement('div');
   reports.id = 'demo-reports';
-  reports.innerHTML = `<h1>${demoText('Reports','Laporan')}</h1><p class="demo-note">${demoText('A simple picture of your restaurant’s visits and recorded spending.','Ringkasan kunjungan dan pengeluaran yang tercatat di restoran Anda.')}</p>
-    <div class="demo-range-bar"><span class="demo-eyebrow">${demoText('Date range','Rentang tanggal')}</span>
-      <input type="hidden" id="demo-report-period" value="month">
-      <div class="demo-range-buttons" role="group" aria-label="${demoText('Report period','Periode laporan')}">
-        <button type="button" data-demo-period="today" aria-pressed="false" onclick="setDemoReportPeriod('today')">${demoText('Today','Hari ini')}</button>
-        <button type="button" data-demo-period="week" aria-pressed="false" onclick="setDemoReportPeriod('week')">${demoText('Last 7 days','7 hari terakhir')}</button>
-        <button type="button" data-demo-period="month" aria-pressed="true" onclick="setDemoReportPeriod('month')">${demoText('This month','Bulan ini')}</button>
-      </div><span id="demo-report-range" class="demo-range-label"></span>
-    </div>
-    <p class="demo-definition">${demoText('One party of 4 dining once = 1 visit · 4 diners (pax).','Satu rombongan berisi 4 orang datang sekali = 1 kunjungan · 4 orang (pax).')}</p>
-    <div id="demo-report-content" aria-live="polite"></div>
-    <aside class="demo-panel demo-campaign"><div class="demo-campaign-intro"><span class="demo-eyebrow">${demoText('Optional marketing support','Layanan pemasaran opsional')}</span><h2>${demoText('Bring your guests back','Ajak tamu Anda kembali')}</h2>
-    <p>${demoText('We can also help you plan campaigns for your guests by email or WhatsApp. This is an optional service.','Kami juga dapat membantu merencanakan kampanye untuk tamu Anda melalui email atau WhatsApp. Ini adalah layanan opsional.')}</p>
-    <div class="demo-channel-tags"><span>Email</span><span>WhatsApp</span></div></div>
-    <div class="demo-campaign-example"><span class="demo-eyebrow">${demoText('Illustrative example','Contoh ilustrasi')}</span><strong>Rp 2.400.000</strong><p>${demoText('Recorded spending from 12 guests who returned after outreach.','Pengeluaran tercatat dari 12 tamu yang kembali setelah dihubungi.')}</p><p class="demo-note">${demoText('Example only · Excluded from report totals','Hanya contoh · Tidak termasuk total laporan')}</p>
-    <details class="demo-method"><summary>${demoText('About campaign results','Tentang hasil kampanye')}</summary><p>${demoText('Spending after a message does not prove the campaign caused the visit. Live campaign attribution is not connected in this demo.','Pengeluaran setelah pesan tidak membuktikan kampanye menyebabkan kunjungan. Atribusi kampanye belum terhubung dalam demo ini.')}</p></details></div></aside>`;
+  reports.innerHTML = `<header data-tour="reports-intro"><h1>${demoText('Reports','Laporan')}</h1><p class="demo-note">${demoText('Understand who visits, who returns, and what your team should prepare for.','Pahami siapa yang datang, siapa yang kembali, dan apa yang perlu disiapkan tim.')}</p></header>
+    <aside class="demo-panel"><p>${demoText('Use the date range to explore guest relationships. Live bookings and Peak Traffic have their own time windows, so you can plan ahead while reviewing past visits.','Gunakan rentang tanggal untuk melihat hubungan tamu. Reservasi live dan Peak Traffic memiliki periode sendiri untuk membantu perencanaan sambil meninjau kunjungan.')}</p><button type="button" class="btn-ghost" data-tour="reports-start" onclick="window.DemoTour?.start('reports')">${demoText('Start Reports Guide','Mulai Panduan Laporan')}</button></aside>
+    <div id="demo-reports-status" role="status"></div>`;
+  const move = (node, marker) => { if (node) { node.dataset.tour = marker; reports.append(node); } };
+  move(document.getElementById('mkt-range-today')?.closest('.card'), 'reports-range');
+  move(document.getElementById('report-total-guests')?.parentElement, 'reports-total');
+  const acquisition = document.getElementById('report-new-guests')?.closest('.card');
+  const retention = document.getElementById('mkt-retain-total')?.closest('.card');
+  const risk = document.getElementById('at-risk-tab-60')?.closest('.card');
+  if (acquisition) acquisition.dataset.tour = 'report-acquire';
+  if (retention) retention.dataset.tour = 'report-retain';
+  if (risk) risk.dataset.tour = 'report-risk';
+  move(acquisition?.parentElement, 'reports-segments');
+  const live = document.getElementById('ops-demand-0-count')?.closest('.grid');
+  if (live?.previousElementSibling) move(live.previousElementSibling, 'reports-live-label');
+  move(live, 'reports-live');
+  move(document.getElementById('ops-forecast-this-week')?.closest('.card'), 'reports-forecast');
+  const peak = document.getElementById('ops-peak-traffic-chart')?.closest('.card');
+  if (peak?.previousElementSibling) move(peak.previousElementSibling, 'reports-peak-label');
+  move(peak, 'reports-peak');
+  // Campaign creation is outside this guide; keep the real read-only CSV exports.
+  reports.querySelectorAll('button[onclick^="bcOpen"]').forEach(node => node.hidden = true);
   document.getElementById('page-reports').append(reports);
 }
 
@@ -110,37 +116,27 @@ function renderDemoGuestSegments(groups,today) {
     `<article class="demo-segment demo-segment--risk"><h3>At Risk</h3><strong>${groups.risk60+groups.risk90}</strong><p class="demo-segment-unit">${demoText('guests not back in 60+ days','tamu belum kembali selama 60+ hari')}</p><p class="demo-segment-description">${demoText('Based on each guest’s latest visit, as of','Berdasarkan kunjungan terakhir setiap tamu, per')} ${fmt.date(today)}.</p><dl><div><dt>${demoText('60–89 days','60–89 hari')}</dt><dd>${groups.risk60}</dd></div><div><dt>${demoText('90+ days','90+ hari')}</dt><dd>${groups.risk90}</dd></div></dl><p class="demo-note">${demoText('All visit history, independent of the selected period.','Seluruh riwayat kunjungan, tidak mengikuti periode yang dipilih.')}</p></article></div></section>`;
 }
 async function loadDemoReports() {
-  if (!demoEnabled() || !hasAccess('reports')) return;
-  const root = document.getElementById('demo-report-content');
-  if (!root) return;
+  if (!demoEnabled() || !hasAccess('reports')) return false;
+  const root = document.getElementById('demo-reports');
+  if (!root) return false;
   const request = ++demoReportRequest, identity = odIdentity();
-  const valid = () => request===demoReportRequest && identity===odIdentity() && currentPage==='reports';
-  const range = odRange(document.getElementById('demo-report-period').value);
-  document.getElementById('demo-report-range').textContent = `${fmt.date(range.start)} – ${fmt.date(range.end)}`;
-  root.textContent = demoText('Loading report…','Memuat laporan…');
+  const valid = () => request === demoReportRequest && identity === odIdentity() && currentPage === 'reports';
+  const status = document.getElementById('demo-reports-status');
+  root.dataset.reportState = 'loading'; status.textContent = demoText('Loading reports…','Memuat laporan…');
+  window.DemoTour?.notify('operations-ready', {page:'reports',ok:false});
   try {
-    const visits = await odRows('visits','id,guest_id,pax,spend_amount,voided_at',query=>query.is('voided_at',null).gte('visit_date',range.start).lte('visit_date',range.end));
-    if (!valid()) return;
-    const today=odRange('today').end;
-    const history = await odRows('visits','id,guest_id,visit_date',query=>query.is('voided_at',null).lte('visit_date',today));
-    if (!valid()) return;
-    const groups=demoGuestSegments(visits,history,range.start,today);
-    const stats = demoMetrics(visits,groups.prior);
-    const money = value => value==null ? '—' : fmt.currency(Math.round(value));
-    root.innerHTML = `<div class="demo-metrics">`+
-      demoCard(demoText('Visits','Kunjungan'),stats.visits,demoText('Each arrival counts, including repeat visits.','Setiap kedatangan dihitung, termasuk kunjungan ulang.'),'brand','visit')+
-      demoCard(demoText('Diners (pax)','Jumlah orang (pax)'),stats.pax,demoText('Total people served across those visits.','Total orang yang dilayani dalam kunjungan tersebut.'),'accent','people')+
-      demoCard(demoText('Revenue','Pendapatan'),money(stats.recorded ? stats.total : null),demoText('Total recorded visit spending.','Total pengeluaran kunjungan yang tercatat.'),'brand','money')+
-      demoCard(demoText('Average spend / visit','Rata-rata / kunjungan'),money(stats.average),demoText('Revenue ÷ visits with spending recorded.','Pendapatan ÷ kunjungan dengan pengeluaran tercatat.'),'soft','money')+
-      demoCard(demoText('Revenue · returning guests','Pendapatan · tamu kembali'),money(stats.recorded ? stats.returning : null),demoText('From guests who visited before this period.','Dari tamu yang pernah datang sebelum periode ini.'),'accent','return')+
-      demoCard(demoText('Revenue · new guests','Pendapatan · tamu baru'),money(stats.recorded ? stats.fresh : null),demoText('From guests whose first visit is in this period.','Dari tamu yang pertama kali datang pada periode ini.'),'brand','new')+
-      `</div><div class="demo-report-coverage"><span>${stats.recorded}/${stats.visits} ${demoText('visits have spending recorded','kunjungan memiliki pengeluaran tercatat')}</span>`+
-      (stats.missingPax ? `<span>${stats.missingPax} ${demoText('visits have no diner count','kunjungan belum mencatat jumlah orang')}</span>` : '')+
-      `<details class="demo-method"><summary>${demoText('How this is calculated','Cara perhitungan')}</summary><p>${demoText('Missing spending is excluded; recorded zero is included. Deposits are not added again. Averages are rounded to the nearest rupiah. Repeat visits by a new guest in this period stay in the new-guest group.','Pengeluaran kosong tidak dihitung; nilai nol tetap dihitung. Deposit tidak ditambahkan lagi. Rata-rata dibulatkan ke rupiah terdekat. Kunjungan ulang tamu baru pada periode ini tetap masuk kelompok tamu baru.')}</p></details></div>`+
-      (stats.unlinked ? `<p class="demo-note">${demoText('Revenue without a linked guest','Pendapatan tanpa data tamu')}: ${money(stats.unlinked)}</p>` : '')+
-      renderDemoGuestSegments(groups,today);
+    const results = await Promise.all([loadReports({demoOnly:true,valid}), loadOperationsReports({demoOnly:true,valid})]);
+    if (!valid()) return false;
+    if (results.some(value => value !== true)) throw Error('Report read incomplete');
+    root.dataset.reportState = 'ready'; status.textContent = '';
+    window.DemoTour?.notify('operations-ready', {page:'reports',ok:true});
+    return true;
   } catch (error) {
-    if (valid()) root.innerHTML = `<p role="alert">${demoText('Report unavailable. Please retry.','Laporan tidak tersedia. Silakan coba lagi.')}</p><button class="btn-ghost" onclick="loadDemoReports()">${demoText('Retry','Coba lagi')}</button>`;
+    if (!valid()) return false;
+    root.dataset.reportState = 'error'; status.textContent = demoText('Reports unavailable. Please retry.','Laporan tidak tersedia. Silakan coba lagi.');
+    const retry = document.createElement('button'); retry.className = 'btn-ghost'; retry.textContent = demoText('Retry','Coba lagi'); retry.onclick = () => loadDemoReports(); status.append(retry);
+    window.DemoTour?.notify('operations-ready', {page:'reports',ok:false});
+    return false;
   }
 }
 async function loadDemoTraffic() {
@@ -188,7 +184,11 @@ async function renderDemoGuestActions(guest) {
 }
 function resetDemoPresentation() {
   demoReportRequest++; demoTrafficRequest++; demoGuestRequest++;
-  for (const id of ['demo-report-content','demo-traffic']) document.getElementById(id)?.replaceChildren();
+  if (typeof currentReportSegments !== 'undefined') currentReportSegments = {};
+  const reports = document.getElementById('demo-reports');
+  if (reports) { reports.dataset.reportState = 'idle'; reports.querySelectorAll('[id^="ops-demand"], [id^="ops-today"], [id^="ops-forecast"], #report-total-guests, #report-new-guests, #mkt-retain-total').forEach(node => node.textContent = '—'); }
+
+  for (const id of ['demo-reports-status','demo-traffic']) document.getElementById(id)?.replaceChildren();
 }
 if (document.readyState==='loading') document.addEventListener('DOMContentLoaded',initDemoPresentation,{once:true});
 else initDemoPresentation();

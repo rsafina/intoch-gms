@@ -10597,6 +10597,7 @@ async function resetPeakDate() {
 }
 
 async function reloadPeakTrafficOnly() {
+  if (typeof demoEnabled === "function" && demoEnabled()) return loadDemoReports();
   const { from, to } = getPeakDateWindow();
 
   const [resResult, walkResult] = await Promise.all([
@@ -10833,9 +10834,12 @@ function renderMktReviewPerformance(submissions) {
   }
 }
 
-async function loadOperationsReports() {
-  await renderOpsReportRange();
-  if (!allAreas.length) await loadAreas();
+async function loadOperationsReports({demoOnly = false, valid = () => true} = {}) {
+  if (!demoOnly && typeof demoEnabled === "function" && demoEnabled()) return loadDemoReports();
+  if (!demoOnly) {
+    await renderOpsReportRange();
+    if (!allAreas.length) await loadAreas();
+  }
 
   const { from, to } = getOpsReportDateRange();
 
@@ -10849,7 +10853,7 @@ async function loadOperationsReports() {
     peakResResult,
   ] = await Promise.all([
     // Date-filtered: lead time, sources, res vs walk-in
-    supabaseQuery(
+    demoOnly ? Promise.resolve({data:[],error:null}) : supabaseQuery(
       () =>
         db
           .from("reservations")
@@ -10865,7 +10869,7 @@ async function loadOperationsReports() {
       "Failed to load reservation reports",
     ),
     // Date-filtered: res vs walk-in ratio
-    supabaseQuery(
+    demoOnly ? Promise.resolve({data:[],error:null}) : supabaseQuery(
       () =>
         db
           .from("visits")
@@ -10879,7 +10883,7 @@ async function loadOperationsReports() {
       () =>
         db
           .from("reservations")
-          .select("pax, status")
+          .select(demoOnly ? "pax,status,deleted_at" : "pax, status")
           .eq("reservation_date", TODAY),
       "Failed to load today reservations",
     ),
@@ -10888,7 +10892,7 @@ async function loadOperationsReports() {
       () =>
         db
           .from("visits")
-          .select("visit_date")
+          .select(demoOnly ? "visit_date,voided_at" : "visit_date")
           .eq("visit_type", "Walk-In")
           .gte("visit_date", peakFrom)
           .lte("visit_date", peakTo),
@@ -10899,7 +10903,7 @@ async function loadOperationsReports() {
       () =>
         db
           .from("reservations")
-          .select("reservation_date")
+          .select(demoOnly ? "reservation_date,deleted_at" : "reservation_date")
           .not("status", "in", '("Cancelled","Cancelled (No Show)")')
           .gte("reservation_date", peakFrom)
           .lte("reservation_date", peakTo),
@@ -10907,6 +10911,8 @@ async function loadOperationsReports() {
     ),
   ]);
 
+  if (demoOnly && !valid()) return false;
+  if (demoOnly && [reservationsResult, visitsResult, todayReservationsResult, peakWalkInsResult, peakResResult].some(result => result.error)) throw new Error("Report read failed");
   if (
     reservationsResult.error ||
     visitsResult.error ||
@@ -10918,9 +10924,9 @@ async function loadOperationsReports() {
 
   const reservations = reservationsResult.data || [];
   const visits = visitsResult.data || [];
-  const todayReservations = todayReservationsResult.data || [];
-  const peakWalkIns = peakWalkInsResult.data || [];
-  const peakReservations = peakResResult?.data || [];
+  const todayReservations = (todayReservationsResult.data || []).filter(row => !demoOnly || !row.deleted_at);
+  const peakWalkIns = (peakWalkInsResult.data || []).filter(row => !demoOnly || !row.voided_at);
+  const peakReservations = (peakResResult?.data || []).filter(row => !demoOnly || !row.deleted_at);
 
   // Today snapshot — always live, unaffected by date filter
   const todayCancelled = todayReservations.filter(
@@ -10951,6 +10957,13 @@ async function loadOperationsReports() {
     todayCancelCountEl.textContent = todayCancelled.length;
   if (todayCancelPaxEl)
     todayCancelPaxEl.textContent = `${todayCancelledPax} pax released`;
+
+  if (demoOnly) {
+    const forecastReady = await loadOpsForecast({demoOnly:true,valid});
+    if (!valid() || !forecastReady) return false;
+    renderOpsPeakTraffic(peakReservations, peakWalkIns);
+    return true;
+  }
 
   // Reservation vs Walk-In vs Cancelled — date filtered
   const reservationVisits = visits.filter(
@@ -10999,7 +11012,7 @@ async function loadOperationsReports() {
 
 }
 
-async function loadOpsForecast() {
+async function loadOpsForecast({demoOnly = false, valid = () => true} = {}) {
   // Compute date windows — always relative to today, never affected by the reporting period filter
   const now = new Date();
   const todayStr = ymd(now);
@@ -11028,7 +11041,7 @@ async function loadOpsForecast() {
       () =>
         db
           .from("reservations")
-          .select("pax, status")
+          .select(demoOnly ? "pax,status,deleted_at" : "pax, status")
           .gte("reservation_date", fmt2(thisWeekStart))
           .lte("reservation_date", fmt2(thisWeekEnd))
           .neq("status", "cancelled"),
@@ -11038,7 +11051,7 @@ async function loadOpsForecast() {
       () =>
         db
           .from("reservations")
-          .select("pax, status")
+          .select(demoOnly ? "pax,status,deleted_at" : "pax, status")
           .gte("reservation_date", fmt2(nextWeekStart))
           .lte("reservation_date", fmt2(nextWeekEnd))
           .neq("status", "cancelled"),
@@ -11048,7 +11061,7 @@ async function loadOpsForecast() {
       () =>
         db
           .from("reservations")
-          .select("pax, status")
+          .select(demoOnly ? "pax,status,deleted_at" : "pax, status")
           .gte("reservation_date", fmt2(nextMonthStart))
           .lte("reservation_date", fmt2(nextMonthEnd))
           .neq("status", "cancelled"),
@@ -11056,8 +11069,10 @@ async function loadOpsForecast() {
     ),
   ]);
 
+  if (demoOnly && !valid()) return false;
+  if (demoOnly && [thisWeekRes, nextWeekRes, nextMonthRes].some(result => result.error)) throw new Error("Forecast read failed");
   const summarise = (res) => {
-    const data = res.data || [];
+    const data = (res.data || []).filter(row => !demoOnly || (!row.deleted_at && !["Cancelled", "Cancelled (No Show)", "Deleted"].includes(row.status)));
     return {
       count: data.length,
       pax: data.reduce((sum, r) => sum + (r.pax || 0), 0),
@@ -11077,6 +11092,7 @@ async function loadOpsForecast() {
   document.getElementById("ops-forecast-next-month").textContent = nm.count;
   document.getElementById("ops-forecast-next-month-pax").textContent =
     `${nm.pax} pax`;
+  return true;
 }
 
 function getMarketingDateRange(value = currentMarketingRange) {
@@ -11261,7 +11277,8 @@ function setMarketingRange(range) {
   if (range !== "custom") loadReports();
 }
 
-async function loadReports() {
+async function loadReports({demoOnly = false, valid = () => true} = {}) {
+  if (!demoOnly && typeof demoEnabled === "function" && demoEnabled()) return loadDemoReports();
   const { from, to } = getMarketingDateRange();
 
   // Update range label
@@ -11304,6 +11321,8 @@ async function loadReports() {
     ),
   ]);
 
+  if (demoOnly && !valid()) return false;
+  if (demoOnly && (allVisitsRes.error || periodVisitsRes.error)) throw new Error("Guest report read failed");
   if (allVisitsRes.error || periodVisitsRes.error) {
     toast("Failed to load marketing data", "error");
     return;
@@ -11427,6 +11446,7 @@ async function loadReports() {
   setChannelText("mkt-ret-pax", reportPaxLine(retainChannels.totalPax));
 
   refreshAtRiskDisplay();
+  if (demoOnly) return true;
 
   // Legacy hidden IDs
   const legacyIds = {

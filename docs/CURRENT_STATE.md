@@ -1,5 +1,32 @@
 # Current state and operational handoff
 
+Online-guide contact simplification (2026-10-08; local): prospects may enter any
+made-up digits-only phone number with at least nine digits; no exact generated
+contact or 000 prefix is required. Name copy now suggests John Doe. Both input
+steps wait for Next so typing is uninterrupted. Actual entered contact is captured
+again before manual submission, persisted for recovery and checked with the returned
+booking ID. Existing saved V1 contacts remain valid. No automatic messages or saves;
+ordinary booking validation is unchanged. Targeted controller tests and Chrome
+fixture flows at 1440px, 393px and 320px pass, including manual submit, exact booking
+lookup, reload recovery and logout. Updated name screenshots are in
+docs/screens/demo-online-booking. No live booking writes, commit, push or deployment.
+
+Demo Reports refresh (2026-10-08; local on `feature/demo-guided-tour`): demo now
+reuses the actual Reports DOM, calculations and controls for date range, Acquire,
+Retain, At Risk, today's reservations/cancellations, upcoming reservations and
+14-day Peak Traffic. Marketing/Operations/Spending tabs and unrelated sections
+remain hidden in demo mode only. CSV exports remain available; campaign creation
+is omitted from this view. No fabricated report totals or automatic database writes.
+An optional nine-step Reports guide starts from the page introduction or Reset
+Tour; the first-entry introduction retains its original three choices. Failed
+reads offer Retry, and request/session guards discard stale results. Voided visits
+and deleted reservations are excluded. Ordinary Reports behavior is preserved.
+Verification: all 95 Node suites pass, plus syntax and diff checks.
+Chrome fixture checks pass at 1440px, 393px and 320px for actual controls, guide,
+restart, recovery and logout; screenshots are in docs/screens/demo-tour/*-reports-*.
+Live Supabase report loading and deployed assets remain unverified. No deployment,
+push, database/configuration/Auth changes or demo-data reset.
+
 Online-guide name entry simplification (2026-10-08; local): user chose arbitrary
 made-up names instead of typing an exact generated name. The name step uses the
 existing form's two-character minimum and enables Next without advancing mid-typing.
