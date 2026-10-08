@@ -164,7 +164,6 @@
             </div>
           </div>
           <div class="guest-preview">
-            <div class="preview-label"><span data-i18n="demo.sample">Contoh data</span><span aria-hidden="true">•••</span></div>
             <div class="guest-preview-body">
               <div class="guest-id"><span class="guest-initials" aria-hidden="true">DL</span><div><h2>Dewi Lestari</h2><p data-i18n="hero.guestMeta">8 kunjungan · Member keluarga</p></div></div>
               <h3 data-i18n="hero.history">Riwayat tamu</h3>
@@ -184,11 +183,38 @@
           </div>
           <div id="manual-panel" role="tabpanel" aria-labelledby="compare-old" class="comparison-panel">
             <div><h3 data-i18n="compare.oldTitle">Banyak catatan.<br />Sedikit konteks bersama.</h3><p data-i18n="compare.oldBody">Reservasi ada di chat, walk-in di buku tamu. Riwayat kunjungan tertinggal di ingatan staf.</p></div>
-            <ul class="comparison-list"><li data-i18n="compare.old1">Data tamu harus dikumpulkan satu per satu.</li><li data-i18n="compare.old2">Pelanggan lama bisa terlihat seperti tamu baru.</li><li data-i18n="compare.old3">Follow-up sulit saat riwayat terakhir tidak jelas.</li></ul>
+            <div class="comparison-evidence">
+              <div class="record-illustration" aria-hidden="true">
+
+                <div class="scattered-records">
+                  <div class="record-note chat-note">
+                    <span class="note-source"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11a8 8 0 0 1-8 8H5l-3 3V11a9 9 0 0 1 19 0Z"/></svg><span data-i18n="compare.chat">Chat reservasi</span></span>
+                    <strong>Dewi Lestari</strong>
+                    <span data-i18n="compare.booking">Sabtu · 19.00 · 4 orang</span>
+                  </div>
+                  <div class="record-note book-note">
+                    <span class="note-source"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="15" height="18" rx="3"/><path d="M8 3v18M3 7h4M3 12h4M3 17h4M12 8h4M12 12h4"/></svg><span data-i18n="compare.book">Buku tamu</span></span>
+                    <strong>Dewi Lestari</strong>
+                    <span data-i18n="compare.walkin">12 Sep · Walk-in</span>
+                  </div>
+                </div>
+              </div>
+              <ul class="comparison-list"><li data-i18n="compare.old1">Data tamu harus dikumpulkan satu per satu.</li><li data-i18n="compare.old2">Pelanggan lama bisa terlihat seperti tamu baru.</li><li data-i18n="compare.old3">Follow-up sulit saat riwayat terakhir tidak jelas.</li></ul>
+            </div>
           </div>
           <div id="solusi" role="tabpanel" aria-labelledby="compare-new" class="comparison-panel" hidden>
             <div><h3 data-i18n="compare.newTitle">Satu riwayat.<br /><span class="tone">Seluruh tim mengenali.</span></h3><p data-i18n="compare.newBody">Reservasi, walk-in, membership, dan catatan kunjungan terhubung dalam profil tamu yang sama.</p></div>
-            <ul class="comparison-list"><li data-i18n="compare.new1">Lihat kunjungan dan konteks pelanggan kembali.</li><li data-i18n="compare.new2">Gunakan riwayat spending untuk segmentasi.</li><li data-i18n="compare.new3">Siapkan pesan WhatsApp sesuai kebutuhan tamu.</li></ul>
+            <div class="comparison-evidence">
+              <div class="record-illustration" aria-hidden="true">
+
+                <div class="connected-record">
+                  <span class="record-initials">DL</span>
+                  <div><strong>Dewi Lestari</strong><span data-i18n="compare.profile">Satu profil, riwayat terhubung.</span></div>
+                  <div class="record-sources"><span data-i18n="compare.reservations">Reservasi</span><span class="record-connector"></span><span>Walk-in</span><span class="record-connector"></span><span>Membership</span></div>
+                </div>
+              </div>
+              <ul class="comparison-list"><li data-i18n="compare.new1">Lihat kunjungan dan konteks pelanggan kembali.</li><li data-i18n="compare.new2">Gunakan riwayat spending untuk segmentasi.</li><li data-i18n="compare.new3">Siapkan pesan WhatsApp sesuai kebutuhan tamu.</li></ul>
+            </div>
           </div>
         </div>
       </section>
@@ -208,7 +234,7 @@
               <li data-i18n="pill.l1c"><span><b>Quick Walk-in:</b> tamu tanpa reservasi tercatat cukup dengan nama</span></li>
               <li class="soft" data-i18n="pill.l1d"><span>Mendukung deposit untuk area tertentu atau rombongan besar</span></li>
             </ul></details></div>
-            <div class="feature-example"><p class="sample-label" data-i18n="demo.sample">Contoh data</p><h4 data-i18n="feature.exampleTitle1">Kunjungan hari ini</h4>
+            <div class="feature-example"><h4 data-i18n="feature.exampleTitle1">Kunjungan hari ini</h4>
               <div class="feature-example-row" data-i18n="feature.row11"><span>19.00</span><strong>Dewi Lestari</strong><small>4 orang · Online</small></div>
               <div class="feature-example-row" data-i18n="feature.row12"><span>19.30</span><strong>Bayu Pratama</strong><small>6 orang · Staf</small></div>
               <div class="feature-example-row" data-i18n="feature.row13"><span>20.00</span><strong>Rangga Adi</strong><small>3 orang · Walk-in</small></div>
@@ -221,7 +247,7 @@
               <li data-i18n="pill.l2b"><span><b>Follow Up:</b> konfirmasi reservasi dan sapaan untuk tamu yang lama tidak berkunjung</span></li>
               <li data-i18n="pill.l2c"><span><b>Broadcast:</b> kirim promo ke segmen pelanggan tertentu</span></li>
             </ul></details></div>
-            <div class="feature-example"><p class="sample-label" data-i18n="demo.sample">Contoh data</p><h4 data-i18n="feature.exampleTitle2">Pesan siap ditinjau</h4>
+            <div class="feature-example"><h4 data-i18n="feature.exampleTitle2">Pesan siap ditinjau</h4>
               <div class="feature-example-row" data-i18n="feature.row21"><span>Konfirmasi</span><strong>Reservasi Dewi</strong><small>Sabtu · 19.00 · 4 orang</small></div>
               <div class="feature-example-row" data-i18n="feature.row22"><span>Terima kasih</span><strong>Setelah kunjungan</strong><small>Pesan personal</small></div>
               <div class="feature-example-row" data-i18n="feature.row23"><span>Follow-up</span><strong>Tamu lama</strong><small>Pilih segmen pelanggan</small></div>
@@ -235,7 +261,7 @@
               <li data-i18n="pill.l3c"><span>Pengingat ulang tahun untuk sentuhan personal</span></li>
               <li data-i18n="pill.l3d"><span>Riwayat kunjungan dan menu favorit setiap member</span></li>
             </ul></details></div>
-            <div class="feature-example"><p class="sample-label" data-i18n="demo.sample">Contoh data</p><h4 data-i18n="feature.exampleTitle3">Membership keluarga</h4>
+            <div class="feature-example"><h4 data-i18n="feature.exampleTitle3">Membership keluarga</h4>
               <div class="feature-example-row" data-i18n="feature.row31"><span>Dewi Lestari</span><strong>8 kunjungan</strong><small>3 reservasi · 5 walk-in</small></div>
               <div class="feature-example-row" data-i18n="feature.row32"><span>Kartu stiker</span><strong>8 / 15 stiker</strong><small>Voucher saat kartu penuh</small></div>
               <div class="feature-example-row" data-i18n="feature.row33"><span>Ulang tahun</span><strong>29 September</strong><small>Sapaan personal</small></div>
@@ -270,7 +296,7 @@
             </ol>
             <p class="v2-note"><span data-i18n="uc.note1">Membutuhkan deposit untuk area tertentu atau rombongan besar? Form reservasi Intoch juga mendukungnya.</span></p>
           </div>
-          <div class="v2-stage"><p class="sample-label" data-i18n="demo.sample">Contoh data</p><div class="demo-visual" aria-hidden="true">
+          <div class="v2-stage"><div class="demo-visual" aria-hidden="true">
             <div class="v2-devices">
               <div class="dev dev-laptop f2 f3">
                 <div class="lid"><div class="screen">
@@ -291,7 +317,7 @@
               <div class="dev dev-phone f1">
                 <div class="screen">
                   <div class="layer pf ph only1">
-                    <div class="pf-head"><b>Senja Resto</b><small>Reservasi Meja</small></div>
+                    <div class="pf-head"><b>Intoch Resto</b><small>Reservasi Meja</small></div>
                     <label>Tanggal</label><div class="pf-in">Sabtu, 26 Sep</div>
                     <label>Area</label>
                     <div class="pf-pills"><span class="pf-pill">Indoor</span><span class="pf-pill pick a1">Teras</span><span class="pf-pill">VIP</span></div>
@@ -324,7 +350,7 @@
               <li data-step="3"><button type="button"><span class="n">3</span><span data-i18n="uc.s23">Daftar tamu siap. Saat tiba, tandai Arrived.</span></button></li>
             </ol>
           </div>
-          <div class="v2-stage"><p class="sample-label" data-i18n="demo.sample">Contoh data</p><div class="demo-visual" aria-hidden="true">
+          <div class="v2-stage"><div class="demo-visual" aria-hidden="true">
             <div class="v2-devices">
               <div class="dev dev-laptop f3">
                 <div class="lid"><div class="screen">
@@ -348,11 +374,11 @@
               <div class="dev dev-phone f1 f2">
                 <div class="screen">
                   <div class="layer wa">
-                    <div class="wa-top"><span class="av">S</span><span><b>Senja Resto</b><small>online</small></span></div>
+                    <div class="wa-top"><span class="av">I</span><span><b>Intoch Resto</b><small>online</small></span></div>
                     <div class="wa-body">
                       <div class="bub pop1">Halo Dewi Lestari!
 
-Kami dari Senja Resto ingin mengonfirmasi reservasi Bapak/Ibu:
+Kami dari Intoch Resto ingin mengonfirmasi reservasi Bapak/Ibu:
 
 Tanggal: Sab, 26 Sep
 Jam: 19:00
@@ -362,7 +388,7 @@ Jumlah: 4 orang<time>10:12</time></div>
                   <div class="layer ticket ph from2">
                     <div class="tk">
                       <div class="tk-l">Tiket Reservasi</div>
-                      <b>Senja Resto</b>
+                      <b>Intoch Resto</b>
                       <dl>
                         <dt>Nama</dt><dd>Dewi Lestari</dd>
                         <dt>Tanggal</dt><dd>Sab, 26 Sep</dd>
@@ -393,7 +419,7 @@ Jumlah: 4 orang<time>10:12</time></div>
               <li data-step="3"><button type="button"><span class="n">3</span><span data-i18n="uc.s33">Setelah kunjungan, kirim ucapan terima kasih.</span></button></li>
             </ol>
           </div>
-          <div class="v2-stage"><p class="sample-label" data-i18n="demo.sample">Contoh data</p><div class="demo-visual" aria-hidden="true">
+          <div class="v2-stage"><div class="demo-visual" aria-hidden="true">
             <div class="v2-devices">
               <div class="dev dev-tablet f1 f2">
                 <div class="screen">
@@ -419,9 +445,9 @@ Jumlah: 4 orang<time>10:12</time></div>
               <div class="dev dev-phone f3">
                 <div class="screen">
                   <div class="layer wa">
-                    <div class="wa-top"><span class="av">S</span><span><b>Senja Resto</b><small>online</small></span></div>
+                    <div class="wa-top"><span class="av">I</span><span><b>Intoch Resto</b><small>online</small></span></div>
                     <div class="wa-body">
-                      <div class="bub pop3 ph from3">Terima kasih atas kunjungan bapak/ibu di resto Senja Resto hari ini. Kami nantikan kedatangannya kembali di lain waktu!<time>21:35</time></div>
+                      <div class="bub pop3 ph from3">Terima kasih atas kunjungan bapak/ibu di resto Intoch Resto hari ini. Kami nantikan kedatangannya kembali di lain waktu!<time>21:35</time></div>
                       <div class="bub in pop3b ph from3">Sama-sama, makanannya enak! 🙏<time>21:41</time></div>
                     </div>
                   </div>
@@ -443,7 +469,7 @@ Jumlah: 4 orang<time>10:12</time></div>
               <li data-step="3"><button type="button"><span class="n">3</span><span data-i18n="uc.s43">Siapkan sapaan ulang tahun atau ajakan kembali.</span></button></li>
             </ol>
           </div>
-          <div class="v2-stage"><p class="sample-label" data-i18n="demo.sample">Contoh data</p><div class="demo-visual" aria-hidden="true">
+          <div class="v2-stage"><div class="demo-visual" aria-hidden="true">
             <div class="v2-devices">
               <div class="dev dev-laptop f1 f2">
                 <div class="lid"><div class="screen">
@@ -484,11 +510,11 @@ Jumlah: 4 orang<time>10:12</time></div>
               <div class="dev dev-phone f3">
                 <div class="screen">
                   <div class="layer wa">
-                    <div class="wa-top"><span class="av">S</span><span><b>Senja Resto</b><small>online</small></span></div>
+                    <div class="wa-top"><span class="av">I</span><span><b>Intoch Resto</b><small>online</small></span></div>
                     <div class="wa-body">
                       <div class="bub pop3 ph from3">Halo Dewi Lestari!
 
-Selamat ulang tahun dari kami semua di Senja Resto. Semoga hari ini menyenangkan dan tahun ini membawa banyak hal baik untuk Bapak/Ibu. 🎂<time>09:00</time></div>
+Selamat ulang tahun dari kami semua di Intoch Resto. Semoga hari ini menyenangkan dan tahun ini membawa banyak hal baik untuk Bapak/Ibu. 🎂<time>09:00</time></div>
                       <div class="bub in pop3b ph from3">Wah terima kasih! Nanti malam aku ke sana ya 🥰<time>09:14</time></div>
                     </div>
                   </div>

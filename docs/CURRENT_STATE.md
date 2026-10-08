@@ -7,6 +7,19 @@ documentation task. **Committed code is not proof of deployed SQL or Edge Functi
 
 ## Landing redesign (2026-10-08; local only)
 
+Follow-up: removed all repeated visible "Contoh data" / "Sample data" labels at the
+user's request, including the hero's decorative label bar. Removed unused label
+styles and translation key; landing interaction checks and script syntax passed.
+
+Follow-up: centered the FAQ heading/list and navy contact content/buttons at the
+user's request. FAQ question and answer text remains left-aligned. Chrome checks
+at 1440 and 390px confirmed the layout without horizontal overflow.
+
+The comparison tabs now illustrate separate chat/guest-book records and one
+connected guest profile using native HTML/CSS and SVG source icons. Sample labels
+and new text support ID/EN. Chrome checks at 1440, 390, and 320px showed no document
+overflow, and the landing interaction regression passed.
+
 Implemented the user-approved restaurant-focused redesign in `landing.html`, with
 styles and marketing interactions extracted to `css/landing.css`,
 `css/landing-demo.css`, `js/landing.js`, and `js/landing-i18n.js`. Brand spelling is

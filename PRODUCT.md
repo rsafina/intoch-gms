@@ -33,8 +33,8 @@ AccelByte's restrained dark-blue contrast is the supplied visual reference.
 
 ## Evidence on Hand
 
-Existing landing-page workflow simulations and actual logo assets. Demo values must
-be labeled illustrative. Generated mockup portraits and replacement logos are not
+Existing landing-page workflow simulations and actual logo assets. Demo values are illustrative; the user requested removal of repeated visible
+sample-data labels. Generated mockup portraits and replacement logos are not
 product assets. No verified outcome statistics or new commercial commitments were
 provided for the redesign.
 

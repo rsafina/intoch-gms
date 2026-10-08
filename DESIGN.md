@@ -135,7 +135,7 @@ Success green is reserved for simulated confirmation states, not a second market
 - **Headline:** Section headings using the frontmatter headline role.
 - **Title:** Product and feature headings; scenario titles use a responsive size and reduce to 1.6rem on mobile.
 - **Body:** Comfortable default reading rhythm; hero supporting copy uses 17px and 1.8 line-height, reducing to 16px on mobile.
-- **Label:** Action labels use the frontmatter role; illustrative-data captions use 11px, weight 600, and restrained tracking.
+- **Label:** Action labels use the frontmatter role.
 
 **The Selective Emphasis Rule.** Highlight a meaningful phrase within a headline; preserve the surrounding sentence and reading order.
 
@@ -159,6 +159,14 @@ Large product and feature panels use the panel radius; simulation screens and mo
 
 ## Components
 
+The FAQ heading and 850px question list are centered within the page container;
+questions and answers retain left alignment. The contact section, its supporting
+copy, and its action group are centered on both desktop and mobile.
+
+The comparison tabs include compact, static HTML illustrations with sample
+data: separate chat and guest-book notes versus one connected guest history. Notes
+use restrained rotation and flat borders; the connected profile uses existing navy.
+
 ### Buttons
 
 Confident pill actions use logo-blue, white text, and the recorded padding. Primary controls have a 48px minimum height; compact navigation controls and playback buttons retain 44px targets. Hover changes the background over 0.2s. Contact actions on navy use a white primary button and a transparent outlined email button. The primary Indonesian CTA remains **Coba Intoch Sekarang**.
@@ -167,7 +175,7 @@ Every interactive component uses visible focus: a 3px blue outline with 5px offs
 
 ### Cards / Containers
 
-Guest history uses a navy panel with white text, muted supporting text, initials, dated rows, and subtle translucent separators. Feature examples use the soft surface with the same panel shape. Preserve the illustrative-data label; example names, counts, and spending are not verified outcomes.
+Guest history uses a navy panel with white text, muted supporting text, initials, dated rows, and subtle translucent separators. Feature examples use the soft surface with the same panel shape. Repeated sample-data labels were removed at the user’s request; example names, counts, and spending are not verified outcomes.
 
 ### Inputs / Fields
 
@@ -193,7 +201,7 @@ Authored inline SVG supplies the corrected interface controls. Emoji inside samp
 - **Do** preserve Intoch spelling, actual logo assets, and Plus Jakarta Sans.
 - **Do** apply the Single Navy Rule and selective pale-blue emphasis.
 - **Do** keep tab focus, mobile controls, pause/replay, and static states usable.
-- **Do** label illustrative data and retain the existing contact destinations.
+- **Do** retain the existing contact destinations and treat demo values as illustrative.
 
 ### Don't:
 - **Don't** apply this landing system to the authenticated app without separate authorization.
