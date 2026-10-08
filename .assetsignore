@@ -52,6 +52,7 @@ assets/_to_delete
 .github
 .agents
 .codex
+.impeccable
 .env
 .env.*
 .dev.vars

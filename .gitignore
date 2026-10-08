@@ -30,3 +30,6 @@ supabase/.branches/
 *.key
 *.p12
 *.pfx
+
+# Local design-review screenshots; keep the design-system sidecar versionable.
+.impeccable/review/

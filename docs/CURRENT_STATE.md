@@ -5,6 +5,33 @@ Implementation claims were checked against code, migrations, Git and existing te
 No live Supabase/Cloudflare inspection, migration, deployment or push was performed for this
 documentation task. **Committed code is not proof of deployed SQL or Edge Functions.**
 
+## Landing redesign (2026-10-08; local only)
+
+Implemented the user-approved restaurant-focused redesign in `landing.html`, with
+styles and marketing interactions extracted to `css/landing.css`,
+`css/landing-demo.css`, `js/landing.js`, and `js/landing-i18n.js`. Brand spelling is
+**Intoch**, with lowercase c, recorded in `AGENTS.md` and `PRODUCT.md`.
+
+The page uses white and uniform dark navy sections, a near-black footer, rounded
+product examples, pill actions, and selective headline emphasis. The existing logo,
+"Coba Intoch Sekarang" CTA, section anchors, ID/EN preference, WhatsApp/email
+destinations, and all four workflow simulations remain. Feature tabs and scenario
+choices reduce mobile stacking. Demos loop in 6.9 seconds, support pause/replay and
+manual steps, stop autoplay offscreen, and provide a static reduced-motion mode.
+No application/backend logic, generated client configuration, or live deployment
+was changed.
+
+Verification: landing interaction regression, page-loading tests, and all 28 brand
+token checks passed; both new scripts passed `node --check`; `git diff --check`
+passed. Headless Chrome captures at 1440, 768, 390, and 320px showed no horizontal
+document overflow after corrections. The in-app browser was unavailable due to
+sandbox metadata failure, so Chrome provided visual verification. Impeccable's
+independent reviewer scored its three fixes resolved: narrow navigation, visible
+paused scenario changes, and consistent SVG interface icons. This verdict covers
+that fix list. The complete application suite and live deployment were not tested.
+Local review screenshots are ignored by Git and excluded from static publication;
+the approved direction is in `docs/design/landing.md`.
+
 ## Deposit tracking save incident (2026-09-23; live recovery unconfirmed)
 
 User reported Settings > Deposits & Payments > Deposit rules > uncheck Deposit

@@ -1,5 +1,7 @@
 # Intoch: start here
 
+Brand spelling: **Intoch**, with a lowercase **c**. Never write `IntoCh`.
+
 Intoch is a restaurant guest-management product: reservations, walk-ins, deposits,
 invoices, membership, vouchers, reports and WhatsApp follow-up. One private codebase
 serves separate client deployments, each with its own Supabase project and configuration.

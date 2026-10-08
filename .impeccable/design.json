@@ -1,0 +1,198 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-08T07:59:37.371486+00:00",
+  "title": "Design System: Intoch landing page",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Logo Blue",
+        "tonalRamp": [
+          "oklch(15% 0.14 270)",
+          "oklch(26% 0.14 270)",
+          "oklch(37% 0.14 270)",
+          "oklch(49% 0.14 270)",
+          "oklch(61% 0.14 270)",
+          "oklch(73% 0.14 270)",
+          "oklch(85% 0.14 270)",
+          "oklch(95% 0.14 270)"
+        ]
+      },
+      "navy": {
+        "role": "neutral",
+        "displayName": "Uniform Navy",
+        "tonalRamp": [
+          "oklch(15% 0.065 255)",
+          "oklch(26% 0.065 255)",
+          "oklch(37% 0.065 255)",
+          "oklch(49% 0.065 255)",
+          "oklch(61% 0.065 255)",
+          "oklch(73% 0.065 255)",
+          "oklch(85% 0.065 255)",
+          "oklch(95% 0.065 255)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "tonalRamp": [
+          "oklch(15% 0 255)",
+          "oklch(26% 0 255)",
+          "oklch(37% 0 255)",
+          "oklch(49% 0 255)",
+          "oklch(61% 0 255)",
+          "oklch(73% 0 255)",
+          "oklch(85% 0 255)",
+          "oklch(95% 0 255)"
+        ]
+      },
+      "highlight": {
+        "role": "primary",
+        "displayName": "Pale Blue",
+        "tonalRamp": [
+          "oklch(15% 0.07 255)",
+          "oklch(26% 0.07 255)",
+          "oklch(37% 0.07 255)",
+          "oklch(49% 0.07 255)",
+          "oklch(61% 0.07 255)",
+          "oklch(73% 0.07 255)",
+          "oklch(85% 0.07 255)",
+          "oklch(95% 0.07 255)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "data": {
+        "displayName": "Data",
+        "purpose": "Dates, times, and selected simulation data."
+      }
+    },
+    "shadows": [
+      {
+        "name": "chat-bubble",
+        "value": "0 1px 1px rgba(0,0,0,0.08)",
+        "purpose": "Simulated chat bubbles only."
+      }
+    ],
+    "motion": [
+      {
+        "name": "control-hover",
+        "value": "background .2s",
+        "purpose": "Landing action hover."
+      },
+      {
+        "name": "phase",
+        "value": "2300ms",
+        "purpose": "Each of three workflow phases; 6900ms loop."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation:none;transition:none",
+        "purpose": "Static manual exploration when reduced motion is requested."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact-desktop",
+        "value": "1050px"
+      },
+      {
+        "name": "mobile",
+        "value": "800px"
+      },
+      {
+        "name": "compact-phone",
+        "value": "360px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The main landing action.",
+      "html": "<button class=\"ds-primary\">Coba Intoch Sekarang</button>",
+      "css": ".ds-primary{font-family:\"Plus Jakarta Sans\",sans-serif;font-size:14px;font-weight:700;background:var(--brand,#3c56a6);color:white;border:0;border-radius:999px;min-height:48px;padding:13px 24px;cursor:pointer;transition:background .2s}.ds-primary:hover{background:var(--brand-hover,#304687)}.ds-primary:focus-visible{outline:3px solid #6f9fe9;outline-offset:5px}"
+    },
+    {
+      "name": "Contact action",
+      "kind": "button",
+      "refersTo": "button-contact",
+      "description": "White action for a navy section.",
+      "html": "<button class=\"ds-contact\">Chat via WhatsApp</button>",
+      "css": ".ds-contact{font-family:\"Plus Jakarta Sans\",sans-serif;font-size:14px;font-weight:700;background:white;color:var(--navy,#102848);border:0;border-radius:999px;min-height:48px;padding:13px 24px;cursor:pointer;transition:background .2s}.ds-contact:hover{background:#e5eefb}.ds-contact:focus-visible{outline:3px solid #6f9fe9;outline-offset:5px}"
+    },
+    {
+      "name": "Product history panel",
+      "kind": "card",
+      "refersTo": "product-panel",
+      "description": "An illustrative guest record.",
+      "html": "<section class=\"ds-panel\"><h3>Riwayat Dewi</h3><p>Contoh data · 8 kunjungan</p></section>",
+      "css": ".ds-panel{font-family:\"Plus Jakarta Sans\",sans-serif;background:var(--navy,#102848);color:white;border-radius:28px;padding:28px}.ds-panel h3{font-size:21px;margin:0}.ds-panel p{font-size:12px;color:var(--inverse-muted,#c7d8ed)}"
+    },
+    {
+      "name": "Scenario choices",
+      "kind": "nav",
+      "refersTo": "scenario-tab",
+      "description": "Static selected-state preview; runtime keyboard behavior belongs to landing.js.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\" aria-label=\"Contoh skenario\"><button role=\"tab\" aria-selected=\"true\">Reservasi</button><button role=\"tab\" aria-selected=\"false\" tabindex=\"-1\">Walk-in</button></div>",
+      "css": ".ds-tabs{display:flex;gap:8px;background:var(--navy,#102848);padding:16px;font-family:\"Plus Jakarta Sans\",sans-serif}.ds-tabs button{font:inherit;font-size:14px;font-weight:600;min-height:48px;padding:10px 22px;border:1px solid #ffffff35;border-radius:999px;background:transparent;color:white;cursor:pointer}.ds-tabs button[aria-selected=true]{background:white;color:var(--navy,#102848);border-color:white}.ds-tabs button:focus-visible{outline:3px solid #6f9fe9;outline-offset:5px}"
+    },
+    {
+      "name": "Guest context chip",
+      "kind": "chip",
+      "refersTo": "product-panel",
+      "description": "Quiet context inside a guest record.",
+      "html": "<div class=\"ds-context\"><span>Member aktif</span></div>",
+      "css": ".ds-context{background:var(--navy,#102848);padding:16px}.ds-context span{display:inline-block;font-family:\"Plus Jakarta Sans\",sans-serif;font-size:11px;color:var(--inverse-muted,#c7d8ed);background:#ffffff0c;border-radius:999px;padding:6px 12px}"
+    },
+    {
+      "name": "Illustrative field",
+      "kind": "input",
+      "refersTo": "feature-panel",
+      "description": "Read-only simulation field; preview focus is accessible, but runtime application validation and focus behavior are outside this contract.",
+      "html": "<label class=\"ds-field\">Nama tamu<input value=\"Dewi Lestari\" readonly></label>",
+      "css": ".ds-field{display:block;font-family:\"Plus Jakarta Sans\",sans-serif;font-size:13px;color:var(--text,#142137)}.ds-field input{display:block;font:inherit;font-weight:600;margin-top:8px;background:white;border:1px solid var(--line,#dce3ed);border-radius:.5em;padding:.45em .6em;min-height:2.1em}.ds-field input:focus-visible{outline:3px solid #6f9fe9;outline-offset:5px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "One Guest History",
+    "overview": "Intoch presents restaurant workflows through readable guest history and short, inspectable demonstrations. The visual character is calm, practical, and softly rounded: white provides breathing room, navy concentrates attention, and logo-blue actions remain easy to find.\n\nThis system applies only to `landing.html` and its landing styles and scripts. The authenticated application retains its incumbent visual system; these tokens do not authorize an app redesign. The approved direction is recorded in `docs/design/landing.md`; brand constraints come from `PRODUCT.md`.",
+    "keyCharacteristics": [
+      "White canvas with uniform navy content sections and a near-black footer.",
+      "Actual Intoch logo, Plus Jakarta Sans, selective headline emphasis.",
+      "Soft product panels, pill controls, compact accessible tabs.",
+      "Illustrative workflow demonstrations with explicit playback controls."
+    ],
+    "rules": [
+      {
+        "name": "The Single Navy Rule",
+        "body": "Dark content sections share the same navy; do not introduce a lighter blue outer shell.",
+        "section": "colors"
+      },
+      {
+        "name": "The Selective Emphasis Rule",
+        "body": "Highlight a meaningful phrase within a headline; preserve the surrounding sentence and reading order.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Surface Rule",
+        "body": "Product panels use color and borders to define their edges; do not add floating shadows to the landing shell.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do preserve Intoch spelling, actual logo assets, and Plus Jakarta Sans.",
+      "Do apply the Single Navy Rule and selective pale-blue emphasis.",
+      "Do keep tab focus, mobile controls, pause/replay, and static states usable.",
+      "Do label illustrative data and retain the existing contact destinations."
+    ],
+    "donts": [
+      "Don't apply this landing system to the authenticated app without separate authorization.",
+      "Don't replace the logo, add invented portraits or outcome claims, or generate decorative product screenshots.",
+      "Don't add a lighter blue shell around navy sections or floating marketing-panel shadows.",
+      "Don't use emoji or text glyphs as interface icons; sample conversational emoji remain allowed."
+    ]
+  }
+}
