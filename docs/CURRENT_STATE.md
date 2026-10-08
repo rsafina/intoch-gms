@@ -1,5 +1,16 @@
 # Current state and operational handoff
 
+Demo Reports visibility correction (2026-10-08; local): the public playground
+login is Staff, whose ordinary navigation policy hides Reports. Initial Reports
+fixture checks used permissive role access and missed this. Reports now has a
+presentation-only exception for Staff after verified application initialization,
+restricted by demo mode, exact allowlisted origin/project and current staff ID.
+Logout/reset clears that exception. Production Staff, other projects/origins,
+unverified sessions and other restricted pages retain their existing policy.
+Real role-policy tests exercise the sidebar and these negative cases. No RLS,
+account role, Auth or generated configuration edits. Deployment must rebuild
+js/config.js from the updated template with existing playground configuration.
+
 Online-guide contact simplification (2026-10-08; local): prospects may enter any
 made-up digits-only phone number with at least nine digits; no exact generated
 contact or 000 prefix is required. Name copy now suggests John Doe. Both input

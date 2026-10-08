@@ -1,5 +1,13 @@
 /* A thin presentation layer for the demo branch. Never grants role access. */
 function demoEnabled() { return document.documentElement.classList.contains('demo-mode'); }
+let demoVerifiedStaffId = null;
+function demoSessionReady(staff) { demoVerifiedStaffId = staff?.id == null ? null : String(staff.id); }
+function demoCanViewReports() {
+  const env = window.INTOCH_DEMO_TOUR_ENV, staff = getStaffSession();
+  return !!(demoEnabled() && env?.origins?.includes(location.origin) &&
+    typeof SUPABASE_URL !== 'undefined' && env.supabaseUrl === SUPABASE_URL &&
+    staff?.role === 'staff' && demoVerifiedStaffId !== null && String(staff.id) === demoVerifiedStaffId);
+}
 function demoRoute(page) {
   if (!demoEnabled()) return page;
   return ['dashboard','reservations','walkins','guests','reports','invoice'].includes(page) ? page : 'dashboard';
@@ -183,6 +191,7 @@ async function renderDemoGuestActions(guest) {
   } catch(error) { if(valid()) { panel.dataset.tourState='error';list.textContent=demoText('Bookings unavailable. Reopen the profile to retry.','Reservasi tidak tersedia. Buka kembali profil untuk mencoba lagi.'); } }
 }
 function resetDemoPresentation() {
+  demoVerifiedStaffId = null;
   demoReportRequest++; demoTrafficRequest++; demoGuestRequest++;
   if (typeof currentReportSegments !== 'undefined') currentReportSegments = {};
   const reports = document.getElementById('demo-reports');

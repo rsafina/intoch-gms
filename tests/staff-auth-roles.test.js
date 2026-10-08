@@ -16,6 +16,21 @@ for(const role of ['owner','admin','manager','staff']){
  w.applyRoleToNav();assert.equal(w.document.getElementById('rff-bank').disabled,role!=='admin');
 }
 w.eval(fs.readFileSync('js/staff-auth.js','utf8'));
+// Exercise the actual demo presentation exception with the real role policy.
+const demoSource=fs.readFileSync('js/demo.js','utf8');
+w.eval(demoSource.slice(demoSource.indexOf('function demoEnabled()'),demoSource.indexOf('function demoRoute(')));
+w.INTOCH_DEMO_TOUR_ENV={origins:['https://example.com'],supabaseUrl:'https://playground.supabase.co'};
+w.SUPABASE_URL='https://playground.supabase.co';w.document.documentElement.classList.add('demo-mode');
+w.setStaffSession({id:'demo-staff',role:'staff'});
+assert.equal(w.hasAccess('reports'),false,'Unverified demo cannot expose Reports');
+w.demoSessionReady(w.getStaffSession());assert.equal(w.hasAccess('reports'),true,'Verified playground Staff sees Reports');
+w.applyRoleToNav();assert.equal(w.document.querySelector('[data-nav="reports"]').style.display,'');
+assert.equal(w.hasAccess('broadcast'),false,'Demo does not grant campaign access');
+w.SUPABASE_URL='https://client.supabase.co';assert.equal(w.hasAccess('reports'),false,'Other project remains restricted');
+w.SUPABASE_URL='https://playground.supabase.co';w.INTOCH_DEMO_TOUR_ENV.origins=[];assert.equal(w.hasAccess('reports'),false,'Other origin remains restricted');
+w.INTOCH_DEMO_TOUR_ENV.origins=['https://example.com'];w.document.documentElement.classList.remove('demo-mode');assert.equal(w.hasAccess('reports'),false,'Ordinary Staff remains restricted');
+w.document.documentElement.classList.add('demo-mode');w.demoSessionReady(null);assert.equal(w.hasAccess('reports'),false,'Teardown removes presentation exception');
+w.document.documentElement.classList.remove('demo-mode');
 w.setStaffSession({id:'fo',role:'staff',can_waive_deposit:true});assert.equal(w.canWaiveDeposit(),true);
 w.setStaffSession({id:'owner',role:'owner',can_waive_deposit:true});assert.equal(w.canWaiveDeposit(),false);
 (async()=>{

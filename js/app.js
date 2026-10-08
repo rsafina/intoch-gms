@@ -337,6 +337,7 @@ async function initializeApplication(landingPage) {
   });
   showAppShell();
   const staff = getStaffSession();
+  if (typeof demoSessionReady === "function") demoSessionReady(staff);
   const staffNameEl = document.getElementById("staff-display-name");
   if (staffNameEl)
     staffNameEl.textContent = staff?.display_name || staff?.username || "Staff";

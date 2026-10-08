@@ -1902,6 +1902,8 @@ const ADMIN_ONLY_PAGES = new Set(["settings-staff"]);
 // Admin (owner/head-chef) gets full manager-level access to every page —
 // the only difference is the dashboard content, swapped in navigateTo().
 function hasAccess(page) {
+  // Presentation exception for the verified fictional playground only; RLS is unchanged.
+  if (page === "reports" && typeof demoCanViewReports === "function" && demoCanViewReports()) return true;
   if (page === "staff-dashboard") return currentStaffRole() === "admin";
   if (page === "reservation-outlook") return ["admin", "owner"].includes(currentStaffRole());
   if (page === "invoice" && typeof invReservationContext !== "undefined" &&
