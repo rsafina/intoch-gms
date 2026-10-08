@@ -162,7 +162,7 @@ async function renderDemoGuestActions(guest) {
   const root=document.getElementById('profile-content');
   // Hide loyalty/tier decorations, retaining contact details, preferences and history.
   root.querySelector('button[onclick*="viewMemberDetail"]')?.parentElement?.setAttribute('data-demo-advanced','');
-  const panel=document.createElement('section'); panel.className='demo-panel';
+  const panel=document.createElement('section'); panel.className='demo-panel';panel.dataset.tour='profile-shortcuts';panel.dataset.tourState='loading';
   const heading=document.createElement('h2'); heading.textContent=demoText('Reservations, deposits & invoices','Reservasi, deposit & invoice'); panel.append(heading);
   const note=document.createElement('p'); note.textContent=demoText('Deposits stay with the reservation. Open a booking to request or record a deposit, or prepare a detailed invoice for a large event.','Deposit terhubung dengan reservasi. Buka reservasi untuk meminta atau mencatat deposit, atau membuat invoice terperinci untuk acara besar.'); panel.append(note);
   if(hasAccess('reservations')) {
@@ -183,7 +183,8 @@ async function renderDemoGuestActions(guest) {
       list.append(row);
     }
     if(!data?.length)list.textContent=demoText('No reservations yet. Create one to try the deposit flow.','Belum ada reservasi. Buat reservasi untuk mencoba alur deposit.');
-  } catch(error) { if(valid())list.textContent=demoText('Bookings unavailable. Reopen the profile to retry.','Reservasi tidak tersedia. Buka kembali profil untuk mencoba lagi.'); }
+    panel.dataset.tourState='ready';
+  } catch(error) { if(valid()) { panel.dataset.tourState='error';list.textContent=demoText('Bookings unavailable. Reopen the profile to retry.','Reservasi tidak tersedia. Buka kembali profil untuk mencoba lagi.'); } }
 }
 function resetDemoPresentation() {
   demoReportRequest++; demoTrafficRequest++; demoGuestRequest++;

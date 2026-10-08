@@ -1,5 +1,33 @@
 # Current state and operational handoff
 
+Authenticated demo walkthrough (2026-10-08; local on `feature/demo-guided-tour`):
+Driver.js 1.9.0 is published locally with its MIT license. A vanilla controller offers
+Start Guided Tour / Explore Independently after verified demo dashboard entry and
+covers dashboard, guest search/profile, preferences/spending/history and available
+booking shortcuts. Guest navigation, search and profile opening require real actions
+and successful results. Includes Back across sections, Skip/X/Escape, Restart Tour,
+browser-local versioned seen state, session recovery and independent exploration.
+Availability is pinned to the existing playground project/origins and verified app
+session; Owner's overview is excluded. The user confirmed playground isolation and
+fictional data; this is not a blocker. No automatic writes, Auth/RLS/config changes,
+reset infrastructure or changes to `/demo/*`. Phone popovers respect the visual
+viewport and keyboard; a temporary guided-profile sizing guard prevents 320px
+clipping without changing independent-use dialog styles. Guest read generations
+discard late results after logout, navigation or leaving an awaited profile step.
+
+Verification: full `npm.cmd test` passed 92 suites with zero failures; targeted tour
+tests also cover missing targets, failed/delayed reads, partial search, pending-profile
+Back, skip/restart/recovery and teardown. Local headless Chrome exercised actual
+navigation/search/profile/rendering with backend-free fictional reads at 1440×1000,
+393×852 and 320×852 (reduced motion at 320px). Screenshots inspected and saved in
+`docs/screens/demo-tour/`. In-app browser startup failed with the known missing
+`sandboxPolicy` error; local Chrome was used. Syntax and diff checks pass.
+See [Demo Tour](DEMO_TOUR.md) for exact copy, files, preview and access handoff.
+Live verified Auth/playground reads/saves, physical-phone keyboards and hosting
+behavior remain unverified for this change. Public access/deployment is not authorized;
+Local commit authorized by the user; push and deployment remain user-managed. Existing user package/skill edits preserved.
+
+
 Five-story phone composition pass (2026-09-30; local, untested at user request):
 Hubungan pelanggan now has mobile guest/action cards and in-place WhatsApp/ticket
 previews. Kenali tamu search/results use guest cards instead of compressed columns;

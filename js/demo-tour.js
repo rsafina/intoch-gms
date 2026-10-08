@@ -1,0 +1,447 @@
+/* Driver.js 1.9.0; vanilla DOM controller mounted outside page sections.
+ * Policy: offer once per verified demo staff identity/browser/version. Every explicit
+ * exit counts as seen; replay is always available. No server state or automatic writes.
+ */
+(function () {
+  "use strict";
+  const VERSION = 1;
+  const text = (en, id) => typeof demoText === "function" ? demoText(en, id) : en;
+  const anchor = name => `[data-tour="${name}"]`;
+  const mobile = () => window.matchMedia("(max-width: 640px)").matches;
+  const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let identity = null, generation = 0, run = null, driverObj = null;
+  let offered = false, internalNavigation = false, profileId = null;
+  let dashboardReady = false, guestsReady = false, waitingCancel = null, welcomeTimer = null, dock = null;
+  let observer = null, refreshTimer = null, lastFocus = null, pendingAction = null, actionTimer = null, readTimer = null;
+  let searchSatisfied = false, profileSatisfied = false;
+
+  function environment() { return window.INTOCH_DEMO_TOUR_ENV; }
+  function eligible() {
+    const env = environment();
+    const staff = typeof getStaffSession === "function" ? getStaffSession() : null;
+    return !!(env && env.origins?.includes(location.origin) && env.supabaseUrl &&
+      typeof SUPABASE_URL !== "undefined" && env.supabaseUrl === SUPABASE_URL &&
+      env.fictionalGuestNames?.some(name => typeof name === "string" && name) &&
+      typeof demoEnabled === "function" && demoEnabled() && staff?.id != null &&
+      ["admin", "manager", "staff", "finance"].includes(staff.role) &&
+      typeof hasAccess === "function" && hasAccess("dashboard") && hasAccess("guests"));
+  }
+  function valid() {
+    return identity !== null && eligible() && identity === String(getStaffSession().id);
+  }
+  function key(active = false) {
+    return `intoch:demo-tour:v${VERSION}:${environment().supabaseUrl}:${identity}:${active ? "active" : "seen"}`;
+  }
+  function read(active = false) {
+    try { return JSON.parse((active ? sessionStorage : localStorage).getItem(key(active))); }
+    catch { return null; }
+  }
+  function store(status) {
+    try { localStorage.setItem(key(), JSON.stringify({ status, version: VERSION })); } catch { /* Storage may be disabled. */ }
+  }
+  function persist() {
+    if (!valid()) return;
+    try {
+      if (run) sessionStorage.setItem(key(true), JSON.stringify({ ...run, version: VERSION }));
+      else sessionStorage.removeItem(key(true));
+    } catch { /* A tour must also work without browser storage. */ }
+  }
+  function sample() {
+    return { id: run?.guestId || null, name: run?.guestName || environment()?.fictionalGuestNames[0] };
+  }
+  function visible(element) {
+    if (!element?.isConnected) return false;
+    const rect = element.getBoundingClientRect();
+    if (!rect.width || !rect.height) return false;
+    for (let node = element; node && node.nodeType === 1; node = node.parentElement) {
+      const style = getComputedStyle(node);
+      if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) return false;
+    }
+    return true;
+  }
+  function find(selector) { return [...document.querySelectorAll(selector)].find(visible); }
+  function catalog() {
+    return [
+      { id: "dashboard", page: "dashboard", target: "dashboard-intro", title: text("Your front desk at a glance", "Ringkasan meja depan Anda"), copy: text("Start the day with bookings, walk-ins and seating in one place. This tour uses a fictional guest and never saves anything for you.", "Mulai hari dengan reservasi, walk-in, dan tempat duduk dalam satu layar. Tur ini menggunakan tamu fiktif dan tidak menyimpan data untuk Anda.") },
+      { id: "reservations", page: "dashboard", target: "today-reservations", title: text("Plan for arriving guests", "Siapkan kedatangan tamu"), copy: text("Upcoming Reservations helps your team prepare before guests arrive. Today, Tomorrow and +2 Days let you look ahead without leaving the dashboard.", "Upcoming Reservations membantu tim bersiap sebelum tamu datang. Today, Tomorrow, dan +2 Days membantu Anda melihat hari berikutnya dari dashboard.") },
+      { id: "walkins", page: "dashboard", target: "today-walkins", title: text("Keep walk-ins in view", "Pantau tamu walk-in"), copy: text("See today's walk-ins alongside your bookings. Your team can return here to update seating as the service changes.", "Lihat walk-in hari ini bersama reservasi Anda. Tim dapat kembali ke sini untuk memperbarui tempat duduk selama layanan berlangsung.") },
+      { id: "occupancy", page: "dashboard", target: "area-occupancy", title: text("See the seating picture", "Lihat kondisi tempat duduk"), copy: text("Area occupancy compares assigned parties with area capacity. It is a seating overview; today's traffic also includes completed visits.", "Okupansi area membandingkan rombongan yang ditempatkan dengan kapasitas area. Ini adalah ringkasan tempat duduk; aktivitas hari ini juga mencakup kunjungan selesai.") },
+      { id: "quick", page: "dashboard", target: "quick-walkin", title: text("A quick welcome for walk-ins", "Sambut walk-in dengan cepat"), copy: text("Quick Walk-In starts with a name, with phone and party size available here. You can add seating details later; no registration is needed for this tour.", "Quick Walk-In dimulai dengan nama, dengan telepon dan jumlah orang tersedia di sini. Detail tempat duduk bisa menyusul; tidak perlu mendaftarkan tamu untuk tur ini.") },
+      ...(mobile() ? [{ id: "menu", page: "dashboard", target: "mobile-menu", action: "menu", title: text("Open navigation", "Buka navigasi"), copy: text("Tap the menu to find your guest tools. The guide will continue when navigation opens.", "Ketuk menu untuk menemukan fitur tamu. Panduan akan berlanjut setelah navigasi terbuka.") }] : []),
+      { id: "guests-nav", page: "dashboard", target: "guests-nav", action: "navigate", title: text("Get to know your guests", "Kenali tamu Anda"), copy: text("Open Guest Database to see the relationships behind each visit. Click the highlighted navigation item to continue.", "Buka Guest Database untuk melihat hubungan di balik setiap kunjungan. Klik navigasi yang disorot untuk melanjutkan.") },
+      { id: "search", page: "guests", target: "guest-search", action: "search", title: text("Find a familiar face", "Temukan tamu yang Anda kenal"), copy: () => text(`Search for ${sample().name}, our reviewed fictional example. The guide continues when their matching result has loaded.`, `Cari ${sample().name}, contoh tamu fiktif yang telah diperiksa. Panduan berlanjut setelah hasil yang sesuai dimuat.`) },
+      { id: "open-profile", page: "guests", target: "guest-profile-open", action: "profile", title: text("Open the guest's story", "Buka cerita tamu"), copy: text("Click the highlighted eye button to open this guest's profile. We'll wait for their details and history to load successfully.", "Klik tombol mata yang disorot untuk membuka profil tamu ini. Kami menunggu detail dan riwayatnya berhasil dimuat.") },
+      { id: "details", page: "guests", target: "profile-details", profile: true, title: text("Remember who they are", "Ingat siapa tamu Anda"), copy: text("Contact details keep the guest's identity together across visits. This example is fictional; you do not need to edit or contact anyone.", "Detail kontak menyatukan identitas tamu di setiap kunjungan. Contoh ini fiktif; Anda tidak perlu mengedit atau menghubungi siapa pun.") },
+      { id: "spending", page: "guests", target: "profile-spending", profile: true, title: text("Understand recorded spending", "Pahami pengeluaran tercatat"), copy: text("Average Spend gives context from the guest's recorded spending history. Missing spending is different from a recorded zero.", "Average Spend memberi konteks dari riwayat pengeluaran tamu yang tercatat. Pengeluaran yang belum dicatat berbeda dengan nilai nol yang dicatat.") },
+      { id: "preferences", page: "guests", target: "profile-preferences", profile: true, title: text("Make the next visit personal", "Buat kunjungan berikutnya lebih personal"), copy: text("Favorites, preferences and notes help the team remember what matters to this guest. Empty fields mean those details have not been recorded yet.", "Menu favorit, preferensi, dan catatan membantu tim mengingat hal penting bagi tamu. Kolom kosong berarti detail tersebut belum dicatat.") },
+      { id: "history", page: "guests", target: "profile-history", profile: true, title: text("See the visits behind the relationship", "Lihat kunjungan di balik hubungan"), copy: text("Visit History shows the guest's recent attendance and recorded spending. A reservation alone does not mean the guest visited.", "Visit History menampilkan kedatangan terbaru dan pengeluaran tercatat. Reservasi saja tidak berarti tamu telah berkunjung.") },
+      { id: "shortcuts", page: "guests", target: "profile-shortcuts", profile: true, title: text("Connect the next booking", "Hubungkan reservasi berikutnya"), copy: text("When available, these shortcuts connect this guest to reservations, deposits and invoices. Deposits belong to a reservation; nothing needs to be created or paid during this tour.", "Jika tersedia, pintasan ini menghubungkan tamu dengan reservasi, deposit, dan invoice. Deposit terhubung ke reservasi; tidak perlu membuat atau membayar apa pun selama tur.") },
+      { id: "finish", page: "guests", target: "profile-close", profile: true, action: "finish", title: text("You're ready to explore", "Anda siap menjelajah"), copy: text("Finish the tour to explore at your own pace. Restart Tour is always available in the dashboard's demo guidance.", "Selesaikan tur untuk menjelajah sesuai keinginan Anda. Restart Tour selalu tersedia di panduan demo pada dashboard.") },
+    ].filter(item => item.id !== "shortcuts" || (typeof hasAccess === "function" && hasAccess("reservations")));
+  }
+  function step() { return catalog().find(item => item.id === run?.step); }
+  function disposeOverlay() {
+    ++generation;
+    waitingCancel?.(); waitingCancel = null;
+    clearTimeout(refreshTimer);
+    clearTimeout(actionTimer); actionTimer = null;
+    if (driverObj) { const old = driverObj; driverObj = null; old.destroy(); }
+  }
+  function button(label, action, className = "demo-tour-link") {
+    const node = document.createElement("button");
+    node.type = "button"; node.textContent = label; node.className = className;
+    node.addEventListener("click", action);
+    return node;
+  }
+  function controls(popover, current, welcome = false) {
+    const previous = popover.previousButton;
+    if (previous) {
+      previous.disabled = welcome || current?.id === "dashboard";
+      previous.classList.toggle("driver-popover-btn-disabled", previous.disabled);
+      if (!welcome) previous.style.display = "block";
+    }
+    const next = popover.nextButton;
+    if (next) {
+      next.disabled = !!current?.action && current.action !== "finish";
+      next.classList.toggle("driver-popover-btn-disabled", next.disabled);
+      next.textContent = welcome ? text("Start Guided Tour", "Mulai Tur Terpandu") :
+        current?.action === "finish" ? text("Finish", "Selesai") : text("Next", "Lanjut");
+    }
+    const extras = document.createElement("div"); extras.className = "demo-tour-controls";
+    if (!welcome) {
+      const progress = document.createElement("span"); progress.className = "demo-tour-progress";
+      const items = catalog();
+      progress.textContent = `${items.findIndex(item => item.id === current.id) + 1} / ${items.length}`;
+      extras.append(progress, button(text("Skip", "Lewati"), () => exit("skipped")));
+    }
+    extras.append(button(text("Explore Independently", "Jelajahi Mandiri"), () => welcome ? exit("skipped") : pause()));
+    popover.wrapper.append(extras);
+    popover.wrapper.setAttribute("role", "dialog");
+    popover.wrapper.setAttribute("aria-label", welcome ? text("Welcome to the Intoch demo", "Selamat datang di demo Intoch") : current.title);
+    next?.focus({ preventScroll: true });
+  }
+  function driverFor(current, welcome = false) {
+    if (!window.driver?.js?.driver) return null;
+    return window.driver.js.driver({
+      animate: !reduced(), smoothScroll: false, allowClose: true, allowKeyboardControl: false,
+      overlayClickBehavior: "none", disableActiveInteraction: current?.id !== "quick" && (!current?.action || current.action === "finish"),
+      overlayColor: getComputedStyle(document.documentElement).getPropertyValue("--brand-ink").trim() || "black",
+      overlayOpacity: 0.38, stagePadding: 6, stageRadius: 12, popoverOffset: 12,
+      popoverClass: "intoch-demo-tour", showProgress: false,
+      showButtons: welcome ? ["next", "close"] : ["previous", "next", "close"],
+      nextBtnText: text("Next", "Lanjut"), prevBtnText: text("Back", "Kembali"),
+      onNextClick: () => welcome ? start() : next(), onDoneClick: () => welcome ? start() : next(),
+      onPrevClick: back, onCloseClick: () => exit("skipped"), onDestroyStarted: () => exit("skipped"),
+      onPopoverRender: popover => controls(popover, current, welcome),
+      onHighlighted: clampPopover,
+    });
+  }
+  function clampPopover() {
+    const popover = document.querySelector(".intoch-demo-tour");
+    if (!popover) return;
+    const viewport = window.visualViewport;
+    const left = viewport?.offsetLeft || 0, top = viewport?.offsetTop || 0;
+    const width = viewport?.width || window.innerWidth, height = viewport?.height || window.innerHeight;
+    const setStyle = (name, value) => { if (popover.style[name] !== value) popover.style[name] = value; };
+    setStyle("maxWidth", `${Math.max(0, Math.min(340, width - 24))}px`);
+    setStyle("maxHeight", `${Math.max(0, height - 24)}px`);
+    const placed = popover.getBoundingClientRect();
+    // Driver may place via bottom/right. Combining those with our top/left
+    // stretches the fixed box, so retain its position and remove the opposing edges.
+    setStyle("bottom", "auto"); setStyle("right", "auto");
+    const rect = popover.getBoundingClientRect();
+    setStyle("left", `${Math.max(left + 12, Math.min(placed.left, left + width - rect.width - 12))}px`);
+    setStyle("top", `${Math.max(top + 12, Math.min(placed.top, top + height - rect.height - 12))}px`);
+  }
+  function viewportChanged() {
+    if (!driverObj) return;
+    document.body.style.setProperty("--demo-tour-viewport-width", `${window.visualViewport?.width || window.innerWidth}px`);
+    document.body.style.setProperty("--demo-tour-viewport-left", `${window.visualViewport?.offsetLeft || 0}px`);
+    driverObj?.refresh(); clampPopover();
+  }
+  function addEntry() {
+    const guide = document.getElementById("demo-guide");
+    if (!guide || document.getElementById("demo-tour-restart")) return;
+    const entry = button(text("Restart Tour", "Ulangi Tur"), event => {
+      event.preventDefault(); event.stopPropagation(); start();
+    });
+    entry.id = "demo-tour-restart"; entry.dataset.tour = "restart";
+    guide.querySelector("summary")?.append(entry);
+  }
+  function showDock(message) {
+    dock?.remove();
+    dock = document.createElement("aside"); dock.className = "demo-tour-dock";
+    dock.setAttribute("aria-label", text("Demo tour", "Tur demo"));
+    const label = document.createElement("span"); label.textContent = message;
+    label.setAttribute("role", "status");
+    dock.append(label, button(text("Resume Tour", "Lanjutkan Tur"), resume),
+      button(text("Restart", "Ulangi"), start), button(text("Close", "Tutup"), () => exit("skipped")));
+    document.body.append(dock);
+  }
+  function discardPendingProfile() {
+    if ((pendingAction === "profile" || (step()?.profile && !profileSatisfied)) && typeof cancelGuestProfileRead === "function") cancelGuestProfileRead();
+  }
+  function pause(message = text("Tour paused. Explore freely, then resume whenever you like.", "Tur dijeda. Jelajahi dengan bebas, lalu lanjutkan kapan saja.")) {
+    if (!run || !valid()) return;
+    discardPendingProfile();
+    disposeOverlay(); clearTimeout(readTimer); run.paused = true; persist(); pendingAction = null;
+    showDock(message);
+  }
+  function restoreFocus() {
+    if (visible(lastFocus)) lastFocus.focus({ preventScroll: true });
+    else if (valid()) {
+      const target = find(anchor("profile-close")) || find(anchor("guest-search")) || find(anchor("restart")) || find(anchor("mobile-menu"));
+      target?.focus({ preventScroll: true });
+    }
+    lastFocus = null;
+  }
+  function exit(status = "skipped") {
+    discardPendingProfile();
+    if (identity) { store(status); run = null; persist(); }
+    disposeOverlay(); clearTimeout(readTimer); dock?.remove(); dock = null; pendingAction = null;
+    if (document.body.classList.contains("sidebar-drawer-open") && typeof toggleSidebarDrawer === "function") toggleSidebarDrawer(false);
+    restoreFocus();
+  }
+  function welcome() {
+    if (!valid() || run || offered || currentPage !== "dashboard" || !dashboardReady) return;
+    offered = true; store("offered"); lastFocus = document.activeElement;
+    driverObj = driverFor(null, true);
+    driverObj?.highlight({ popover: {
+      showButtons: ["next", "close"],
+      title: text("Try Intoch at your own pace", "Coba Intoch sesuai keinginan Anda"),
+      description: text("Take a short tour of the dashboard and a fictional guest profile, or explore independently. You can restart the tour from the demo guidance anytime.", "Ikuti tur singkat dashboard dan profil tamu fiktif, atau jelajahi secara mandiri. Anda dapat mengulang tur dari panduan demo kapan saja."),
+    } });
+  }
+  function waitTarget(selector, token, timeout = 5000) {
+    return new Promise(resolve => {
+      let timer, poll, watch, completed = false;
+      const finish = value => { if (completed) return; completed = true; clearTimeout(timer); clearInterval(poll); watch?.disconnect(); waitingCancel = null; resolve(value); };
+      const check = () => {
+        if (token !== generation || !valid()) return finish(null);
+        const element = find(selector);
+        if (element) finish(element);
+      };
+      waitingCancel = () => finish(null);
+      watch = new MutationObserver(check); watch.observe(document.body, { childList: true, subtree: true, attributes: true });
+      timer = setTimeout(() => finish(null), timeout); poll = setInterval(check, 100); check();
+    });
+  }
+  async function navigate(page) {
+    internalNavigation = true;
+    try { await navigateTo(page); } finally { internalNavigation = false; }
+    return typeof currentPage !== "undefined" && currentPage === page;
+  }
+  async function show() {
+    if (!run || !valid()) return;
+    disposeOverlay(); dock?.remove(); dock = null;
+    const token = generation, current = step();
+    if (!current) return exit("skipped");
+    run.paused = false; persist();
+    if (currentPage !== current.page && !(await navigate(current.page))) return pause();
+    if (token !== generation || !valid() || !run) return;
+    if (document.body.classList.contains("sidebar-drawer-open") && (current.id !== "guests-nav" || !mobile())) toggleSidebarDrawer(false);
+    if (current.page === "dashboard" && !dashboardReady) return pause(text("Dashboard data is unavailable. Retry the page, then resume.", "Data dashboard belum tersedia. Coba kembali halaman, lalu lanjutkan."));
+    if (!current.profile && profileId && typeof hideModal === "function") {
+      internalNavigation = true; hideModal("modal-profile"); profileId = null; profileSatisfied = false; internalNavigation = false;
+    }
+    if (current.id === "guests-nav" && mobile() && !document.body.classList.contains("sidebar-drawer-open")) toggleSidebarDrawer(true);
+    if (current.profile && (!profileSatisfied || profileId !== sample().id)) {
+      if (!sample().id) { run.step = "search"; return show(); }
+      internalNavigation = true;
+      try { await viewGuestProfile(sample().id); } finally { internalNavigation = false; }
+      if (token !== generation || !valid() || !run) return;
+      if (!profileSatisfied) return pause(text("Guest details are unavailable. Reopen the profile, then resume.", "Detail tamu belum tersedia. Buka kembali profil, lalu lanjutkan."));
+    }
+    if (current.profile && mobile()) {
+      window.scrollTo({ left: 0, top: window.scrollY, behavior: "instant" });
+      document.body.style.setProperty("--demo-tour-viewport-width", `${window.visualViewport?.width || window.innerWidth}px`);
+      document.body.style.setProperty("--demo-tour-viewport-left", `${window.visualViewport?.offsetLeft || 0}px`);
+    }
+    let selector = anchor(current.target);
+    if (current.id === "shortcuts") selector += '[data-tour-state="ready"]';
+    if (current.id === "preferences" && !find(selector)) selector = anchor("profile-favorite");
+    if (current.action === "profile") selector += `[data-tour-guest="${CSS.escape(sample().id)}"]`;
+    const element = await waitTarget(selector, token);
+    if (token !== generation || !valid() || !run) return;
+    if (!element) return pause(text("This part of the demo is not available yet. Explore freely or retry with Resume Tour.", "Bagian demo ini belum tersedia. Jelajahi dengan bebas atau coba Lanjutkan Tur."));
+    element.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
+    driverObj = driverFor(current);
+    if (!driverObj) return pause(text("The tour could not load. You can keep exploring.", "Tur belum dapat dimuat. Anda dapat terus menjelajah."));
+    const copy = typeof current.copy === "function" ? current.copy() : current.copy;
+    // Driver accepts HTML; all dynamic copy (including the reviewed sample name) is escaped.
+    const escaped = document.createElement("span"); escaped.textContent = copy;
+    driverObj.highlight({ element, popover: { showButtons: ["previous", "next", "close"], title: current.title, description: escaped.innerHTML, side: mobile() ? "bottom" : "right", align: "center" } });
+  }
+  function start() {
+    if (!valid()) return;
+    lastFocus = document.activeElement;
+    searchSatisfied = false; profileSatisfied = false;
+    run = { step: "dashboard", guestId: null, guestName: environment().fictionalGuestNames[0], paused: false };
+    store("started"); persist(); show().catch(() => pause());
+  }
+  function resume() {
+    if (!valid() || !run) return;
+    // Recovery re-establishes successful search/profile reads instead of trusting saved flags.
+    if (["open-profile", "search"].includes(run.step) && !searchSatisfied) run.step = "search";
+    show().catch(() => pause());
+  }
+  function next(fromAction = false) {
+    if (!valid() || !run || run.paused) return;
+    const current = step();
+    if (current.action && current.action !== "finish" && !fromAction) return;
+    if (current.action === "search") document.querySelector(anchor("guest-search"))?.blur();
+    if (current.id === "finish") { exit("completed"); hideModal("modal-profile"); find(anchor("guest-search"))?.focus({ preventScroll: true }); return; }
+    const items = catalog(), position = items.findIndex(item => item.id === current.id);
+    run.step = items[position + 1].id;
+    pendingAction = null; clearTimeout(readTimer); persist(); show().catch(() => pause());
+  }
+  function back() {
+    if (!valid() || !run || run.paused) return;
+    const items = catalog(), position = items.findIndex(item => item.id === run.step);
+    if (position <= 0) return;
+    discardPendingProfile();
+    run.step = items[position - 1].id; pendingAction = null; clearTimeout(readTimer);
+    persist(); show().catch(() => pause());
+  }
+  function notify(type, detail = {}) {
+    if (!valid()) return;
+    const current = step();
+    if (type === "dashboard-ready") dashboardReady = detail.ok === true;
+    if (type === "page-changing") {
+      if (detail.page === "guests") guestsReady = false;
+      if (run && !run.paused && !internalNavigation && current?.page !== detail.page) {
+        if (current?.action === "navigate" && detail.page === "guests" && pendingAction === "navigate") disposeOverlay();
+        else pause();
+      }
+    }
+    if (type === "page-ready") {
+      addEntry();
+      if (!run && !offered && !read() && detail.page === "dashboard" && dashboardReady) {
+        clearTimeout(welcomeTimer); welcomeTimer = setTimeout(welcome, 350);
+      }
+      if (run && !run.paused && current?.action === "navigate" && detail.page === "guests" && pendingAction === "navigate" && detail.ok) {
+        if (guestsReady) next(true);
+        else pause(text("Guest Database could not load. Retry the page, then resume the tour.", "Guest Database belum berhasil dimuat. Coba kembali halaman, lalu lanjutkan tur."));
+      }
+    }
+    if (type === "guests-ready") {
+      guestsReady = detail.ok === true;
+      if (run && detail.ok && !run.guestId) {
+        const selected = environment().fictionalGuestNames.map(name => detail.rows?.find(guest => guest.name === name)).find(Boolean);
+        if (selected) { run.guestId = selected.id; run.guestName = selected.name; persist(); }
+      }
+      if (run && !run.paused && current?.action === "search") {
+        const selected = sample();
+        const matches = detail.ok && detail.search.trim().length >= 2 &&
+          detail.rows?.some(guest => guest.id === selected.id && guest.name === selected.name);
+        if (matches && find(`${anchor("guest-profile-open")}[data-tour-guest="${CSS.escape(selected.id)}"]`)) {
+          searchSatisfied = true; next(true);
+        } else if (!detail.ok) pause(text("Guest search could not load. Retry your search, then resume the tour.", "Pencarian tamu belum berhasil. Coba cari kembali, lalu lanjutkan tur."));
+        else if (detail.search.trim().toLowerCase() === selected.name.toLowerCase()) pause(text("The sample guest is not in these results. Check the guest filters, then resume and search again.", "Tamu contoh tidak ada dalam hasil ini. Periksa filter tamu, lalu lanjutkan dan cari kembali."));
+      }
+    }
+    if (type === "profile-ready") {
+      profileId = detail.guestId;
+      profileSatisfied = detail.ok === true && detail.guestId === sample()?.id && detail.name === sample()?.name;
+      if (run && !run.paused && current?.action === "profile" && pendingAction === "profile") {
+        if (profileSatisfied) next(true);
+        else pause(text("The example profile did not load completely. Retry it, then resume.", "Profil contoh belum dimuat lengkap. Coba kembali, lalu lanjutkan."));
+      } else if (run && !internalNavigation && detail.guestId !== sample()?.id) pause();
+    }
+    if (type === "profile-closed") {
+      profileId = null; profileSatisfied = false;
+      if (run && !internalNavigation && current?.profile) pause();
+    }
+  }
+  function onClick(event) {
+    if (!valid() || !run || run.paused) return;
+    const current = step(), target = event.target.closest?.("[data-tour]");
+    const loading = (current?.action === "navigate" && target?.dataset.tour === "guests-nav") ||
+      (current?.action === "profile" && target?.dataset.tour === "guest-profile-open" && target.dataset.tourGuest === sample().id);
+    if (loading) {
+      pendingAction = current.action; clearTimeout(readTimer);
+      const requestedStep = run.step;
+      readTimer = setTimeout(() => {
+        if (valid() && run && !run.paused && run.step === requestedStep) pause(text("This is taking longer than expected. Explore freely, then retry with Resume Tour.", "Proses ini lebih lama dari biasanya. Jelajahi dengan bebas, lalu coba Lanjutkan Tur."));
+      }, 8000);
+    }
+    if (current?.action === "menu" && target?.dataset.tour === "mobile-menu") {
+      const token = generation;
+      // A browser can flush microtasks between capture and the target's inline handler.
+      // Check in the next task, after toggleSidebarDrawer has actually run.
+      actionTimer = setTimeout(() => { if (token === generation && document.body.classList.contains("sidebar-drawer-open")) next(true); }, 0);
+    }
+  }
+  function onKey(event) {
+    if (event.key === "Escape" && driverObj) { event.preventDefault(); exit("skipped"); }
+    if (driverObj && event.key === "Tab") {
+      // Include the real action target (e.g. search field/eye) in keyboard traversal.
+      const current = step(), target = driverObj.getActiveElement();
+      const nodes = [...(current?.action && target ? [target] : []),
+        ...document.querySelectorAll(".intoch-demo-tour button:not(:disabled)")].filter(visible);
+      if (!nodes.length) return;
+      let position = nodes.indexOf(document.activeElement) + (event.shiftKey ? -1 : 1);
+      position = (position + nodes.length) % nodes.length;
+      event.preventDefault(); event.stopImmediatePropagation(); nodes[position].focus({ preventScroll: true });
+    }
+  }
+  function checkVisibility() {
+    if (!valid()) return teardown();
+    if (driverObj) clampPopover();
+    const current = step();
+    if (driverObj && current?.profile && !visible(document.getElementById("modal-profile"))) notify("profile-closed");
+    if (driverObj && current && !visible(driverObj.getActiveElement())) {
+      clearTimeout(refreshTimer); refreshTimer = setTimeout(() => { if (run && !run.paused) show().catch(() => pause()); }, 80);
+    }
+  }
+  function resize() {
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(() => {
+      if (!valid() || !run || run.paused) return;
+      if (run.step === "menu" && !mobile()) run.step = "guests-nav";
+      show().catch(() => pause());
+    }, 180);
+  }
+  function sessionReady(staff) {
+    teardown();
+    // Called only by initializeApplication after verified login/restoration and settings loads.
+    if (!eligible() || String(getStaffSession().id) !== String(staff?.id)) return;
+    identity = String(staff.id); offered = !!read();
+    const saved = read(true);
+    if (saved?.version === VERSION && catalog().some(item => item.id === saved.step) && environment().fictionalGuestNames.includes(saved.guestName)) {
+      run = { step: saved.step, guestId: saved.guestId, guestName: saved.guestName, paused: true };
+      showDock(text("Your tour is saved. Resume whenever you're ready.", "Tur Anda tersimpan. Lanjutkan kapan saja Anda siap."));
+    }
+    addEntry();
+    document.addEventListener("click", onClick, true);
+    document.addEventListener("keydown", onKey, true);
+    window.addEventListener("resize", resize);
+    window.visualViewport?.addEventListener("resize", viewportChanged);
+    window.visualViewport?.addEventListener("scroll", viewportChanged);
+    observer = new MutationObserver(checkVisibility);
+    observer.observe(document.body, { attributes: true, subtree: true, childList: true, attributeFilter: ["class", "hidden", "style"] });
+  }
+  function teardown() {
+    discardPendingProfile();
+    clearTimeout(welcomeTimer); welcomeTimer = null;
+    clearTimeout(readTimer); readTimer = null;
+    observer?.disconnect(); observer = null;
+    // Logout clears recovery, but never clears the browser-local seen flag.
+    if (identity) {
+      try { sessionStorage.removeItem(key(true)); } catch { /* Storage may be disabled. */ }
+      run = null;
+    }
+    disposeOverlay(); dock?.remove(); dock = null;
+    document.getElementById("demo-tour-restart")?.remove();
+    document.removeEventListener("click", onClick, true);
+    document.removeEventListener("keydown", onKey, true);
+    window.removeEventListener("resize", resize);
+    window.visualViewport?.removeEventListener("resize", viewportChanged);
+    window.visualViewport?.removeEventListener("scroll", viewportChanged);
+    document.body.style.removeProperty("--demo-tour-viewport-width");
+    document.body.style.removeProperty("--demo-tour-viewport-left");
+    identity = null; offered = false; pendingAction = null; profileId = null;
+    profileSatisfied = false; searchSatisfied = false; dashboardReady = false; guestsReady = false;
+  }
+  window.DemoTour = Object.freeze({ sessionReady, notify, teardown, start, resume, pause, exit });
+})();

@@ -343,6 +343,7 @@ async function initializeApplication(landingPage) {
   applyRoleToNav();
 
   if (appInitialized) {
+    if (typeof DemoTour !== "undefined") DemoTour.sessionReady(staff);
     navigateTo(landingPage || "dashboard", bootToken);
     return;
   }
@@ -373,6 +374,7 @@ async function initializeApplication(landingPage) {
     setStaffDashboardDateLabel();
   }
   appInitialized = true;
+  if (typeof DemoTour !== "undefined") DemoTour.sessionReady(staff);
 
   // ── Restore last visited page (persists across refresh) ──
   // Deliberately not awaited, as before: the realtime channel, the bell and
@@ -628,6 +630,9 @@ function setupRealtimeUpdates() {
 }
 
 function showLoginPage() {
+  if (typeof DemoTour !== "undefined") DemoTour.teardown();
+  if (typeof guestLoadGeneration !== "undefined") guestLoadGeneration++;
+  if (typeof guestProfileGeneration !== "undefined") guestProfileGeneration++;
   document.getElementById("login-page")?.classList.remove("hidden");
   document.getElementById("app-sidebar")?.classList.add("hidden");
   document.getElementById("app-main")?.classList.add("hidden");
@@ -730,6 +735,9 @@ async function loginStaff(event) {
 }
 
 async function logoutStaff() {
+  if (typeof DemoTour !== "undefined") DemoTour.teardown();
+  if (typeof guestLoadGeneration !== "undefined") guestLoadGeneration++;
+  if (typeof guestProfileGeneration !== "undefined") guestProfileGeneration++;
   if (typeof resetDemoPresentation === "function") resetDemoPresentation();
   if (typeof odReset === "function") odReset();
   stopStaffSessionMonitor();
@@ -822,6 +830,7 @@ async function navigateTo(page, bootToken = null) {
   if (bootToken === null && typeof settingsMayNavigate === "function" && !settingsMayNavigate()) return;
   const pendingLoads = [];
   let spinning = false;
+  let navigationSucceeded = false;
   try {
     // "settings" resolves to the last-used (allowed) settings tab
     if (page === "settings") page = defaultSettingsTab();
@@ -870,6 +879,7 @@ async function navigateTo(page, bootToken = null) {
     }
 
     currentPage = page;
+    if (typeof DemoTour !== "undefined") DemoTour.notify("page-changing", { page });
     if (typeof settingsNavigationChanged === "function") settingsNavigationChanged(page);
     localStorage.setItem("lastPage", page);
 
@@ -941,6 +951,7 @@ async function navigateTo(page, bootToken = null) {
       loader(true);
     }
     await Promise.all(pendingLoads);
+    navigationSucceeded = true;
     if (typeof settingsCaptureBaseline === "function") settingsCaptureBaseline(document.getElementById(`page-${page}`));
     if (bootToken !== null) PageLoading.finish(bootToken);
   } catch (error) {
@@ -948,6 +959,7 @@ async function navigateTo(page, bootToken = null) {
     if (bootToken !== null) PageLoading.fail(bootToken);
   } finally {
     if (spinning) loader(false);
+    if (typeof DemoTour !== "undefined") DemoTour.notify("page-ready", { page, ok: navigationSucceeded });
   }
 }
 
@@ -2868,6 +2880,7 @@ let dashboardLoadRequest = 0;
 let dashboardReservationRequest = 0;
 
 async function loadDashboard() {
+  if (typeof DemoTour !== "undefined") DemoTour.notify("dashboard-ready", { ok: false });
   const request = ++dashboardLoadRequest;
   const revision = reservationDataRevision;
   try {
@@ -2928,6 +2941,7 @@ async function loadDashboard() {
     await loadDashboardReservations(dashboardReservationOffset, resData);
     if (typeof demoEnabled === "function" && demoEnabled()) await loadDemoTraffic();
     else if (!finance) { loadDashboardPrizeRedemptions(); loadDashboardBirthdays(); }
+    if (typeof DemoTour !== "undefined") DemoTour.notify("dashboard-ready", { ok: true });
   } catch (error) {
     console.error("Dashboard load failed", error);
     toast("Dashboard load failed", "error");
@@ -3774,7 +3788,10 @@ function invalidateGuestVisitHistoryCache() {
   _guestVisitHistoryCacheTime = 0;
 }
 
+let guestLoadGeneration = 0;
 async function loadGuests(search = "") {
+  const request = ++guestLoadGeneration;
+  const identity = getStaffSession()?.id;
   try {
     let query = db
       .from("guests")
@@ -3799,13 +3816,18 @@ async function loadGuests(search = "") {
     if (error) {
       throw error;
     }
+    if (request !== guestLoadGeneration || identity !== getStaffSession()?.id) return;
     allGuests = data || [];
     // EGRESS FIX: bulk client-side tier recalculation removed. The database
     // triggers (visits_recalculate_guest_spending_tier) already keep tiers
     // correct on every visit change. The old code re-downloaded ALL spend
     // visits for ALL guests every 10 minutes — the main egress hog.
-    await renderGuestsTable(allGuests);
+    await renderGuestsTable(allGuests, () => request === guestLoadGeneration && identity === getStaffSession()?.id);
+    if (request !== guestLoadGeneration || identity !== getStaffSession()?.id) return;
+    if (typeof DemoTour !== "undefined") DemoTour.notify("guests-ready", { search, rows: allGuests, ok: true });
   } catch (error) {
+    if (request !== guestLoadGeneration || identity !== getStaffSession()?.id) return;
+    if (typeof DemoTour !== "undefined") DemoTour.notify("guests-ready", { search, ok: false });
     console.error("Failed to load guests", error);
     toast("Failed to load guests", "error");
   }
@@ -3842,7 +3864,7 @@ function updateGuestSortIcons() {
   });
 }
 
-async function renderGuestsTable(guests) {
+async function renderGuestsTable(guests, stillCurrent = () => true) {
   const tbody = document.getElementById("guests-tbody");
   if (!tbody) return;
 
@@ -3859,6 +3881,7 @@ async function renderGuestsTable(guests) {
       () => db.rpc("get_guest_visit_summary"),
       "Failed to load visit counts",
     );
+    if (!stillCurrent()) return;
 
     if (visitCountError) toast("Unable to load guest visit history", "error");
 
@@ -4002,7 +4025,7 @@ async function renderGuestsTable(guests) {
         <td class="px-5 py-3.5 text-sm text-[#999]">${fmt.date(lastVisit)}</td>
         <td class="px-5 py-3.5 text-right">
           <div class="flex items-center justify-end gap-1">
-            <button onclick="event.stopPropagation(); viewGuestProfile('${g.id}')" title="View guest profile" class="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-[#EEF3F7] text-[#999] hover:text-[color:var(--brand)] transition-colors">
+            <button data-tour="guest-profile-open" data-tour-guest="${escapeHtml(g.id)}" onclick="event.stopPropagation(); viewGuestProfile('${g.id}')" title="View guest profile" class="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-[#EEF3F7] text-[#999] hover:text-[color:var(--brand)] transition-colors">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
             <button onclick="event.stopPropagation(); editGuest('${g.id}')" title="Edit guest" class="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-[#FBF8EE] text-[#999] hover:text-[color:var(--accent-strong)] transition-colors">
@@ -4664,7 +4687,12 @@ async function saveGuest() {
   loadGuests();
 }
 
+let guestProfileGeneration = 0;
+function cancelGuestProfileRead() { guestProfileGeneration++; }
 async function viewGuestProfile(guestId) {
+  const request = ++guestProfileGeneration;
+  const identity = getStaffSession()?.id;
+  const originPage = currentPage;
   const { data: guest, error: guestError } = await supabaseQuery(
     () => db.from("guests").select("*").eq("id", guestId).single(),
     "Failed to load guest profile",
@@ -4685,7 +4713,7 @@ async function viewGuestProfile(guestId) {
   // just the 10 shown in the history list below — otherwise a loyal guest
   // with a long history would show a skewed "recent 10" average instead of
   // their true lifetime average. Only spend_amount is fetched (lightweight).
-  const { data: spendRows } = await supabaseQuery(
+  const { data: spendRows, error: spendError } = await supabaseQuery(
     () =>
       db
         .from("visits")
@@ -4703,13 +4731,17 @@ async function viewGuestProfile(guestId) {
       )
     : null;
 
-  if (guestError) return;
+  if (request !== guestProfileGeneration || identity !== getStaffSession()?.id || currentPage !== originPage) return;
+  if (guestError || !guest) {
+    if (typeof DemoTour !== "undefined") DemoTour.notify("profile-ready", { guestId, ok: false });
+    return;
+  }
 
   const content = document.getElementById("profile-content");
   if (!guest) return;
 
   content.innerHTML = `
-    <div class="flex items-start gap-4 mb-6">
+    <div class="flex items-start gap-4 mb-6" data-tour="profile-details">
       <div style="width:52px;height:52px;background:#EEF3F7;border-radius:50%;display:flex;align-items:center;justify-content:center;font-display;font-size:22px;font-weight:600;color:var(--brand-ink);flex-shrink:0;">
         ${guest.name.charAt(0).toUpperCase()}
       </div>
@@ -4745,12 +4777,12 @@ async function viewGuestProfile(guestId) {
     </div>
 
     <div class="grid grid-cols-2 gap-3 mb-4">
-      <div class="p-3 bg-[#EEF3F7] rounded-10 border border-[color:var(--brand-tint)]">
+      <div data-tour="profile-spending" class="p-3 bg-[#EEF3F7] rounded-10 border border-[color:var(--brand-tint)]">
         <p class="text-[10px] text-[color:var(--brand)] uppercase tracking-wider mb-1">Average Spend</p>
         <p class="font-display text-lg text-[color:var(--brand-ink)]">${avgSpend !== null ? fmt.currency(avgSpend) : "—"}</p>
         <p class="text-[10px] text-[#999] mt-0.5">${validSpends.length ? `across ${validSpends.length} visit${validSpends.length === 1 ? "" : "s"} with spend recorded` : "no spend recorded yet"}</p>
       </div>
-      <div class="p-3 bg-[#FBF8EE] rounded-10 border border-[#E8E0D0]" id="fav-menu-card-${guest.id}">
+      <div class="p-3 bg-[#FBF8EE] rounded-10 border border-[#E8E0D0]" id="fav-menu-card-${guest.id}" data-tour="profile-favorite">
         <div class="flex items-center justify-between mb-1">
           <p class="text-[10px] text-[color:var(--accent-strong)] uppercase tracking-wider">Favorite</p>
           <button onclick="startEditFavoriteMenu('${guest.id}')" class="text-[#999] hover:text-[color:var(--brand-ink)] transition-colors" title="Edit favorite menu">
@@ -4771,7 +4803,7 @@ async function viewGuestProfile(guestId) {
       </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-3 mb-5 text-sm">
+    <div class="grid grid-cols-2 gap-3 mb-5 text-sm" data-tour="profile-preferences">
       ${guest.food_allergy ? `<div class="p-3 bg-red-50 rounded-10 border border-red-100"><p class="text-[10px] text-red-400 uppercase tracking-wider mb-1">Allergy</p><p class="text-[#333]">${guest.food_allergy}</p></div>` : ""}
       ${guest.preference ? `<div class="p-3 bg-[#FBF8EE] rounded-10 border border-[#E8E0D0]"><p class="text-[10px] text-[color:var(--accent-strong)] uppercase tracking-wider mb-1">Preference</p><p class="text-[#333]">${guest.preference}</p></div>` : ""}
       ${guest.notes ? `<div class="p-3 bg-[#F8F6F2] rounded-10 border border-[#EDE9E3] col-span-2"><p class="text-[10px] text-[#999] uppercase tracking-wider mb-1">Notes</p><p class="text-[#333]">${guest.notes}</p></div>` : ""}
@@ -4779,7 +4811,7 @@ async function viewGuestProfile(guestId) {
 
     <div class="divider mb-4"></div>
     <p class="text-xs text-[#999] uppercase tracking-wider mb-3 font-medium">Visit History (${visits?.length || 0} visits)</p>
-    <div class="space-y-2 max-h-64 overflow-y-auto">
+    <div class="space-y-2 max-h-64 overflow-y-auto" data-tour="profile-history">
       ${
         (visits || [])
           .map((v) => {
@@ -4809,6 +4841,7 @@ async function viewGuestProfile(guestId) {
   `;
   showModal("modal-profile");
   if (typeof demoEnabled === "function" && demoEnabled()) renderDemoGuestActions(guest);
+  if (typeof DemoTour !== "undefined") DemoTour.notify("profile-ready", { guestId, name: guest.name, ok: !visitError && !spendError });
 }
 
 // Lets staff/managers edit a guest's saved favorite menu / recent order

@@ -5,6 +5,7 @@ This records material decisions and their consequences, not a list of every UI e
 
 | Decision | Reason | Implications / constraints |
 |---|---|---|
+| Authenticated playground walkthrough uses vanilla Driver.js and browser-local V1 state | Prospects should use the existing product, with optional help and no framework/server onboarding migration | Offer once per account/browser/version; Skip/Close suppress the introduction; retain Restart and explicit session recovery. Pin the existing playground origin/project and verified session. Never automate writes or replace Auth/RLS; public access and reset tooling require separate work. |
 | Sales stories use a standalone, in-memory player on `demo` and shared landing CSS | Prospect URLs need deterministic, unauthenticated demonstrations without production data | Public assets stay outside private `demo/` tooling; `/demo/*` is rewritten to one shell. Add definitions/scenes, not duplicated pages. Verify host routing before publishing. |
 | Settings grouped by task, with sidebar children and category-local tabs | Booking, payment, spending and loyalty controls need predictable homes | Keep existing role gates; saves update only their section, even when sections share a JSON settings row. Area deposit amounts have one editor. Compact sidebar preference is device-local. |
 | One client, one Cloudflare deployment and Supabase project | Isolation and manageable per-client configuration | No shared multi-tenant database. Never point a preview/client at another client's DB. Separate origins avoid shared browser storage. |

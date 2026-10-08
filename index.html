@@ -21,6 +21,8 @@
     <link rel="stylesheet" href="css/dashboard-reservations.css?v=9" />
     <link rel="stylesheet" href="css/owner-dashboard.css?v=4" />
     <link rel="stylesheet" href="css/demo.css?v=4" />
+    <link rel="stylesheet" href="assets/vendor/driverjs/1.9.0/driver.css" />
+    <link rel="stylesheet" href="css/demo-tour.css?v=1" />
     <script src="js/demo.js?v=4" defer></script>
     <style>
       :root {
@@ -868,7 +870,7 @@
     <!-- ============================================================ -->
     <!-- SIDEBAR -->
     <!-- ============================================================ -->
-    <button id="sidebar-mobile-toggle" class="hidden" onclick="toggleSidebarDrawer()" aria-label="Open navigation" aria-expanded="false" aria-controls="app-sidebar">☰</button>
+    <button id="sidebar-mobile-toggle" data-tour="mobile-menu" class="hidden" onclick="toggleSidebarDrawer()" aria-label="Open navigation" aria-expanded="false" aria-controls="app-sidebar">☰</button>
     <button id="sidebar-backdrop" hidden onclick="toggleSidebarDrawer(false)" aria-label="Close navigation"></button>
     <aside class="sidebar hidden" id="app-sidebar">
       <button id="sidebar-size-toggle" onclick="toggleSidebarSize()" aria-label="Collapse sidebar" aria-expanded="true"></button>
@@ -953,7 +955,7 @@
             <span class="nav-label" data-i18n-skip>Walk-Ins</span>
           </button>
           <button
-            data-nav="guests"
+            data-nav="guests" data-tour="guests-nav"
             data-manager-only
             onclick="navigateTo('guests')"
             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-10 text-[13px] font-medium text-[#555] hover:bg-[#F8F6F2] transition-colors"
@@ -1476,7 +1478,7 @@
       <!-- ===== DASHBOARD ===== -->
       <section id="page-dashboard" class="page-section active p-8">
         <div class="max-w-5xl mx-auto">
-          <div class="flex items-center justify-between mb-8">
+          <div class="flex items-center justify-between mb-8" data-tour="dashboard-intro">
             <div>
               <div class="gold-bar mb-3"></div>
               <h1 class="font-heading text-3xl font-semibold text-[color:var(--brand-ink)]" data-i18n>
@@ -1521,7 +1523,7 @@
           </div>
 
           <!-- Quick Walk-In (fast as a spreadsheet: name + phone + Enter) -->
-          <div class="card p-5 mb-8" style="border-left: 4px solid var(--accent)">
+          <div data-tour="quick-walkin" class="card p-5 mb-8" style="border-left: 4px solid var(--accent)">
             <div class="flex items-center gap-3 flex-wrap">
               <div class="flex-shrink-0">
                 <p class="text-xs font-semibold text-[color:var(--accent-strong)] uppercase tracking-widest">Quick Walk-In</p>
@@ -1570,7 +1572,7 @@
           </div>
 
           <!-- Upcoming Reservations -->
-          <div class="card p-6 mb-8">
+          <div class="card p-6 mb-8" data-tour="today-reservations">
             <div class="flex items-center justify-between mb-5">
               <div>
                 <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)]">
@@ -1668,7 +1670,7 @@
                 </button>
               </div>
             </div>
-            <div id="dashboard-walkins-list">
+            <div id="dashboard-walkins-list" data-tour="today-walkins">
               <div class="loading-skeleton h-12 mb-3"></div>
               <div class="loading-skeleton h-12 mb-3"></div>
               <div class="loading-skeleton h-12"></div>
@@ -1718,7 +1720,7 @@
           </div>
 
           <div
-            id="dashboard-area-occupancy"
+            id="dashboard-area-occupancy" data-tour="area-occupancy"
             class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
           >
             <div class="stat-card py-4 px-5">
@@ -2622,7 +2624,7 @@
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
               <input
-                id="guest-search"
+                id="guest-search" data-tour="guest-search"
                 type="text"
                 placeholder="Search by name, phone, or company…"
                 class="form-input pl-9"
@@ -8618,7 +8620,7 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
             Guest Profile
           </h2>
           <button
-            onclick="hideModal('modal-profile')"
+            data-tour="profile-close" onclick="hideModal('modal-profile')"
             class="modal-close"
             aria-label="Close"
           >
@@ -9475,7 +9477,10 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     <script src="js/owner-dashboard.js?v=6"></script>
     <script src="js/deposit-policy.js?v=1"></script>
     <script src="js/settings-navigation.js?v=1"></script>
-    <script src="js/app.js?v=61"></script>
+    <script src="assets/vendor/driverjs/1.9.0/driver.js.iife.js"></script>
+    <script src="js/demo-tour-environment.js?v=1"></script>
+    <script src="js/demo-tour.js?v=1"></script>
+    <script src="js/app.js?v=62"></script>
     <script src="js/reservation-extras.js?v=2"></script>
     <script src="js/membership.js?v=7"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
