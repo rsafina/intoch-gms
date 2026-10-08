@@ -79,7 +79,8 @@ const SETTINGS_SUBPAGES=[],defaultSettingsTab=()=> 'dashboard',settingsMayNaviga
 const settingsNavigationChanged=()=>{if(document.body.classList.contains('sidebar-drawer-open'))toggleSidebarDrawer(false);};
 const setStaffDashboardDateLabel=()=>{document.getElementById('dashboard-date-label').textContent='Thursday, 8 October 2026';};
 const loadOwnerDashboard=async()=>{},loadReservationOutlook=async()=>{},renderStaffViewBanner=()=>{};
-const loadReservations=async()=>{},clearResSearch=()=>{},loadWalkIns=async()=>{},initInvoice=()=>{};
+const fixtureOperations=async page=>{await new Promise(resolve=>setTimeout(resolve,fixture.delay));DemoTour.notify('operations-ready',{page,ok:fixture.fail!==page});};
+const loadReservations=()=>fixtureOperations('reservations'),clearResSearch=()=>{},loadWalkIns=()=>fixtureOperations('walkins'),initInvoice=()=>{};
 const toast=message=>{fixture.lastToast=message;};
 let guestLoadGeneration=0,guestProfileGeneration=0,allGuests=[],guestPage=1,guestSortKey='name',guestSortDir='asc',guestTierFilter='all',guestMinVisits=0,guestTagFilter='',guestLastVisitFrom='',guestLastVisitTo='',searchTimeout;
 const GUEST_PAGE_SIZE=25,GUEST_VISIT_HISTORY_TTL=300000;

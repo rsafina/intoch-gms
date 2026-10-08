@@ -14,6 +14,7 @@
   let dashboardReady = false, guestsReady = false, waitingCancel = null, welcomeTimer = null, dock = null;
   let observer = null, refreshTimer = null, lastFocus = null, pendingAction = null, actionTimer = null, readTimer = null;
   let searchSatisfied = false, profileSatisfied = false;
+  const operationsReady = { reservations: false, walkins: false };
 
   function environment() { return window.INTOCH_DEMO_TOUR_ENV; }
   function eligible() {
@@ -67,8 +68,14 @@
       { id: "walkins", page: "dashboard", target: "today-walkins", title: text("Keep walk-ins in view", "Pantau tamu walk-in"), copy: text("See today's walk-ins alongside your bookings. Your team can return here to update seating as the service changes.", "Lihat walk-in hari ini bersama reservasi Anda. Tim dapat kembali ke sini untuk memperbarui tempat duduk selama layanan berlangsung.") },
       { id: "occupancy", page: "dashboard", target: "area-occupancy", title: text("See the seating picture", "Lihat kondisi tempat duduk"), copy: text("Area occupancy compares assigned parties with area capacity. It is a seating overview; today's traffic also includes completed visits.", "Okupansi area membandingkan rombongan yang ditempatkan dengan kapasitas area. Ini adalah ringkasan tempat duduk; aktivitas hari ini juga mencakup kunjungan selesai.") },
       { id: "quick", page: "dashboard", target: "quick-walkin", title: text("A quick welcome for walk-ins", "Sambut walk-in dengan cepat"), copy: text("Quick Walk-In starts with a name, with phone and party size available here. You can add seating details later; no registration is needed for this tour.", "Quick Walk-In dimulai dengan nama, dengan telepon dan jumlah orang tersedia di sini. Detail tempat duduk bisa menyusul; tidak perlu mendaftarkan tamu untuk tur ini.") },
-      ...(mobile() ? [{ id: "menu", page: "dashboard", target: "mobile-menu", action: "menu", title: text("Open navigation", "Buka navigasi"), copy: text("Tap the menu to find your guest tools. The guide will continue when navigation opens.", "Ketuk menu untuk menemukan fitur tamu. Panduan akan berlanjut setelah navigasi terbuka.") }] : []),
-      { id: "guests-nav", page: "dashboard", target: "guests-nav", action: "navigate", title: text("Get to know your guests", "Kenali tamu Anda"), copy: text("Open Guest Database to see the relationships behind each visit. Click the highlighted navigation item to continue.", "Buka Guest Database untuk melihat hubungan di balik setiap kunjungan. Klik navigasi yang disorot untuk melanjutkan.") },
+      ...(mobile() ? [{ id: "menu", page: "dashboard", target: "mobile-menu", action: "menu", title: text("Open navigation", "Buka navigasi"), copy: text("Tap the menu to explore reservations, walk-ins and guests. The guide will continue when navigation opens.", "Ketuk menu untuk menjelajahi reservasi, walk-in, dan tamu. Panduan akan berlanjut setelah navigasi terbuka.") }] : []),
+      { id: "reservations-nav", page: "dashboard", destination: "reservations", target: "reservations-nav", action: "navigate", title: text("Explore reservations", "Jelajahi reservasi"), copy: text("Click Reservations to see how your team prepares bookings and manages arrivals. We will continue when the list loads.", "Klik Reservations untuk melihat persiapan reservasi dan pengelolaan kedatangan. Panduan berlanjut setelah daftar dimuat.") },
+      { id: "reservation-controls", page: "reservations", target: "reservation-controls", title: text("Find the right booking", "Temukan reservasi yang tepat"), copy: text("Search for a guest or choose a date range to find bookings. Status filters help the team focus on the arrivals that need attention.", "Cari tamu atau pilih rentang tanggal untuk menemukan reservasi. Filter status membantu tim fokus pada kedatangan yang perlu ditangani.") },
+      { id: "reservation-list", page: "reservations", target: "reservation-list", title: text("Manage the arrival", "Kelola kedatangan"), copy: text("The booking list brings guests, times, seating and status together. Available row actions let your team manage each booking; you do not need to change or save one during this tour.", "Daftar reservasi menyatukan tamu, waktu, tempat duduk, dan status. Tindakan pada baris membantu tim mengelola reservasi; Anda tidak perlu mengubah atau menyimpan apa pun selama tur.") },
+      { id: "walkins-nav", page: "reservations", destination: "walkins", target: "walkins-nav", action: "navigate", title: text("Explore walk-ins", "Jelajahi walk-in"), copy: text("Click Walk-Ins to see the guests who arrived without a reservation. We will continue when the log loads.", "Klik Walk-Ins untuk melihat tamu yang datang tanpa reservasi. Panduan berlanjut setelah log dimuat.") },
+      { id: "walkin-controls", page: "walkins", target: "walkin-controls", title: text("Review the service day", "Tinjau hari pelayanan"), copy: text("Choose a day to review its walk-ins. Register Walk-In is available for a new arrival; no registration is required to continue.", "Pilih hari untuk meninjau walk-in. Register Walk-In tersedia untuk kedatangan baru; tidak perlu mendaftarkan tamu untuk melanjutkan.") },
+      { id: "walkin-list", page: "walkins", target: "walkin-list", title: text("Follow each walk-in", "Pantau setiap walk-in"), copy: text("The log shows arrivals and their progress. Your team can edit details or complete a real visit with the available controls. Continue to connect these visits with the guest relationship.", "Log menampilkan kedatangan dan perkembangannya. Tim dapat mengedit detail atau menyelesaikan kunjungan nyata lewat kontrol yang tersedia. Lanjutkan untuk menghubungkan kunjungan dengan hubungan pelanggan.") },
+      { id: "guests-nav", page: "walkins", destination: "guests", target: "guests-nav", action: "navigate", title: text("Get to know your guests", "Kenali tamu Anda"), copy: text("Open Guest Database to see the relationships behind each visit. Click the highlighted navigation item to continue.", "Buka Guest Database untuk melihat hubungan di balik setiap kunjungan. Klik navigasi yang disorot untuk melanjutkan.") },
       { id: "search", page: "guests", target: "guest-search", action: "search", title: text("Find a familiar face", "Temukan tamu yang Anda kenal"), copy: () => text(`Search for ${sample().name}, our reviewed fictional example. The guide continues when their matching result has loaded.`, `Cari ${sample().name}, contoh tamu fiktif yang telah diperiksa. Panduan berlanjut setelah hasil yang sesuai dimuat.`) },
       { id: "open-profile", page: "guests", target: "guest-profile-open", action: "profile", title: text("Open the guest's story", "Buka cerita tamu"), copy: text("Click the highlighted eye button to open this guest's profile. We'll wait for their details and history to load successfully.", "Klik tombol mata yang disorot untuk membuka profil tamu ini. Kami menunggu detail dan riwayatnya berhasil dimuat.") },
       { id: "details", page: "guests", target: "profile-details", profile: true, title: text("Remember who they are", "Ingat siapa tamu Anda"), copy: text("Contact details keep the guest's identity together across visits. This example is fictional; you do not need to edit or contact anyone.", "Detail kontak menyatukan identitas tamu di setiap kunjungan. Contoh ini fiktif; Anda tidak perlu mengedit atau menghubungi siapa pun.") },
@@ -77,7 +84,10 @@
       { id: "history", page: "guests", target: "profile-history", profile: true, title: text("See the visits behind the relationship", "Lihat kunjungan di balik hubungan"), copy: text("Visit History shows the guest's recent attendance and recorded spending. A reservation alone does not mean the guest visited.", "Visit History menampilkan kedatangan terbaru dan pengeluaran tercatat. Reservasi saja tidak berarti tamu telah berkunjung.") },
       { id: "shortcuts", page: "guests", target: "profile-shortcuts", profile: true, title: text("Connect the next booking", "Hubungkan reservasi berikutnya"), copy: text("When available, these shortcuts connect this guest to reservations, deposits and invoices. Deposits belong to a reservation; nothing needs to be created or paid during this tour.", "Jika tersedia, pintasan ini menghubungkan tamu dengan reservasi, deposit, dan invoice. Deposit terhubung ke reservasi; tidak perlu membuat atau membayar apa pun selama tur.") },
       { id: "finish", page: "guests", target: "profile-close", profile: true, action: "finish", title: text("You're ready to explore", "Anda siap menjelajah"), copy: text("Finish the tour to explore at your own pace. Restart Tour is always available in the dashboard's demo guidance.", "Selesaikan tur untuk menjelajah sesuai keinginan Anda. Restart Tour selalu tersedia di panduan demo pada dashboard.") },
-    ].filter(item => item.id !== "shortcuts" || (typeof hasAccess === "function" && hasAccess("reservations")));
+    ].filter(item => (!item.id.startsWith("reservation") || hasAccess("reservations")) &&
+      (!item.id.startsWith("walkin-") && item.id !== "walkins-nav" || hasAccess("walkins")) &&
+      (item.id !== "shortcuts" || hasAccess("reservations")))
+      .map((item, index, items) => item.action === "navigate" ? { ...item, page: index ? items[index - 1].page : "dashboard" } : item);
   }
   function step() { return catalog().find(item => item.id === run?.step); }
   function disposeOverlay() {
@@ -124,7 +134,7 @@
     if (!window.driver?.js?.driver) return null;
     return window.driver.js.driver({
       animate: !reduced(), smoothScroll: false, allowClose: true, allowKeyboardControl: false,
-      overlayClickBehavior: "none", disableActiveInteraction: current?.id !== "quick" && (!current?.action || current.action === "finish"),
+      overlayClickBehavior: "none", disableActiveInteraction: !["quick", "reservation-controls", "walkin-controls"].includes(current?.id) && (!current?.action || current.action === "finish"),
       overlayColor: getComputedStyle(document.documentElement).getPropertyValue("--brand-ink").trim() || "black",
       overlayOpacity: 0.38, stagePadding: 6, stageRadius: 12, popoverOffset: 12,
       popoverClass: "intoch-demo-tour", showProgress: false,
@@ -239,12 +249,13 @@
     run.paused = false; persist();
     if (currentPage !== current.page && !(await navigate(current.page))) return pause();
     if (token !== generation || !valid() || !run) return;
-    if (document.body.classList.contains("sidebar-drawer-open") && (current.id !== "guests-nav" || !mobile())) toggleSidebarDrawer(false);
+    if (document.body.classList.contains("sidebar-drawer-open") && (current.action !== "navigate" || !mobile())) toggleSidebarDrawer(false);
     if (current.page === "dashboard" && !dashboardReady) return pause(text("Dashboard data is unavailable. Retry the page, then resume.", "Data dashboard belum tersedia. Coba kembali halaman, lalu lanjutkan."));
+    if (current.page in operationsReady && !operationsReady[current.page]) return pause();
     if (!current.profile && profileId && typeof hideModal === "function") {
       internalNavigation = true; hideModal("modal-profile"); profileId = null; profileSatisfied = false; internalNavigation = false;
     }
-    if (current.id === "guests-nav" && mobile() && !document.body.classList.contains("sidebar-drawer-open")) toggleSidebarDrawer(true);
+    if (current.action === "navigate" && mobile() && !document.body.classList.contains("sidebar-drawer-open")) toggleSidebarDrawer(true);
     if (current.profile && (!profileSatisfied || profileId !== sample().id)) {
       if (!sample().id) { run.step = "search"; return show(); }
       internalNavigation = true;
@@ -309,8 +320,9 @@
     if (type === "dashboard-ready") dashboardReady = detail.ok === true;
     if (type === "page-changing") {
       if (detail.page === "guests") guestsReady = false;
+      if (detail.page in operationsReady) operationsReady[detail.page] = false;
       if (run && !run.paused && !internalNavigation && current?.page !== detail.page) {
-        if (current?.action === "navigate" && detail.page === "guests" && pendingAction === "navigate") disposeOverlay();
+        if (current?.action === "navigate" && detail.page === current.destination && pendingAction === "navigate") disposeOverlay();
         else pause();
       }
     }
@@ -319,11 +331,12 @@
       if (!run && !offered && !read() && detail.page === "dashboard" && dashboardReady) {
         clearTimeout(welcomeTimer); welcomeTimer = setTimeout(welcome, 350);
       }
-      if (run && !run.paused && current?.action === "navigate" && detail.page === "guests" && pendingAction === "navigate" && detail.ok) {
-        if (guestsReady) next(true);
-        else pause(text("Guest Database could not load. Retry the page, then resume the tour.", "Guest Database belum berhasil dimuat. Coba kembali halaman, lalu lanjutkan tur."));
+      if (run && !run.paused && current?.action === "navigate" && detail.page === current.destination && pendingAction === "navigate" && detail.ok) {
+        if (current.destination === "guests" ? guestsReady : operationsReady[current.destination]) next(true);
+        else pause(text("This page could not load. Retry it, then resume the tour.", "Halaman ini belum berhasil dimuat. Coba kembali, lalu lanjutkan tur."));
       }
     }
+    if (type === "operations-ready" && detail.page in operationsReady) operationsReady[detail.page] = detail.ok === true;
     if (type === "guests-ready") {
       guestsReady = detail.ok === true;
       if (run && detail.ok && !run.guestId) {
@@ -356,7 +369,7 @@
   function onClick(event) {
     if (!valid() || !run || run.paused) return;
     const current = step(), target = event.target.closest?.("[data-tour]");
-    const loading = (current?.action === "navigate" && target?.dataset.tour === "guests-nav") ||
+    const loading = (current?.action === "navigate" && target?.dataset.tour === current.target) ||
       (current?.action === "profile" && target?.dataset.tour === "guest-profile-open" && target.dataset.tourGuest === sample().id);
     if (loading) {
       pendingAction = current.action; clearTimeout(readTimer);
@@ -377,7 +390,9 @@
     if (driverObj && event.key === "Tab") {
       // Include the real action target (e.g. search field/eye) in keyboard traversal.
       const current = step(), target = driverObj.getActiveElement();
+      const interactive = ["quick", "reservation-controls", "walkin-controls"].includes(current?.id);
       const nodes = [...(current?.action && target ? [target] : []),
+        ...(interactive && target ? target.querySelectorAll("input:not(:disabled), select:not(:disabled), button:not(:disabled), a[href]") : []),
         ...document.querySelectorAll(".intoch-demo-tour button:not(:disabled)")].filter(visible);
       if (!nodes.length) return;
       let position = nodes.indexOf(document.activeElement) + (event.shiftKey ? -1 : 1);
@@ -398,7 +413,7 @@
     clearTimeout(refreshTimer);
     refreshTimer = setTimeout(() => {
       if (!valid() || !run || run.paused) return;
-      if (run.step === "menu" && !mobile()) run.step = "guests-nav";
+      if (run.step === "menu" && !mobile()) run.step = catalog().find(item => item.action === "navigate").id;
       show().catch(() => pause());
     }, 180);
   }

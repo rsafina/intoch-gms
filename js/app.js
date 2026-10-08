@@ -5710,6 +5710,7 @@ async function saveWalkIn() {
 }
 
 async function loadWalkIns() {
+  if (typeof DemoTour !== "undefined") DemoTour.notify("operations-ready", { page: "walkins", ok: false });
   const dateEl = document.getElementById("wi-date-filter");
   // Use wiSelectedDate if available, otherwise fall back to date input or TODAY
   const date = wiSelectedDate || dateEl?.value || TODAY;
@@ -5762,6 +5763,7 @@ async function loadWalkIns() {
     return;
   }
 
+  if (typeof DemoTour !== "undefined") DemoTour.notify("operations-ready", { page: "walkins", ok: true });
   if (!data?.length) {
     tbody.innerHTML =
       '<tr><td colspan="7" class="px-5 py-8 text-center text-[#bbb] text-sm">No walk-ins for this day</td></tr>';
@@ -6191,6 +6193,7 @@ async function loadReservations() {
   // search results after they act on a row instead of being bounced back
   // to whichever day the picker happens to hold.
   if (resSearchActive) return renderResSearchResults();
+  if (typeof DemoTour !== "undefined") DemoTour.notify("operations-ready", { page: "reservations", ok: false });
 
   if (!resSelectedDate) {
     resSelectedDate = TODAY;
@@ -6266,6 +6269,7 @@ async function loadReservations() {
   // actually still expected.
   allReservations = sortReservationsByStatus(data);
   await renderReservationsTable(allReservations);
+  if (request === resLoadRequest && typeof DemoTour !== "undefined") DemoTour.notify("operations-ready", { page: "reservations", ok: true });
 
   // Occupancy summary always reflects the FULL day regardless of the
   // active status filter/chip — a manager filtering to "Cancelled" to

@@ -916,7 +916,7 @@
             ></span>
           </button>
           <button
-            data-nav="reservations"
+            data-nav="reservations" data-tour="reservations-nav"
             onclick="navigateTo('reservations')"
             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-10 text-[13px] font-medium text-[#555] hover:bg-[#F8F6F2] transition-colors"
             style="border-radius: 10px"
@@ -937,7 +937,7 @@
             <span class="nav-label" data-i18n-skip>Reservations</span>
           </button>
           <button
-            data-nav="walkins"
+            data-nav="walkins" data-tour="walkins-nav"
             onclick="navigateTo('walkins')"
             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-10 text-[13px] font-medium text-[#555] hover:bg-[#F8F6F2] transition-colors"
             style="border-radius: 10px"
@@ -2835,7 +2835,7 @@
             </div>
           </div>
 
-          <div class="res-controls">
+          <div class="res-controls" data-tour="reservation-controls">
             <div class="res-controls-top">
           <div class="res-search-controls">
             <div class="relative" id="res-search-wrap">
@@ -3029,7 +3029,7 @@
 
           <div class="card res-list-card">
             <div class="res-list-scroll">
-              <table class="res-list-table">
+              <table data-tour="reservation-list" class="res-list-table">
                 <thead><tr>
                   <th scope="col" data-i18n>Time</th>
                   <th scope="col" data-i18n>Guest &amp; booking</th>
@@ -3078,7 +3078,7 @@
           </div>
 
           <div
-            class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8"
+            data-tour="walkin-controls" class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8"
           >
             <div
               class="flex flex-wrap items-center gap-1 bg-white border border-[#E7E4DE] rounded-10 px-2 py-1.5"
@@ -3201,7 +3201,7 @@
                   <th class="px-5 py-3"></th>
                 </tr>
               </thead>
-              <tbody id="walkins-tbody">
+              <tbody id="walkins-tbody" data-tour="walkin-list">
                 <tr>
                   <td
                     colspan="8"
@@ -9479,8 +9479,8 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     <script src="js/settings-navigation.js?v=1"></script>
     <script src="assets/vendor/driverjs/1.9.0/driver.js.iife.js"></script>
     <script src="js/demo-tour-environment.js?v=2"></script>
-    <script src="js/demo-tour.js?v=1"></script>
-    <script src="js/app.js?v=62"></script>
+    <script src="js/demo-tour.js?v=2"></script>
+    <script src="js/app.js?v=63"></script>
     <script src="js/reservation-extras.js?v=2"></script>
     <script src="js/membership.js?v=7"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file

@@ -73,14 +73,25 @@ async function main() {
       await click('#demo-tour-restart');
     }else await click('.driver-popover-next-btn');
     await until(title('Your front desk at a glance'),'dashboard');await screenshot(width+'-dashboard');
-    for(const expected of ['Plan for arriving guests','Keep walk-ins in view','See the seating picture','A quick welcome for walk-ins',phone?'Open navigation':'Get to know your guests']){
+    for(const expected of ['Plan for arriving guests','Keep walk-ins in view','See the seating picture','A quick welcome for walk-ins',phone?'Open navigation':'Explore reservations']){
       await click('.driver-popover-next-btn');await until(title(expected),expected+' '+width);await bounds(expected+' '+width);
     }
-    if(phone){await click('[data-tour="mobile-menu"]');await until(title('Get to know your guests'),'phone drawer');await screenshot(width+'-navigation');}
+    if(phone){await click('[data-tour="mobile-menu"]');await until(title('Explore reservations'),'phone drawer');await screenshot(width+'-navigation');}
+    assert.ok(await evaluate('document.querySelector(".driver-popover-next-btn").disabled'),'Reservations navigation is action gated');
+    await click('[data-tour="reservations-nav"]');await until(title('Find the right booking'),'reservations');await bounds('reservations '+width);await screenshot(width+'-reservations');
+    await click('.driver-popover-prev-btn');await until(title('Explore reservations'),'Back to dashboard');
+    await click('[data-tour="reservations-nav"]');await until(title('Find the right booking'),'return to reservations');
+    await click('.driver-popover-next-btn');await until(title('Manage the arrival'),'reservation list');
+    await click('.driver-popover-next-btn');await until(title('Explore walk-ins'),'walkins navigation');
+    await click('[data-tour="walkins-nav"]');await until(title('Review the service day'),'walkins');await bounds('walkins '+width);await screenshot(width+'-walkins');
+    await click('.driver-popover-prev-btn');await until(title('Explore walk-ins'),'Back to reservations');
+    await click('[data-tour="walkins-nav"]');await until(title('Review the service day'),'return to walkins');
+    await click('.driver-popover-next-btn');await until(title('Follow each walk-in'),'walkin log');
+    await click('.driver-popover-next-btn');await until(title('Get to know your guests'),'guests navigation');
     assert.ok(await evaluate('document.querySelector(".driver-popover-next-btn").disabled'),'Navigation is action gated');
     await click('[data-tour="guests-nav"]');await until(title('Find a familiar face'),'search');
     await click('.driver-popover-prev-btn');await until(title('Get to know your guests'),'Back crosses page boundary');
-    assert.ok(await evaluate('document.querySelector("#page-dashboard").classList.contains("active")'));
+    assert.ok(await evaluate('document.querySelector("#page-walkins").classList.contains("active")'));
     await click('[data-tour="guests-nav"]');await until(title('Find a familiar face'),'return to search');
     await screenshot(width+'-search');
     await evaluate('fixture.delay=150;');

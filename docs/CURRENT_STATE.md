@@ -1,5 +1,15 @@
 # Current state and operational handoff
 
+Demo tour operations flow (2026-10-08): now visits Reservations, then Walk-Ins,
+then Guest Database after the dashboard. Navigation requires actual clicks and
+successful reads, including valid empty lists. Uses existing search/date/status
+controls and lists; no required saves or automatic writes. Back crosses each page
+boundary; mobile navigation opens the drawer as needed. Existing V1 completion
+state remains valid, with the expanded flow available through Restart Tour.
+Verification: 92 test suites pass; Chrome fixture checks pass at 1440px, 393px,
+and 320px, including Back across the new page boundaries. New screenshots saved
+for Reservations and Walk-Ins. Live project reads remain unverified.
+
 Demo tour close-button polish (2026-10-08): removed the square focus outline from
 the tour close button, retaining a circular background for visible keyboard focus.
 Bumped the tour CSS cache version. Chrome fixture checks passed at 393px and 320px;

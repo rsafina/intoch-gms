@@ -83,8 +83,11 @@ storage restrictions or clearing storage can lose persistence; the tour still wo
 
 ## Flow and English copy
 
-Desktop: 14 steps. Phone: 15, including the hamburger. Reservation shortcuts are omitted
-for accounts without reservation access; progress counts the applicable steps.
+Desktop: 20 steps. Phone: 21, including the hamburger. Reservation and walk-in
+sections are omitted without the relevant access; progress counts applicable steps.
+The flow is Dashboard → Reservations → Walk-Ins → Guest Database. Each navigation
+requires the real click and a successful page read. Filters remain usable without
+requiring a submission; empty lists are valid, and failed reads pause the guide.
 Equivalent Indonesian copy is included using the existing `demoText()` convention.
 
 Welcome: **Try Intoch at your own pace** — “Take a short tour of the dashboard and a
@@ -98,7 +101,13 @@ demo guidance anytime.”
 | Keep walk-ins in view | See today's walk-ins alongside your bookings. Your team can return here to update seating as the service changes. | Next |
 | See the seating picture | Area occupancy compares assigned parties with area capacity. It is a seating overview; today's traffic also includes completed visits. | Next |
 | A quick welcome for walk-ins | Quick Walk-In starts with a name, with phone and party size available here. You can add seating details later; no registration is needed for this tour. | Next; fields remain interactive |
-| Open navigation (phone) | Tap the menu to find your guest tools. The guide will continue when navigation opens. | Actual hamburger opens drawer |
+| Open navigation (phone) | Tap the menu to explore reservations, walk-ins and guests. The guide will continue when navigation opens. | Actual hamburger opens drawer |
+| Explore reservations | Click Reservations to see how your team prepares bookings and manages arrivals. We will continue when the list loads. | Actual navigation and successful list read |
+| Find the right booking | Search for a guest or choose a date range to find bookings. Status filters help the team focus on the arrivals that need attention. | Next; filters remain interactive |
+| Manage the arrival | The booking list brings guests, times, seating and status together. Available row actions let your team manage each booking; you do not need to change or save one during this tour. | Next |
+| Explore walk-ins | Click Walk-Ins to see the guests who arrived without a reservation. We will continue when the log loads. | Actual navigation and successful log read |
+| Review the service day | Choose a day to review its walk-ins. Register Walk-In is available for a new arrival; no registration is required to continue. | Next; filters remain interactive |
+| Follow each walk-in | The log shows arrivals and their progress. Your team can edit details or complete a real visit with the available controls. Continue to connect these visits with the guest relationship. | Next |
 | Get to know your guests | Open Guest Database to see the relationships behind each visit. Click the highlighted navigation item to continue. | Actual navigation and loaded page |
 | Find a familiar face | Search for Budi Santoso, our reviewed fictional example. The guide continues when their matching result has loaded. | Matching query, successful read and visible result; name adapts to sample |
 | Open the guest's story | Click the highlighted eye button to open this guest's profile. We'll wait for their details and history to load successfully. | Actual eye click and complete profile read |
