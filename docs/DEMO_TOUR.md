@@ -186,7 +186,7 @@ existing 13 steps and manual fictional booking submission.
 Reset Tour stays visible at the lower right of verified demo staff pages. Select a
 section to restart its guide, without changing bookings, guests or other demo data.
 Skip, Close, Escape and Explore Independently briefly highlight this entry with
-“Replay any section here”; there is no forced redirect or automatic replay. Explore
+“Restart any guide here ↓”; there is no forced redirect or automatic replay. Explore
 preserves a Resume prompt. Back stays within the selected section. Older saved full
 walkthroughs retain their recovery path. On the public booking form, dismissal offers
 a verified-session-only reset link back to the dashboard; selecting a staff section
@@ -225,3 +225,9 @@ QA: `node tests/demo-login.test.js`; start `node scripts/demo-tour-preview.cjs`,
 screenshots at 1440/393/320px. The fixture uses existing login and verified-session
 handlers with fictional Auth replies. Live credential/session/active Staff checks
 also passed, followed by local sign-out; complete live browser boot is still pending.
+
+Reset Tour uses a navy background and white label. Close/Skip/Explore and Finish
+highlight it with a static amber ring and a ten-second directional hint. Reduced
+motion remains respected; the nudge does not animate or block independent use.
+Use `node scripts/check-demo-tour-browser.cjs --reset-only` for fast desktop/393/320
+Close-to-reset visual checks and current highlight/section-picker screenshots.

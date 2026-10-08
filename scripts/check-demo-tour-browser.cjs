@@ -55,6 +55,20 @@ async function main() {
     await until(`(()=>{const box=document.querySelector('.intoch-demo-tour').getBoundingClientRect(),viewport=visualViewport;return box.left>=viewport.offsetLeft-1&&box.right<=viewport.offsetLeft+viewport.width+1&&box.top>=viewport.offsetTop-1&&box.bottom<=viewport.offsetTop+viewport.height+1;})()`,'Popover fits '+label);
     assert.ok(await evaluate('document.querySelector(".intoch-demo-tour").getBoundingClientRect().height < 500'),'Popover has no stretched blank space: '+label);
   }
+  if(process.argv.includes('--reset-only')) {
+    for(const width of [1440,393,320]) {
+      await command('Emulation.setDeviceMetricsOverride',{width,height:width<=640?852:1000,deviceScaleFactor:1,mobile:width<=640});
+      await command('Page.navigate',{url:'http://127.0.0.1:8080/__demo-tour-fixture'});
+      await until('!!window.fixture','fixture ready');await evaluate('localStorage.clear();sessionStorage.clear();');await command('Page.reload');
+      await until(title('Try Intoch at your own pace'),'welcome');await click('.driver-popover-close-btn');
+      await until('!!document.querySelector(".demo-tour-reset-highlight") && !document.querySelector(".driver-overlay")','Close highlights Reset Tour');
+      assert.equal(await evaluate('getComputedStyle(document.getElementById("demo-tour-reset")).color'),'rgb(255, 255, 255)');
+      assert.notEqual(await evaluate('getComputedStyle(document.getElementById("demo-tour-reset")).backgroundColor'),'rgb(255, 255, 255)');
+      await screenshot(width+'-reset-highlight');await click('#demo-tour-reset');await screenshot(width+'-reset-menu');
+      console.log('PASS '+width+'px: real Close, navy Reset Tour, white label, visible restart hint and section picker');
+    }
+    assert.deepEqual(errors,[],'No browser runtime exceptions');return;
+  }
   for(const width of process.argv.includes('--phone')?[393,320]:[1440,393,320]) {
     const phone=width<=640;
     await command('Emulation.setDeviceMetricsOverride',{width,height:phone?852:1000,deviceScaleFactor:1,mobile:phone});

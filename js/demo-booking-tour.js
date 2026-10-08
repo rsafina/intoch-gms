@@ -94,6 +94,7 @@
     if (state) { try { localStorage.setItem(`intoch:online-demo:v${VERSION}:${env().supabaseUrl}:${state.staffId}:seen`, status); } catch {} }
     dispose(); dock?.remove(); dock = null; state = null; save(); pending = false; booking = null;
     if (isStaff() && typeof toggleSidebarDrawer === "function") toggleSidebarDrawer(false);
+    if (status === "completed" && isStaff()) window.DemoTour?.nudge();
   }
   function dismiss() {
     const allowed = valid(); exit("skipped");

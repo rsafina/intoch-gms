@@ -261,11 +261,11 @@
   function nudge() {
     if (!valid() || !resetMenu) return;
     resetMenu.classList.add("demo-tour-reset-highlight");
-    resetMenu.querySelector("#demo-tour-reset-hint").textContent = text("Replay any section here", "Ulangi bagian mana pun di sini");
+    resetMenu.querySelector("#demo-tour-reset-hint").textContent = text("Restart any guide here ↓", "Ulangi panduan di sini ↓");
     clearTimeout(nudgeTimer); nudgeTimer = setTimeout(() => {
       resetMenu?.classList.remove("demo-tour-reset-highlight");
       if (resetMenu) resetMenu.querySelector("#demo-tour-reset-hint").textContent = "";
-    }, 6000);
+    }, 10000);
   }
   function dismiss() { exit("skipped"); nudge(); }
   function showDock(message) {
@@ -303,6 +303,7 @@
     disposeOverlay(); clearTimeout(readTimer); dock?.remove(); dock = null; pendingAction = null;
     if (document.body.classList.contains("sidebar-drawer-open") && typeof toggleSidebarDrawer === "function") toggleSidebarDrawer(false);
     restoreFocus();
+    if (status === "completed") nudge();
   }
   function welcome() {
     if (!valid() || run || offered || currentPage !== "dashboard" || !dashboardReady) return;

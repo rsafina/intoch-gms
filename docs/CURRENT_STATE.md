@@ -1,5 +1,14 @@
 # Current state and operational handoff
 
+Reset Tour visibility polish (2026-10-08; local): persistent reset button now uses
+Intoch navy with white text. Non-continuing exits and guide completion show a strong
+static amber ring and “Restart any guide here ↓” hint for ten seconds. No extra
+blocking overlay, forced navigation or motion. CSS/controller cache versions bumped
+in staff and public source templates. Chrome Close/reset checks pass at 1440px,
+393px and 320px; inspected screenshots in docs/screens/demo-tour/*-reset-highlight.png.
+Targeted staff and online controller tests cover the existing exit/recovery flows.
+No push/deployment or database/Auth/config changes.
+
 Local repository cleanup (2026-10-08; `feature/demo-guided-tour`): user authorized
 keeping installed `.agents/` skills, `.impeccable/` visual-review screenshots and
 `skills-lock.json` local through `.gitignore`. Also excluded review artifacts and
