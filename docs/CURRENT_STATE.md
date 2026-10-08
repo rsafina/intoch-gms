@@ -1,5 +1,10 @@
 # Current state and operational handoff
 
+Demo tour close-button polish (2026-10-08): removed the square focus outline from
+the tour close button, retaining a circular background for visible keyboard focus.
+Bumped the tour CSS cache version. Chrome fixture checks passed at 393px and 320px;
+updated phone screenshots. No push or deployment performed.
+
 Demo tour hostname follow-up (2026-10-08): added `https://demo.intoch.app` to the
 exact-origin allowlist for the Cloudflare demo. Retains the pinned playground project
 and verified session checks. Bumped the environment script cache version; push and
