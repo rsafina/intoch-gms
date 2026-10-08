@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="css/demo.css?v=4" />
     <link rel="stylesheet" href="assets/vendor/driverjs/1.9.0/driver.css" />
     <link rel="stylesheet" href="css/demo-tour.css?v=2" />
-    <script src="js/demo.js?v=4" defer></script>
+    <script src="js/demo.js?v=5" defer></script>
     <style>
       :root {
         /* ── Brand tokens (2026-09-05). ONE PLACE. ───────────────────
@@ -1291,7 +1291,7 @@
     >
       <!-- ONLINE RESERVATION BELL (rings for public-form bookings only) -->
       <button
-        id="res-alert-bell"
+        id="res-alert-bell" data-booking-tour="bell"
         onclick="toggleResAlertPanel()"
         type="button" aria-label="Booking follow-ups" aria-controls="res-alert-panel" aria-expanded="false"
         title="Booking follow-ups"
@@ -1631,7 +1631,7 @@
               >
                 +2 Days
               </button>
-              <button id="dashboard-online-tab" onclick="showDashboardOnlineReservations()" class="text-xs px-3 py-2 rounded-full border border-[#D8D2C4] bg-[#F8F6F2] text-[color:var(--brand)]" data-i18n>Online form &middot; 14 days</button>
+              <button id="dashboard-online-tab" data-booking-tour="online-tab" onclick="showDashboardOnlineReservations()" class="text-xs px-3 py-2 rounded-full border border-[#D8D2C4] bg-[#F8F6F2] text-[color:var(--brand)]" data-i18n>Online form &middot; 14 days</button>
             </div>
             <!-- Totals for the selected day tab: reservations + expected pax,
                  including bookings with no table/area assigned yet -->
@@ -3028,7 +3028,7 @@
           <div id="res-occupancy-summary"></div>
 
           <div class="card res-list-card">
-            <div class="res-list-scroll">
+            <div class="res-list-scroll" data-booking-tour="list-scroll">
               <table data-tour="reservation-list" class="res-list-table">
                 <thead><tr>
                   <th scope="col" data-i18n>Time</th>
@@ -9479,9 +9479,10 @@ Pembayaran downpayment dapat dilakukan melalui QRIS</textarea
     <script src="js/settings-navigation.js?v=1"></script>
     <script src="assets/vendor/driverjs/1.9.0/driver.js.iife.js"></script>
     <script src="js/demo-tour-environment.js?v=2"></script>
-    <script src="js/demo-tour.js?v=2"></script>
-    <script src="js/app.js?v=63"></script>
-    <script src="js/reservation-extras.js?v=2"></script>
+    <script src="js/demo-tour.js?v=3"></script>
+    <script src="js/demo-booking-tour.js?v=1"></script>
+    <script src="js/app.js?v=64"></script>
+    <script src="js/reservation-extras.js?v=3"></script>
     <script src="js/membership.js?v=7"></script>
     <!-- Bump ?v= on every wa.js change so FD browsers fetch the new file
          instead of serving a stale cached copy (caused the � emoji bug) -->

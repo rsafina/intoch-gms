@@ -354,6 +354,8 @@
         text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
       }
     </style>
+      <link rel="stylesheet" href="assets/vendor/driverjs/1.9.0/driver.css" />
+    <link rel="stylesheet" href="css/demo-tour.css?v=2" />
   </head>
   <body>
     <div class="bg-photo"></div>
@@ -376,7 +378,7 @@
         />
       </div>
 
-      <div class="card">
+      <div class="card" data-booking-tour="confirmation">
         <div class="check">
           <svg
             viewBox="0 0 24 24"
@@ -586,5 +588,8 @@
       })();
       PageLoading.ready(Promise.all([brandingReady, appearanceReady, languageReady]));
     </script>
+    <script src="assets/vendor/driverjs/1.9.0/driver.js.iife.js"></script>
+    <script src="js/demo-tour-environment.js?v=2"></script>
+    <script src="js/demo-booking-tour.js?v=1"></script>
   </body>
 </html>

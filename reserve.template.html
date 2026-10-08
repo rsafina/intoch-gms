@@ -915,6 +915,8 @@
         transform: scale(0.985);
       }
     </style>
+      <link rel="stylesheet" href="assets/vendor/driverjs/1.9.0/driver.css" />
+    <link rel="stylesheet" href="css/demo-tour.css?v=2" />
   </head>
   <body>
     <div id="reserve-loading">
@@ -960,7 +962,7 @@
           <div class="field">
             <label for="f-name" data-i18n>Name</label>
             <input
-              id="f-name"
+              id="f-name" data-booking-tour="name"
               type="text"
               autocomplete="name"
               maxlength="80"
@@ -972,7 +974,7 @@
           <div class="field">
             <label for="f-phone" data-i18n>WhatsApp Number</label>
             <input
-              id="f-phone"
+              id="f-phone" data-booking-tour="phone"
               type="tel"
               autocomplete="tel"
               inputmode="tel"
@@ -982,7 +984,7 @@
           </div>
           <div class="field">
             <label data-i18n>Number of Guests</label>
-            <div class="pax-box">
+            <div class="pax-box" data-booking-tour="party">
               <button type="button" onclick="paxStep(-1)" aria-label="Fewer" data-i18n-aria>
                 &minus;
               </button>
@@ -1016,6 +1018,7 @@
             <p id="pax-note" class="soft-note" style="display: none"></p>
           </div>
 
+          <div data-booking-tour="schedule">
           <!-- Area picker. Hidden entirely when no area is bookable online,
                which is the inherited fallback: with nothing to choose, the form
                behaves exactly as it did before areas existed and submits a null
@@ -1043,6 +1046,7 @@
               aria-labelledby="time-label"
             ></div>
             <input id="f-time" type="hidden" />
+          </div>
           </div>
           <!-- Optional, and off unless the restaurant switches it on. Fills
                guests.company only when that guest has none: a returning guest
@@ -1085,7 +1089,7 @@
                above it. -->
           <div class="submit-dock">
             <div id="form-error" class="err"></div>
-            <button id="btn-submit" type="submit" class="btn-submit" data-i18n>
+            <button id="btn-submit" data-booking-tour="submit" type="submit" class="btn-submit" data-i18n>
               Reserve Now
             </button>
           </div>
@@ -2251,6 +2255,7 @@
           });
           if (error) throw error;
           if (!data?.ok) {
+            if (typeof DemoBookingTour !== "undefined") DemoBookingTour.reservationFailed(false);
             if (data?.code === "time_full") await loadAvailability();
             // For a closed date and for a pause, the server's own message is
             // what STAFF wrote for this specific closure ("Tutup untuk Idul
@@ -2295,10 +2300,12 @@
             if (handoff) sessionStorage.setItem("bhPublicResWa", handoff);
             else sessionStorage.removeItem("bhPublicResWa");
           } catch (_) {}
+          if (typeof DemoBookingTour !== "undefined") DemoBookingTour.reservationSaved(data, {name, phone, date});
           // Show the saved request before offering the optional WhatsApp link.
           PageLoading.begin();
           window.location.href = "reservation-created.html";
         } catch (err) {
+          if (typeof DemoBookingTour !== "undefined") DemoBookingTour.reservationFailed(true);
           showError(ERR_ID.network);
         } finally {
           submitting = false;
@@ -2309,5 +2316,8 @@
         }
       });
     </script>
+    <script src="assets/vendor/driverjs/1.9.0/driver.js.iife.js"></script>
+    <script src="js/demo-tour-environment.js?v=2"></script>
+    <script src="js/demo-booking-tour.js?v=1"></script>
   </body>
 </html>

@@ -47,18 +47,20 @@ async function showDashboardOnlineReservations() {
     if (result.data.length < 500) break;
   }
   if (error) {
+    if (typeof DemoBookingTour !== "undefined") DemoBookingTour.notify("online-overview-ready", {ok:false});
     list.innerHTML = `<p class="dash-res-empty">${id ? "Reservasi online tidak dapat dimuat." : "Online reservations could not be loaded."}</p><button class="btn-ghost" onclick="showDashboardOnlineReservations()">${id ? "Coba lagi" : "Retry"}</button>`;
     return;
   }
   const days = onlineReservationDays(rows);
   const label = date => new Date(date+"T00:00:00").toLocaleDateString(id ? "id-ID" : "en-GB", {weekday:"short",day:"numeric",month:"short"});
   list.innerHTML = `<div class="online-days-heading"><div><strong>${id ? "Reservasi online" : "Online form reservations"}</strong><p>${label(start)} &ndash; ${label(end)} &middot; ${id ? "Diperbarui" : "Updated"} ${new Date().toLocaleTimeString(id ? "id-ID" : "en-GB",{hour:"2-digit",minute:"2-digit"})}</p></div><button class="btn-ghost" onclick="showDashboardOnlineReservations()">${id ? "Muat ulang" : "Refresh"}</button></div>` +
-    (days.length ? days.map(day=>`<button class="online-day" onclick="openOnlineReservationDay('${day.date}')">
+    (days.length ? days.map(day=>`<button data-booking-tour="day" data-booking-date="${escapeHtml(day.date)}" class="online-day" onclick="openOnlineReservationDay('${day.date}')">
       <span><strong>${label(day.date)}</strong><span>${day.count} ${id ? "reservasi online" : "online bookings"} &middot; ${day.expectedPax} ${id ? "pax diharapkan" : "expected pax"}</span>
       ${day.waiting ? `<span class="dash-res-waiting">${day.waiting} ${id ? "menunggu keputusan" : "awaiting decision"} &middot; ${day.pendingPax} ${id ? "pax belum dihitung" : "pax pending"}</span>` : ""}
       ${day.incoming ? `<span>${day.incoming} ${id ? "menunggu deposit" : "awaiting deposit"}</span>` : ""}
       ${day.latest ? `<small>${id ? "Form terbaru" : "Latest submission"}: ${escapeHtml(new Date(day.latest).toLocaleString(id ? "id-ID" : "en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))}</small>` : ""}</span>
       <span>${id ? "Lihat tanggal" : "View day"} &rarr;</span></button>`).join("") : `<p class="dash-res-empty">${id ? "Tidak ada reservasi online dalam 14 hari ini." : "No upcoming online bookings in these 14 days."}</p>`);
+  if (typeof DemoBookingTour !== "undefined") DemoBookingTour.notify("online-overview-ready", {ok:true,rows});
 }
 
 function setReservationOnlineOnly(value) {
@@ -78,7 +80,7 @@ function openOnlineReservationDay(date) {
   document.querySelectorAll(".status-filter-btn").forEach(btn => {
     btn.className = btn.dataset.status === "all" ? "status-filter-btn btn-primary text-xs px-3 py-1.5" : "status-filter-btn btn-ghost text-xs px-3 py-1.5";
   });
-  navigateTo("reservations");
+  return navigateTo("reservations");
 }
 
 let staffDepositEdited = false;

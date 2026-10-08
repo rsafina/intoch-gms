@@ -1,5 +1,24 @@
 # Current state and operational handoff
 
+Online Reservation Guide (2026-10-08; local on `feature/demo-guided-tour`): separate
+optional guide in dashboard demo guidance. Uses the actual public form in the same
+tab, fictional name/contact input gates, user-triggered save and returned booking ID.
+The user confirmed this is the dedicated fictional playground. Confirmation copy
+distinguishes Reserved, Incoming and Waitlist. Return restores verified staff Auth;
+actual online overview/day clicks and successful exact-row reads connect the booking
+to Reservations and the follow-up bell. No required payment, message or follow-up
+write. Public guidance rechecks existing Auth/session/profile permissions and the
+playground allowlist. Two-hour, versioned same-tab recovery handles failed reads and
+uncertain submissions without automatic retries or duplicate saves. Templates only;
+no generated config rebuild, live SQL, Auth/RLS changes, reset or deployment.
+Verification: full test runner passes 93 suites; final guide and reservation-list
+checks pass. Chrome fixture checks pass at 1440px, 393px and 320px, including actual
+input/submission, returned ID, online day/row, reload, skip/restart and logout. Phone
+checks assert both popover bounds and readable name/status targets after table pan.
+Inspected screenshots are in `docs/screens/demo-online-booking/`. Live Auth/RPC,
+realtime delivery and physical keyboards remain unverified; push/deploy are user-managed.
+See [Online Reservation Guide](DEMO_ONLINE_GUIDE.md) for flow, local QA and limitations.
+
 Demo tour operations flow (2026-10-08): now visits Reservations, then Walk-Ins,
 then Guest Database after the dashboard. Navigation requires actual clicks and
 successful reads, including valid empty lists. Uses existing search/date/status

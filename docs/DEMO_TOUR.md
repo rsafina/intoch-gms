@@ -9,6 +9,10 @@ The tour itself only navigates and reads; it never submits a walk-in, reservatio
 payment, invoice or message. Reset Demo Data is a separate future improvement.
 The `/demo/*` sales-story player is unchanged.
 
+A separate [Online Reservation Guide](DEMO_ONLINE_GUIDE.md) now connects the real
+guest form to the exact saved booking on the dashboard. It is launched explicitly
+from the dashboard demo guidance and does not add steps to this tour.
+
 ## Integration and availability
 
 Modified: `index.html`, `js/app.js`, `js/demo.js`, `docs/CURRENT_STATE.md` and

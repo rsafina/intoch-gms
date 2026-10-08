@@ -344,6 +344,7 @@ async function initializeApplication(landingPage) {
 
   if (appInitialized) {
     if (typeof DemoTour !== "undefined") DemoTour.sessionReady(staff);
+    if (typeof DemoBookingTour !== "undefined") DemoBookingTour.sessionReady(staff);
     navigateTo(landingPage || "dashboard", bootToken);
     return;
   }
@@ -375,6 +376,7 @@ async function initializeApplication(landingPage) {
   }
   appInitialized = true;
   if (typeof DemoTour !== "undefined") DemoTour.sessionReady(staff);
+  if (typeof DemoBookingTour !== "undefined") DemoBookingTour.sessionReady(staff);
 
   // ── Restore last visited page (persists across refresh) ──
   // Deliberately not awaited, as before: the realtime channel, the bell and
@@ -631,6 +633,7 @@ function setupRealtimeUpdates() {
 
 function showLoginPage() {
   if (typeof DemoTour !== "undefined") DemoTour.teardown();
+  if (typeof DemoBookingTour !== "undefined") DemoBookingTour.teardown();
   if (typeof guestLoadGeneration !== "undefined") guestLoadGeneration++;
   if (typeof guestProfileGeneration !== "undefined") guestProfileGeneration++;
   document.getElementById("login-page")?.classList.remove("hidden");
@@ -736,6 +739,7 @@ async function loginStaff(event) {
 
 async function logoutStaff() {
   if (typeof DemoTour !== "undefined") DemoTour.teardown();
+  if (typeof DemoBookingTour !== "undefined") DemoBookingTour.teardown();
   if (typeof guestLoadGeneration !== "undefined") guestLoadGeneration++;
   if (typeof guestProfileGeneration !== "undefined") guestProfileGeneration++;
   if (typeof resetDemoPresentation === "function") resetDemoPresentation();
@@ -880,6 +884,7 @@ async function navigateTo(page, bootToken = null) {
 
     currentPage = page;
     if (typeof DemoTour !== "undefined") DemoTour.notify("page-changing", { page });
+    if (typeof DemoBookingTour !== "undefined") DemoBookingTour.notify("page-changing", { page });
     if (typeof settingsNavigationChanged === "function") settingsNavigationChanged(page);
     localStorage.setItem("lastPage", page);
 
@@ -960,6 +965,7 @@ async function navigateTo(page, bootToken = null) {
   } finally {
     if (spinning) loader(false);
     if (typeof DemoTour !== "undefined") DemoTour.notify("page-ready", { page, ok: navigationSucceeded });
+    if (typeof DemoBookingTour !== "undefined") DemoBookingTour.notify("page-ready", { page, ok: navigationSucceeded });
   }
 }
 
@@ -6270,6 +6276,7 @@ async function loadReservations() {
   allReservations = sortReservationsByStatus(data);
   await renderReservationsTable(allReservations);
   if (request === resLoadRequest && typeof DemoTour !== "undefined") DemoTour.notify("operations-ready", { page: "reservations", ok: true });
+  if (request === resLoadRequest && typeof DemoBookingTour !== "undefined") DemoBookingTour.notify("operations-ready", { page: "reservations", ok: true, rows: allReservations });
 
   // Occupancy summary always reflects the FULL day regardless of the
   // active status filter/chip — a manager filtering to "Cancelled" to
@@ -6928,7 +6935,7 @@ async function renderReservationsTable(data) {
       return `<tr class="res-list-row">
         <td><time class="res-list-time">${escapeHtml(String(r.reservation_time || "").slice(0,5) || "--")}</time></td>
         <td>
-          <p class="res-list-name">${escapeHtml(r.booking_name || r.guests?.name || "--")} <span>&middot; ${fmt.pax(r.pax)}</span></p>
+          <p class="res-list-name"><span data-booking-tour="row" data-booking-id="${escapeHtml(r.id)}" style="font:inherit;white-space:inherit">${escapeHtml(r.booking_name || r.guests?.name || "--")}</span> <span>&middot; ${fmt.pax(r.pax)}</span></p>
           <div class="res-list-guest-meta">${formatSpendingTierBadge(r.guests?.spending_tier)} ${memberBadge(r.guest_id)}
             <span>${Number(r._visitCount || 0)} ${id ? "kunjungan" : "visits"}</span>${tag ? `<span>${escapeHtml(tag)}</span>` : ""}
           </div>
@@ -6945,7 +6952,7 @@ async function renderReservationsTable(data) {
           </details>
         </td>
         <td><p class="res-list-area">${escapeHtml(area || (id ? "Area belum ditentukan" : "Area unassigned"))}</p><div class="res-list-seating">${seating}</div></td>
-        <td><div class="res-list-status">${statusBadge(r.status)}${dashboardDepositSummary(r)}${waitlistReasonLine(r)}</div></td>
+        <td><div class="res-list-status" data-booking-tour="status" data-booking-id="${escapeHtml(r.id)}">${statusBadge(r.status)}${dashboardDepositSummary(r)}${waitlistReasonLine(r)}</div></td>
         <td><div class="dash-res-actions"><button type="button" class="dash-res-update" onclick="openResActions('${r.id}')">${t("Update")}</button>
           ${typeof reservationTicketButton === "function" ? reservationTicketButton(r) : ""}
           ${!followup || ["Arrived", "Cancelled", "Cancelled (No Show)"].includes(r.status) ? "" : `<div class="dash-res-secondary">${followup}</div>`}

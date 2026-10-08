@@ -206,6 +206,7 @@
     lastFocus = null;
   }
   function exit(status = "skipped") {
+    clearTimeout(welcomeTimer); welcomeTimer = null; offered = true;
     discardPendingProfile();
     if (identity) { store(status); run = null; persist(); }
     disposeOverlay(); clearTimeout(readTimer); dock?.remove(); dock = null; pendingAction = null;
@@ -285,6 +286,7 @@
   }
   function start() {
     if (!valid()) return;
+    if (window.DemoBookingTour) DemoBookingTour.exit();
     lastFocus = document.activeElement;
     searchSatisfied = false; profileSatisfied = false;
     run = { step: "dashboard", guestId: null, guestName: environment().fictionalGuestNames[0], paused: false };

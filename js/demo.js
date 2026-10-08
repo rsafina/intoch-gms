@@ -40,7 +40,7 @@ function initDemoPresentation() {
       <li>${demoText('View Reports.','Buka Laporan.')}</li>
     </ol>
     <p>${demoText('Use fictional guest details in this demo.','Gunakan data tamu fiktif dalam demo ini.')}</p>
-    <div class="demo-actions"><a href="reserve.html" target="_blank" rel="noopener" class="btn-ghost">${demoText('Try the online reservation form','Coba formulir reservasi online')}</a></div>`;
+    <div class="demo-actions"><a data-booking-tour="form-link" href="reserve.html" target="_blank" rel="noopener" class="btn-ghost">${demoText('Try the online reservation form','Coba formulir reservasi online')}</a></div>`;
   guide.addEventListener('toggle', () => sessionStorage.setItem('demo-guide-closed', guide.open ? 'no' : 'yes'));
   dashboard.children[0].after(guide);
   const traffic = document.createElement('div');
