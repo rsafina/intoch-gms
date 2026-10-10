@@ -7,6 +7,42 @@ documentation task. **Committed code is not proof of deployed SQL or Edge Functi
 
 ## Landing redesign (2026-10-08; local only)
 
+Comparison point styling: replaced horizontal rules with vertical dividers between
+desktop columns and small SVG icons above the text. Mobile points retain their
+icons without divider lines. Both tab states and translations remain functional;
+interaction and 1440/390/320px visual checks passed.
+
+Feature alignment follow-up: desktop examples now sit alongside the combined
+heading, tabs, and selected description instead of starting below the tabs. All
+three feature views retain their mobile stack, copy, and tab behavior. Interaction
+tests and Chrome checks at 1440, 390, and 320px passed without document overflow.
+
+Comparison layout refinement: explanation points now use three horizontal div
+components spanning both columns beneath the description and illustration. They
+stack on mobile; both tabs retain their copy and translations. Interaction tests
+and Chrome checks at 1440, 390, and 320px passed without document overflow.
+
+Comparison layout follow-up: moved the bullet explanations beneath their heading
+and description in the left column for both tabs. Illustrations remain in the right
+column, then follow the text on mobile. Interaction tests and Chrome checks at
+1440, 390, and 320px passed without document overflow.
+
+2026-10-10 feature copy follow-up: replaced the three feature categories with
+Guest Profile, Loyalty Program, and Get Intoch using the user's headings and
+always-visible descriptions. Removed "Lihat fitur selengkapnya" accordions.
+Examples now show guest profile fields, membership/voucher/game programs, and
+reservation/visit/follow-up statuses with the requested left/right action order.
+ID/EN, existing tab IDs, and keyboard behavior remain. Interaction regression,
+translation syntax, and diff checks passed; Chrome checks at 1440, 390, and 320px
+showed no document overflow. No application behavior or deployment changed.
+
+2026-10-10 copy follow-up: comparison section now uses the user's exact Indonesian
+headings, beginning with "Berhenti Sekedar Mencatat", and contrasts unused visit
+records with documented history, recognizing regulars, and targeted follow-up.
+Supporting wording preserves the supplied meaning; English copy matches it.
+Bullet headings are visually distinct from their explanations. Landing interaction
+tests, translation syntax, and diff checks passed. No deployment was performed.
+
 Follow-up: supporting-feature grid now uses continuous internal row/column lines
 matching the supplied reference. Desktop/mobile columns remain three/two; Chrome
 checks at 1440, 390, and 320px showed no horizontal overflow.

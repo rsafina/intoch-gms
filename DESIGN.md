@@ -159,6 +159,14 @@ Large product and feature panels use the panel radius; simulation screens and mo
 
 ## Components
 
+Feature tabs are Guest Profile, Loyalty Program, and Get Intoch. Descriptions are
+always visible, with profile, loyalty, and communication examples beside them;
+feature-detail accordions are removed. Example actions are static preview labels,
+not live controls. The workflow demonstrations retain their separate controls.
+On desktop, the heading, tabs, and selected description share the left column;
+the example spans their combined height on the right. Mobile keeps document order
+with the example below the description.
+
 The supporting-feature grid uses one-pixel internal column and row dividers with subtle opacity and fading
 only at the outer grid edges, with solid intersections and without
 outer borders: three columns on desktop and two on mobile.
@@ -170,6 +178,10 @@ copy, and its action group are centered on both desktop and mobile.
 The comparison tabs include compact, static HTML illustrations with sample
 data: separate chat and guest-book notes versus one connected guest history. Notes
 use restrained rotation and flat borders; the connected profile uses existing navy.
+Comparison headings and descriptions sit beside the illustrations. Three explanation
+components span the full width beneath them on desktop and stack on mobile.
+Each explanation has a small blue SVG icon above its text. Only vertical dividers
+separate the desktop columns; stacked mobile points have no divider lines.
 
 ### Buttons
 
@@ -191,7 +203,7 @@ The white sticky navigation has a divider and actual logo. Mobile uses a rounded
 
 ### Tabs and context chips
 
-Feature choices use a pale track and white selected tab. Scenario choices on navy use outlined pills; the selected tab becomes white with navy text. Keyboard arrows, Home, and End change selection with a roving tab stop. Context chips use muted inverse text on a translucent navy-panel surface.
+Feature choices use a pale track and a logo-blue selected tab with white text. Scenario choices on navy use outlined pills; the selected tab becomes white with navy text. Keyboard arrows, Home, and End change selection with a roving tab stop. Context chips use muted inverse text on a translucent navy-panel surface.
 
 ### Workflow demonstrations
 
