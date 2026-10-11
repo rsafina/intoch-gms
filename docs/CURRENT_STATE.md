@@ -12,6 +12,11 @@ the sequence, followed by guest history and then the updated sticker card
 (previous order 3 → 1 → 2). Captions, manual controls, replay and phase visuals
 follow the same new order. No deployment or push performed.
 
+Landing demo entry (2026-10-11; local on `main`): the hero's "Coba Intoch
+Sekarang" button now opens `https://demo.intoch.app/?demo=1`, the separately
+deployed one-hour playground demo. Text/translations and contact links remain
+unchanged. Committed at the user's request; not pushed or published.
+
 Landing copy and follow-up refinement (2026-10-11; local only): voucher copy now
 invites guests to complete all stamps and claim their voucher; recognition copy
 uses “nama hingga pesanan favorit”, and Guest Profile uses the requested “sekedar”.
