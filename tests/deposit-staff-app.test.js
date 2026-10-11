@@ -435,7 +435,7 @@ ok(
   (() => {
     const strip = (s) =>
       s.replace(/const SUPABASE_URL = "[^"]*";/, "").replace(/"(__SUPABASE_ANON_KEY__|sb_[^"]*)"/, "");
-    return strip(cfgTpl) === strip(cfgOut);
+    return strip(cfgTpl.replace('"__DEMO_TURNSTILE_SITE_KEY__"', '""')) === strip(cfgOut);
   })(),
   "config.js is a build artefact. An edit to only one of the pair is either " +
     "wiped by the next build or never reaches the browser.",

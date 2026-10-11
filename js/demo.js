@@ -9,6 +9,7 @@ function demoCanViewReports() {
     staff?.role === 'staff' && demoVerifiedStaffId !== null && String(staff.id) === demoVerifiedStaffId);
 }
 function demoRoute(page) {
+  if (window.DemoSession?.selected()) return window.DemoSession.permits(page) ? page : 'dashboard';
   if (!demoEnabled()) return page;
   return ['dashboard','reservations','walkins','guests','reports','invoice'].includes(page) ? page : 'dashboard';
 }

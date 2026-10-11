@@ -295,6 +295,7 @@ async function refreshAutoGuestTiers(guests, force = false) {
 // ============================================================
 document.addEventListener("DOMContentLoaded", async () => {
   startClock();
+  if (window.DemoSession && await window.DemoSession.bootstrap()) return;
   const resDateEl = document.getElementById("res-date-filter");
   if (resDateEl) resDateEl.value = TODAY;
 
@@ -350,7 +351,7 @@ async function initializeApplication(landingPage) {
     return;
   }
 
-  startStaffSessionMonitor();
+  if (!window.DemoSession?.selected()) startStaffSessionMonitor();
 
   const connected = await testSupabaseConnection();
   // Its toast lives in the body, which the boot screen hides. Uncover before
@@ -600,6 +601,7 @@ function teardownRealtimeUpdates() {
 }
 
 function setupRealtimeUpdates() {
+  if (window.DemoSession?.selected()) return;
   if (typeof IS_DEV !== "undefined" && IS_DEV) return; // dev: no realtime — saves a persistent connection + refetch bursts
   // Idempotent by construction. Even with the logout teardown in place, this
   // must never be the thing that throws: it runs in the middle of app boot
@@ -727,12 +729,23 @@ async function loginStaff(event) {
     return;
   }
 
+  let captchaToken;
+  try { captchaToken = await globalThis.DemoSession?.staffCaptcha(); }
+  catch {
+    if (errorEl) {
+      errorEl.textContent = 'Security check unavailable. Please try again.';
+      errorEl.classList.remove('hidden');
+    }
+    return;
+  }
   loader(true);
-  const {error} = await db.auth.signInWithPassword({email:staffAuthEmail(username),password:staffAuthPassword(pin)});
+  const {error} = await db.auth.signInWithPassword({email:staffAuthEmail(username),password:staffAuthPassword(pin),
+    ...(captchaToken ? {options:{captchaToken}} : {})});
   const user = error ? null : await restoreVerifiedStaffSession();
   loader(false);
 
   if (error || !user) {
+    if (errorEl) errorEl.textContent = 'Invalid username or PIN';
     if (errorEl) errorEl.classList.remove("hidden");
     return;
   }
@@ -744,6 +757,7 @@ async function loginStaff(event) {
 }
 
 async function logoutStaff() {
+  if (window.DemoSession?.selected()) { await window.DemoSession.exit(); return; }
   if (typeof DemoTour !== "undefined") DemoTour.teardown();
   if (typeof DemoBookingTour !== "undefined") DemoBookingTour.teardown();
   if (typeof guestLoadGeneration !== "undefined") guestLoadGeneration++;
@@ -7657,6 +7671,7 @@ function depositInvoiceUrl(token) {
 let depositSweepDone = false;
 
 async function sweepExpiredDeposits() {
+  if (window.DemoSession?.selected()) return;
   if (currentStaffRole() === "owner") return;
   if (depositSweepDone) return;
   // Set BEFORE awaiting: two loads firing at once must not both sweep.

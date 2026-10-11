@@ -21,7 +21,7 @@
     ["guests", text("Guest Database", "Database Tamu")],
     ["online", text("Reservation from Online Form", "Reservasi dari Form Online")],
     ["reports", text("Reports", "Laporan")],
-  ];
+  ].filter(([section]) => !window.DemoSession?.selected() || ["operations", "reports"].includes(section));
 
   function environment() { return window.INTOCH_DEMO_TOUR_ENV; }
   function eligible() {
@@ -31,8 +31,9 @@
       typeof SUPABASE_URL !== "undefined" && env.supabaseUrl === SUPABASE_URL &&
       env.fictionalGuestNames?.some(name => typeof name === "string" && name) &&
       typeof demoEnabled === "function" && demoEnabled() && staff?.id != null &&
-      ["admin", "manager", "staff", "finance"].includes(staff.role) &&
-      typeof hasAccess === "function" && hasAccess("dashboard") && hasAccess("guests"));
+      (["admin", "manager", "staff", "finance"].includes(staff.role) || window.DemoSession?.active()) &&
+      typeof hasAccess === "function" && hasAccess("dashboard") &&
+      (hasAccess("guests") || window.DemoSession?.active()));
   }
   function valid() {
     return identity !== null && eligible() && identity === String(getStaffSession().id);
@@ -115,7 +116,9 @@
     }
     if (run?.section === "operations") {
       const operations = items.slice(0, guestStart);
-      operations.push({ id: "operations-finish", page: operations.at(-1).page, target: operations.at(-1).target, action: "finish", title: text("Your front desk guide is complete", "Panduan meja depan selesai"), copy: text("Explore freely, or use Reset Tour to try Guest Database or the online reservation guide. Restarting a guide does not change demo data.", "Jelajahi dengan bebas, atau gunakan Reset Tour untuk mencoba Database Tamu atau panduan reservasi online. Mengulang panduan tidak mengubah data demo.") });
+      operations.push({ id: "operations-finish", page: operations.at(-1).page, target: operations.at(-1).target, action: "finish", title: text("Your front desk guide is complete", "Panduan meja depan selesai"), copy: window.DemoSession?.selected()
+        ? text("Explore freely, or use Reset Tour to try Reports. Restarting a guide keeps the same one-hour expiry.", "Jelajahi dengan bebas, atau gunakan Reset Tour untuk mencoba Laporan. Mengulang panduan tidak mengubah waktu berakhir satu jam Anda.")
+        : text("Explore freely, or use Reset Tour to try Guest Database or the online reservation guide. Restarting a guide does not change demo data.", "Jelajahi dengan bebas, atau gunakan Reset Tour untuk mencoba Database Tamu atau panduan reservasi online. Mengulang panduan tidak mengubah data demo.") });
       return operations;
     }
     return items; // Recover an older, already-active full walkthrough without losing its place.
@@ -159,7 +162,7 @@
     if (welcome) {
       const choices = document.createElement("div"); choices.className = "demo-tour-sections";
       for (const [id, label] of sections()) {
-        if (id !== "reports" && (id !== "online" || hasAccess("reservations"))) choices.append(button(label, () => choose(id)));
+        if ((id !== "reports" || window.DemoSession?.selected()) && (id !== "online" || hasAccess("reservations"))) choices.append(button(label, () => choose(id)));
       }
       popover.description.append(choices);
       next.textContent = text("Start Dashboard Guide", "Mulai Panduan Dashboard");
@@ -325,7 +328,9 @@
     driverObj?.highlight({ popover: {
       showButtons: ["next", "close"],
       title: text("Try Intoch at your own pace", "Coba Intoch sesuai keinginan Anda"),
-      description: text("Choose a guide: front desk operations, guest relationships, or a booking from the online form. Explore independently whenever you like; Reset Tour lets you replay any section.", "Pilih panduan: operasional meja depan, hubungan tamu, atau reservasi dari form online. Jelajahi mandiri kapan saja; Reset Tour memungkinkan Anda mengulang bagian mana pun."),
+      description: window.DemoSession?.selected()
+        ? text("You have one hour to try your private fictional restaurant. Follow Dashboard, Reservations & Walk-Ins or Reports, or explore independently. Restarting a guide keeps the same expiry.", "Anda punya satu jam untuk mencoba restoran fiktif pribadi Anda. Ikuti panduan Dashboard, Reservasi & Walk-In atau Laporan, atau jelajahi sendiri. Mengulang panduan tidak mengubah waktu berakhir.")
+        : text("Choose a guide: front desk operations, guest relationships, or a booking from the online form. Explore independently whenever you like; Reset Tour lets you replay any section.", "Pilih panduan: operasional meja depan, hubungan tamu, atau reservasi dari form online. Jelajahi mandiri kapan saja; Reset Tour memungkinkan Anda mengulang bagian mana pun."),
     } });
   }
   function waitTarget(selector, token, timeout = 5000) {
@@ -391,6 +396,7 @@
   }
   function start(section = "operations") {
     if (!valid()) return;
+    if (window.DemoSession?.selected() && !["operations", "reports"].includes(section)) return;
     if (!["operations", "guests", "reports"].includes(section)) section = "operations";
     if (section === "reports" && !hasAccess("reports")) return;
     closeMenu(); clearTimeout(welcomeTimer); welcomeTimer = null; offered = true;

@@ -179,6 +179,11 @@ if (!/^https:\/\/[a-z0-9.-]+(:\d+)?$/i.test(siteUrl)) {
 // pages already shipped with, which is wrong but harmless. A missing
 // SITE_URL is silently broken, which is why that one IS required.
 const restaurantName = (process.env.RESTAURANT_NAME || "Restoran").trim();
+const demoSiteKey = (process.env.DEMO_TURNSTILE_SITE_KEY || "").trim();
+if (demoSiteKey && !/^(?:0x|1x|2x|3x)[A-Za-z0-9_-]{18,98}$/.test(demoSiteKey)) {
+  console.error("build-config: invalid public DEMO_TURNSTILE_SITE_KEY");
+  process.exit(1);
+}
 
 if (!process.env.RESTAURANT_NAME) {
   console.warn(
@@ -218,6 +223,7 @@ for (const { from, to, requires } of TARGETS) {
 
   out = out.split("__SUPABASE_URL__").join(url);
   out = out.split("__SUPABASE_ANON_KEY__").join(key);
+  out = out.split("__DEMO_TURNSTILE_SITE_KEY__").join(demoSiteKey);
   out = out.split("__SITE_URL__").join(siteUrl);
   out = out.split("__RESTAURANT_NAME__").join(restaurantName);
 

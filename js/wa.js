@@ -583,6 +583,10 @@ async function waLogSend(guestId, templateKey, isBroadcast, extra = {}) {
 // Returns true if a chat window was actually opened (callers use
 // this to decide whether to log the send).
 function waOpenChat(rawPhone, message) {
+  if (window.DemoSession?.selected()) {
+    toast("Demo: WhatsApp delivery is disabled. No message was sent.");
+    return false;
+  }
   const phone = waPhone(rawPhone);
   if (!phone) {
     toast(
@@ -710,12 +714,14 @@ async function waSendLargePartyFollowUp(resId) {
 const WA_BTN_CLASS = "text-xs text-[#1FAF5E] hover:underline whitespace-nowrap";
 
 function waThankYouVisitBtn(visit) {
+  if (globalThis.DemoSession?.selected()) return "";
   const isCompleted = visit.status === "Done" || !!visit.completed_at;
   if (!isCompleted || !visit.guests?.phone) return "";
   return `<button onclick="waSendThankYouVisit('${visit.id}')" class="${WA_BTN_CLASS}">WA Thanks</button>`;
 }
 
 function waReservationBtns(res) {
+  if (globalThis.DemoSession?.selected()) return "";
   if (!res.guests?.phone) return "";
   // A large party that has already agreed a figure needs the invoice, not
   // another opener. Same row, different stage of the same conversation.

@@ -1,0 +1,7 @@
+# Function handler authentication is explicit. Deploy only with the pinned
+# --project-ref in docs/DEMO_SESSION_ROLLOUT.md; do not use the stale local link.
+[functions.demo-start]
+verify_jwt = false
+
+[functions.demo-cleanup]
+verify_jwt = false

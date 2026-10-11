@@ -7,6 +7,7 @@
   const username = "intoch-demo", pin = "1212";
   const text = (en, id) => typeof demoText === "function" ? demoText(en, id) : en;
   function allowed() {
+    if (window.DemoSession?.selected()) return false;
     const env = window.INTOCH_DEMO_TOUR_ENV;
     return !!(env?.origins?.includes(location.origin) && env.supabaseUrl &&
       typeof SUPABASE_URL !== "undefined" && env.supabaseUrl === SUPABASE_URL &&

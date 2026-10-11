@@ -748,6 +748,7 @@ function setupOnlineResNotify() {
     RES_NOTIFY_POLL_MS,
   );
 
+  if (window.DemoSession?.selected()) return; // Scoped polling; no shared realtime channel.
   _resNotifyChannel = db.channel("rt-online-res-bell");
   _resNotifyChannel
     .on(

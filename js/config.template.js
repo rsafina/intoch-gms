@@ -11,7 +11,10 @@ const SUPABASE_URL = "__SUPABASE_URL__";
 const SUPABASE_ANON_KEY =
   "__SUPABASE_ANON_KEY__";
 
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const DEMO_TURNSTILE_SITE_KEY = "__DEMO_TURNSTILE_SITE_KEY__";
+const db = typeof createDemoDatabase === "function"
+  ? createDemoDatabase(supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY))
+  : supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Host that serves this deployment's promo pages (/p/<slug>). Leave null
 // when the staff app and the promo pages are on the same site, which is the
@@ -1819,6 +1822,7 @@ function setActivePage(page) {
 }
 
 function getStaffSession() {
+  if (window.DemoSession?.selected()) return window.DemoSession.profile();
   try {
     return JSON.parse(localStorage.getItem(STAFF_SESSION_KEY));
   } catch (error) {
@@ -1844,6 +1848,7 @@ function clearStaffSession() {
 }
 
 function currentStaffId() {
+  if (window.DemoSession?.selected()) return null;
   return getStaffSession()?.id || null;
 }
 
@@ -1902,6 +1907,7 @@ const ADMIN_ONLY_PAGES = new Set(["settings-staff"]);
 // Admin (owner/head-chef) gets full manager-level access to every page —
 // the only difference is the dashboard content, swapped in navigateTo().
 function hasAccess(page) {
+  if (window.DemoSession?.selected()) return window.DemoSession.permits(page);
   // Presentation exception for the verified fictional playground only; RLS is unchanged.
   if (page === "reports" && typeof demoCanViewReports === "function" && demoCanViewReports()) return true;
   if (page === "staff-dashboard") return currentStaffRole() === "admin";

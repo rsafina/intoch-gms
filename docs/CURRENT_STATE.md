@@ -1,5 +1,65 @@
 # Current state and operational handoff
 
+Playground backend installed (2026-10-11; `feature/demo-guided-tour` only): the
+authorized management token verified project `hkrhsubhfqrgqkuhpvql`. Installed
+demo isolation/lifecycle SQL, exposed `intoch_demo` alongside public/graphql_public
+(not `demo_private`), deployed active `demo-start`/`demo-cleanup`, installed server
+cleanup/rate secrets, enabled pg_net and scheduled one-minute cleanup using Vault.
+Public staff policy fingerprint remained unchanged. Live transaction tests passed
+two-workspace seed/isolation, same-phone writes, arrival/completion, fixed expiry
+and scoped cleanup; all verification identities/rows were rolled back. Unauthenticated
+provisioning/cleanup requests are rejected; authorized cleanup returned success.
+
+Platform corrections: Supabase's postgres needs explicit temporary SET-role
+membership for function ownership. Its Auth schema cannot be granted to the demo
+executor, so copied functions now use narrow postgres-owned identity bridges;
+`20261011_demo_auth_bridges.sql` was applied as a targeted upgrade. Supabase retains
+its own postgres admin membership in the new role; the explicit temporary grant
+was revoked. Executor remains NOLOGIN/NOBYPASSRLS and owns no tables.
+
+Rollout activated (2026-10-11): Turnstile is configured for demo/dashboard and
+anonymous Auth plus CAPTCHA are enabled in the playground. Requests without
+CAPTCHA fail for signup and password login. The user verified the live private
+demo Dashboard/countdown in Incognito and normal staff username/PIN login.
+Scheduled cleanup's recent HTTP responses were all 200; the active workspace
+deadline is exactly one hour after its server start.
+Final verification: all 98 suites pass after the Auth-bridge and staff CAPTCHA
+changes; JavaScript syntax and diff checks pass. Live host probes confirm scoped
+assets and retained original landing/reservation responses. Automated live browser
+control was unavailable; the user performed the two live sign-in checks above.
+Cloudflare Worker `intoch-playground-access` serves scoped frontend overrides on
+`demo.intoch.app/*` and `dashboard.intoch.app/*`, with original asset fallback
+through `demo-intoch` and `intoch-gms` service bindings. Staff overrides change
+only login CAPTCHA compatibility. Main landing/reservation response hashes
+remain unchanged; the main landing CTA is not linked yet. No branch switch,
+commit or push. Future deployments must update or retire these router overrides
+after equivalent source is deployed, otherwise they retain the rollout snapshot.
+See [rollout maintenance](DEMO_SESSION_ROLLOUT.md) before publishing either host.
+
+The following preparation/local entries describe earlier checkpoints, superseded
+by the installed backend and activated frontend recorded above.
+
+Rollout preparation (2026-10-11): user authorized playground installation before
+linking main's landing CTA. Read-only checks still show anonymous Auth disabled
+and demo schema/RPC absent. No management/Cloudflare tokens are configured; browser
+access failed, so no live mutation was possible. Added a branch/project-pinned
+management installer and playground-only staff CAPTCHA support: global Supabase
+CAPTCHA also covers password login, so publish compatibility code before enabling
+it. Relevant demo, staff Auth, demo-login and build-parity tests pass. Main and
+the stale CLI link remain untouched. Await local access configuration to continue.
+
+Private one-hour demo (2026-10-11; local on `feature/demo-guided-tour`): landing
+CTA requests a credential-free private workspace for Dashboard, Reservations,
+Walk-ins and Reports, with optional guides, countdown and server-enforced expiry.
+Staff Auth remains separate. Additive SQL, provisioning/cleanup Edge handlers,
+scheduling SQL and [rollout instructions](DEMO_SESSION_ROLLOUT.md) are included.
+No live SQL, Auth changes, deployments, account deletion, commit or push performed.
+The pinned playground is reachable, but anonymous Auth is disabled and the new
+schema/RPC absent. The local CLI link points elsewhere and was not used.
+Verification: 98 test suites pass, JavaScript syntax and diff checks pass, and
+PGlite role/isolation/lifecycle plus desktop/mobile Chrome checks pass. Live
+Auth/API/Edge/Cron verification remains required before publishing the CTA.
+
 Demo Reports visibility correction (2026-10-08; local): the public playground
 login is Staff, whose ordinary navigation policy hides Reports. Initial Reports
 fixture checks used permissive role access and missed this. Reports now has a
