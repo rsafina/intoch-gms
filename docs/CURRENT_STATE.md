@@ -7,6 +7,16 @@ documentation task. **Committed code is not proof of deployed SQL or Edge Functi
 
 ## Landing redesign (2026-10-08; local only)
 
+Landing copy and follow-up refinement (2026-10-11; local only): voucher copy now
+invites guests to complete all stamps and claim their voucher; recognition copy
+uses “nama hingga pesanan favorit”, and Guest Profile uses the requested “sekedar”.
+The contact example shows New Reservation before Confirm. The Follow-up demo now
+starts with the guest list; Dewi's accessible Follow up button opens WhatsApp step
+2 and pauses playback, moving keyboard focus to its step control. The reservation
+ticket follows in step 3. No external message is sent. Landing interaction, brand
+token, page-loading, JavaScript syntax and diff checks passed. Chrome desktop and
+mobile checks at 1440/390/320px passed without page overflow. Not deployed or pushed.
+
 Comparison point styling: replaced horizontal rules with vertical dividers between
 desktop columns and small SVG icons above the text. Mobile points retain their
 icons without divider lines. Both tab states and translations remain functional;

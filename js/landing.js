@@ -98,6 +98,16 @@
       paint(); schedule();
     });
   });
+  section.addEventListener('click', event => {
+    const button = event.target.closest('[data-demo-follow-up]');
+    if (!button) return;
+    active = button.closest('.v2-panel');
+    phase = 2;
+    paused = true;
+    staticView = true;
+    paint(); schedule();
+    active.querySelector('[data-demo-step="2"]').focus();
+  });
   section.addEventListener('intoch:tabchange', event => {
     active = document.getElementById(event.detail.tab.getAttribute('aria-controls'));
     phase = reduced.matches ? 3 : 1;

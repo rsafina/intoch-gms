@@ -1364,3 +1364,19 @@ html:not(.js) .v2-steps li {
     padding: 7px;
   }
 }
+
+/* A real control within the guest-list preview. */
+.demo-follow-up {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.demo-follow-up:hover { background: var(--brand-hover); }
+.demo-follow-up:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }

@@ -49,6 +49,15 @@ function load({ reduced = false, hash = '' } = {}) {
   assert.equal(doc.getElementById('uc-p1').hidden, true);
   assert.equal(doc.getElementById('uc-p4').hidden, false);
   assert.equal(doc.querySelector('#uc-p4 .v2-steps .current').dataset.step, '1');
+  doc.getElementById('uc-t2').click();
+  const followUp = doc.querySelector('#uc-p2 [data-demo-follow-up]');
+  assert.ok(followUp.closest('.dev').classList.contains('f1'), 'Guest list starts the follow-up demo');
+  followUp.click();
+  assert.equal(doc.getElementById('uc-p2').dataset.phase, '2');
+  assert.equal(doc.querySelector('#uc-p2 .demo-pause').getAttribute('aria-pressed'), 'true');
+  assert.equal(doc.activeElement.dataset.demoStep, '2', 'Focus moves to the visible step control');
+  assert.ok(doc.querySelector('#uc-p2 .wa').closest('.dev').classList.contains('f2'));
+  assert.ok(doc.querySelector('#uc-p2 .ticket').classList.contains('from3'));
   assert.match(doc.getElementById('waLink').href, /^https:\/\/wa.me\/6281325063362/);
   dom.window.close();
 }
