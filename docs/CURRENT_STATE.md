@@ -7,6 +7,11 @@ documentation task. **Committed code is not proof of deployed SQL or Edge Functi
 
 ## Landing redesign (2026-10-08; local only)
 
+Returning-guest demo order (2026-10-11; local only): WhatsApp greeting now starts
+the sequence, followed by guest history and then the updated sticker card
+(previous order 3 → 1 → 2). Captions, manual controls, replay and phase visuals
+follow the same new order. No deployment or push performed.
+
 Landing copy and follow-up refinement (2026-10-11; local only): voucher copy now
 invites guests to complete all stamps and claim their voucher; recognition copy
 uses “nama hingga pesanan favorit”, and Guest Profile uses the requested “sekedar”.

@@ -58,6 +58,16 @@ function load({ reduced = false, hash = '' } = {}) {
   assert.equal(doc.activeElement.dataset.demoStep, '2', 'Focus moves to the visible step control');
   assert.ok(doc.querySelector('#uc-p2 .wa').closest('.dev').classList.contains('f2'));
   assert.ok(doc.querySelector('#uc-p2 .ticket').classList.contains('from3'));
+  doc.getElementById('uc-t4').click();
+  const returning = doc.getElementById('uc-p4');
+  assert.ok(returning.querySelector('.wa').closest('.dev').classList.contains('f1'));
+  assert.equal(returning.querySelector('[data-step="1"] [data-i18n]').dataset.i18n, 'uc.s43');
+  assert.equal(returning.querySelector('[data-step="2"] [data-i18n]').dataset.i18n, 'uc.s41');
+  assert.equal(returning.querySelector('[data-step="3"] [data-i18n]').dataset.i18n, 'uc.s42');
+  doc.querySelector('#uc-p4 [data-demo-step="2"]').click();
+  assert.equal(returning.dataset.phase, '2');
+  doc.querySelector('#uc-p4 .demo-replay').click();
+  assert.equal(returning.dataset.phase, '1', 'Replay starts with WhatsApp');
   assert.match(doc.getElementById('waLink').href, /^https:\/\/wa.me\/6281325063362/);
   dom.window.close();
 }
