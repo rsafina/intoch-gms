@@ -1,5 +1,13 @@
 # Current state and operational handoff
 
+Demo heading focus polish (2026-10-11): suppress the outline only on the
+programmatically focused screen heading. Keep heading focus for assistive
+technology and retain interactive controls' keyboard focus indicators.
+Published the CSS and stylesheet version on the scoped demo host; staff snapshot
+preserved. Chrome desktop/mobile fixtures and live CSS verification pass. Source
+changes committed at the user's request on `feature/demo-guided-tour` through
+the separate `intoch-demo-ui-fix` worktree; no push.
+
 Demo entry/header polish (2026-10-11; `feature/demo-guided-tour`): verified rollout
 checkpoint committed as `fe17c9c` at the user's request. Entry now says "Coba
 Intoch selama 1 jam" and explains sample restaurant data. CAPTCHA completion
