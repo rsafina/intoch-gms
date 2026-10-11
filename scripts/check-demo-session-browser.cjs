@@ -28,15 +28,19 @@ const watchdog=setTimeout(()=>{chrome.kill();console.error('Session visual verif
   await command('Input.dispatchMouseEvent',{type:'mousePressed',...point,button:'left',clickCount:1});await command('Input.dispatchMouseEvent',{type:'mouseReleased',...point,button:'left',clickCount:1});
  };
  await command('Runtime.enable');await command('Page.enable');
- await command('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+ for(const width of [1440,320]){
+ await command('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width!==1440});
  await command('Page.navigate',{url:'http://127.0.0.1:8080/?demo=1&entry=1'});
+ await until('!!document.getElementById("demo-security-loading")','security download waiting state');
+ await screenshot(width+'-security-loading');
  await until('!!document.getElementById("fixture-security-check")','entry security check');
- await screenshot('1440-entry');
+ await screenshot(width+'-entry');
  await click('#fixture-security-check');
  await until('document.documentElement.hasAttribute("data-page-loading")','immediate verification loading');
- await screenshot('1440-verification-loading');
+ await screenshot(width+'-verification-loading');
  await until('window.DemoSession?.active() && !!document.querySelector(".driver-popover")','fresh demo finishes loading');
  await evaluate('localStorage.clear();sessionStorage.clear();');
+ }
  for(const width of [1440,393,320]){
   if(width!==1440) await evaluate('localStorage.clear();sessionStorage.clear();');
   await command('Emulation.setDeviceMetricsOverride',{width,height:width===1440?1000:852,deviceScaleFactor:1,mobile:width!==1440});

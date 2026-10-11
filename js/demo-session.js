@@ -60,7 +60,7 @@
     node.className = primary ? 'btn-primary' : 'btn-ghost'; node.textContent = label;
     node.addEventListener('click', action); return node;
   }
-  function screen(title, message, retry = false, fresh = false) {
+  function screen(title, message, retry = false, fresh = false, securityPending = false) {
     overlay?.remove(); overlay = document.createElement('section');
     overlay.id = 'demo-session-screen'; overlay.className = 'demo-session-screen';
     const panel = document.createElement('div'); panel.className = 'demo-session-panel';
@@ -68,7 +68,17 @@
     const heading = document.createElement('h1'); heading.textContent = title;
     const copy = document.createElement('p'); copy.textContent = message;
     panel.append(brand, heading, copy);
-    const captcha = document.createElement('div'); captcha.id = 'demo-session-captcha'; panel.append(captcha);
+    const security = document.createElement('div'); security.className = 'demo-security-area';
+    const captcha = document.createElement('div'); captcha.id = 'demo-session-captcha'; security.append(captcha);
+    if (securityPending) {
+      security.setAttribute('aria-busy', 'true');
+      const pending = document.createElement('div'); pending.id = 'demo-security-loading';
+      pending.className = 'demo-security-loading'; pending.setAttribute('role', 'status');
+      const spinner = document.createElement('span'); spinner.className = 'demo-security-spinner'; spinner.setAttribute('aria-hidden', 'true');
+      const label = document.createElement('span'); label.textContent = text('Loading security verification…', 'Memuat verifikasi keamanan…');
+      pending.append(spinner, label); security.append(pending);
+    }
+    panel.append(security);
     if (retry) panel.append(button(text('Try Again', 'Coba Lagi'), () => bootstrap(), true));
     if (fresh) panel.append(button(text('Start Another Demo', 'Mulai Demo Baru'), () => restart(), true));
     const contact = document.createElement('a'); contact.href = 'https://intoch.app/landing.html#kontak';
@@ -80,6 +90,26 @@
     heading.tabIndex = -1; heading.focus({ preventScroll: true });
   }
   async function captcha(selector = '#demo-session-captcha') {
+    const target = document.querySelector(selector);
+    const pending = selector === '#demo-session-captcha' ? document.getElementById('demo-security-loading') : null;
+    let observer;
+    const ready = () => {
+      observer?.disconnect(); pending?.remove();
+      target?.parentElement.removeAttribute('aria-busy');
+    };
+    if (pending && target) {
+      // Turnstile renders a cross-origin iframe. Its load event tells us the
+      // verification UI has arrived; never inspect its private contents.
+      observer = new MutationObserver(records => {
+        for (const record of records) for (const node of record.addedNodes) {
+          if (node.nodeType !== 1) continue;
+          const frames = node.matches('iframe') ? [node] : node.querySelectorAll('iframe');
+          frames.forEach(frame => frame.addEventListener('load', ready, { once: true }));
+        }
+      });
+      observer.observe(target, { childList: true, subtree: true });
+    }
+    try {
     const sitekey = typeof DEMO_TURNSTILE_SITE_KEY !== 'undefined' ? DEMO_TURNSTILE_SITE_KEY : '';
     if (!sitekey || sitekey.startsWith('__')) throw new Error('Demo security check is not configured yet');
     if (!window.turnstile) await new Promise((resolve, reject) => {
@@ -94,13 +124,15 @@
       document.head.append(script);
     });
     if (widget !== null) window.turnstile.remove(widget);
-    return new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
       widget = window.turnstile.render(selector, { sitekey, action: 'intoch-demo', size: 'flexible',
         callback: token => {
+          ready();
           if (selector === '#demo-session-captcha') loading();
           resolve(token);
         },
         'before-interactive-callback': () => {
+          ready();
           // Provisioning needs a second single-use token. Reveal its challenge
           // if interaction is required, rather than trapping it behind loading.
           if (selector === '#demo-session-captcha') {
@@ -111,6 +143,7 @@
         'error-callback': () => reject(new Error('Please repeat the security check')),
         'expired-callback': () => reject(new Error('Please repeat the security check')) });
     });
+    } finally { ready(); }
   }
   function loading() {
     overlay?.classList.add('is-loading');
@@ -237,7 +270,7 @@
     selected = true; busy = true;
     screen(text('Try Intoch for 1 hour', 'Coba Intoch selama 1 jam'),
       text('No account needed. Complete the security check to start exploring with sample restaurant data. Your hour starts when the demo is ready.',
-        'Tanpa membuat akun. Selesaikan verifikasi keamanan untuk mencoba Intoch dengan data contoh restoran. Waktu 1 jam dimulai setelah demo siap.'));
+        'Tanpa membuat akun. Selesaikan verifikasi keamanan untuk mencoba Intoch dengan data contoh restoran. Waktu 1 jam dimulai setelah demo siap.'), false, false, true);
     try {
       if (!allowed()) throw new Error('Demo is available only in the approved playground');
       const activate = async () => {

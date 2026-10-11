@@ -63,6 +63,10 @@ function setup({url='http://127.0.0.1:8080/?demo=1',existing=false,expired=false
  const activation=win.DemoSession.bootstrap();
  for(let attempt=0;attempt<10&&!checks.length;attempt++)await Promise.resolve();
  assert.match(win.document.querySelector('#demo-session-screen h1').textContent,/Try Intoch for 1 hour/);
+ assert.match(win.document.getElementById('demo-security-loading').textContent,/Loading security verification/,'waiting state appears before the widget');
+ const frame=win.document.createElement('iframe');win.document.getElementById('demo-session-captcha').append(frame);
+ await Promise.resolve();frame.dispatchEvent(new win.Event('load'));
+ assert.equal(win.document.getElementById('demo-security-loading'),null,'iframe arrival replaces waiting state');
  checks[0].callback('signup-token');
  assert.equal(win.document.documentElement.hasAttribute('data-page-loading'),true,'verification immediately shows loading before network work');
  for(let attempt=0;attempt<10&&checks.length<2;attempt++)await Promise.resolve();
@@ -73,6 +77,16 @@ function setup({url='http://127.0.0.1:8080/?demo=1',existing=false,expired=false
  assert.equal(win.document.documentElement.hasAttribute('data-page-loading'),true,'second verification resumes loading immediately');
  await activation;
  assert.equal(win.DemoSession.active(),true);instance.dom.window.close();
+
+ instance=setup();({win}=instance);delete win.turnstile;
+ const failedActivation=win.DemoSession.bootstrap();
+ for(let attempt=0;attempt<10&&!win.document.getElementById('demo-turnstile-script');attempt++)await Promise.resolve();
+ assert.ok(win.document.getElementById('demo-security-loading'),'slow script download shows a waiting state');
+ win.document.getElementById('demo-turnstile-script').dispatchEvent(new win.Event('error'));
+ await failedActivation;
+ assert.equal(win.document.getElementById('demo-security-loading'),null,'failed download does not leave an endless spinner');
+ assert.match(win.document.querySelector('#demo-session-screen h1').textContent,/temporarily unavailable/);
+ instance.dom.window.close();
 
  instance=setup({existing:true});({win,calls}=instance);
  await win.DemoSession.bootstrap();assert.equal(win.document.getElementById('demo-session-clock').textContent,'45:00','reload preserves remaining time');

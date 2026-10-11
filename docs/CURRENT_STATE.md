@@ -1,5 +1,15 @@
 # Current state and operational handoff
 
+Demo security download feedback (2026-10-11): a reserved CAPTCHA area immediately
+shows a spinner and localized "Memuat verifikasi keamanan…" while the script/UI
+loads. It clears when the widget iframe loads, an interactive challenge appears
+or verification succeeds. Download errors clear the spinner and retain retry.
+Contact/Admin links remain available. Reduced motion disables spinner animation.
+Session tests cover delayed script loading, iframe readiness and failed download.
+Desktop/phone Chrome fixture checks pass. Published only demo controller, styling
+and cache versions through the scoped router; staff assets preserved. Committed
+at the user's request on `feature/demo-guided-tour`; main and database unchanged.
+
 Demo heading focus polish (2026-10-11): suppress the outline only on the
 programmatically focused screen heading. Keep heading focus for assistive
 technology and retain interactive controls' keyboard focus indicators.

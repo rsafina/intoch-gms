@@ -3,6 +3,11 @@
 .demo-session-eyebrow { color: var(--brand-ink); font-size: 12px; font-weight: 700; letter-spacing: .14em; }
 .demo-session-panel h1 { margin: 16px 0; color: var(--brand-ink); font-size: 28px; font-weight: 700; line-height: 1.3; }
 .demo-session-panel h1:focus { outline: none; }
+.demo-security-area[aria-busy="true"] { position: relative; min-height: 78px; }
+.demo-security-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px; border: 1px solid var(--brand-tint); border-radius: 8px; background: var(--card); color: var(--brand-ink); font-size: 13px; line-height: 1.5; }
+.demo-security-spinner { width: 18px; height: 18px; flex-shrink: 0; border: 2px solid var(--brand-tint); border-top-color: var(--brand-ink); border-radius: 50%; animation: demo-security-spin .8s linear infinite; }
+@keyframes demo-security-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .demo-security-spinner { animation: none; } }
 .demo-session-panel p { margin-bottom: 20px; line-height: 1.7; }
 .demo-session-panel button, .demo-session-panel a { display: block; width: 100%; margin-top: 12px; text-align: center; }
 .demo-session-admin { color: var(--brand-ink); font-size: 13px; text-decoration: underline; }

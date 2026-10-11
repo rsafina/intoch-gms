@@ -19,7 +19,7 @@ function html() {
  window.supabase={createClient:()=>({auth,rpc:async name=>({data:name==='demo_session_status'?sessionStatus():{ok:true},error:null}),
   functions:{invoke:async()=>{if(entryCheck)await new Promise(resolve=>setTimeout(resolve,2000));return {data:sessionStatus(),error:null};}}})};
  let checks=0;
- window.turnstile={render:(selector,options)=>{checks++;if(entryCheck&&checks===1){const check=document.createElement('button');check.id='fixture-security-check';check.textContent='Complete test verification';check.onclick=()=>options.callback('fixture-check');document.querySelector(selector).append(check);}else queueMicrotask(()=>options.callback('fixture-check'));return checks;},remove(){}};
+ window.turnstile={render:(selector,options)=>{checks++;if(entryCheck&&checks===1){setTimeout(()=>{options['before-interactive-callback']();const check=document.createElement('button');check.id='fixture-security-check';check.textContent='Complete test verification';check.onclick=()=>options.callback('fixture-check');document.querySelector(selector).append(check);},2000);}else queueMicrotask(()=>options.callback('fixture-check'));return checks;},remove(){}};
  window.initializeApplication=async()=>{
   document.getElementById('login-page').classList.add('hidden');document.getElementById('app-sidebar').classList.remove('hidden');
   document.getElementById('app-main').classList.remove('hidden');document.getElementById('sidebar-mobile-toggle').classList.remove('hidden');
