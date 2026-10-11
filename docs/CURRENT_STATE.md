@@ -1,5 +1,11 @@
 # Current state and operational handoff
 
+Tour close button polish (2026-10-11): remove the filled blue background from
+the close control. Preserve its click area and use an outline for keyboard focus.
+Desktop/phone Chrome fixtures pass; published the tour stylesheet and cache
+version through the demo router, preserving staff assets. Committed at the user's
+request on `feature/demo-guided-tour`; no push.
+
 Demo security download feedback (2026-10-11): a reserved CAPTCHA area immediately
 shows a spinner and localized "Memuat verifikasi keamanan…" while the script/UI
 loads. It clears when the widget iframe loads, an interactive challenge appears
