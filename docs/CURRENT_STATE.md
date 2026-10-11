@@ -16,6 +16,8 @@ Landing demo entry (2026-10-11; local on `main`): the hero's "Coba Intoch
 Sekarang" button now opens `https://demo.intoch.app/?demo=1`, the separately
 deployed one-hour playground demo. Text/translations and contact links remain
 unchanged. Committed at the user's request; not pushed or published.
+Follow-up: the trial link opens in a new tab with `noopener noreferrer`;
+committed at the user's request, not pushed or published.
 
 Landing copy and follow-up refinement (2026-10-11; local only): voucher copy now
 invites guests to complete all stamps and claim their voucher; recognition copy
