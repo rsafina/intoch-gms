@@ -29,7 +29,7 @@ function setup({url='http://127.0.0.1:8080/?demo=1',existing=false,expired=false
  win.eval(source);win.eval(roleCode);
  const database=win.createDemoDatabase(staff);
  win.eval('let guestLoadGeneration=0,guestProfileGeneration=0;');
- win.PageLoading={finish:()=>{}};win.teardownRealtimeUpdates=()=>calls.push('realtime-end');win.teardownOnlineResNotify=()=>calls.push('notifications-end');
+ win.PageLoading={begin:()=>win.document.documentElement.setAttribute('data-page-loading',''),finish:()=>win.document.documentElement.removeAttribute('data-page-loading')};win.teardownRealtimeUpdates=()=>calls.push('realtime-end');win.teardownOnlineResNotify=()=>calls.push('notifications-end');
  win.DemoTour={teardown:()=>calls.push('tour-end')};
  win.initializeApplication=async page=>{calls.push(['initialize',page]);win.document.getElementById('app-main').classList.remove('hidden');win.document.getElementById('app-sidebar').classList.remove('hidden');};
  return {dom,win,calls,status,database,advance:value=>milliseconds+=value};
@@ -43,6 +43,8 @@ function setup({url='http://127.0.0.1:8080/?demo=1',existing=false,expired=false
  assert.ok(calls.some(item=>Array.isArray(item)&&item[0]==='anonymous'));
  assert.ok(calls.some(item=>Array.isArray(item)&&item[0]==='demo-start'));
  assert.equal(win.document.getElementById('demo-session-clock').textContent,'60:00');
+ assert.equal(win.document.getElementById('bd-alert-wrap').closest('#demo-session-banner')?.id,'demo-session-banner','notifications share the header layout');
+ assert.equal(win.document.documentElement.hasAttribute('data-page-loading'),false,'successful activation dismisses loading');
  assert.equal(win.getStaffSession().role,'demo_guest');assert.equal(win.currentStaffId(),null);
  for(const page of ['dashboard','reservations','walkins','reports'])assert.equal(win.hasAccess(page),true,page);
  for(const page of ['guests','invoice','membership','settings-staff','broadcast'])assert.equal(win.hasAccess(page),false,page);
@@ -53,7 +55,24 @@ function setup({url='http://127.0.0.1:8080/?demo=1',existing=false,expired=false
  assert.equal(win.DemoSession.active(),false);assert.equal(win.document.querySelector('#demo-session-screen h1').textContent,'Demo Ended');
  assert.equal(win.document.getElementById('app-main').classList.contains('hidden'),true);
  assert.ok(calls.includes('unsubscribe'));assert.ok(calls.includes('realtime-end'));
+ assert.equal(win.document.getElementById('bd-alert-wrap').parentNode,win.document.body,'teardown restores notification container');
  instance.dom.window.close();
+
+ instance=setup();({win}=instance);
+ const checks=[];win.turnstile.render=(selector,options)=>{checks.push(options);return checks.length;};
+ const activation=win.DemoSession.bootstrap();
+ for(let attempt=0;attempt<10&&!checks.length;attempt++)await Promise.resolve();
+ assert.match(win.document.querySelector('#demo-session-screen h1').textContent,/Try Intoch for 1 hour/);
+ checks[0].callback('signup-token');
+ assert.equal(win.document.documentElement.hasAttribute('data-page-loading'),true,'verification immediately shows loading before network work');
+ for(let attempt=0;attempt<10&&checks.length<2;attempt++)await Promise.resolve();
+ assert.equal(checks.length,2);
+ checks[1]['before-interactive-callback']();
+ assert.equal(win.document.documentElement.hasAttribute('data-page-loading'),false,'second interactive challenge stays accessible');
+ checks[1].callback('provision-token');
+ assert.equal(win.document.documentElement.hasAttribute('data-page-loading'),true,'second verification resumes loading immediately');
+ await activation;
+ assert.equal(win.DemoSession.active(),true);instance.dom.window.close();
 
  instance=setup({existing:true});({win,calls}=instance);
  await win.DemoSession.bootstrap();assert.equal(win.document.getElementById('demo-session-clock').textContent,'45:00','reload preserves remaining time');

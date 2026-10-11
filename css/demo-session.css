@@ -5,13 +5,25 @@
 .demo-session-panel p { margin-bottom: 20px; line-height: 1.7; }
 .demo-session-panel button, .demo-session-panel a { display: block; width: 100%; margin-top: 12px; text-align: center; }
 .demo-session-admin { color: var(--brand-ink); font-size: 13px; text-decoration: underline; }
-.demo-session-banner { position: sticky; top: 0; z-index: 35; display: flex; align-items: center; gap: 16px; padding: 12px 24px; background: var(--brand-ink); color: var(--card); }
+.demo-session-screen.is-loading #demo-session-captcha { visibility: hidden; }
+.demo-session-banner { position: sticky; top: 0; z-index: 60; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 24px; min-height: 72px; padding: 12px 28px; background: var(--card); color: var(--brand-ink); border-bottom: 1px solid var(--brand-tint); }
+.demo-session-status { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.demo-session-status > strong { padding: 6px 10px; border-radius: 8px; background: var(--brand-tint); font-size: 12px; }
+.demo-session-remaining { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.demo-session-remaining > span:first-child { color: #64748b; }
 .demo-session-banner #demo-session-clock { font-variant-numeric: tabular-nums; font-weight: 700; }
-.demo-session-banner button { margin-left: auto; color: inherit; font-size: 12px; }
+.demo-session-banner > button { padding: 8px 12px; border: 1px solid var(--brand-tint); border-radius: 8px; color: inherit; font-size: 12px; white-space: nowrap; }
+.demo-session-banner #bd-alert-wrap { position: relative !important; top: auto !important; right: auto !important; gap: 8px !important; align-items: center; }
+.demo-session-banner #bd-alert-panel { max-width: calc(100vw - 32px); }
 .demo-guest-mode [data-nav="guests"], .demo-guest-mode [data-nav="invoice"], .demo-guest-mode [data-booking-tour="form-link"], .demo-guest-mode .demo-external-action { display: none !important; }
 @media (max-width: 640px) {
   .demo-session-screen { padding: 16px; }
   .demo-session-panel { padding: 24px 18px; }
   .demo-session-panel h1 { font-size: 24px; }
-  .demo-session-banner { padding: 12px 16px; gap: 12px; font-size: 12px; }
+  .demo-guest-mode #app-main { padding-top: 0; }
+  .demo-session-banner { grid-template-columns: minmax(0, 1fr) auto; padding: 12px 16px; gap: 12px; font-size: 12px; }
+  .demo-session-status { padding-left: 48px; gap: 6px; align-items: flex-start; flex-direction: column; }
+  .demo-session-status > strong { background: none; padding: 0; }
+  .demo-session-remaining { font-size: 11px; gap: 6px; }
+  .demo-session-banner #bd-alert-wrap { grid-column: 1 / -1; justify-self: end; }
 }

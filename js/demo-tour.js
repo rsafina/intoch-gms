@@ -329,7 +329,7 @@
       showButtons: ["next", "close"],
       title: text("Try Intoch at your own pace", "Coba Intoch sesuai keinginan Anda"),
       description: window.DemoSession?.selected()
-        ? text("You have one hour to try your private fictional restaurant. Follow Dashboard, Reservations & Walk-Ins or Reports, or explore independently. Restarting a guide keeps the same expiry.", "Anda punya satu jam untuk mencoba restoran fiktif pribadi Anda. Ikuti panduan Dashboard, Reservasi & Walk-In atau Laporan, atau jelajahi sendiri. Mengulang panduan tidak mengubah waktu berakhir.")
+        ? text("Try Intoch for one hour using sample restaurant data. Choose a Dashboard, Reservations & Walk-Ins or Reports guide, or explore on your own. You can replay guides while your demo is active.", "Coba Intoch selama 1 jam dengan data contoh restoran. Pilih panduan Dashboard, Reservasi & Walk-In atau Laporan, atau jelajahi sendiri. Panduan dapat diulang selama demo masih aktif.")
         : text("Choose a guide: front desk operations, guest relationships, or a booking from the online form. Explore independently whenever you like; Reset Tour lets you replay any section.", "Pilih panduan: operasional meja depan, hubungan tamu, atau reservasi dari form online. Jelajahi mandiri kapan saja; Reset Tour memungkinkan Anda mengulang bagian mana pun."),
     } });
   }

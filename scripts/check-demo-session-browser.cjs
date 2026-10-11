@@ -28,6 +28,15 @@ const watchdog=setTimeout(()=>{chrome.kill();console.error('Session visual verif
   await command('Input.dispatchMouseEvent',{type:'mousePressed',...point,button:'left',clickCount:1});await command('Input.dispatchMouseEvent',{type:'mouseReleased',...point,button:'left',clickCount:1});
  };
  await command('Runtime.enable');await command('Page.enable');
+ await command('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+ await command('Page.navigate',{url:'http://127.0.0.1:8080/?demo=1&entry=1'});
+ await until('!!document.getElementById("fixture-security-check")','entry security check');
+ await screenshot('1440-entry');
+ await click('#fixture-security-check');
+ await until('document.documentElement.hasAttribute("data-page-loading")','immediate verification loading');
+ await screenshot('1440-verification-loading');
+ await until('window.DemoSession?.active() && !!document.querySelector(".driver-popover")','fresh demo finishes loading');
+ await evaluate('localStorage.clear();sessionStorage.clear();');
  for(const width of [1440,393,320]){
   if(width!==1440) await evaluate('localStorage.clear();sessionStorage.clear();');
   await command('Emulation.setDeviceMetricsOverride',{width,height:width===1440?1000:852,deviceScaleFactor:1,mobile:width!==1440});
@@ -41,6 +50,12 @@ const watchdog=setTimeout(()=>{chrome.kill();console.error('Session visual verif
   await until('!document.querySelector(".driver-popover")','independent exploration');
   const bounds=await evaluate('(()=>{const bar=document.getElementById("demo-session-banner").getBoundingClientRect();const clock=document.getElementById("demo-session-clock").getBoundingClientRect();return {barLeft:bar.left,barRight:bar.right,clockRight:clock.right,width:innerWidth};})()');
   assert.ok(bounds.barLeft>=0&&bounds.barRight<=bounds.width+1&&bounds.clockRight<=bounds.width,'banner fits viewport');
+  const header=await evaluate('(()=>{const bar=document.getElementById("demo-session-banner").getBoundingClientRect();const boxes=[...document.querySelectorAll(".demo-session-status, #demo-session-banner > button, #bd-alert-wrap")].map(node=>{const box=node.getBoundingClientRect();return {left:box.left,right:box.right,top:box.top,bottom:box.bottom};});return {bar:{left:bar.left,right:bar.right,top:bar.top,bottom:bar.bottom},boxes};})()');
+  for(const box of header.boxes)assert.ok(box.left>=header.bar.left&&box.right<=header.bar.right+1&&box.top>=header.bar.top&&box.bottom<=header.bar.bottom+1,'header controls remain inside banner');
+  for(let left=0;left<header.boxes.length;left++)for(let right=left+1;right<header.boxes.length;right++){
+   const first=header.boxes[left],second=header.boxes[right];
+   assert.ok(first.right<=second.left||second.right<=first.left||first.bottom<=second.top||second.bottom<=first.top,'timer, exit and notifications do not overlap');
+  }
   await screenshot(width+'-dashboard');
   await click('#demo-tour-reset');await until('!document.getElementById("demo-tour-sections").hidden','guide picker');
   assert.equal(await evaluate('document.querySelectorAll("#demo-tour-sections [data-tour-section]").length'),2);

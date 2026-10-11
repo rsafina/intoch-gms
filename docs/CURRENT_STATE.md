@@ -1,5 +1,19 @@
 # Current state and operational handoff
 
+Demo entry/header polish (2026-10-11; `feature/demo-guided-tour`): verified rollout
+checkpoint committed as `fe17c9c` at the user's request. Entry now says "Coba
+Intoch selama 1 jam" and explains sample restaurant data. CAPTCHA completion
+immediately starts the existing animated loading screen; a second interactive
+challenge remains accessible if required. Demo mode, time remaining, exit and
+notifications share a light header, with a separate notification row on phones.
+Notification DOM placement is restored on teardown. Relevant session/tour tests
+and actual Chrome fixture checks at 1440/393/320 pass, including immediate loading,
+header non-overlap, countdown recovery, Reports replay and expiry. These checks
+use fictional backend fixtures, not live CAPTCHA automation.
+Published only the four changed demo public files through the existing scoped
+router; its dashboard staff snapshot is unchanged. No SQL/Auth changes or push.
+The user requested a separate commit for the UI polish after the rollout checkpoint.
+
 Playground backend installed (2026-10-11; `feature/demo-guided-tour` only): the
 authorized management token verified project `hkrhsubhfqrgqkuhpvql`. Installed
 demo isolation/lifecycle SQL, exposed `intoch_demo` alongside public/graphql_public

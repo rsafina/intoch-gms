@@ -9,7 +9,7 @@
   const requested = () => new URL(location.href).searchParams.get('demo') === '1';
   let staffClient, guestClient, session = null, selected = false, busy = false;
   let epoch = 0, timer = null, validating = false, overlay = null, widget = null;
-  let deadline = 0, authSubscription = null;
+  let deadline = 0, authSubscription = null, notificationAnchor = null;
   const text = (en, id) => typeof CURRENT_LANG !== 'undefined' && CURRENT_LANG === 'id' ? id : en;
   function allowed() {
     return typeof SUPABASE_URL !== 'undefined' && SUPABASE_URL === PROJECT &&
@@ -96,9 +96,25 @@
     if (widget !== null) window.turnstile.remove(widget);
     return new Promise((resolve, reject) => {
       widget = window.turnstile.render(selector, { sitekey, action: 'intoch-demo', size: 'flexible',
-        callback: resolve, 'error-callback': () => reject(new Error('Please repeat the security check')),
+        callback: token => {
+          if (selector === '#demo-session-captcha') loading();
+          resolve(token);
+        },
+        'before-interactive-callback': () => {
+          // Provisioning needs a second single-use token. Reveal its challenge
+          // if interaction is required, rather than trapping it behind loading.
+          if (selector === '#demo-session-captcha') {
+            overlay?.classList.remove('is-loading');
+            if (typeof PageLoading !== 'undefined') PageLoading.finish();
+          }
+        },
+        'error-callback': () => reject(new Error('Please repeat the security check')),
         'expired-callback': () => reject(new Error('Please repeat the security check')) });
     });
+  }
+  function loading() {
+    overlay?.classList.add('is-loading');
+    if (typeof PageLoading !== 'undefined') PageLoading.begin();
   }
   async function staffCaptcha() {
     if (!allowed() || typeof DEMO_TURNSTILE_SITE_KEY === 'undefined' ||
@@ -138,16 +154,25 @@
     document.documentElement.classList.add('demo-guest-mode');
     overlay?.remove(); overlay = null;
     const banner = document.createElement('aside'); banner.id = 'demo-session-banner'; banner.className = 'demo-session-banner';
+    const status = document.createElement('div'); status.className = 'demo-session-status';
     const label = document.createElement('strong'); label.textContent = text('Demo Mode', 'Mode Demo');
+    const remaining = document.createElement('span'); remaining.className = 'demo-session-remaining';
+    const caption = document.createElement('span'); caption.textContent = text('Time left', 'Sisa waktu');
     const clock = document.createElement('span'); clock.id = 'demo-session-clock'; clock.setAttribute('aria-label', text('Time remaining', 'Sisa waktu'));
-    banner.append(label, clock, button(text('Exit Demo', 'Keluar Demo'), () => exit()));
+    remaining.append(caption, clock); status.append(label, remaining);
+    banner.append(status, button(text('Exit Demo', 'Keluar Demo'), () => exit()));
     document.getElementById('demo-session-banner')?.remove(); document.getElementById('app-main').prepend(banner);
+    const notifications = document.getElementById('bd-alert-wrap');
+    if (notifications) {
+      notificationAnchor = document.createComment('Demo notification position');
+      notifications.before(notificationAnchor); banner.append(notifications);
+    }
     const logout = document.getElementById('sidebar-logout'); if (logout) logout.textContent = text('Exit Demo', 'Keluar Demo');
     const guide = document.getElementById('demo-guide');
     if (guide) {
       const copy = guide.querySelector('p');
-      if (copy) copy.textContent = text('You have one hour to try Dashboard, Reservations, Walk-Ins and Reports in your private fictional restaurant. Choose a guided tour or explore independently.',
-        'Anda punya satu jam untuk mencoba Dashboard, Reservasi, Walk-In, dan Laporan di restoran fiktif pribadi Anda. Ikuti panduan atau jelajahi sendiri.');
+      if (copy) copy.textContent = text('Try Dashboard, Reservations, Walk-Ins and Reports for one hour using sample restaurant data. Follow a guide or explore on your own.',
+        'Coba Dashboard, Reservasi, Walk-In, dan Laporan selama 1 jam dengan data contoh restoran. Ikuti panduan atau jelajahi sendiri.');
       guide.querySelector('ol')?.remove();
     }
     timer = setInterval(tick, 1000); tick();
@@ -157,6 +182,7 @@
       if (event === 'SIGNED_OUT') setTimeout(ended, 0);
       else if (['SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'].includes(event)) setTimeout(validate, 0);
     }).data?.subscription;
+    if (typeof PageLoading !== 'undefined') PageLoading.finish();
   }
   function teardown() {
     epoch++; clearInterval(timer); timer = null;
@@ -176,7 +202,11 @@
     if (typeof dashboardWalkinData !== 'undefined') dashboardWalkinData = [];
     if (typeof APP_SETTINGS !== 'undefined') APP_SETTINGS = {};
     document.querySelectorAll('.modal').forEach(node => node.classList.add('hidden'));
+    const notifications = document.getElementById('bd-alert-wrap');
+    if (notificationAnchor && notifications) notificationAnchor.replaceWith(notifications);
+    notificationAnchor = null;
     document.getElementById('demo-session-banner')?.remove();
+    document.documentElement.classList.remove('demo-guest-mode');
     document.getElementById('app-sidebar')?.classList.add('hidden'); document.getElementById('app-main')?.classList.add('hidden');
     document.getElementById('sidebar-mobile-toggle')?.classList.add('hidden');
     document.body.classList.remove('sidebar-drawer-open');
@@ -185,8 +215,8 @@
   function ended() {
     if (!selected) return;
     teardown();
-    screen(text('Demo Ended', 'Demo Berakhir'), text('Your one-hour demo has ended. Start again for a fresh private restaurant.',
-      'Demo satu jam Anda telah berakhir. Mulai lagi untuk mendapatkan restoran pribadi yang baru.'), false, true);
+    screen(text('Demo Ended', 'Demo Berakhir'), text('Your one-hour demo has ended. Start again with a fresh set of sample data.',
+      'Demo satu jam Anda telah berakhir. Mulai lagi dengan data contoh yang baru.'), false, true);
   }
   async function exit() {
     if (!selected) return false;
@@ -205,8 +235,9 @@
     if (busy) return true;
     if (session) teardown();
     selected = true; busy = true;
-    screen(text('Preparing your private restaurant', 'Menyiapkan restoran pribadi Anda'),
-      text('No credentials needed. Your hour starts when the workspace is ready.', 'Tanpa username atau PIN. Satu jam Anda dimulai setelah ruang demo siap.'));
+    screen(text('Try Intoch for 1 hour', 'Coba Intoch selama 1 jam'),
+      text('No account needed. Complete the security check to start exploring with sample restaurant data. Your hour starts when the demo is ready.',
+        'Tanpa membuat akun. Selesaikan verifikasi keamanan untuk mencoba Intoch dengan data contoh restoran. Waktu 1 jam dimulai setelah demo siap.'));
     try {
       if (!allowed()) throw new Error('Demo is available only in the approved playground');
       const activate = async () => {
@@ -214,6 +245,7 @@
       if (identity.error && identity.error.name !== 'AuthSessionMissingError') throw new Error('Could not verify the demo session. Please reconnect and retry.');
       if (identity.data?.user && !identity.data.user.is_anonymous) throw new Error('Use Admin Login for staff accounts');
       if (identity.data?.user) {
+        loading();
         const status = await demo.rpc('demo_session_status');
         if (status.error) throw new Error('Demo service unavailable');
         if (status.data && !status.data.active) { ended(); return true; }
