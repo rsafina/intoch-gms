@@ -43,6 +43,7 @@ let appInitialized = false;
 let allPrizes = [];
 let _voidReasonContext = null; // { type: 'reservation'|'visit', id } — set by openDeleteReservation/openVoidWalkIn, consumed by confirmVoidReason
 let wiShowVoided = false; // toggle: include voided walk-ins in the list (manager audit view)
+let wiRows = []; // walk-ins loaded for wiSelectedDate; the name search filters these without a refetch
 
 function formatSpendingTierLabel(tier) {
   if (!tier) return t("None");
@@ -5790,15 +5791,36 @@ async function loadWalkIns() {
   }
 
   if (typeof DemoTour !== "undefined") DemoTour.notify("operations-ready", { page: "walkins", ok: true });
-  if (!data?.length) {
+  wiRows = data || [];
+  if (wiRows.length) await attachGuestVisitCounts(wiRows);
+  renderWalkIns();
+}
+
+// Partial, case-insensitive match on the guest's name or online booking alias,
+// so staff can type part of a name instead of the whole thing.
+function walkInMatchesName(visit, query) {
+  if (!query) return true;
+  const guest = visit.guests;
+  return [guest?.name, guest?.booking_alias].some((name) => (name || "").toLowerCase().includes(query));
+}
+
+function renderWalkIns() {
+  const tbody = document.getElementById("walkins-tbody");
+  if (!tbody) return;
+  if (!wiRows.length) {
     tbody.innerHTML =
       '<tr><td colspan="7" class="px-5 py-8 text-center text-[#bbb] text-sm">No walk-ins for this day</td></tr>';
     return;
   }
+  const query = (document.getElementById("wi-search")?.value || "").trim().toLowerCase();
+  const rows = wiRows.filter((v) => walkInMatchesName(v, query));
+  if (!rows.length) {
+    tbody.innerHTML =
+      '<tr><td colspan="7" class="px-5 py-8 text-center text-[#bbb] text-sm">No walk-ins match this name</td></tr>';
+    return;
+  }
 
-  await attachGuestVisitCounts(data);
-
-  tbody.innerHTML = data
+  tbody.innerHTML = rows
     .map((v) => {
       const isCompleted = v.status === "Done" || !!v.completed_at;
       const isVoided = !!v.voided_at;

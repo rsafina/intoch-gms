@@ -10,7 +10,7 @@ and the Peak Traffic date picker remain interactive. Campaign creation and other
 report sections are outside this demo view. Non-demo Reports is unchanged.
 
 Start Reports Guide in the page introduction, or choose Reports from Reset Tour.
-The initial three-guide introduction is unchanged. The nine steps introduce:
+The initial three-guide introduction offers Reservations & Walk-in, Guest Data and the Online Reservation Form. The nine steps introduce:
 guest insights, date range, acquisition, returning guests, at-risk relationships,
 today's service, upcoming bookings, peak traffic and independent exploration.
 Controls can be tried while highlighted; this introduction does not require

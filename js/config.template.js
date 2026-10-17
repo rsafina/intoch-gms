@@ -1461,6 +1461,8 @@ const ID_DICT = {
   "Partner or company": "Partner atau perusahaan",
   Recipient: "Penerima",
   "Search a guest by name or phone": "Cari tamu dari nama atau nomor HP",
+  "Search guest name": "Cari nama tamu",
+  "No walk-ins match this name": "Tidak ada walk-in dengan nama ini",
   // Reservations page guest search (2026-08-09)
   "Searching...": "Mencari...",
   "No guests found": "Tamu tidak ditemukan",

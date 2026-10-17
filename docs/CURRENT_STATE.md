@@ -1,5 +1,20 @@
 # Current state and operational handoff
 
+Demo QA bug list fixes (2026-10-17; `feature/demo-guided-tour`): tour copy follows
+the QA wording (login hint, "Ikuti Petunjuk Demo" welcome, guide names, "Mulai"
+button and every Reservations & Walk-in step). The Walk-In/New Reservation buttons
+and Quick Walk-In are one highlight (`data-tour="dashboard-entry"`); Quick Walk-In
+now sits directly under Welcome, above the demo guide panel. The Today's Walk-Ins
+highlight includes its heading. The guide's closing step is centered and Next
+continues into Guest Data; the one-hour playground has no Guest Data page, so it
+keeps its Reports hint. Indonesian demo text says "Walk-In" instead of "Tanpa
+Reservasi" (demo-only override in `js/demo.js`; client builds unchanged, app-wide
+wording still pending a decision). New for all builds: Walk-In Log partial,
+case-insensitive guest-name search over the selected day, without a refetch.
+jsdom suites and the local Chrome tour check (1440/393/320) pass; screenshots were
+not refreshed because the Tailwind CDN was unreachable in that environment.
+Not yet published to the scoped demo router; demo.intoch.app is unchanged until then.
+
 Tour close button polish (2026-10-11): remove the filled blue background from
 the close control. Preserve its click area and use an outline for keyboard focus.
 Desktop/phone Chrome fixtures pass; published the tour stylesheet and cache
