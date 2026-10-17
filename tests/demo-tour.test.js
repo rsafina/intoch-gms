@@ -47,14 +47,16 @@ async function harness(options = {}) {
 async function walkToSearch(h) {
   await h.until(()=>h.title()==='Follow the Demo Guide');h.next();
   await h.until(()=>h.title()==='Record Guest Visits');
-  for(const expected of ['See Upcoming Reservations','See Walk-in Visits','Check Table Availability','Record a Quick Walk-in','Click the Reservations Menu']) {
+  const entry=h.win.document.querySelector('[data-tour="dashboard-entry"]');
+  assert.ok(entry.querySelector('[data-tour="dashboard-intro"]')&&entry.querySelector('[data-tour="quick-walkin"]'),'Top buttons and Quick Walk-In share one highlight');
+  assert.equal(entry.nextElementSibling?.id,'demo-guide','Quick Walk-In sits directly under Welcome, above the demo guide');
+  const quick=h.win.document.getElementById('qw-name');quick.value='Budi';quick.dispatchEvent(new h.win.Event('input',{bubbles:true}));
+  await h.until(()=>!h.win.document.getElementById('qw-results').classList.contains('hidden'));
+  h.click('#qw-results button');assert.equal(quick.value,'Budi Santoso');
+  assert.equal(h.win.fixture.writes,0,'Quick Walk-In explanation permits lookup without submitting');
+  for(const expected of ['See Upcoming Reservations','See Walk-in Visits','Check Table Availability','Click the Reservations Menu']) {
     h.next(); await h.until(()=>h.title()===expected);
-    if(expected==='Record a Quick Walk-in') {
-      const quick=h.win.document.getElementById('qw-name');quick.value='Budi';quick.dispatchEvent(new h.win.Event('input',{bubbles:true}));
-      await h.until(()=>!h.win.document.getElementById('qw-results').classList.contains('hidden'));
-      h.click('#qw-results button');assert.equal(quick.value,'Budi Santoso');
-      assert.equal(h.win.fixture.writes,0,'Quick Walk-In explanation permits lookup without submitting');
-    }
+    if(expected==='See Walk-in Visits') assert.match(h.win.document.querySelector('[data-tour="today-walkins"] h2').textContent,/Today's Walk-Ins/,'Walk-in highlight includes its heading');
   }
   assert.equal(h.win.document.querySelector('.driver-popover-next-btn').disabled,true);
   h.win.fixture.delay=100;h.click('[data-tour="reservations-nav"]');await sleep(30);assert.notEqual(h.title(),'Find a Reservation');
@@ -64,8 +66,11 @@ async function walkToSearch(h) {
   h.next();await h.until(()=>h.title()==='Manage Reservations');h.next();await h.until(()=>h.title()==='Click the Walk-Ins Menu');
   h.click('[data-tour="walkins-nav"]');await h.until(()=>h.title()==='Find Walk-in Visits');
   h.back();await h.until(()=>h.title()==='Click the Walk-Ins Menu');h.click('[data-tour="walkins-nav"]');await h.until(()=>h.title()==='Find Walk-in Visits');
-  h.next();await h.until(()=>h.title()==='Manage Walk-in Visits');h.next();await h.until(()=>h.title()==='Your front desk guide is complete');h.next();assert.equal(h.title(),undefined);
-  h.click('#demo-tour-reset');h.click('[data-tour-section=guests]');await h.until(()=>h.title()==='Get to know your guests');
+  h.next();await h.until(()=>h.title()==='Manage Walk-in Visits');h.next();await h.until(()=>h.title()==='Thank You for Following the Reservations and Walk-in Tour');
+  assert.equal(h.win.document.querySelector('[data-tour="walkin-list"].driver-active-element'),null,'Closing step is centered, not attached to the walk-in log');
+  await sleep(200);assert.equal(h.title(),'Thank You for Following the Reservations and Walk-in Tour','Centered step stays stable');
+  assert.equal(h.win.document.querySelector('.driver-popover-next-btn').textContent,'Next');
+  h.next();await h.until(()=>h.title()==='Get to know your guests');
   const nextButton=h.win.document.querySelector('.driver-popover-next-btn');
   assert.equal(nextButton.disabled,true,'Navigation requires real action');
   h.click('[data-tour="guests-nav"]');await h.until(()=>h.title()==='Find a familiar face');

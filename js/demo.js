@@ -1,5 +1,14 @@
 /* A thin presentation layer for the demo branch. Never grants role access. */
 function demoEnabled() { return document.documentElement.classList.contains('demo-mode'); }
+// QA: the demo keeps "Walk-In" in Indonesian instead of "Tanpa Reservasi". Client builds
+// keep the shared ID_DICT wording until it is decided app-wide.
+function demoWalkInWording(dict) {
+  if (!demoEnabled() || !dict) return;
+  for (const [key, value] of Object.entries(dict)) {
+    if (typeof value === 'string' && value.includes('Tanpa Reservasi')) dict[key] = value.replaceAll('Tanpa Reservasi', 'Walk-In');
+  }
+}
+demoWalkInWording(typeof ID_DICT !== 'undefined' ? ID_DICT : null);
 let demoVerifiedStaffId = null;
 function demoSessionReady(staff) { demoVerifiedStaffId = staff?.id == null ? null : String(staff.id); }
 function demoCanViewReports() {

@@ -112,7 +112,7 @@ async function main() {
       await click('#demo-tour-restart');await click('[data-tour-section=operations]');
     }else await click('.driver-popover-next-btn');
     await until(title('Record Guest Visits'),'dashboard');await screenshot(width+'-dashboard');
-    for(const expected of ['Plan for arriving guests','Keep walk-ins in view','See the seating picture','A quick welcome for walk-ins',phone?'Open navigation':'Click the Reservations Menu']){
+    for(const expected of ['See Upcoming Reservations','See Walk-in Visits','Check Table Availability',phone?'Open navigation':'Click the Reservations Menu']){
       await click('.driver-popover-next-btn');await until(title(expected),expected+' '+width);await bounds(expected+' '+width);
     }
     if(phone){await click('[data-tour="mobile-menu"]');await until(title('Click the Reservations Menu'),'phone drawer');await screenshot(width+'-navigation');}
@@ -126,7 +126,7 @@ async function main() {
     await click('.driver-popover-prev-btn');await until(title('Click the Walk-Ins Menu'),'Back to reservations');
     await click('[data-tour="walkins-nav"]');await until(title('Find Walk-in Visits'),'return to walkins');
     await click('.driver-popover-next-btn');await until(title('Manage Walk-in Visits'),'walkin log');
-    await click('.driver-popover-next-btn');await until(title('Your front desk guide is complete'),'operations finish');await click('.driver-popover-next-btn');await click('#demo-tour-reset');await screenshot(width+'-reset-menu');await click('[data-tour-section=guests]');
+    await click('.driver-popover-next-btn');await until(title('Thank You for Following the Reservations and Walk-in Tour'),'operations finish');await screenshot(width+'-operations-finish');await click('.driver-popover-next-btn');
     if(phone){await until(title('Open navigation'),'guest menu');await click('[data-tour=mobile-menu]');}
     await until(title('Get to know your guests'),'guests navigation');
     assert.ok(await evaluate('document.querySelector(".driver-popover-next-btn").disabled'),'Navigation is action gated');

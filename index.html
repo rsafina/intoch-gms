@@ -24,7 +24,7 @@
     <link rel="stylesheet" href="assets/vendor/driverjs/1.9.0/driver.css" />
     <link rel="stylesheet" href="css/demo-tour.css?v=5" />
     <link rel="stylesheet" href="css/demo-session.css?v=4" />
-    <script src="js/demo.js?v=8" defer></script>
+    <script src="js/demo.js?v=9" defer></script>
     <style>
       :root {
         /* ── Brand tokens (2026-09-05). ONE PLACE. ───────────────────
@@ -1480,6 +1480,8 @@
       <!-- ===== DASHBOARD ===== -->
       <section id="page-dashboard" class="page-section active p-8">
         <div class="max-w-5xl mx-auto">
+          <!-- Entry points to record a visit; the demo guide highlights them together -->
+          <div data-tour="dashboard-entry">
           <div class="flex items-center justify-between mb-8" data-tour="dashboard-intro">
             <div>
               <div class="gold-bar mb-3"></div>
@@ -1572,6 +1574,7 @@
             </div>
             <p id="qw-hint" class="text-[11px] text-[#999] mt-2 hidden"></p>
           </div>
+          </div>
 
           <!-- Upcoming Reservations -->
           <div class="card p-6 mb-8" data-tour="today-reservations">
@@ -1646,7 +1649,7 @@
           </div>
 
           <!-- Today's Walk-Ins -->
-          <div class="card p-6 mb-8">
+          <div class="card p-6 mb-8" data-tour="today-walkins">
             <div class="flex items-center justify-between mb-5">
               <div>
                 <h2 class="font-heading text-xl font-semibold text-[color:var(--brand-ink)]">
@@ -1672,7 +1675,7 @@
                 </button>
               </div>
             </div>
-            <div id="dashboard-walkins-list" data-tour="today-walkins">
+            <div id="dashboard-walkins-list">
               <div class="loading-skeleton h-12 mb-3"></div>
               <div class="loading-skeleton h-12 mb-3"></div>
               <div class="loading-skeleton h-12"></div>

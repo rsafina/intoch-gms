@@ -82,11 +82,10 @@
       {id:"reports-finish",target:"reports-intro",action:"finish",title:text("You're ready to explore Reports","Anda siap menjelajahi Laporan"),copy:text("Change filters, compare guest groups or export a list independently. Reset Tour lets you revisit Reports or choose another guide.","Ubah filter, bandingkan kelompok tamu, atau ekspor daftar secara mandiri. Reset Tour memungkinkan Anda mengulang Laporan atau memilih panduan lain.")},
     ].map(item => ({...item,page:"reports"}));
     const items = [
-      { id: "dashboard", page: "dashboard", target: "dashboard-intro", title: text("Record Guest Visits", "Catat Kunjungan Pelanggan"), copy: text("In this top section, guest visits are recorded through 3 options: the Walk-In button, the New Reservation button and the Quick Walk-In bar. This guide uses fictional guest data and does not save anything.", "Pada bagian atas ini, kunjungan pelanggan dicatat melalui 3 opsi: tombol Walk-In, tombol Reservasi Baru, dan kolom Quick Walk-In. Panduan ini menggunakan data tamu fiktif dan tidak menyimpan data apa pun.") },
+      { id: "dashboard", page: "dashboard", target: "dashboard-entry", title: text("Record Guest Visits", "Catat Kunjungan Pelanggan"), copy: text("In this top section, guest visits are recorded through 3 options: the Walk-In button, the New Reservation button and the Quick Walk-In bar. For a Quick Walk-In, enter the guest's name, contact and pax, then click 'Add'; the table number or a note can be added later with 'Edit'. This guide uses fictional guest data and does not save anything.", "Pada bagian atas ini, kunjungan pelanggan dicatat melalui 3 opsi: tombol Walk-In, tombol Reservasi Baru, dan kolom Quick Walk-In. Untuk Quick Walk-In, masukkan nama pelanggan, kontak, jumlah pax, lalu klik ‘Add’; nomor meja atau note dapat ditambahkan nanti melalui tombol ‘Edit’. Panduan ini menggunakan data tamu fiktif dan tidak menyimpan data apa pun.") },
       { id: "reservations", page: "dashboard", target: "today-reservations", title: text("See Upcoming Reservations", "Lihat List Reservasi Mendatang"), copy: text("This log lists reservations added by staff with the 'New Reservation' button, or received through the Online Form. It shows reservations for Today, Tomorrow, +2 Days and Online form · 14 days.", "Log ini menampilkan daftar reservasi yang ditambahkan oleh staff melalui tombol ‘Reservasi Baru’, atau reservasi yang masuk melalui Form Online. Reservasi yang ditampilkan adalah untuk Hari Ini, Besok, +2 Hari, dan Form online · 14 hari.") },
       { id: "walkins", page: "dashboard", target: "today-walkins", title: text("See Walk-in Visits", "Lihat Daftar Kunjungan Walk-in"), copy: text("This log lists today's visits recorded through Walk-In or Quick Walk-In. Walk-in visits can be edited here if something changes, such as the table number, pax or note.", "Log ini menampilkan daftar kunjungan di hari H yang dicatat melalui fitur Walk-In atau Quick Walk-In. Di sini data kunjungan pelanggan walk-in dapat di-edit kembali jika ada perubahan seperti nomor meja, jumlah pax, atau note.") },
       { id: "occupancy", page: "dashboard", target: "area-occupancy", title: text("Check Table Availability", "Cek Ketersediaan Meja"), copy: text("Always check the outlet's capacity before accepting a visit through walk-in, reservation or the online form. This section shows outlet areas such as indoor, outdoor and VIP. Note: areas can be adjusted to your outlet layout.", "Selalu pastikan kapasitas outlet sebelum menerima kunjungan pelanggan melalui walk-in, reservasi, atau form online. Bagian ini menampilkan area outlet seperti indoor, outdoor, dan VIP. Catatan: area dapat disesuaikan dengan layout outlet Anda.") },
-      { id: "quick", page: "dashboard", target: "quick-walkin", title: text("Record a Quick Walk-in", "Catat Quick Walk-in Dengan Cepat"), copy: text("Enter the guest's name, contact and pax, then click 'Add'. Other details such as the table number or a note can be added after the guest is seated, with the 'Edit' button.", "Masukkan nama pelanggan, kontak, jumlah pax, lalu klik ‘Add’. Detail lainnya seperti nomor meja atau note dapat ditambahkan setelah pelanggan duduk, melalui tombol ‘Edit’.") },
       ...(mobile() ? [{ id: "menu", page: "dashboard", target: "mobile-menu", action: "menu", title: text("Open navigation", "Buka navigasi"), copy: text("Tap the menu to explore reservations, walk-ins and guests. The guide will continue when navigation opens.", "Ketuk menu untuk menjelajahi reservasi, walk-in, dan tamu. Panduan akan berlanjut setelah navigasi terbuka.") }] : []),
       { id: "reservations-nav", page: "dashboard", destination: "reservations", target: "reservations-nav", action: "navigate", title: text("Click the Reservations Menu", "Klik Menu Reservations"), copy: text("Open this menu for a wider reservation search. The guide continues after you click 'Reservations'.", "Lihat menu ini untuk pencarian reservasi yang lebih luas. Panduan berlanjut setelah Anda klik menu ‘Reservations’.") },
       { id: "reservation-controls", page: "reservations", target: "reservation-controls", title: text("Find a Reservation", "Temukan Reservasi"), copy: text("Search reservations by guest name, day and date, or use the available search filters.", "Cari reservasi dengan keyword nama pelanggan, hari & tanggal, atau gunakan filter pencarian yang tersedia.") },
@@ -116,9 +115,11 @@
     }
     if (run?.section === "operations") {
       const operations = items.slice(0, guestStart);
-      operations.push({ id: "operations-finish", page: operations.at(-1).page, target: operations.at(-1).target, action: "finish", title: text("Your front desk guide is complete", "Panduan meja depan selesai"), copy: window.DemoSession?.selected()
-        ? text("Explore freely, or use Reset Tour to try Reports. Restarting a guide keeps the same one-hour expiry.", "Jelajahi dengan bebas, atau gunakan Reset Tour untuk mencoba Laporan. Mengulang panduan tidak mengubah waktu berakhir satu jam Anda.")
-        : text("Explore freely, or use Reset Tour to try Guest Database or the online reservation guide. Restarting a guide does not change demo data.", "Jelajahi dengan bebas, atau gunakan Reset Tour untuk mencoba Database Tamu atau panduan reservasi online. Mengulang panduan tidak mengubah data demo.") });
+      // The playground's four-page scope has no Guest Data, so it keeps the Reports hint there.
+      const guestsNext = !window.DemoSession?.selected() && hasAccess("guests");
+      operations.push({ id: "operations-finish", page: operations.at(-1).page, center: true, action: "finish", continueTo: guestsNext ? "guests" : null, title: text("Thank You for Following the Reservations and Walk-in Tour", "Terima Kasih Telah Mengikuti Tour Reservasi dan Walk-in"), copy: guestsNext
+        ? text("Next, you will follow the tour to try the Guest Data feature.", "Selanjutnya Anda akan mengikuti tour untuk mencoba fitur Guest Data.")
+        : text("Explore freely, or use Reset Tour to try Reports. Restarting a guide keeps the same one-hour expiry.", "Jelajahi dengan bebas, atau gunakan Reset Tour untuk mencoba Laporan. Mengulang panduan tidak mengubah waktu berakhir satu jam Anda.") });
       return operations;
     }
     return items; // Recover an older, already-active full walkthrough without losing its place.
@@ -149,7 +150,7 @@
       next.disabled = !!current?.action && current.action !== "finish";
       next.classList.toggle("driver-popover-btn-disabled", next.disabled);
       next.textContent = welcome ? text("Start Guided Tour", "Mulai Tur Terpandu") :
-        current?.action === "finish" ? text("Finish", "Selesai") : text("Next", "Lanjut");
+        current?.action === "finish" && !current.continueTo ? text("Finish", "Selesai") : text("Next", "Lanjut");
     }
     const extras = document.createElement("div"); extras.className = "demo-tour-controls";
     if (!welcome) {
@@ -176,7 +177,7 @@
     if (!window.driver?.js?.driver) return null;
     return window.driver.js.driver({
       animate: !reduced(), smoothScroll: false, allowClose: true, allowKeyboardControl: false,
-      overlayClickBehavior: "none", disableActiveInteraction: !["quick", "reservation-controls", "walkin-controls", "reports-range", "report-risk", "reports-peak"].includes(current?.id) && (!current?.action || current.action === "finish"),
+      overlayClickBehavior: "none", disableActiveInteraction: !["dashboard", "reservation-controls", "walkin-controls", "reports-range", "report-risk", "reports-peak"].includes(current?.id) && (!current?.action || current.action === "finish"),
       overlayColor: getComputedStyle(document.documentElement).getPropertyValue("--brand-ink").trim() || "black",
       overlayOpacity: 0.38, stagePadding: 6, stageRadius: 12, popoverOffset: 12,
       popoverClass: "intoch-demo-tour", showProgress: false,
@@ -379,6 +380,13 @@
       document.body.style.setProperty("--demo-tour-viewport-width", `${window.visualViewport?.width || window.innerWidth}px`);
       document.body.style.setProperty("--demo-tour-viewport-left", `${window.visualViewport?.offsetLeft || 0}px`);
     }
+    if (current.center) {
+      driverObj = driverFor(current);
+      if (!driverObj) return pause(text("The tour could not load. You can keep exploring.", "Tur belum dapat dimuat. Anda dapat terus menjelajah."));
+      const centered = document.createElement("span"); centered.textContent = current.copy;
+      driverObj.highlight({ popover: { showButtons: ["previous", "next", "close"], title: current.title, description: centered.innerHTML } });
+      return;
+    }
     let selector = anchor(current.target);
     if (current.id === "shortcuts") selector += '[data-tour-state="ready"]';
     if (current.id === "preferences" && !find(selector)) selector = anchor("profile-favorite");
@@ -418,6 +426,7 @@
     if (current.action && current.action !== "finish" && !fromAction) return;
     if (current.action === "search") document.querySelector(anchor("guest-search"))?.blur();
     if (current.id === "finish") { exit("completed"); hideModal("modal-profile"); find(anchor("guest-search"))?.focus({ preventScroll: true }); return; }
+    if (current.continueTo) { start(current.continueTo); return; }
     if (["operations-finish", "reports-finish"].includes(current.id)) { exit("completed"); return; }
     const items = catalog(), position = items.findIndex(item => item.id === current.id);
     run.step = items[position + 1].id;
@@ -508,7 +517,7 @@
     if (driverObj && event.key === "Tab") {
       // Include the real action target (e.g. search field/eye) in keyboard traversal.
       const current = step(), target = driverObj.getActiveElement();
-      const interactive = ["quick", "reservation-controls", "walkin-controls", "reports-range", "report-risk", "reports-peak"].includes(current?.id);
+      const interactive = ["dashboard", "reservation-controls", "walkin-controls", "reports-range", "report-risk", "reports-peak"].includes(current?.id);
       const nodes = [...(current?.action && target ? [target] : []),
         ...(interactive && target ? target.querySelectorAll("input:not(:disabled), select:not(:disabled), button:not(:disabled), a[href]") : []),
         ...document.querySelectorAll(".intoch-demo-tour button:not(:disabled)")].filter(visible);
@@ -524,7 +533,7 @@
     if (driverObj) clampPopover();
     const current = step();
     if (driverObj && current?.profile && !visible(document.getElementById("modal-profile"))) notify("profile-closed");
-    if (driverObj && current && !visible(driverObj.getActiveElement())) {
+    if (driverObj && current && !current.center && !visible(driverObj.getActiveElement())) {
       clearTimeout(refreshTimer); refreshTimer = setTimeout(() => { if (run && !run.paused) show().catch(() => pause()); }, 80);
     }
   }

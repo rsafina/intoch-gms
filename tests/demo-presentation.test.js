@@ -14,6 +14,13 @@ const source = fs.readFileSync(path.join(root,'js/demo.js'),'utf8');
   assert.equal(win.document.querySelectorAll('#demo-guide').length,1);
   win.initDemoPresentation();
   assert.equal(win.document.querySelectorAll('#demo-guide').length,1);
+  const dict={'Walk-In':'Tanpa Reservasi','Walk-In Log':'Log Tanpa Reservasi','Reservation vs Walk-In vs Cancelled':'Reservasi vs Tanpa Reservasi vs Dibatalkan','Guests':'Tamu'};
+  win.demoWalkInWording(dict);
+  assert.deepEqual(dict,{'Walk-In':'Walk-In','Walk-In Log':'Log Walk-In','Reservation vs Walk-In vs Cancelled':'Reservasi vs Walk-In vs Dibatalkan','Guests':'Tamu'},'Demo keeps Walk-In untranslated');
+  win.document.documentElement.classList.remove('demo-mode');
+  const client={'Walk-In':'Tanpa Reservasi'};win.demoWalkInWording(client);
+  assert.equal(client['Walk-In'],'Tanpa Reservasi','Non-demo builds keep the shared wording');
+  win.document.documentElement.classList.add('demo-mode');
   assert.equal(win.demoRoute('broadcast'),'dashboard');
   assert.equal(win.demoRoute('invoice'),'invoice');
   const metrics=win.demoMetrics([
