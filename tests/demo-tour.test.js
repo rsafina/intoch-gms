@@ -119,8 +119,9 @@ async function walkToSearch(h) {
   for(const expected of ['Understand recorded spending','Make the next visit personal','See the visits behind the relationship','Connect the next booking',"You're ready to explore"]) {
     h.next();await h.until(()=>h.title()===expected);
   }
-  h.next();assert.equal(h.seen()[0].status,'completed');assert.equal(h.title(),undefined);assert.equal(h.win.fixture.writes,0);
-  assert.ok(h.win.document.getElementById('modal-profile').classList.contains('hidden'));h.dom.window.close();
+  assert.equal(h.win.document.querySelector('.driver-popover-next-btn').textContent,'Next','Guest guide continues to Reports');
+  h.next();await h.until(()=>h.title()==='Turn visits into useful insights');assert.equal(h.win.fixture.writes,0);
+  assert.ok(h.win.document.getElementById('modal-profile').classList.contains('hidden'),'Profile closes before Reports');h.dom.window.close();
 
   h=await harness();await walkToSearch(h);h.back();await h.until(()=>h.title()==='Get to know your guests');
   assert.ok(h.win.document.getElementById('page-dashboard').classList.contains('active'),'Back returns across pages');

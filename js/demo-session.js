@@ -5,7 +5,7 @@
 (function () {
   'use strict';
   const PROJECT = 'https://hkrhsubhfqrgqkuhpvql.supabase.co';
-  const PAGES = new Set(['dashboard', 'reservations', 'walkins', 'reports']);
+  const PAGES = new Set(['dashboard', 'reservations', 'walkins', 'guests', 'reports']);
   const requested = () => new URL(location.href).searchParams.get('demo') === '1';
   let staffClient, guestClient, session = null, selected = false, busy = false;
   let epoch = 0, timer = null, validating = false, overlay = null, widget = null;
@@ -204,8 +204,8 @@
     const guide = document.getElementById('demo-guide');
     if (guide) {
       const copy = guide.querySelector('p');
-      if (copy) copy.textContent = text('Try Dashboard, Reservations, Walk-Ins and Reports for one hour using sample restaurant data. Follow a guide or explore on your own.',
-        'Coba Dashboard, Reservasi, Walk-In, dan Laporan selama 1 jam dengan data contoh restoran. Ikuti panduan atau jelajahi sendiri.');
+      if (copy) copy.textContent = text('Try Dashboard, Reservations, Walk-Ins, Guest Data and Reports for one hour using sample restaurant data. Follow a guide or explore on your own.',
+        'Coba Dashboard, Reservasi, Walk-In, Guest Data, dan Laporan selama 1 jam dengan data contoh restoran. Ikuti panduan atau jelajahi sendiri.');
       guide.querySelector('ol')?.remove();
     }
     timer = setInterval(tick, 1000); tick();

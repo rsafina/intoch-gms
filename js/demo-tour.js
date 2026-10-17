@@ -21,7 +21,7 @@
     ["guests", text("Guest Data", "Guest Data")],
     ["online", text("Online Reservation Form", "Form Reservasi Online")],
     ["reports", text("Reports", "Laporan")],
-  ].filter(([section]) => !window.DemoSession?.selected() || ["operations", "reports"].includes(section));
+  ].filter(([section]) => !window.DemoSession?.selected() || ["operations", "guests", "reports"].includes(section));
 
   function environment() { return window.INTOCH_DEMO_TOUR_ENV; }
   function eligible() {
@@ -101,7 +101,9 @@
       { id: "preferences", page: "guests", target: "profile-preferences", profile: true, title: text("Make the next visit personal", "Buat kunjungan berikutnya lebih personal"), copy: text("Favorites, preferences and notes help the team remember what matters to this guest. Empty fields mean those details have not been recorded yet.", "Menu favorit, preferensi, dan catatan membantu tim mengingat hal penting bagi tamu. Kolom kosong berarti detail tersebut belum dicatat.") },
       { id: "history", page: "guests", target: "profile-history", profile: true, title: text("See the visits behind the relationship", "Lihat kunjungan di balik hubungan"), copy: text("Visit History shows the guest's recent attendance and recorded spending. A reservation alone does not mean the guest visited.", "Visit History menampilkan kedatangan terbaru dan pengeluaran tercatat. Reservasi saja tidak berarti tamu telah berkunjung.") },
       { id: "shortcuts", page: "guests", target: "profile-shortcuts", profile: true, title: text("Connect the next booking", "Hubungkan reservasi berikutnya"), copy: text("When available, these shortcuts connect this guest to reservations, deposits and invoices. Deposits belong to a reservation; nothing needs to be created or paid during this tour.", "Jika tersedia, pintasan ini menghubungkan tamu dengan reservasi, deposit, dan invoice. Deposit terhubung ke reservasi; tidak perlu membuat atau membayar apa pun selama tur.") },
-      { id: "finish", page: "guests", target: "profile-close", profile: true, action: "finish", title: text("You're ready to explore", "Anda siap menjelajah"), copy: text("Finish the tour to explore at your own pace. Reset Tour is always visible so you can replay this section or choose another guide.", "Selesaikan tur untuk menjelajah sesuai keinginan Anda. Reset Tour selalu terlihat untuk mengulang bagian ini atau memilih panduan lain.") },
+      { id: "finish", page: "guests", target: "profile-close", profile: true, action: "finish", continueTo: hasAccess("reports") ? "reports" : null, title: text("You're ready to explore", "Anda siap menjelajah"), copy: hasAccess("reports")
+        ? text("All your guest data is in one place: search a guest or update their details whenever needed to personalize every visit. Next, you will follow the tour to try Reports.", "Semua data tamu Anda ada di satu tempat: cari tamu atau perbarui detailnya kapan pun dibutuhkan untuk membuat setiap kunjungan lebih personal. Selanjutnya Anda akan mengikuti tour untuk mencoba Laporan.")
+        : text("Finish the tour to explore at your own pace. Reset Tour is always visible so you can replay this section or choose another guide.", "Selesaikan tur untuk menjelajah sesuai keinginan Anda. Reset Tour selalu terlihat untuk mengulang bagian ini atau memilih panduan lain.") },
     ].filter(item => (!item.id.startsWith("reservation") || hasAccess("reservations")) &&
       (!item.id.startsWith("walkin-") && item.id !== "walkins-nav" || hasAccess("walkins")) &&
       (item.id !== "shortcuts" || hasAccess("reservations")))
@@ -115,11 +117,10 @@
     }
     if (run?.section === "operations") {
       const operations = items.slice(0, guestStart);
-      // The playground's four-page scope has no Guest Data, so it keeps the Reports hint there.
-      const guestsNext = !window.DemoSession?.selected() && hasAccess("guests");
+      const guestsNext = hasAccess("guests");
       operations.push({ id: "operations-finish", page: operations.at(-1).page, center: true, action: "finish", continueTo: guestsNext ? "guests" : null, title: text("Thank You for Following the Reservations and Walk-in Tour", "Terima Kasih Telah Mengikuti Tour Reservasi dan Walk-in"), copy: guestsNext
         ? text("Next, you will follow the tour to try the Guest Data feature.", "Selanjutnya Anda akan mengikuti tour untuk mencoba fitur Guest Data.")
-        : text("Explore freely, or use Reset Tour to try Reports. Restarting a guide keeps the same one-hour expiry.", "Jelajahi dengan bebas, atau gunakan Reset Tour untuk mencoba Laporan. Mengulang panduan tidak mengubah waktu berakhir satu jam Anda.") });
+        : text("Explore freely, or use Reset Tour to try another guide.", "Jelajahi dengan bebas, atau gunakan Reset Tour untuk mencoba panduan lain.") });
       return operations;
     }
     return items; // Recover an older, already-active full walkthrough without losing its place.
@@ -336,7 +337,7 @@
       showButtons: ["next", "close"],
       title: text("Follow the Demo Guide", "Ikuti Petunjuk Demo"),
       description: window.DemoSession?.selected()
-        ? text("Try Intoch for one hour using sample restaurant data. Choose the Reservations & Walk-in or Reports guide, or follow the full guide by clicking 'Start'. You can replay guides while your demo is active.", "Coba Intoch selama 1 jam dengan data contoh restoran. Pilih panduan Fitur Reservasi & Walk-in atau Laporan, atau ikuti panduan lengkap dengan klik tombol ‘Mulai’. Panduan dapat diulang selama demo masih aktif.")
+        ? text("Try Intoch for one hour using sample restaurant data. Click one of Intoch's 3 main features you would like to try, or follow the full guide by clicking 'Start'.", "Coba Intoch selama 1 jam dengan data contoh restoran. Klik satu dari 3 fitur utama Intoch yang ingin Anda coba, atau ikuti panduan lengkap dengan klik tombol ‘Mulai’.")
         : text("Click one of Intoch's 3 main features you would like to try, or follow the full guide by clicking 'Start'.", "Klik satu dari 3 fitur utama Intoch yang ingin Anda coba, atau ikuti panduan lengkap dengan klik tombol ‘Mulai’."),
     } });
   }
@@ -410,7 +411,7 @@
   }
   function start(section = "operations") {
     if (!valid()) return;
-    if (window.DemoSession?.selected() && !["operations", "reports"].includes(section)) return;
+    if (window.DemoSession?.selected() && !["operations", "guests", "reports"].includes(section)) return;
     if (!["operations", "guests", "reports"].includes(section)) section = "operations";
     if (section === "reports" && !hasAccess("reports")) return;
     closeMenu(); clearTimeout(welcomeTimer); welcomeTimer = null; offered = true;
@@ -431,8 +432,12 @@
     const current = step();
     if (current.action && current.action !== "finish" && !fromAction) return;
     if (current.action === "search") document.querySelector(anchor("guest-search"))?.blur();
+    if (current.continueTo) {
+      // The guest guide ends inside the profile dialog; close it before the next guide starts.
+      if (current.profile && typeof hideModal === "function") { internalNavigation = true; hideModal("modal-profile"); profileId = null; profileSatisfied = false; internalNavigation = false; }
+      start(current.continueTo); return;
+    }
     if (current.id === "finish") { exit("completed"); hideModal("modal-profile"); find(anchor("guest-search"))?.focus({ preventScroll: true }); return; }
-    if (current.continueTo) { start(current.continueTo); return; }
     if (["operations-finish", "reports-finish"].includes(current.id)) { exit("completed"); return; }
     const items = catalog(), position = items.findIndex(item => item.id === current.id);
     run.step = items[position + 1].id;

@@ -1,5 +1,14 @@
 # Current state and operational handoff
 
+Guided tour chain and one-hour Guest Data (2026-10-17; `feature/demo-guided-tour`):
+the full guide now runs Reservasi & Walk-in -> Guest Data -> Laporan in both the login
+demo and the one-hour `?demo=1` demo. The one-hour demo shows Guest Data again
+(`DemoSession` pages: dashboard, reservations, walkins, guests, reports); its
+`intoch_demo` schema already granted guest/visit/member/invoice reads and guest writes,
+and its seed creates the tour's sample guests (Budi Santoso, Michelle, Jessica).
+The guest guide closes the profile before Reports starts. Local jsdom and Chrome
+fixture checks pass; the one-hour Guest Data page itself still needs a live check.
+
 Demo QA bug list fixes (2026-10-17; `feature/demo-guided-tour`): tour copy follows
 the QA wording (login hint, "Ikuti Petunjuk Demo" welcome, guide names, "Mulai"
 button and every Reservations & Walk-in step). The Walk-In/New Reservation buttons

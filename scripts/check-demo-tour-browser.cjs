@@ -147,7 +147,9 @@ async function main() {
       await click('.driver-popover-next-btn');await until(title(expected),expected);await bounds(expected+' '+width);
       if(expected==='Make the next visit personal')await screenshot(width+'-preferences');
     }
-    await click('.driver-popover-next-btn');
+    await click('.driver-popover-next-btn');await until(title('Turn visits into useful insights'),'guest guide continues to Reports');
+    assert.equal(await evaluate('document.getElementById("modal-profile").classList.contains("hidden")'),true,'Profile closes before Reports');
+    await click('.driver-popover-close-btn');
     assert.equal(await evaluate('fixture.writes'),0,'Tour performs no writes');
     assert.equal(await evaluate('!!document.querySelector(".driver-overlay")'),false,'Completion removes overlay');
     await command('Page.reload');await until('!!window.fixture','completed reload');await sleep(600);

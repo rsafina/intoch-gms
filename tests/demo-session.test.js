@@ -46,8 +46,8 @@ function setup({url='http://127.0.0.1:8080/?demo=1',existing=false,expired=false
  assert.equal(win.document.getElementById('bd-alert-wrap').closest('#demo-session-banner')?.id,'demo-session-banner','notifications share the header layout');
  assert.equal(win.document.documentElement.hasAttribute('data-page-loading'),false,'successful activation dismisses loading');
  assert.equal(win.getStaffSession().role,'demo_guest');assert.equal(win.currentStaffId(),null);
- for(const page of ['dashboard','reservations','walkins','reports'])assert.equal(win.hasAccess(page),true,page);
- for(const page of ['guests','invoice','membership','settings-staff','broadcast'])assert.equal(win.hasAccess(page),false,page);
+ for(const page of ['dashboard','reservations','walkins','guests','reports'])assert.equal(win.hasAccess(page),true,page);
+ for(const page of ['invoice','membership','settings-staff','broadcast'])assert.equal(win.hasAccess(page),false,page);
  assert.equal(database.from('guests').schema,'intoch_demo');await database.rpc('record_reservation_arrival');
  assert.throws(()=>database.functions.invoke('staff-account'),/Unavailable/);
  assert.equal(win.canManagePaymentSettings(),false);assert.equal(win.canWaiveDeposit(),false);
@@ -120,5 +120,5 @@ function setup({url='http://127.0.0.1:8080/?demo=1',existing=false,expired=false
  assert.equal(await instance.win.DemoSession.staffCaptcha(),undefined);
  assert.deepEqual(instance.calls,[],'other projects retain existing login without demo CAPTCHA');
  instance.dom.window.close();
- console.log('Demo entry: credential-free authentication, separate CAPTCHA tokens, scoped client, four pages, preserved staff client, countdown recovery, expiry/exit teardown and wrong-project refusal passed');
+ console.log('Demo entry: credential-free authentication, separate CAPTCHA tokens, scoped client, five pages, preserved staff client, countdown recovery, expiry/exit teardown and wrong-project refusal passed');
 })().catch(error=>{console.error(error);process.exitCode=1;});
