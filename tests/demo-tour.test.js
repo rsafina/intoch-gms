@@ -47,6 +47,9 @@ async function harness(options = {}) {
 async function walkToSearch(h) {
   await h.until(()=>h.title()==='Follow the Demo Guide');h.next();
   await h.until(()=>h.title()==='Record Guest Visits');
+  const closeButton=h.win.document.querySelector('.intoch-demo-tour .driver-popover-close-btn');
+  assert.ok(closeButton.classList.contains('modal-close')&&closeButton.querySelector('svg'),'Tour close uses the red modal close button');
+  assert.equal(closeButton.getAttribute('aria-label'),'Close');
   const entry=h.win.document.querySelector('[data-tour="dashboard-entry"]');
   assert.ok(entry.querySelector('[data-tour="dashboard-intro"]')&&entry.querySelector('[data-tour="quick-walkin"]'),'Top buttons and Quick Walk-In share one highlight');
   assert.equal(entry.nextElementSibling?.id,'demo-guide','Quick Walk-In sits directly under Welcome, above the demo guide');

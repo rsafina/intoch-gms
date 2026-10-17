@@ -11,9 +11,11 @@ function demoWalkInWording(dict, patterns) {
   }
   if (!patterns) return;
   for (const pattern of patterns) if (typeof pattern[1] === 'string') pattern[1] = swap(pattern[1]);
-  patterns.unshift([/^(.*\b[Tt]amu) tanpa reservasi\b(.*)$/, '$1 walk-in$2']);
+  // Covers app.js's hardcoded labels and text i18n.js translated before this deferred file ran.
+  patterns.unshift([/^(.*)Tanpa Reservasi(.*)$/, '$1Walk-In$2'], [/^(.*)tanpa reservasi(.*)$/, '$1walk-in$2']);
 }
 demoWalkInWording(typeof ID_DICT !== 'undefined' ? ID_DICT : null, typeof ID_DICT_PATTERNS !== 'undefined' ? ID_DICT_PATTERNS : null);
+if (demoEnabled() && typeof i18nTranslateTree === 'function' && document.body) i18nTranslateTree(document.body);
 let demoVerifiedStaffId = null;
 function demoSessionReady(staff) { demoVerifiedStaffId = staff?.id == null ? null : String(staff.id); }
 function demoCanViewReports() {

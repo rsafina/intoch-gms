@@ -13,7 +13,14 @@ wording still pending a decision). New for all builds: Walk-In Log partial,
 case-insensitive guest-name search over the selected day, without a refetch.
 jsdom suites and the local Chrome tour check (1440/393/320) pass; screenshots were
 not refreshed because the Tailwind CDN was unreachable in that environment.
-Not yet published to the scoped demo router; demo.intoch.app is unchanged until then.
+Publishing (2026-10-17, done by the user in Cloudflare): added the public build variable
+`DEMO_TURNSTILE_SITE_KEY` to `demo-intoch` and removed only the `demo.intoch.app/*` route
+from Worker `intoch-playground-access`, so demo.intoch.app is now served by the
+`demo-intoch` build of this branch and updates on each push. The Worker and its
+`dashboard.intoch.app/*` route are unchanged. Undo: re-add route `demo.intoch.app/*`
+(zone intoch.app) to that Worker. Live check: ?demo=1 entry, CAPTCHA and new tour copy work.
+Follow-up: the tour close button reuses the red `.modal-close` style; Indonesian demo text
+translated before `js/demo.js` loads is also rewritten to "Walk-In".
 
 Tour close button polish (2026-10-11): remove the filled blue background from
 the close control. Preserve its click area and use an outline for keyboard focus.

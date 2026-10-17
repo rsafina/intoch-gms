@@ -22,6 +22,8 @@ const source = fs.readFileSync(path.join(root,'js/demo.js'),'utf8');
   assert.equal(rewrite('3 walk-ins'),'3 walk-in');
   assert.equal(rewrite('4 tamu tanpa reservasi pada 8 Okt 2026'),'4 tamu walk-in pada 8 Okt 2026','Hardcoded app.js label');
   assert.equal(rewrite('Tamu tanpa reservasi untuk 8 Okt 2026'),'Tamu walk-in untuk 8 Okt 2026');
+  assert.equal(rewrite('Tanpa Reservasi'),'Walk-In','Text translated before demo.js loaded is corrected');
+  assert.equal(rewrite('Log Tanpa Reservasi'),'Log Walk-In');
   win.document.documentElement.classList.remove('demo-mode');
   const client={'Walk-In':'Tanpa Reservasi'};win.demoWalkInWording(client);
   assert.equal(client['Walk-In'],'Tanpa Reservasi','Non-demo builds keep the shared wording');

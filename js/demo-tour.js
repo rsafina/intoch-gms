@@ -168,6 +168,12 @@
       popover.description.append(choices);
       next.textContent = text("Start", "Mulai");
     }
+    const close = popover.closeButton;
+    if (close) {
+      close.classList.add("modal-close");
+      close.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 10 10" fill="none" aria-hidden="true"><line x1="1.5" y1="1.5" x2="8.5" y2="8.5" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="8.5" y1="1.5" x2="1.5" y2="8.5" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>';
+      close.setAttribute("aria-label", text("Close", "Tutup"));
+    }
     popover.wrapper.append(extras);
     popover.wrapper.setAttribute("role", "dialog");
     popover.wrapper.setAttribute("aria-label", welcome ? text("Welcome to the Intoch demo", "Selamat datang di demo Intoch") : current.title);
