@@ -59,7 +59,7 @@ async function main() {
     for(const width of [1440,393,320]) {
       await command('Emulation.setDeviceMetricsOverride',{width,height:width<=640?852:1000,deviceScaleFactor:1,mobile:width<=640});
       await command('Page.navigate',{url:'http://127.0.0.1:8080/__demo-tour-fixture'});await until('!!window.fixture','ready');
-      await evaluate('localStorage.clear();sessionStorage.clear();');await command('Page.reload');await until(title('Try Intoch at your own pace'),'welcome');await click('.driver-popover-close-btn');
+      await evaluate('localStorage.clear();sessionStorage.clear();');await command('Page.reload');await until(title('Follow the Demo Guide'),'welcome');await click('.driver-popover-close-btn');
       if(width<=640)await click('[data-tour="mobile-menu"]');await click('[data-nav="reports"]');
       await until('document.getElementById("demo-reports").dataset.reportState === "ready"','real Reports data');
       assert.ok(await evaluate('document.getElementById("demo-reports").contains(document.getElementById("report-new-guests"))'),'Real cohort cards');
@@ -85,7 +85,7 @@ async function main() {
       await command('Emulation.setDeviceMetricsOverride',{width,height:width<=640?852:1000,deviceScaleFactor:1,mobile:width<=640});
       await command('Page.navigate',{url:'http://127.0.0.1:8080/__demo-tour-fixture'});
       await until('!!window.fixture','fixture ready');await evaluate('localStorage.clear();sessionStorage.clear();');await command('Page.reload');
-      await until(title('Try Intoch at your own pace'),'welcome');await click('.driver-popover-close-btn');
+      await until(title('Follow the Demo Guide'),'welcome');await click('.driver-popover-close-btn');
       await until('!!document.querySelector(".demo-tour-reset-highlight") && !document.querySelector(".driver-overlay")','Close highlights Reset Tour');
       assert.equal(await evaluate('getComputedStyle(document.getElementById("demo-tour-reset")).color'),'rgb(255, 255, 255)');
       assert.notEqual(await evaluate('getComputedStyle(document.getElementById("demo-tour-reset")).backgroundColor'),'rgb(255, 255, 255)');
@@ -102,7 +102,7 @@ async function main() {
     await until('!!window.fixture','fixture ready');
     await evaluate('localStorage.clear();sessionStorage.clear();');
     await command('Page.reload');
-    await until(title('Try Intoch at your own pace'),'welcome '+width);
+    await until(title('Follow the Demo Guide'),'welcome '+width);
     await bounds('welcome '+width);await screenshot(width+'-welcome');
     if(width===1440){
       await click('.demo-tour-controls .demo-tour-link');
@@ -111,21 +111,21 @@ async function main() {
       assert.equal(await evaluate('!!document.querySelector(".intoch-demo-tour")'),false,'Intro does not repeat');
       await click('#demo-tour-restart');await click('[data-tour-section=operations]');
     }else await click('.driver-popover-next-btn');
-    await until(title('Your front desk at a glance'),'dashboard');await screenshot(width+'-dashboard');
-    for(const expected of ['Plan for arriving guests','Keep walk-ins in view','See the seating picture','A quick welcome for walk-ins',phone?'Open navigation':'Explore reservations']){
+    await until(title('Record Guest Visits'),'dashboard');await screenshot(width+'-dashboard');
+    for(const expected of ['Plan for arriving guests','Keep walk-ins in view','See the seating picture','A quick welcome for walk-ins',phone?'Open navigation':'Click the Reservations Menu']){
       await click('.driver-popover-next-btn');await until(title(expected),expected+' '+width);await bounds(expected+' '+width);
     }
-    if(phone){await click('[data-tour="mobile-menu"]');await until(title('Explore reservations'),'phone drawer');await screenshot(width+'-navigation');}
+    if(phone){await click('[data-tour="mobile-menu"]');await until(title('Click the Reservations Menu'),'phone drawer');await screenshot(width+'-navigation');}
     assert.ok(await evaluate('document.querySelector(".driver-popover-next-btn").disabled'),'Reservations navigation is action gated');
-    await click('[data-tour="reservations-nav"]');await until(title('Find the right booking'),'reservations');await bounds('reservations '+width);await screenshot(width+'-reservations');
-    await click('.driver-popover-prev-btn');await until(title('Explore reservations'),'Back to dashboard');
-    await click('[data-tour="reservations-nav"]');await until(title('Find the right booking'),'return to reservations');
-    await click('.driver-popover-next-btn');await until(title('Manage the arrival'),'reservation list');
-    await click('.driver-popover-next-btn');await until(title('Explore walk-ins'),'walkins navigation');
-    await click('[data-tour="walkins-nav"]');await until(title('Review the service day'),'walkins');await bounds('walkins '+width);await screenshot(width+'-walkins');
-    await click('.driver-popover-prev-btn');await until(title('Explore walk-ins'),'Back to reservations');
-    await click('[data-tour="walkins-nav"]');await until(title('Review the service day'),'return to walkins');
-    await click('.driver-popover-next-btn');await until(title('Follow each walk-in'),'walkin log');
+    await click('[data-tour="reservations-nav"]');await until(title('Find a Reservation'),'reservations');await bounds('reservations '+width);await screenshot(width+'-reservations');
+    await click('.driver-popover-prev-btn');await until(title('Click the Reservations Menu'),'Back to dashboard');
+    await click('[data-tour="reservations-nav"]');await until(title('Find a Reservation'),'return to reservations');
+    await click('.driver-popover-next-btn');await until(title('Manage Reservations'),'reservation list');
+    await click('.driver-popover-next-btn');await until(title('Click the Walk-Ins Menu'),'walkins navigation');
+    await click('[data-tour="walkins-nav"]');await until(title('Find Walk-in Visits'),'walkins');await bounds('walkins '+width);await screenshot(width+'-walkins');
+    await click('.driver-popover-prev-btn');await until(title('Click the Walk-Ins Menu'),'Back to reservations');
+    await click('[data-tour="walkins-nav"]');await until(title('Find Walk-in Visits'),'return to walkins');
+    await click('.driver-popover-next-btn');await until(title('Manage Walk-in Visits'),'walkin log');
     await click('.driver-popover-next-btn');await until(title('Your front desk guide is complete'),'operations finish');await click('.driver-popover-next-btn');await click('#demo-tour-reset');await screenshot(width+'-reset-menu');await click('[data-tour-section=guests]');
     if(phone){await until(title('Open navigation'),'guest menu');await click('[data-tour=mobile-menu]');}
     await until(title('Get to know your guests'),'guests navigation');
@@ -153,14 +153,14 @@ async function main() {
     await command('Page.reload');await until('!!window.fixture','completed reload');await sleep(600);
     assert.equal(await evaluate('!!document.querySelector(".intoch-demo-tour")'),false,'Completion suppresses intro');
     // Restart via dashboard; pause allows unrelated navigation and reload offers explicit resume.
-    await evaluate('navigateTo("dashboard")');await click('#demo-tour-restart');await click('[data-tour-section=operations]');await until(title('Your front desk at a glance'),'restart');
+    await evaluate('navigateTo("dashboard")');await click('#demo-tour-restart');await click('[data-tour-section=operations]');await until(title('Record Guest Visits'),'restart');
     await click('.demo-tour-controls .demo-tour-link:last-child');
     await evaluate('navigateTo("guests")');
     assert.equal(await evaluate('!!document.querySelector(".intoch-demo-tour")'),false,'Exploration does not force navigation');
     await command('Page.reload');await until('!!document.querySelector(".demo-tour-dock")','recovery prompt');
     await until(`(()=>{const view=visualViewport;return ['#demo-tour-reset','.demo-tour-dock'].every(selector=>{const box=document.querySelector(selector).getBoundingClientRect();return box.left>=view.offsetLeft-1&&box.right<=view.offsetLeft+view.width+1&&box.top>=view.offsetTop-1&&box.bottom<=view.offsetTop+view.height+1;});})()`,'Reset and resume remain inside the phone viewport');
     await screenshot(width+'-resume');
-    await click('.demo-tour-dock button');await until(title('Your front desk at a glance'),'resume');
+    await click('.demo-tour-dock button');await until(title('Record Guest Visits'),'resume');
     await evaluate('fixture.logout()');assert.equal(await evaluate('!!document.querySelector(".driver-overlay")'),false,'Logout removes overlay');
     assert.equal(await evaluate('!!document.querySelector(".demo-tour-dock")'),false,'Logout removes dock');
     console.log('PASS '+width+'px: intro, explore, action gates, back, search/profile, completion, restart, reload, pause and logout');

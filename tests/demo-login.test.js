@@ -15,7 +15,7 @@ async function harness(options = {}) {
   const {win} = h, submit = win.document.querySelector('[data-tour="login-submit"]');
   assert.equal(win.document.getElementById('login-username').value,'intoch-demo');
   assert.equal(win.document.getElementById('login-pin').value.length,4);
-  assert.match(win.document.getElementById('demo-login-hint').textContent,/Click Login to continue/);
+  assert.match(win.document.getElementById('demo-login-hint').textContent,/Click Login to continue to the guided Intoch demo/);
   assert.equal(win.document.activeElement,submit,'Autofill focuses Login rather than opening the phone keyboard');
   assert.equal(win.fixture.calls,0,'Preparing does not authenticate automatically');
   win.showLoginPage();assert.equal(win.document.querySelectorAll('#demo-login-hint').length,1,'Idempotent hint');
@@ -35,6 +35,6 @@ async function harness(options = {}) {
   }
   h=await harness({setup:'document.getElementById("login-username").value="another-staff";document.getElementById("login-pin").value="9876";'});
   assert.equal(h.win.document.getElementById('login-username').value,'another-staff');assert.equal(h.win.document.getElementById('login-pin').value,'9876','Preserves typed/saved credentials');h.dom.window.close();
-  h=await harness({setup:'CURRENT_LANG="id";'});assert.match(h.win.document.getElementById('demo-login-hint').textContent,/Klik Login/);h.dom.window.close();
+  h=await harness({setup:'CURRENT_LANG="id";'});assert.match(h.win.document.getElementById('demo-login-hint').textContent,/Klik Login untuk melanjutkan ke demo Intoch dengan panduan/);h.dom.window.close();
   console.log('Demo login: allowlist/project gates, editable autofill, manual Auth, verified session/profile checks, dashboard entry, teardown, focus and hint passed.');
 })().catch(error=>{console.error(error);process.exit(1);});

@@ -33,7 +33,7 @@
     if (!name.value && !code.value) { name.value = username; code.value = pin; }
     else if (name.value === username && !code.value) code.value = pin;
     const hint = document.createElement("p"); hint.id = "demo-login-hint"; hint.className = "demo-login-hint";
-    hint.textContent = text("Click Login to continue to the Intoch demo. You can explore freely or choose a guided tour.", "Klik Login untuk melanjutkan ke demo Intoch. Jelajahi dengan bebas atau pilih tur terpandu.");
+    hint.textContent = text("Click Login to continue to the guided Intoch demo.", "Klik Login untuk melanjutkan ke demo Intoch dengan panduan.");
     submit.before(hint); submit.classList.add("demo-login-highlight");
     submit.setAttribute("aria-describedby", [submit.getAttribute("aria-describedby"), hint.id].filter(Boolean).join(" "));
     return name.value === username && code.value === pin;

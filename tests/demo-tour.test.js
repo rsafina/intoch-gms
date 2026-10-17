@@ -45,11 +45,11 @@ async function harness(options = {}) {
   return {win,dom,errors,until,title,click,next,back,seen};
 }
 async function walkToSearch(h) {
-  await h.until(()=>h.title()==='Try Intoch at your own pace');h.next();
-  await h.until(()=>h.title()==='Your front desk at a glance');
-  for(const expected of ['Plan for arriving guests','Keep walk-ins in view','See the seating picture','A quick welcome for walk-ins','Explore reservations']) {
+  await h.until(()=>h.title()==='Follow the Demo Guide');h.next();
+  await h.until(()=>h.title()==='Record Guest Visits');
+  for(const expected of ['See Upcoming Reservations','See Walk-in Visits','Check Table Availability','Record a Quick Walk-in','Click the Reservations Menu']) {
     h.next(); await h.until(()=>h.title()===expected);
-    if(expected==='A quick welcome for walk-ins') {
+    if(expected==='Record a Quick Walk-in') {
       const quick=h.win.document.getElementById('qw-name');quick.value='Budi';quick.dispatchEvent(new h.win.Event('input',{bubbles:true}));
       await h.until(()=>!h.win.document.getElementById('qw-results').classList.contains('hidden'));
       h.click('#qw-results button');assert.equal(quick.value,'Budi Santoso');
@@ -57,14 +57,14 @@ async function walkToSearch(h) {
     }
   }
   assert.equal(h.win.document.querySelector('.driver-popover-next-btn').disabled,true);
-  h.win.fixture.delay=100;h.click('[data-tour="reservations-nav"]');await sleep(30);assert.notEqual(h.title(),'Find the right booking');
-  await h.until(()=>h.title()==='Find the right booking');h.win.fixture.delay=0;
+  h.win.fixture.delay=100;h.click('[data-tour="reservations-nav"]');await sleep(30);assert.notEqual(h.title(),'Find a Reservation');
+  await h.until(()=>h.title()==='Find a Reservation');h.win.fixture.delay=0;
   let filterFocused=false;for(let i=0;i<35;i++){h.win.document.dispatchEvent(new h.win.KeyboardEvent('keydown',{key:'Tab',bubbles:true}));if(h.win.document.activeElement.id==='res-search-input'){filterFocused=true;break;}}assert.ok(filterFocused,'Reservation filters are keyboard reachable');
-  h.back();await h.until(()=>h.title()==='Explore reservations');h.click('[data-tour="reservations-nav"]');await h.until(()=>h.title()==='Find the right booking');
-  h.next();await h.until(()=>h.title()==='Manage the arrival');h.next();await h.until(()=>h.title()==='Explore walk-ins');
-  h.click('[data-tour="walkins-nav"]');await h.until(()=>h.title()==='Review the service day');
-  h.back();await h.until(()=>h.title()==='Explore walk-ins');h.click('[data-tour="walkins-nav"]');await h.until(()=>h.title()==='Review the service day');
-  h.next();await h.until(()=>h.title()==='Follow each walk-in');h.next();await h.until(()=>h.title()==='Your front desk guide is complete');h.next();assert.equal(h.title(),undefined);
+  h.back();await h.until(()=>h.title()==='Click the Reservations Menu');h.click('[data-tour="reservations-nav"]');await h.until(()=>h.title()==='Find a Reservation');
+  h.next();await h.until(()=>h.title()==='Manage Reservations');h.next();await h.until(()=>h.title()==='Click the Walk-Ins Menu');
+  h.click('[data-tour="walkins-nav"]');await h.until(()=>h.title()==='Find Walk-in Visits');
+  h.back();await h.until(()=>h.title()==='Click the Walk-Ins Menu');h.click('[data-tour="walkins-nav"]');await h.until(()=>h.title()==='Find Walk-in Visits');
+  h.next();await h.until(()=>h.title()==='Manage Walk-in Visits');h.next();await h.until(()=>h.title()==='Your front desk guide is complete');h.next();assert.equal(h.title(),undefined);
   h.click('#demo-tour-reset');h.click('[data-tour-section=guests]');await h.until(()=>h.title()==='Get to know your guests');
   const nextButton=h.win.document.querySelector('.driver-popover-next-btn');
   assert.equal(nextButton.disabled,true,'Navigation requires real action');
@@ -73,7 +73,7 @@ async function walkToSearch(h) {
 (async () => {
   for (const mobile of [false, true]) {
     const section = await harness({ mobile });
-    await section.until(() => section.title() === 'Try Intoch at your own pace');
+    await section.until(() => section.title() === 'Follow the Demo Guide');
     const choices = section.win.document.querySelectorAll('.demo-tour-sections button');
     assert.equal(choices.length, 3, 'Intro offers three independent sections');
     choices[1].click();
@@ -92,7 +92,7 @@ async function walkToSearch(h) {
     section.dom.window.close();
   }
   let h=await harness();
-  await h.until(()=>h.title()==='Try Intoch at your own pace');
+  await h.until(()=>h.title()==='Follow the Demo Guide');
   const explore=[...h.win.document.querySelectorAll('.demo-tour-link')].find(node=>node.textContent==='Explore Independently');
   explore.click();assert.equal(h.seen()[0].status,'skipped');assert.equal(h.title(),undefined);assert.ok(h.win.document.querySelector('.demo-tour-reset-highlight'),'Explore highlights reset');
   await h.win.fixture.relogin();await sleep(400);assert.equal(h.title(),undefined,'Explicit skip suppresses next intro');
@@ -128,7 +128,7 @@ async function walkToSearch(h) {
   h.win.DemoTour.resume();await h.until(()=>h.title()==='Find a familiar face');
   h.win.fixture.fail='guests';h.win.eval('loadGuests("Budi Santoso")');await h.until(()=>h.win.document.querySelector('.demo-tour-dock'));
   assert.equal(h.title(),undefined,'Failed reads pause instead of advancing');h.win.fixture.fail=null;
-  h.win.DemoTour.start();await h.until(()=>h.title()==='Your front desk at a glance');
+  h.win.DemoTour.start();await h.until(()=>h.title()==='Record Guest Visits');
   h.win.fixture.logout();assert.equal(h.title(),undefined);assert.equal(h.win.document.querySelector('.demo-tour-dock'),null);
   assert.equal(Object.keys(h.win.sessionStorage).filter(key=>key.includes(':active')).length,0,'Logout clears recovery');h.dom.window.close();
 
@@ -145,7 +145,7 @@ async function walkToSearch(h) {
   h.win.document.dispatchEvent(new h.win.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
   assert.equal(h.seen()[0].status,'skipped');assert.equal(h.win.document.querySelector('.driver-overlay'),null);h.dom.window.close();
 
-  h=await harness();await h.until(()=>h.title()==='Try Intoch at your own pace');h.next();await h.until(()=>h.title()==='Your front desk at a glance');
+  h=await harness();await h.until(()=>h.title()==='Follow the Demo Guide');h.next();await h.until(()=>h.title()==='Record Guest Visits');
   h.win.document.querySelector('[data-tour="today-reservations"]').remove();h.next();await sleep(5200);
   assert.ok(h.win.document.querySelector('.demo-tour-dock'),'Missing target times out safely');
   assert.equal(h.title(),undefined);h.dom.window.close();
@@ -170,17 +170,17 @@ async function walkToSearch(h) {
   assert.equal(h.title(),undefined,'Failed page data does not satisfy navigation');h.dom.window.close();
 
   for (const page of ['reservations','walkins']) {
-    h=await harness();await h.until(()=>h.title()==='Try Intoch at your own pace');h.next();await h.until(()=>h.title()==='Your front desk at a glance');
+    h=await harness();await h.until(()=>h.title()==='Follow the Demo Guide');h.next();await h.until(()=>h.title()==='Record Guest Visits');
     for (let i=0;i<5;i++) {h.next();await sleep(30);}
-    await h.until(()=>h.title()==='Explore reservations');
+    await h.until(()=>h.title()==='Click the Reservations Menu');
     if (page==='walkins') {
-      h.click('[data-tour="reservations-nav"]');await h.until(()=>h.title()==='Find the right booking');h.next();await h.until(()=>h.title()==='Manage the arrival');h.next();await h.until(()=>h.title()==='Explore walk-ins');
+      h.click('[data-tour="reservations-nav"]');await h.until(()=>h.title()==='Find a Reservation');h.next();await h.until(()=>h.title()==='Manage Reservations');h.next();await h.until(()=>h.title()==='Click the Walk-Ins Menu');
     }
     h.win.fixture.fail=page;h.click(`[data-tour="${page}-nav"]`);await h.until(()=>h.win.document.querySelector('.demo-tour-dock'));
     assert.equal(h.title(),undefined,'Failed operations read pauses rather than advancing');assert.equal(h.win.fixture.writes,0);h.dom.window.close();
   }
   for(const origin of ['https://demo.intoch.app','https://dashboard.intoch.app']) {
-    h=await harness({origin});await h.until(()=>h.title()==='Try Intoch at your own pace');h.dom.window.close();
+    h=await harness({origin});await h.until(()=>h.title()==='Follow the Demo Guide');h.dom.window.close();
   }
   for(const options of [
     {origin:'https://client.example'},
@@ -193,9 +193,9 @@ async function walkToSearch(h) {
   ]) {
     h=await harness(options);await sleep(420);assert.equal(h.title(),undefined);assert.equal(h.win.document.getElementById('demo-tour-restart'),null);h.dom.window.close();
   }
-  h=await harness({mobile:true});await h.until(()=>h.title()==='Try Intoch at your own pace');h.next();await h.until(()=>h.title()==='Your front desk at a glance');
+  h=await harness({mobile:true});await h.until(()=>h.title()==='Follow the Demo Guide');h.next();await h.until(()=>h.title()==='Record Guest Visits');
   for(let count=0;count<5;count++){h.next();await sleep(30);}
-  await h.until(()=>h.title()==='Open navigation');h.click('[data-tour="mobile-menu"]');await h.until(()=>h.title()==='Explore reservations');
+  await h.until(()=>h.title()==='Open navigation');h.click('[data-tour="mobile-menu"]');await h.until(()=>h.title()==='Click the Reservations Menu');
   assert.ok(h.win.document.body.classList.contains('sidebar-drawer-open'));h.win.DemoTour.exit();assert.ok(!h.win.document.body.classList.contains('sidebar-drawer-open'));h.dom.window.close();
   console.log('Demo tour: real navigation/search/profile, action gates, skip/completion, back, recovery, pause, teardown and environment gates passed.');
 })().catch(error=>{console.error(error);process.exit(1);});
